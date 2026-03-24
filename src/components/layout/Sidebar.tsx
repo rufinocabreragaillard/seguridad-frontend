@@ -1,0 +1,113 @@
+'use client'
+
+import Link from 'next/link'
+import Image from 'next/image'
+import { usePathname } from 'next/navigation'
+import {
+  LayoutDashboard,
+  Users,
+  ShieldCheck,
+  Building2,
+  SlidersHorizontal,
+  ClipboardList,
+  LogOut,
+  Menu,
+  X,
+} from 'lucide-react'
+import { useState } from 'react'
+import { cn } from '@/lib/utils'
+import { useAuth } from '@/context/AuthContext'
+import { tema } from '@/config/tema.config'
+
+const navegacion = [
+  { nombre: 'Dashboard', href: '/dashboard', icono: LayoutDashboard },
+  { nombre: 'Usuarios', href: '/usuarios', icono: Users },
+  { nombre: 'Roles y Funciones', href: '/roles', icono: ShieldCheck },
+  { nombre: 'Entidades y Áreas', href: '/entidades', icono: Building2 },
+  { nombre: 'Parámetros', href: '/parametros', icono: SlidersHorizontal },
+  { nombre: 'Auditoría', href: '/auditoria', icono: ClipboardList },
+]
+
+export function Sidebar() {
+  const pathname = usePathname()
+  const { logout } = useAuth()
+  const [colapsado, setColapsado] = useState(false)
+
+  return (
+    <aside
+      className={cn(
+        'flex flex-col h-full transition-all duration-300',
+        'bg-sidebar text-sidebar-texto',
+        colapsado ? 'w-16' : 'w-60'
+      )}
+    >
+      {/* Logo y botón colapsar */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-white/10 min-h-[64px]">
+        {!colapsado && (
+          <Link href="/dashboard" className="flex items-center">
+            <Image
+              src={tema.logo.src}
+              alt={tema.logo.alt}
+              width={tema.logo.ancho}
+              height={tema.logo.alto}
+              className="object-contain"
+              onError={(e) => {
+                // Fallback si no existe el logo
+                const target = e.target as HTMLImageElement
+                target.style.display = 'none'
+              }}
+            />
+            {/* Fallback texto si no hay logo */}
+            <span className="text-white font-bold text-lg ml-2 hidden">{tema.app.nombreCorto}</span>
+          </Link>
+        )}
+        <button
+          onClick={() => setColapsado(!colapsado)}
+          className="p-1.5 rounded-lg hover:bg-sidebar-hover text-sidebar-texto transition-colors ml-auto"
+          title={colapsado ? 'Expandir menú' : 'Colapsar menú'}
+        >
+          {colapsado ? <Menu size={18} /> : <X size={18} />}
+        </button>
+      </div>
+
+      {/* Navegación */}
+      <nav className="flex-1 py-4 px-2 flex flex-col gap-1 overflow-y-auto">
+        {navegacion.map((item) => {
+          const activo = pathname === item.href || pathname.startsWith(item.href + '/')
+          const Icono = item.icono
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                'flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-medium',
+                activo
+                  ? 'bg-sidebar-activo text-white'
+                  : 'text-sidebar-texto-muted hover:bg-sidebar-hover hover:text-white'
+              )}
+              title={colapsado ? item.nombre : undefined}
+            >
+              <Icono size={18} className="shrink-0" />
+              {!colapsado && <span>{item.nombre}</span>}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Cerrar sesión */}
+      <div className="px-2 py-4 border-t border-white/10">
+        <button
+          onClick={logout}
+          className={cn(
+            'flex items-center gap-3 px-3 py-2.5 rounded-lg w-full transition-colors text-sm font-medium',
+            'text-sidebar-texto-muted hover:bg-sidebar-hover hover:text-white'
+          )}
+          title={colapsado ? 'Cerrar sesión' : undefined}
+        >
+          <LogOut size={18} className="shrink-0" />
+          {!colapsado && <span>Cerrar sesión</span>}
+        </button>
+      </div>
+    </aside>
+  )
+}
