@@ -19,6 +19,7 @@ export default function PaginaUsuarios() {
   const [usuarioEditando, setUsuarioEditando] = useState<Usuario | null>(null)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+  const [errorCarga, setErrorCarga] = useState('')
 
   // Formulario
   const [form, setForm] = useState({
@@ -31,10 +32,13 @@ export default function PaginaUsuarios() {
 
   const cargar = useCallback(async () => {
     setCargando(true)
+    setErrorCarga('')
     try {
       const [u, r] = await Promise.all([usuariosApi.listar(), rolesApi.listar()])
       setUsuarios(u)
       setRoles(r)
+    } catch (e) {
+      setErrorCarga(e instanceof Error ? e.message : 'Error al cargar usuarios')
     } finally {
       setCargando(false)
     }
@@ -132,6 +136,13 @@ export default function PaginaUsuarios() {
           icono={<Search size={15} />}
         />
       </div>
+
+      {/* Error de carga */}
+      {errorCarga && (
+        <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <p className="text-sm text-error">{errorCarga}</p>
+        </div>
+      )}
 
       {/* Tabla */}
       {cargando ? (
