@@ -46,11 +46,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Escucha cambios de sesión de Supabase (login, logout, OAuth callback)
   useEffect(() => {
+    let isMounted = true
+    let initialLoadDone = false
+
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        if (!isMounted) return
+        initialLoadDone = true
         if (session) {
           const ctx = await cargarContexto()
-          if (ctx && event === 'SIGNED_IN') {
+          if (isMounted && ctx && event === 'SIGNED_IN') {
             router.push(ctx.url_inicio || '/dashboard')
           }
         } else {
@@ -59,20 +64,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             router.push('/login')
           }
         }
-        setCargando(false)
+        if (isMounted) setCargando(false)
       }
     )
 
-    // Carga inicial
-    supabase.auth.getSession().then(({ data }) => {
+    // Carga inicial - solo si el listener no la manejó ya
+    supabase.auth.getSession().then(async ({ data }) => {
+      if (!isMounted || initialLoadDone) return
       if (data.session) {
-        cargarContexto().finally(() => setCargando(false))
-      } else {
-        setCargando(false)
+        await cargarContexto()
       }
+      if (isMounted) setCargando(false)
     })
 
-    return () => listener.subscription.unsubscribe()
+    return () => {
+      isMounted = false
+      listener.subscription.unsubscribe()
+    }
   }, [cargarContexto, router])
 
   const login = async (email: string, password: string) => {
