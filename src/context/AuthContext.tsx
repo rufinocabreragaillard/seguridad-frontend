@@ -6,12 +6,16 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
   type ReactNode,
 } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { authApi } from '@/lib/api'
 import type { UsuarioContexto } from '@/lib/tipos'
+
+// Timeout de inactividad en milisegundos (90 minutos por defecto)
+const INACTIVITY_TIMEOUT_MS = 90 * 60 * 1000
 
 interface AuthContextType {
   usuario: UsuarioContexto | null
@@ -82,6 +86,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       listener.subscription.unsubscribe()
     }
   }, [cargarContexto, router])
+
+  // Timeout de inactividad: cierra sesión si no hay actividad
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!usuario) return
+
+    const resetTimer = () => {
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current)
+      inactivityTimer.current = setTimeout(() => {
+        logout()
+      }, INACTIVITY_TIMEOUT_MS)
+    }
+
+    const events = ['mousedown', 'keydown', 'scroll', 'touchstart']
+    events.forEach((e) => window.addEventListener(e, resetTimer))
+    resetTimer()
+
+    return () => {
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current)
+      events.forEach((e) => window.removeEventListener(e, resetTimer))
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usuario])
 
   const login = async (email: string, password: string) => {
     setError(null)

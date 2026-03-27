@@ -345,7 +345,7 @@ export default function PaginaUsuarios() {
       <Modal
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
-        titulo={usuarioEditando ? 'Editar usuario' : 'Nuevo usuario'}
+        titulo={usuarioEditando ? `Editar usuario : ${usuarioEditando.codigo_usuario}` : 'Nuevo usuario'}
         descripcion={usuarioEditando ? undefined : 'El usuario recibirá una invitación por correo'}
       >
         <div className="flex flex-col gap-4">
@@ -370,7 +370,7 @@ export default function PaginaUsuarios() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                Roles adicionales
+                Roles del usuario
               </button>
               <button
                 onClick={() => setTabActiva('entidades')}
@@ -428,7 +428,7 @@ export default function PaginaUsuarios() {
                   }
                 </select>
                 {usuarioEditando && rolesUsuario.length === 0 && (
-                  <p className="text-xs text-texto-muted">Asigne roles en la pestaña &quot;Roles adicionales&quot; primero</p>
+                  <p className="text-xs text-texto-muted">Asigne roles en la pestaña &quot;Roles del usuario&quot; primero</p>
                 )}
               </div>
 
@@ -449,7 +449,7 @@ export default function PaginaUsuarios() {
             </>
           )}
 
-          {/* Tab Roles adicionales */}
+          {/* Tab Roles del usuario */}
           {tabActiva === 'roles' && usuarioEditando && (
             <div className="flex flex-col gap-4">
               {/* Asignar nuevo rol */}

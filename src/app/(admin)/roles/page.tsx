@@ -274,7 +274,7 @@ export default function PaginaRoles() {
       )}
 
       {/* Modal Rol */}
-      <Modal abierto={modalRol} alCerrar={() => setModalRol(false)} titulo={rolEditando ? 'Editar rol' : 'Nuevo rol'}>
+      <Modal abierto={modalRol} alCerrar={() => setModalRol(false)} titulo={rolEditando ? `Editar rol : ${rolEditando.codigo_rol}` : 'Nuevo rol'}>
         <div className="flex flex-col gap-4">
           {/* Pestañas (solo en edición) */}
           {rolEditando && (
