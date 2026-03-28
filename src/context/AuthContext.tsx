@@ -44,6 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
+  const contextoCargado = useRef(false)
 
   const cargarContexto = useCallback(async () => {
     try {
@@ -56,9 +57,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const isPublicRoute = PUBLIC_ROUTES.includes(pathname)
-
-  // Escucha cambios de sesión de Supabase (login, logout, OAuth callback, token refresh)
+  // Único flujo de autenticación: onAuthStateChange maneja todo
+  // INITIAL_SESSION se dispara siempre al cargar (con o sin sesión)
   useEffect(() => {
     let isMounted = true
 
@@ -66,56 +66,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       async (event, session) => {
         if (!isMounted) return
 
-        if (session) {
-          // Hay sesión válida — cargar contexto del backend
+        if (event === 'INITIAL_SESSION') {
+          // Carga inicial (refresh de página o primera visita)
+          if (session) {
+            // Hay sesión guardada — cargar contexto del backend
+            const ctx = await cargarContexto()
+            if (isMounted) {
+              setCargando(false)
+              contextoCargado.current = true
+              // No redirigir — el usuario está refrescando la página actual
+              if (!ctx && !PUBLIC_ROUTES.includes(pathname)) {
+                // Sesión de Supabase existe pero el backend la rechazó
+                router.push('/login')
+              }
+            }
+          } else {
+            // No hay sesión guardada
+            if (isMounted) {
+              setCargando(false)
+              contextoCargado.current = true
+              if (!PUBLIC_ROUTES.includes(pathname)) {
+                router.push('/login')
+              }
+            }
+          }
+        } else if (event === 'SIGNED_IN') {
+          // Login explícito del usuario
           const ctx = await cargarContexto()
           if (isMounted) {
             setCargando(false)
-            // Solo redirigir al dashboard en login explícito, no en refresh/token_refresh
-            if (ctx && event === 'SIGNED_IN') {
+            if (ctx) {
               router.push(ctx.url_inicio || '/dashboard')
             }
           }
-        } else {
-          // No hay sesión
+        } else if (event === 'SIGNED_OUT') {
+          // Logout
           setUsuario(null)
           if (isMounted) {
             setCargando(false)
-            if (!isPublicRoute) {
-              router.push('/login')
-            }
+            router.push('/login')
+          }
+        } else if (event === 'TOKEN_REFRESHED') {
+          // Token refrescado automáticamente — solo recargar contexto silenciosamente
+          if (session) {
+            await cargarContexto()
           }
         }
       }
     )
 
-    // Carga inicial: verificar si hay sesión existente (persiste en localStorage)
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!isMounted) return
-
-      if (data.session) {
-        // Sesión existente (refresh de página) — cargar contexto
-        await cargarContexto()
-      } else {
-        // Sin sesión — redirigir a login si está en ruta protegida
-        setUsuario(null)
-        if (!isPublicRoute) {
-          router.push('/login')
-        }
-      }
-      if (isMounted) setCargando(false)
-    }).catch(() => {
-      if (isMounted) {
-        setCargando(false)
-        if (!isPublicRoute) router.push('/login')
-      }
-    })
-
     return () => {
       isMounted = false
       listener.subscription.unsubscribe()
     }
-  }, [cargarContexto, router, isPublicRoute])
+  }, [cargarContexto, router, pathname])
 
   // Timeout de inactividad: usa la duración configurada desde el backend
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -149,7 +153,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const { error: err } = await supabase.auth.signInWithPassword({ email, password })
       if (err) throw new Error(err.message)
-      // onAuthStateChange maneja la redirección
+      // onAuthStateChange SIGNED_IN maneja la redirección
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al iniciar sesión')
       setCargando(false)
@@ -191,8 +195,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const ctx = await authApi.cambiarGrupo(codigoGrupo)
       setUsuario(ctx)
-      // Refrescar la página actual para que los datos se recarguen con el nuevo grupo
-      router.refresh()
+      // Recargar la página para que todos los datos se refresquen con el nuevo grupo
+      window.location.reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cambiar grupo')
       throw e
