@@ -14,10 +14,6 @@ import { supabase } from '@/lib/supabase'
 import { authApi } from '@/lib/api'
 import type { UsuarioContexto } from '@/lib/tipos'
 
-// Default 90 minutos — se sobreescribe con el parámetro del backend
-const DEFAULT_INACTIVITY_TIMEOUT_MS = 90 * 60 * 1000
-
-// Rutas que no requieren autenticación
 const PUBLIC_ROUTES = ['/login', '/auth/callback']
 
 interface AuthContextType {
@@ -44,7 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
   const pathname = usePathname()
-  const contextoCargado = useRef(false)
+
+  // Flag: true solo cuando el usuario hace login explícito (clic en "Iniciar sesión")
+  // Se usa para distinguir SIGNED_IN por login vs SIGNED_IN por restauración de sesión
+  const loginExplicito = useRef(false)
 
   const cargarContexto = useCallback(async () => {
     try {
@@ -57,8 +56,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  // Único flujo de autenticación: onAuthStateChange maneja todo
-  // INITIAL_SESSION se dispara siempre al cargar (con o sin sesión)
   useEffect(() => {
     let isMounted = true
 
@@ -67,47 +64,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!isMounted) return
 
         if (event === 'INITIAL_SESSION') {
-          // Carga inicial (refresh de página o primera visita)
+          // Carga inicial: refresh de página o primera visita
           if (session) {
-            // Hay sesión guardada — cargar contexto del backend
             const ctx = await cargarContexto()
             if (isMounted) {
               setCargando(false)
-              contextoCargado.current = true
-              // No redirigir — el usuario está refrescando la página actual
               if (!ctx && !PUBLIC_ROUTES.includes(pathname)) {
-                // Sesión de Supabase existe pero el backend la rechazó
                 router.push('/login')
               }
             }
           } else {
-            // No hay sesión guardada
             if (isMounted) {
               setCargando(false)
-              contextoCargado.current = true
               if (!PUBLIC_ROUTES.includes(pathname)) {
                 router.push('/login')
               }
             }
           }
         } else if (event === 'SIGNED_IN') {
-          // Login explícito del usuario
-          const ctx = await cargarContexto()
-          if (isMounted) {
-            setCargando(false)
-            if (ctx) {
-              router.push(ctx.url_inicio || '/dashboard')
+          // Solo redirigir si fue un login explícito del usuario
+          if (loginExplicito.current) {
+            loginExplicito.current = false
+            const ctx = await cargarContexto()
+            if (isMounted) {
+              setCargando(false)
+              if (ctx) {
+                router.push(ctx.url_inicio || '/dashboard')
+              }
             }
           }
+          // Si no es login explícito (restauración de sesión), ignorar
+          // INITIAL_SESSION ya lo manejó
         } else if (event === 'SIGNED_OUT') {
-          // Logout
           setUsuario(null)
           if (isMounted) {
             setCargando(false)
             router.push('/login')
           }
         } else if (event === 'TOKEN_REFRESHED') {
-          // Token refrescado automáticamente — solo recargar contexto silenciosamente
           if (session) {
             await cargarContexto()
           }
@@ -150,11 +144,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     setError(null)
     setCargando(true)
+    loginExplicito.current = true  // Marcar que es login explícito
     try {
       const { error: err } = await supabase.auth.signInWithPassword({ email, password })
-      if (err) throw new Error(err.message)
-      // onAuthStateChange SIGNED_IN maneja la redirección
+      if (err) {
+        loginExplicito.current = false
+        throw new Error(err.message)
+      }
     } catch (e) {
+      loginExplicito.current = false
       setError(e instanceof Error ? e.message : 'Error al iniciar sesión')
       setCargando(false)
       throw e
@@ -163,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loginConGoogle = async () => {
     setError(null)
+    loginExplicito.current = true
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -170,6 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
     })
     if (err) {
+      loginExplicito.current = false
       setError(err.message)
       throw new Error(err.message)
     }
@@ -195,7 +195,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const ctx = await authApi.cambiarGrupo(codigoGrupo)
       setUsuario(ctx)
-      // Recargar la página para que todos los datos se refresquen con el nuevo grupo
       window.location.reload()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cambiar grupo')
