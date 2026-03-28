@@ -8,7 +8,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { gruposApi, entidadesApi } from '@/lib/api'
+import { gruposApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Grupo, Entidad } from '@/lib/tipos'
 
@@ -43,10 +43,10 @@ export default function PaginaGrupos() {
     setCargandoDetalle(true)
     try {
       const [ents, usrs] = await Promise.all([
-        entidadesApi.listar(),
+        gruposApi.listarEntidades(codigoGrupo),
         gruposApi.listarUsuarios(codigoGrupo),
       ])
-      setEntidadesGrupo(ents.filter((e: Entidad) => e.codigo_grupo === codigoGrupo))
+      setEntidadesGrupo(ents)
       setUsuariosGrupo(usrs)
     } finally {
       setCargandoDetalle(false)
