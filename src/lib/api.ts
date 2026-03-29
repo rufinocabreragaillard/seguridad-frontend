@@ -12,6 +12,8 @@ import type {
   ParametroGeneral,
   ParametroUsuario,
   RegistroAuditoria,
+  CategoriaParametro,
+  TipoParametro,
 } from './tipos'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -183,6 +185,28 @@ export const parametrosApi = {
 export const auditoriaApi = {
   listar: (params?: { pagina?: number; por_pagina?: number }) =>
     api.get<RegistroAuditoria[]>('/auditoria', { params }).then((r) => r.data),
+}
+
+// ─── Datos Básicos ────────────────────────────────────────────────────────────
+
+export const datosBasicosApi = {
+  listarCategorias: () =>
+    api.get<CategoriaParametro[]>('/datos-basicos/categorias').then((r) => r.data),
+  crearCategoria: (datos: Partial<CategoriaParametro>) =>
+    api.post<CategoriaParametro>('/datos-basicos/categorias', datos).then((r) => r.data),
+  actualizarCategoria: (categoria: string, datos: Partial<CategoriaParametro>) =>
+    api.put<CategoriaParametro>(`/datos-basicos/categorias/${categoria}`, datos).then((r) => r.data),
+  eliminarCategoria: (categoria: string) =>
+    api.delete(`/datos-basicos/categorias/${categoria}`),
+
+  listarTipos: (categoria?: string) =>
+    api.get<TipoParametro[]>('/datos-basicos/tipos', { params: categoria ? { categoria } : {} }).then((r) => r.data),
+  crearTipo: (datos: Partial<TipoParametro>) =>
+    api.post<TipoParametro>('/datos-basicos/tipos', datos).then((r) => r.data),
+  actualizarTipo: (categoria: string, tipo: string, datos: Partial<TipoParametro>) =>
+    api.put<TipoParametro>(`/datos-basicos/tipos/${categoria}/${tipo}`, datos).then((r) => r.data),
+  eliminarTipo: (categoria: string, tipo: string) =>
+    api.delete(`/datos-basicos/tipos/${categoria}/${tipo}`),
 }
 
 export default api

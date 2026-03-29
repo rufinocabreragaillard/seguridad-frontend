@@ -127,15 +127,37 @@ export interface ParametroUsuario {
   valor: string
 }
 
+// ─── Datos Básicos ────────────────────────────────────────────────────────────
+
+export interface CategoriaParametro {
+  categoria_parametro: string
+  nombre: string
+  descripcion?: string
+  activo: boolean
+  fecha_creacion?: string
+}
+
+export interface TipoParametro {
+  categoria_parametro: string
+  tipo_parametro: string
+  nombre: string
+  descripcion?: string
+  activo: boolean
+  fecha_creacion?: string
+  categorias_parametro?: { nombre: string }
+}
+
 // ─── Auditoría ───────────────────────────────────────────────────────────────
 
 export interface RegistroAuditoria {
-  id: number
+  id_auditoria: number
   fecha_hora: string
   codigo_usuario: string
   tabla_afectada: string
   operacion: string
-  registro_id: string
+  codigo_registro: string
+  codigo_entidad?: string
+  codigo_grupo?: string
   datos_anteriores?: Record<string, unknown>
   datos_nuevos?: Record<string, unknown>
 }

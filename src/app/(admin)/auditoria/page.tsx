@@ -86,7 +86,7 @@ export default function PaginaAuditoria() {
             </TablaFila>
           ) : (
             filtrados.map((r) => (
-              <TablaFila key={r.id}>
+              <TablaFila key={r.id_auditoria}>
                 <TablaTd className="text-xs text-texto-muted whitespace-nowrap">
                   {new Date(r.fecha_hora).toLocaleString('es-CL', {
                     day: '2-digit', month: '2-digit', year: 'numeric',
@@ -100,7 +100,7 @@ export default function PaginaAuditoria() {
                 <TablaTd>
                   <Insignia variante={varianteOperacion(r.operacion)}>{r.operacion}</Insignia>
                 </TablaTd>
-                <TablaTd className="text-xs text-texto-muted font-mono">{r.registro_id}</TablaTd>
+                <TablaTd className="text-xs text-texto-muted font-mono">{r.codigo_registro}</TablaTd>
               </TablaFila>
             ))
           )}

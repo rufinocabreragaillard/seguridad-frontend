@@ -69,14 +69,6 @@ export default function PaginaUsuarios() {
 
   useEffect(() => { cargar() }, [cargar])
 
-  // Re-cargar entidades cuando cambie el grupo activo
-  useEffect(() => {
-    if (grupoActivo && grupoActivo !== grupoAnteriorRef.current) {
-      grupoAnteriorRef.current = grupoActivo
-      entidadesApi.listar().then(setEntidades).catch(() => setEntidades([]))
-    }
-  }, [grupoActivo])
-
   const usuariosFiltrados = usuarios.filter((u) =>
     (u.nombre || '').toLowerCase().includes(busqueda.toLowerCase()) ||
     (u.codigo_usuario || '').toLowerCase().includes(busqueda.toLowerCase())
@@ -113,6 +105,17 @@ export default function PaginaUsuarios() {
       setCargandoEntidades(false)
     }
   }, [])
+
+  // Re-cargar entidades cuando cambie el grupo activo
+  useEffect(() => {
+    if (grupoActivo && grupoActivo !== grupoAnteriorRef.current) {
+      grupoAnteriorRef.current = grupoActivo
+      entidadesApi.listar().then(setEntidades).catch(() => setEntidades([]))
+      if (usuarioEditando) {
+        cargarEntidadesUsuario(usuarioEditando.codigo_usuario)
+      }
+    }
+  }, [grupoActivo, usuarioEditando, cargarEntidadesUsuario])
 
   const abrirEditar = (u: Usuario) => {
     setUsuarioEditando(u)

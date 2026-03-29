@@ -11,6 +11,7 @@ import {
   Layers,
   SlidersHorizontal,
   ClipboardList,
+  Database,
   LogOut,
   Menu,
   X,
@@ -33,6 +34,7 @@ const navegacion: NavItem[] = [
   { nombre: 'Roles y Funciones', href: '/roles', icono: ShieldCheck },
   { nombre: 'Entidades y Áreas', href: '/entidades', icono: Building2 },
   { nombre: 'Grupos', href: '/grupos', icono: Layers, requiereSuperAdmin: true },
+  { nombre: 'Datos Básicos', href: '/datos-basicos', icono: Database, requiereSuperAdmin: true },
   { nombre: 'Parámetros', href: '/parametros', icono: SlidersHorizontal },
   { nombre: 'Auditoría', href: '/auditoria', icono: ClipboardList },
 ]
