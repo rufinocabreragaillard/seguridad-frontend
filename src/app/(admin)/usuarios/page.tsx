@@ -304,8 +304,31 @@ export default function PaginaUsuarios() {
     !entidadesUsuario.some((ea) => ea.codigo_entidad === e.codigo_entidad)
   )
 
-  // Entidades del usuario disponibles para seleccionar como default (ya asignadas)
-  const entidadesParaDefault = entidadesUsuario
+  // Grupos únicos del usuario, derivados de sus entidades asignadas
+  // (complementa / reemplaza rel_usuario_grupo para el dropdown de defaults)
+  const gruposDeEntidades: GrupoAsignado[] = (() => {
+    const map = new Map<string, GrupoAsignado>()
+    entidadesUsuario.forEach((ea) => {
+      if (!map.has(ea.codigo_grupo)) {
+        // intentar encontrar el nombre en gruposUsuario; si no, usar el código
+        const found = gruposUsuario.find((g) => g.codigo_grupo === ea.codigo_grupo)
+        map.set(ea.codigo_grupo, found ?? {
+          codigo_grupo: ea.codigo_grupo,
+          grupos_entidades: { nombre: ea.codigo_grupo, activo: true },
+        })
+      }
+    })
+    // también incluir grupos directos que no tengan entidades aún
+    gruposUsuario.forEach((g) => {
+      if (!map.has(g.codigo_grupo)) map.set(g.codigo_grupo, g)
+    })
+    return Array.from(map.values())
+  })()
+
+  // Entidades del usuario disponibles para seleccionar como default, filtradas por grupo elegido
+  const entidadesParaDefault = form.grupo_por_defecto
+    ? entidadesUsuario.filter((ea) => ea.codigo_grupo === form.grupo_por_defecto)
+    : entidadesUsuario
 
   // ── Handlers de cascada en Datos ──────────────────────────────────────────
   const handleGrupoDefaultChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -531,7 +554,7 @@ export default function PaginaUsuarios() {
                       Preferencias de inicio de sesión
                     </p>
 
-                    {/* Grupo por defecto — solo grupos asignados al usuario */}
+                    {/* Grupo por defecto — grupos donde el usuario tiene entidades o acceso directo */}
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-texto">Grupo por defecto</label>
                       <select
@@ -540,14 +563,14 @@ export default function PaginaUsuarios() {
                         className={selectClass}
                       >
                         <option value="">Sin grupo seleccionado</option>
-                        {gruposUsuario.map((g) => (
+                        {gruposDeEntidades.map((g) => (
                           <option key={g.codigo_grupo} value={g.codigo_grupo}>
                             {g.grupos_entidades?.nombre || g.codigo_grupo}
                           </option>
                         ))}
                       </select>
-                      {gruposUsuario.length === 0 && (
-                        <p className="text-xs text-texto-muted">Asigne grupos en la pestaña &quot;Entidades&quot; primero</p>
+                      {gruposDeEntidades.length === 0 && (
+                        <p className="text-xs text-texto-muted">Asigne entidades en la pestaña &quot;Entidades&quot; primero</p>
                       )}
                     </div>
 
