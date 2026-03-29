@@ -112,14 +112,18 @@ export default function PaginaUsuarios() {
   }, [entidadNueva])
 
   // Áreas para default (pestaña Datos): carga cuando cambia entidad_por_defecto en form
-  useEffect(() => {
-    if (!form.entidad_por_defecto) { setAreasParaDefault([]); return }
+  const cargarAreasDefault = useCallback((codigoEntidad: string) => {
+    if (!codigoEntidad) { setAreasParaDefault([]); return }
     setCargandoAreasDefault(true)
-    entidadesApi.listarAreas(form.entidad_por_defecto)
+    entidadesApi.listarAreas(codigoEntidad)
       .then(setAreasParaDefault)
       .catch(() => setAreasParaDefault([]))
       .finally(() => setCargandoAreasDefault(false))
-  }, [form.entidad_por_defecto])
+  }, [])
+
+  useEffect(() => {
+    cargarAreasDefault(form.entidad_por_defecto)
+  }, [form.entidad_por_defecto, cargarAreasDefault])
 
   // Re-cargar entidades cuando cambie el grupo activo del admin
   useEffect(() => {
@@ -194,6 +198,7 @@ export default function PaginaUsuarios() {
     cargarRolesUsuario(u.codigo_usuario)
     cargarGruposUsuario(u.codigo_usuario)
     cargarEntidadesUsuario(u.codigo_usuario)
+    if (u.entidad_por_defecto) cargarAreasDefault(u.entidad_por_defecto)
     setModalAbierto(true)
   }
 
