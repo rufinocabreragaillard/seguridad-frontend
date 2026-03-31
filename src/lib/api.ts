@@ -66,11 +66,11 @@ export const usuariosApi = {
     api.put<Usuario>(`/usuarios/${id}`, datos).then((r) => r.data),
   desactivar: (id: string) => api.delete(`/usuarios/${id}`),
   listarRoles: (id: string) =>
-    api.get<{ codigo_rol: string; roles: { nombre: string; activo: boolean } }[]>(
+    api.get<{ codigo_grupo: string; codigo_rol: string; roles: { nombre: string; activo: boolean } }[]>(
       `/usuarios/${id}/roles`
     ).then((r) => r.data),
-  asignarRol: (id: string, codigoRol: string) =>
-    api.post(`/usuarios/${id}/roles`, { codigo_rol: codigoRol }),
+  asignarRol: (id: string, codigoRol: string, codigoGrupo: string) =>
+    api.post(`/usuarios/${id}/roles`, { codigo_rol: codigoRol, codigo_grupo: codigoGrupo }),
   quitarRol: (id: string, codigoRol: string) =>
     api.delete(`/usuarios/${id}/roles/${codigoRol}`),
   listarEntidades: (id: string) =>

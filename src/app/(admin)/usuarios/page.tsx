@@ -11,7 +11,7 @@ import { usuariosApi, rolesApi, entidadesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Usuario, Rol, Entidad, Area } from '@/lib/tipos'
 
-type RolAsignado = { codigo_rol: string; roles: { nombre: string; activo: boolean } }
+type RolAsignado = { codigo_grupo: string; codigo_rol: string; roles: { nombre: string; activo: boolean } }
 type GrupoAsignado = { codigo_grupo: string; grupos_entidades: { nombre: string; activo: boolean } }
 type EntidadAsignada = {
   codigo_entidad: string
@@ -243,7 +243,7 @@ export default function PaginaUsuarios() {
     if (!rolNuevo || !usuarioEditando) return
     setAsignandoRol(true)
     try {
-      await usuariosApi.asignarRol(usuarioEditando.codigo_usuario, rolNuevo)
+      await usuariosApi.asignarRol(usuarioEditando.codigo_usuario, rolNuevo, grupoActivo || 'ADMIN')
       setRolNuevo('')
       await cargarRolesUsuario(usuarioEditando.codigo_usuario)
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al asignar rol') }
