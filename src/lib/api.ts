@@ -170,6 +170,16 @@ export const aplicacionesApi = {
     api.post(`/aplicaciones/${id}/usuarios`, { codigo_usuario: codigoUsuario }),
   quitarUsuario: (id: string, codigoUsuario: string) =>
     api.delete(`/aplicaciones/${id}/usuarios/${codigoUsuario}`),
+  listarDependencias: (id: string) =>
+    api.get<{ codigo_aplicacion_previa: string; orden: number; aplicaciones: { nombre_aplicacion: string; activo: boolean } }[]>(
+      `/aplicaciones/${id}/dependencias`
+    ).then((r) => r.data),
+  agregarDependencia: (id: string, codigoPrevia: string) =>
+    api.post(`/aplicaciones/${id}/dependencias`, { codigo_aplicacion_previa: codigoPrevia }),
+  quitarDependencia: (id: string, codigoPrevia: string) =>
+    api.delete(`/aplicaciones/${id}/dependencias/${codigoPrevia}`),
+  reordenarDependencias: (id: string, orden: { codigo_aplicacion_previa: string; orden: number }[]) =>
+    api.put(`/aplicaciones/${id}/dependencias/orden`, orden),
 }
 
 // ─── Entidades ────────────────────────────────────────────────────────────────
