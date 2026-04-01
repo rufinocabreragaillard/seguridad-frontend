@@ -25,7 +25,6 @@ interface NavItem {
   href: string
   icono: typeof LayoutDashboard
   requiereSuperAdmin?: boolean
-  requiereFuncion?: string | string[]
 }
 
 interface NavGrupo {
@@ -38,31 +37,31 @@ const navegacion: NavGrupo[] = [
     titulo: 'Operación',
     items: [
       { nombre: 'Dashboard', href: '/dashboard', icono: LayoutDashboard },
-      { nombre: 'Usuarios', href: '/usuarios', icono: Users, requiereFuncion: 'GEST_USUARIOS' },
-      { nombre: 'Auditoría', href: '/auditoria', icono: ClipboardList, requiereFuncion: 'VER_AUDITORIA' },
+      { nombre: 'Usuarios', href: '/usuarios', icono: Users },
+      { nombre: 'Auditoría', href: '/auditoria', icono: ClipboardList },
     ],
   },
   {
     titulo: 'Organización',
     items: [
       { nombre: 'Parámetros por Nivel', href: '/parametros', icono: SlidersHorizontal },
-      { nombre: 'Entidades, Áreas y Roles', href: '/entidades', icono: Building2, requiereFuncion: ['GEST_ENTIDADES', 'GEST_AREAS', 'GEST_ROLES'] },
+      { nombre: 'Entidades, Áreas y Roles', href: '/entidades', icono: Building2 },
       { nombre: 'Grupos', href: '/grupos', icono: Layers, requiereSuperAdmin: true },
     ],
   },
   {
     titulo: 'Básicos',
     items: [
-      { nombre: 'Aplicaciones y Funciones', href: '/aplicaciones', icono: AppWindow, requiereFuncion: ['GEST_APLICACIONES', 'GEST_FUNCIONES'] },
+      { nombre: 'Aplicaciones y Funciones', href: '/aplicaciones', icono: AppWindow },
       { nombre: 'Datos Básicos', href: '/datos-basicos', icono: Database, requiereSuperAdmin: true },
-      { nombre: 'Parámetros Generales', href: '/parametros-generales', icono: SlidersHorizontal, requiereFuncion: 'GEST_PARAM_GEN' },
+      { nombre: 'Parámetros Generales', href: '/parametros-generales', icono: SlidersHorizontal },
     ],
   },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { esSuperAdmin, tieneFuncion } = useAuth()
+  const { esSuperAdmin } = useAuth()
   const [colapsado, setColapsado] = useState(false)
 
   return (
@@ -105,14 +104,7 @@ export function Sidebar() {
       {/* Navegación */}
       <nav className="flex-1 py-4 px-2 flex flex-col gap-4 overflow-y-auto">
         {navegacion.map((grupo) => {
-          const itemsVisibles = grupo.items.filter((item) => {
-            if (item.requiereSuperAdmin && !esSuperAdmin()) return false
-            if (item.requiereFuncion) {
-              const fns = Array.isArray(item.requiereFuncion) ? item.requiereFuncion : [item.requiereFuncion]
-              if (!fns.some((f) => tieneFuncion(f))) return false
-            }
-            return true
-          })
+          const itemsVisibles = grupo.items.filter((item) => !item.requiereSuperAdmin || esSuperAdmin())
           if (itemsVisibles.length === 0) return null
           return (
             <div key={grupo.titulo}>
