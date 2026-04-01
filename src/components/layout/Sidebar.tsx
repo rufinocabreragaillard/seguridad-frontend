@@ -6,14 +6,12 @@ import { usePathname } from 'next/navigation'
 import {
   LayoutDashboard,
   Users,
-  ShieldCheck,
   Building2,
   Layers,
   SlidersHorizontal,
   ClipboardList,
   Database,
   AppWindow,
-  LogOut,
   Menu,
   X,
 } from 'lucide-react'
@@ -27,6 +25,7 @@ interface NavItem {
   href: string
   icono: typeof LayoutDashboard
   requiereSuperAdmin?: boolean
+  requiereFuncion?: string | string[]
 }
 
 interface NavGrupo {
@@ -39,31 +38,31 @@ const navegacion: NavGrupo[] = [
     titulo: 'Operación',
     items: [
       { nombre: 'Dashboard', href: '/dashboard', icono: LayoutDashboard },
-      { nombre: 'Usuarios', href: '/usuarios', icono: Users },
-      { nombre: 'Auditoría', href: '/auditoria', icono: ClipboardList },
+      { nombre: 'Usuarios', href: '/usuarios', icono: Users, requiereFuncion: 'GEST_USUARIOS' },
+      { nombre: 'Auditoría', href: '/auditoria', icono: ClipboardList, requiereFuncion: 'VER_AUDITORIA' },
     ],
   },
   {
     titulo: 'Organización',
     items: [
       { nombre: 'Parámetros por Nivel', href: '/parametros', icono: SlidersHorizontal },
-      { nombre: 'Entidades, Áreas y Roles', href: '/entidades', icono: Building2 },
+      { nombre: 'Entidades, Áreas y Roles', href: '/entidades', icono: Building2, requiereFuncion: ['GEST_ENTIDADES', 'GEST_AREAS', 'GEST_ROLES'] },
       { nombre: 'Grupos', href: '/grupos', icono: Layers, requiereSuperAdmin: true },
     ],
   },
   {
     titulo: 'Básicos',
     items: [
-      { nombre: 'Aplicaciones y Funciones', href: '/aplicaciones', icono: AppWindow },
+      { nombre: 'Aplicaciones y Funciones', href: '/aplicaciones', icono: AppWindow, requiereFuncion: ['GEST_APLICACIONES', 'GEST_FUNCIONES'] },
       { nombre: 'Datos Básicos', href: '/datos-basicos', icono: Database, requiereSuperAdmin: true },
-      { nombre: 'Parámetros Generales', href: '/parametros-generales', icono: SlidersHorizontal },
+      { nombre: 'Parámetros Generales', href: '/parametros-generales', icono: SlidersHorizontal, requiereFuncion: 'GEST_PARAM_GEN' },
     ],
   },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { logout, esSuperAdmin } = useAuth()
+  const { esSuperAdmin, tieneFuncion } = useAuth()
   const [colapsado, setColapsado] = useState(false)
 
   return (
@@ -106,7 +105,14 @@ export function Sidebar() {
       {/* Navegación */}
       <nav className="flex-1 py-4 px-2 flex flex-col gap-4 overflow-y-auto">
         {navegacion.map((grupo) => {
-          const itemsVisibles = grupo.items.filter((item) => !item.requiereSuperAdmin || esSuperAdmin())
+          const itemsVisibles = grupo.items.filter((item) => {
+            if (item.requiereSuperAdmin && !esSuperAdmin()) return false
+            if (item.requiereFuncion) {
+              const fns = Array.isArray(item.requiereFuncion) ? item.requiereFuncion : [item.requiereFuncion]
+              if (!fns.some((f) => tieneFuncion(f))) return false
+            }
+            return true
+          })
           if (itemsVisibles.length === 0) return null
           return (
             <div key={grupo.titulo}>
