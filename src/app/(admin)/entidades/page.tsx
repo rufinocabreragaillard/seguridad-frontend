@@ -1,22 +1,28 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Building2, MapPin, Download, Search } from 'lucide-react'
+import { Plus, Pencil, Building2, MapPin, Download, Search, Trash2, ChevronUp, ChevronDown, X } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
+import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { entidadesApi } from '@/lib/api'
+import { entidadesApi, rolesApi, funcionesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Entidad, Area } from '@/lib/tipos'
+import type { Entidad, Area, Rol, Funcion } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 
 const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
 
+type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string; activo: boolean } }
+
 export default function PaginaEntidades() {
   const { grupoActivo } = useAuth()
+  const [tabPrincipal, setTabPrincipal] = useState<'entidades' | 'roles'>('entidades')
+
+  // ── Entidades y Áreas ─────────────────────────────────────────────────────
   const [entidades, setEntidades] = useState<Entidad[]>([])
   const [entidadSeleccionada, setEntidadSeleccionada] = useState<Entidad | null>(null)
   const [areas, setAreas] = useState<Area[]>([])
@@ -32,11 +38,34 @@ export default function PaginaEntidades() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
+  // ── Roles ─────────────────────────────────────────────────────────────────
+  const [roles, setRoles] = useState<Rol[]>([])
+  const [allFunciones, setAllFunciones] = useState<Funcion[]>([])
+  const [busquedaRoles, setBusquedaRoles] = useState('')
+  const [modalRol, setModalRol] = useState(false)
+  const [rolEditando, setRolEditando] = useState<Rol | null>(null)
+  const [formRol, setFormRol] = useState({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '' })
+  const [tabModalRol, setTabModalRol] = useState<'datos' | 'funciones'>('datos')
+  const [guardandoRol, setGuardandoRol] = useState(false)
+  const [errorRol, setErrorRol] = useState('')
+
+  // Funciones del rol
+  const [funcionesRol, setFuncionesRol] = useState<FuncionAsignada[]>([])
+  const [cargandoFuncionesRol, setCargandoFuncionesRol] = useState(false)
+  const [funcionNueva, setFuncionNueva] = useState('')
+  const [asignandoFuncion, setAsignandoFuncion] = useState(false)
+
+  // Confirmación eliminación rol
+  const [rolAEliminar, setRolAEliminar] = useState<Rol | null>(null)
+  const [eliminandoRol, setEliminandoRol] = useState(false)
+
   const cargar = useCallback(async () => {
     setCargando(true)
     try {
-      const e = await entidadesApi.listar()
+      const [e, r, f] = await Promise.all([entidadesApi.listar(), rolesApi.listar(), funcionesApi.listar()])
       setEntidades(e)
+      setRoles(r)
+      setAllFunciones(f)
       if (e.length > 0 && !entidadSeleccionada) setEntidadSeleccionada(e[0])
     } finally {
       setCargando(false)
@@ -115,6 +144,63 @@ export default function PaginaEntidades() {
     }
   }
 
+  // ── Roles: CRUD + funciones ────────────────────────────────────────────────
+  const cargarFuncionesRol = useCallback(async (codigo: string) => {
+    setCargandoFuncionesRol(true)
+    try { setFuncionesRol(await rolesApi.listarFunciones(codigo)) } catch { setFuncionesRol([]) }
+    finally { setCargandoFuncionesRol(false) }
+  }, [])
+
+  const abrirNuevoRol = () => {
+    setRolEditando(null); setFormRol({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '' })
+    setErrorRol(''); setTabModalRol('datos'); setModalRol(true)
+  }
+  const abrirEditarRol = (r: Rol) => {
+    setRolEditando(r); setFormRol({ codigo_rol: r.codigo_rol, nombre: r.nombre, alias_de_rol: r.alias_de_rol || '', descripcion: r.descripcion || '', url_inicio: r.url_inicio || '', funcion_por_defecto: r.funcion_por_defecto || '' })
+    setErrorRol(''); setTabModalRol('datos'); setFuncionNueva(''); cargarFuncionesRol(r.codigo_rol); setModalRol(true)
+  }
+  const guardarRol = async () => {
+    if (!formRol.codigo_rol || !formRol.nombre) { setErrorRol('Código y nombre son obligatorios'); return }
+    setGuardandoRol(true)
+    try {
+      if (rolEditando) { await rolesApi.actualizar(rolEditando.codigo_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined }) }
+      else { await rolesApi.crear({ ...formRol, codigo_grupo: grupoActivo || 'ADMIN' }) }
+      setModalRol(false); cargar()
+    } catch (e) { setErrorRol(e instanceof Error ? e.message : 'Error') }
+    finally { setGuardandoRol(false) }
+  }
+  const ejecutarEliminarRol = async () => {
+    if (!rolAEliminar) return; setEliminandoRol(true)
+    try { await rolesApi.eliminar(rolAEliminar.codigo_rol); setRolAEliminar(null); cargar() }
+    catch (e) { setErrorRol(e instanceof Error ? e.message : 'Error'); setRolAEliminar(null) }
+    finally { setEliminandoRol(false) }
+  }
+
+  const asignarFuncionRol = async () => {
+    if (!funcionNueva || !rolEditando) return; setAsignandoFuncion(true)
+    try { await rolesApi.asignarFuncion(rolEditando.codigo_rol, funcionNueva); setFuncionNueva(''); cargarFuncionesRol(rolEditando.codigo_rol) }
+    catch (e) { setErrorRol(e instanceof Error ? e.message : 'Error') } finally { setAsignandoFuncion(false) }
+  }
+  const quitarFuncionRol = async (c: string) => {
+    if (!rolEditando) return
+    try { await rolesApi.quitarFuncion(rolEditando.codigo_rol, c); cargarFuncionesRol(rolEditando.codigo_rol) }
+    catch (e) { setErrorRol(e instanceof Error ? e.message : 'Error') }
+  }
+  const moverFuncionRol = async (index: number, dir: 'arriba' | 'abajo') => {
+    if (!rolEditando) return
+    const lista = [...funcionesRol]; const swap = dir === 'arriba' ? index - 1 : index + 1
+    if (swap < 0 || swap >= lista.length) return
+    const oA = lista[index].orden; const oB = lista[swap].orden
+    lista[index].orden = oB; lista[swap].orden = oA
+    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
+    setFuncionesRol(lista)
+    try { await rolesApi.reordenarFunciones(rolEditando.codigo_rol, lista.map((f) => ({ codigo_funcion: f.codigo_funcion, orden: f.orden }))) }
+    catch { cargarFuncionesRol(rolEditando.codigo_rol) }
+  }
+
+  const funcionesDisponiblesRol = allFunciones.filter((f) => f.activo && !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
+  const rolesFiltrados = roles.filter((r) => r.nombre.toLowerCase().includes(busquedaRoles.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRoles.toLowerCase()) || (r.alias_de_rol || '').toLowerCase().includes(busquedaRoles.toLowerCase())).sort((a, b) => a.nombre.localeCompare(b.nombre))
+
   // Áreas filtradas (mantiene orden jerárquico de la función SQL)
   const areasFiltradas = areas
     .filter((a) =>
@@ -125,11 +211,24 @@ export default function PaginaEntidades() {
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl">
+      <div>
+        <h2 className="text-2xl font-bold text-texto">Entidades, Áreas y Roles</h2>
+        <p className="text-sm text-texto-muted mt-1">Gestión de organizaciones, áreas y perfiles de acceso</p>
+      </div>
+
+      {/* Tabs principales */}
+      <div className="flex gap-1 p-1 bg-fondo rounded-lg border border-borde w-fit">
+        {(['entidades', 'roles'] as const).map((tab) => (
+          <button key={tab} onClick={() => setTabPrincipal(tab)} className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tabPrincipal === tab ? 'bg-surface text-primario shadow-sm border border-borde' : 'text-texto-muted hover:text-texto'}`}>
+            {tab === 'entidades' ? 'Entidades y Áreas' : 'Roles'}
+          </button>
+        ))}
+      </div>
+
+      {/* ═══ TAB ENTIDADES Y ÁREAS ═══ */}
+      {tabPrincipal === 'entidades' && (<>
       <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-texto">Entidades y Áreas</h2>
-          <p className="text-sm text-texto-muted mt-1">Gestión de organizaciones y sus áreas</p>
-        </div>
+        <div />
         <div className="flex gap-2">
           <Boton
             variante="contorno"
@@ -292,6 +391,46 @@ export default function PaginaEntidades() {
         </div>
       </div>
 
+      </>)}
+
+      {/* ═══ TAB ROLES ═══ */}
+      {tabPrincipal === 'roles' && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center gap-3">
+            <div className="max-w-sm flex-1">
+              <Input placeholder="Buscar por nombre, código o alias..." value={busquedaRoles} onChange={(e) => setBusquedaRoles(e.target.value)} icono={<Search size={15} />} />
+            </div>
+            <div className="flex gap-2 ml-auto">
+              <Boton variante="contorno" tamano="sm" onClick={() => exportarExcel(rolesFiltrados as Record<string, unknown>[], [{ titulo: 'Grupo', campo: 'codigo_grupo' }, { titulo: 'Código', campo: 'codigo_rol' }, { titulo: 'Alias', campo: 'alias_de_rol' }, { titulo: 'Nombre', campo: 'nombre' }, { titulo: 'Descripción', campo: 'descripcion' }, { titulo: 'URL inicio', campo: 'url_inicio' }, { titulo: 'Fn. defecto', campo: 'funcion_por_defecto' }, { titulo: 'Estado', campo: 'activo', formato: (v) => v ? 'Activo' : 'Inactivo' }], `roles_${grupoActivo || 'todos'}`)} disabled={rolesFiltrados.length === 0}><Download size={15} />Excel</Boton>
+              <Boton variante="primario" onClick={abrirNuevoRol}><Plus size={16} />Nuevo rol</Boton>
+            </div>
+          </div>
+          <Tabla>
+            <TablaCabecera><tr><TablaTh>Código</TablaTh><TablaTh>Alias</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>URL inicio</TablaTh><TablaTh>Fn. defecto</TablaTh><TablaTh>Estado</TablaTh><TablaTh className="text-right">Acciones</TablaTh></tr></TablaCabecera>
+            <TablaCuerpo>
+              {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>Cargando...</TablaTd></TablaFila>
+              ) : rolesFiltrados.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron roles</TablaTd></TablaFila>
+              ) : rolesFiltrados.map((r) => (
+                <TablaFila key={r.codigo_rol}>
+                  <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_rol}</code></TablaTd>
+                  <TablaTd className="text-sm">{r.alias_de_rol || '—'}</TablaTd>
+                  <TablaTd className="font-medium">{r.nombre}</TablaTd>
+                  <TablaTd className="text-texto-muted text-xs">{r.url_inicio || '—'}</TablaTd>
+                  <TablaTd className="text-texto-muted text-xs">{r.funcion_por_defecto || '—'}</TablaTd>
+                  <TablaTd><Insignia variante={r.activo ? 'exito' : 'error'}>{r.activo ? 'Activo' : 'Inactivo'}</Insignia></TablaTd>
+                  <TablaTd>
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => abrirEditarRol(r)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                      <button onClick={() => setRolAEliminar(r)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                    </div>
+                  </TablaTd>
+                </TablaFila>
+              ))}
+            </TablaCuerpo>
+          </Tabla>
+        </div>
+      )}
+
       {/* Modal entidad */}
       <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? 'Editar entidad' : 'Nueva entidad'}>
         <div className="flex flex-col gap-4">
@@ -335,6 +474,54 @@ export default function PaginaEntidades() {
           </div>
         </div>
       </Modal>
+      {/* Modal Rol */}
+      <Modal abierto={modalRol} alCerrar={() => setModalRol(false)} titulo={rolEditando ? `Editar rol: ${rolEditando.codigo_rol}` : 'Nuevo rol'}>
+        <div className="flex flex-col gap-4">
+          {rolEditando && (
+            <div className="flex border-b border-borde -mx-1">
+              <button onClick={() => setTabModalRol('datos')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalRol === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Datos</button>
+              <button onClick={() => setTabModalRol('funciones')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalRol === 'funciones' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Funciones ({funcionesRol.length})</button>
+            </div>
+          )}
+          {tabModalRol === 'datos' && (<>
+            <Input etiqueta="Código *" value={formRol.codigo_rol} onChange={(e) => setFormRol({ ...formRol, codigo_rol: e.target.value.toUpperCase() })} disabled={!!rolEditando} placeholder="ADMIN" />
+            <Input etiqueta="Alias" value={formRol.alias_de_rol} onChange={(e) => setFormRol({ ...formRol, alias_de_rol: e.target.value.substring(0, 40) })} placeholder="Admin" />
+            <Input etiqueta="Nombre *" value={formRol.nombre} onChange={(e) => setFormRol({ ...formRol, nombre: e.target.value })} placeholder="Administrador" />
+            <Input etiqueta="Descripción" value={formRol.descripcion} onChange={(e) => setFormRol({ ...formRol, descripcion: e.target.value })} />
+            <Input etiqueta="URL de inicio" value={formRol.url_inicio} onChange={(e) => setFormRol({ ...formRol, url_inicio: e.target.value })} placeholder="/admin/dashboard" />
+            {rolEditando && (
+              <div className="flex flex-col gap-1"><label className="text-sm font-medium text-texto">Función por defecto</label>
+                <select value={formRol.funcion_por_defecto} onChange={(e) => setFormRol({ ...formRol, funcion_por_defecto: e.target.value })} className={selectClass}>
+                  <option value="">Sin función por defecto</option>
+                  {funcionesRol.map((fa) => (<option key={fa.codigo_funcion} value={fa.codigo_funcion}>{fa.funciones?.nombre_funcion || fa.codigo_funcion}</option>))}
+                </select>
+              </div>
+            )}
+            {errorRol && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorRol}</p></div>}
+            <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>Cancelar</Boton><Boton variante="primario" onClick={guardarRol} cargando={guardandoRol}>{rolEditando ? 'Guardar' : 'Crear rol'}</Boton></div>
+          </>)}
+          {tabModalRol === 'funciones' && rolEditando && (
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-2"><div className="flex-1"><select value={funcionNueva} onChange={(e) => setFuncionNueva(e.target.value)} className={selectClass}><option value="">Seleccionar función...</option>{funcionesDisponiblesRol.map((f) => (<option key={f.codigo_funcion} value={f.codigo_funcion}>{f.nombre}</option>))}</select></div><Boton variante="primario" onClick={asignarFuncionRol} cargando={asignandoFuncion} disabled={!funcionNueva}><Plus size={14} />Asignar</Boton></div>
+              {cargandoFuncionesRol ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+              : funcionesRol.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene funciones asignadas</p>
+              : <div className="flex flex-col gap-2">{funcionesRol.map((fa, idx) => (
+                <div key={fa.codigo_funcion} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
+                  <div className="flex flex-col"><button onClick={() => moverFuncionRol(idx, 'arriba')} disabled={idx === 0} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp size={14} /></button><button onClick={() => moverFuncionRol(idx, 'abajo')} disabled={idx === funcionesRol.length - 1} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown size={14} /></button></div>
+                  <span className="text-xs text-texto-muted w-5 text-center">{fa.orden}</span>
+                  <div className="flex-1 min-w-0"><span className="text-sm font-medium text-texto">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</span><span className="ml-2 text-xs text-texto-muted">{fa.codigo_funcion}</span></div>
+                  <button onClick={() => quitarFuncionRol(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
+                </div>
+              ))}</div>}
+              {errorRol && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorRol}</p></div>}
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>Cerrar</Boton></div>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      {/* Modal Confirmar eliminación rol */}
+      <ModalConfirmar abierto={!!rolAEliminar} alCerrar={() => setRolAEliminar(null)} alConfirmar={ejecutarEliminarRol} titulo="Eliminar rol" mensaje={`¿Estás seguro de eliminar el rol "${rolAEliminar?.nombre}"? Esta acción no se puede deshacer.`} textoConfirmar="Eliminar" cargando={eliminandoRol} />
     </div>
   )
 }

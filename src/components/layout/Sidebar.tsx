@@ -43,17 +43,16 @@ const navegacion: NavGrupo[] = [
     ],
   },
   {
-    titulo: 'Configuración',
+    titulo: 'Organización',
     items: [
-      { nombre: 'Roles y Funciones', href: '/roles', icono: ShieldCheck },
-      { nombre: 'Aplicaciones', href: '/aplicaciones', icono: AppWindow },
-      { nombre: 'Entidades y Áreas', href: '/entidades', icono: Building2 },
+      { nombre: 'Entidades, Áreas y Roles', href: '/entidades', icono: Building2 },
       { nombre: 'Grupos', href: '/grupos', icono: Layers, requiereSuperAdmin: true },
     ],
   },
   {
     titulo: 'Básicos',
     items: [
+      { nombre: 'Aplicaciones y Funciones', href: '/aplicaciones', icono: AppWindow },
       { nombre: 'Datos Básicos', href: '/datos-basicos', icono: Database, requiereSuperAdmin: true },
       { nombre: 'Parámetros', href: '/parametros', icono: SlidersHorizontal },
       { nombre: 'Auditoría', href: '/auditoria', icono: ClipboardList },
