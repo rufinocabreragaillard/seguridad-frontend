@@ -10,7 +10,7 @@ import { auditoriaApi } from '@/lib/api'
 import type { RegistroAuditoria } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 
-export default function PaginaAuditoria() {
+export default function PaginaAuditoriaConfiguracion() {
   const [registros, setRegistros] = useState<RegistroAuditoria[]>([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
@@ -18,7 +18,7 @@ export default function PaginaAuditoria() {
   const cargar = async () => {
     setCargando(true)
     try {
-      const r = await auditoriaApi.listar({ tipo: 'seguridad', por_pagina: 100 })
+      const r = await auditoriaApi.listar({ tipo: 'configuracion', por_pagina: 100 })
       setRegistros(r)
     } finally {
       setCargando(false)
@@ -44,7 +44,7 @@ export default function PaginaAuditoria() {
     <div className="flex flex-col gap-6 max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-texto">Auditoría Seguridad</h2>
+          <h2 className="text-2xl font-bold text-texto">Auditoría Configuración</h2>
           <p className="text-sm text-texto-muted mt-1">{registros.length} registros totales</p>
         </div>
         <div className="flex gap-2">
@@ -57,9 +57,7 @@ export default function PaginaAuditoria() {
               { titulo: 'Tabla', campo: 'tabla_afectada' },
               { titulo: 'Operación', campo: 'operacion' },
               { titulo: 'Registro ID', campo: 'codigo_registro' },
-              { titulo: 'Grupo', campo: 'codigo_grupo' },
-              { titulo: 'Entidad', campo: 'codigo_entidad' },
-            ], 'auditoria')}
+            ], 'auditoria-configuracion')}
             disabled={filtrados.length === 0}
           >
             <Download size={15} />

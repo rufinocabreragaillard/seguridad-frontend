@@ -15,6 +15,15 @@ import type {
   CategoriaParametro,
   TipoParametro,
   Aplicacion,
+  EstadoCanonicoConversacion,
+  EstadoCanonicoCompromiso,
+  TipoConversacion,
+  TipoCompromiso,
+  EstadoConversacion,
+  EstadoCompromiso,
+  Conversacion,
+  ParticipanteConversacion,
+  Compromiso,
 } from './tipos'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -180,6 +189,14 @@ export const aplicacionesApi = {
     api.delete(`/aplicaciones/${id}/dependencias/${codigoPrevia}`),
   reordenarDependencias: (id: string, orden: { codigo_aplicacion_previa: string; orden: number }[]) =>
     api.put(`/aplicaciones/${id}/dependencias/orden`, orden),
+  listarGrupos: (id: string) =>
+    api.get<{ codigo_grupo: string; activo: boolean; grupos_entidades: { nombre_grupo: string } }[]>(
+      `/aplicaciones/${id}/grupos`
+    ).then((r) => r.data),
+  asignarGrupo: (id: string, codigoGrupo: string) =>
+    api.post(`/aplicaciones/${id}/grupos`, { codigo_grupo: codigoGrupo }),
+  quitarGrupo: (id: string, codigoGrupo: string) =>
+    api.delete(`/aplicaciones/${id}/grupos/${codigoGrupo}`),
 }
 
 // ─── Entidades ────────────────────────────────────────────────────────────────
@@ -252,7 +269,7 @@ export const parametrosApi = {
 // ─── Auditoría ────────────────────────────────────────────────────────────────
 
 export const auditoriaApi = {
-  listar: (params?: { pagina?: number; por_pagina?: number }) =>
+  listar: (params?: { tipo?: string; pagina?: number; por_pagina?: number }) =>
     api.get<RegistroAuditoria[]>('/auditoria', { params }).then((r) => r.data),
 }
 
@@ -276,6 +293,106 @@ export const datosBasicosApi = {
     api.put<TipoParametro>(`/datos-basicos/tipos/${categoria}/${tipo}`, datos).then((r) => r.data),
   eliminarTipo: (categoria: string, tipo: string) =>
     api.delete(`/datos-basicos/tipos/${categoria}/${tipo}`),
+}
+
+// ─── Compromisos: Datos Básicos ──────────────────────────────────────────────
+
+export const compromisosDatosBasicosApi = {
+  // Canónicos conversación
+  listarCanonicosCnv: () =>
+    api.get<EstadoCanonicoConversacion[]>('/compromisos-datos-basicos/canonicos-conversacion').then((r) => r.data),
+  crearCanonicosCnv: (datos: Partial<EstadoCanonicoConversacion>) =>
+    api.post('/compromisos-datos-basicos/canonicos-conversacion', datos).then((r) => r.data),
+  actualizarCanonicosCnv: (codigo: string, datos: Partial<EstadoCanonicoConversacion>) =>
+    api.put(`/compromisos-datos-basicos/canonicos-conversacion/${codigo}`, datos).then((r) => r.data),
+  eliminarCanonicosCnv: (codigo: string) =>
+    api.delete(`/compromisos-datos-basicos/canonicos-conversacion/${codigo}`),
+
+  // Canónicos compromiso
+  listarCanonicosCmp: () =>
+    api.get<EstadoCanonicoCompromiso[]>('/compromisos-datos-basicos/canonicos-compromiso').then((r) => r.data),
+  crearCanonicosCmp: (datos: Partial<EstadoCanonicoCompromiso>) =>
+    api.post('/compromisos-datos-basicos/canonicos-compromiso', datos).then((r) => r.data),
+  actualizarCanonicosCmp: (codigo: string, datos: Partial<EstadoCanonicoCompromiso>) =>
+    api.put(`/compromisos-datos-basicos/canonicos-compromiso/${codigo}`, datos).then((r) => r.data),
+  eliminarCanonicosCmp: (codigo: string) =>
+    api.delete(`/compromisos-datos-basicos/canonicos-compromiso/${codigo}`),
+
+  // Tipos conversación
+  listarTiposCnv: () =>
+    api.get<TipoConversacion[]>('/compromisos-datos-basicos/tipos-conversacion').then((r) => r.data),
+  crearTipoCnv: (datos: Partial<TipoConversacion>) =>
+    api.post('/compromisos-datos-basicos/tipos-conversacion', datos).then((r) => r.data),
+  actualizarTipoCnv: (codigo: string, datos: Partial<TipoConversacion>) =>
+    api.put(`/compromisos-datos-basicos/tipos-conversacion/${codigo}`, datos).then((r) => r.data),
+  eliminarTipoCnv: (codigo: string) =>
+    api.delete(`/compromisos-datos-basicos/tipos-conversacion/${codigo}`),
+
+  // Tipos compromiso
+  listarTiposCmp: () =>
+    api.get<TipoCompromiso[]>('/compromisos-datos-basicos/tipos-compromiso').then((r) => r.data),
+  crearTipoCmp: (datos: Partial<TipoCompromiso>) =>
+    api.post('/compromisos-datos-basicos/tipos-compromiso', datos).then((r) => r.data),
+  actualizarTipoCmp: (codigo: string, datos: Partial<TipoCompromiso>) =>
+    api.put(`/compromisos-datos-basicos/tipos-compromiso/${codigo}`, datos).then((r) => r.data),
+  eliminarTipoCmp: (codigo: string) =>
+    api.delete(`/compromisos-datos-basicos/tipos-compromiso/${codigo}`),
+
+  // Estados conversación
+  listarEstadosCnv: (tipo?: string) =>
+    api.get<EstadoConversacion[]>('/compromisos-datos-basicos/estados-conversacion', { params: tipo ? { tipo } : {} }).then((r) => r.data),
+  crearEstadoCnv: (datos: Partial<EstadoConversacion>) =>
+    api.post('/compromisos-datos-basicos/estados-conversacion', datos).then((r) => r.data),
+  actualizarEstadoCnv: (tipo: string, codigo: string, datos: Partial<EstadoConversacion>) =>
+    api.put(`/compromisos-datos-basicos/estados-conversacion/${tipo}/${codigo}`, datos).then((r) => r.data),
+  eliminarEstadoCnv: (tipo: string, codigo: string) =>
+    api.delete(`/compromisos-datos-basicos/estados-conversacion/${tipo}/${codigo}`),
+
+  // Estados compromiso
+  listarEstadosCmp: (tipo?: string) =>
+    api.get<EstadoCompromiso[]>('/compromisos-datos-basicos/estados-compromiso', { params: tipo ? { tipo } : {} }).then((r) => r.data),
+  crearEstadoCmp: (datos: Partial<EstadoCompromiso>) =>
+    api.post('/compromisos-datos-basicos/estados-compromiso', datos).then((r) => r.data),
+  actualizarEstadoCmp: (tipo: string, codigo: string, datos: Partial<EstadoCompromiso>) =>
+    api.put(`/compromisos-datos-basicos/estados-compromiso/${tipo}/${codigo}`, datos).then((r) => r.data),
+  eliminarEstadoCmp: (tipo: string, codigo: string) =>
+    api.delete(`/compromisos-datos-basicos/estados-compromiso/${tipo}/${codigo}`),
+}
+
+// ─── Compromisos: Operación ──────────────────────────────────────────────────
+
+export const compromisosApi = {
+  // Conversaciones
+  listarConversaciones: (params?: { tipo?: string; estado?: string }) =>
+    api.get<Conversacion[]>('/compromisos/conversaciones', { params }).then((r) => r.data),
+  obtenerConversacion: (id: number) =>
+    api.get<Conversacion>(`/compromisos/conversaciones/${id}`).then((r) => r.data),
+  crearConversacion: (datos: Partial<Conversacion>) =>
+    api.post('/compromisos/conversaciones', datos).then((r) => r.data),
+  actualizarConversacion: (id: number, datos: Partial<Conversacion>) =>
+    api.put(`/compromisos/conversaciones/${id}`, datos).then((r) => r.data),
+  eliminarConversacion: (id: number) =>
+    api.delete(`/compromisos/conversaciones/${id}`),
+
+  // Participantes
+  listarParticipantes: (idConv: number) =>
+    api.get<ParticipanteConversacion[]>(`/compromisos/conversaciones/${idConv}/participantes`).then((r) => r.data),
+  agregarParticipante: (idConv: number, datos: Partial<ParticipanteConversacion>) =>
+    api.post(`/compromisos/conversaciones/${idConv}/participantes`, datos).then((r) => r.data),
+  eliminarParticipante: (idConv: number, idPart: number) =>
+    api.delete(`/compromisos/conversaciones/${idConv}/participantes/${idPart}`),
+
+  // Compromisos
+  listarCompromisos: (params?: { tipo?: string; estado?: string; prioridad?: string; conversacion?: number }) =>
+    api.get<Compromiso[]>('/compromisos/compromisos-lista', { params }).then((r) => r.data),
+  obtenerCompromiso: (id: number) =>
+    api.get<Compromiso>(`/compromisos/compromisos-lista/${id}`).then((r) => r.data),
+  crearCompromiso: (datos: Partial<Compromiso>) =>
+    api.post('/compromisos/compromisos-lista', datos).then((r) => r.data),
+  actualizarCompromiso: (id: number, datos: Partial<Compromiso>) =>
+    api.put(`/compromisos/compromisos-lista/${id}`, datos).then((r) => r.data),
+  eliminarCompromiso: (id: number) =>
+    api.delete(`/compromisos/compromisos-lista/${id}`),
 }
 
 export default api
