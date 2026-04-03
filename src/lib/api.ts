@@ -201,6 +201,7 @@ export const entidadesApi = {
     api.put(`/entidades/${idEntidad}/parametros`, datos),
   eliminarParametro: (idEntidad: string, categoria: string, tipo: string) =>
     api.delete(`/entidades/${idEntidad}/parametros/${categoria}/${tipo}`),
+  desactivar: (id: string) => api.delete(`/entidades/${id}`),
 }
 
 // ─── Grupos de Entidades ──────────────────────────────────────────────────────

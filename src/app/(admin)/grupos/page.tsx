@@ -8,7 +8,8 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { gruposApi, usuariosApi } from '@/lib/api'
+import { gruposApi, usuariosApi, entidadesApi } from '@/lib/api'
+import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { useAuth } from '@/context/AuthContext'
 import type { Grupo, Entidad, Usuario } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -40,6 +41,14 @@ export default function PaginaGrupos() {
   const [dropdownAbierto, setDropdownAbierto] = useState(false)
   const [asignandoUsuario, setAsignandoUsuario] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+
+  // CRUD de entidades del grupo
+  const [modalEntidad, setModalEntidad] = useState(false)
+  const [entidadEditando, setEntidadEditando] = useState<Entidad | null>(null)
+  const [formEntidad, setFormEntidad] = useState({ codigo_entidad: '', nombre: '', descripcion: '' })
+  const [guardandoEntidad, setGuardandoEntidad] = useState(false)
+  const [errorEntidad, setErrorEntidad] = useState('')
+  const [confirmarDesactivar, setConfirmarDesactivar] = useState<Entidad | null>(null)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -129,6 +138,49 @@ export default function PaginaGrupos() {
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al quitar usuario')
     }
+  }
+
+  // ── Entidades CRUD ──
+  const abrirNuevaEntidad = () => {
+    setEntidadEditando(null)
+    setFormEntidad({ codigo_entidad: '', nombre: '', descripcion: '' })
+    setErrorEntidad('')
+    setModalEntidad(true)
+  }
+
+  const abrirEditarEntidad = (e: Entidad) => {
+    setEntidadEditando(e)
+    setFormEntidad({ codigo_entidad: e.codigo_entidad, nombre: e.nombre, descripcion: e.descripcion || '' })
+    setErrorEntidad('')
+    setModalEntidad(true)
+  }
+
+  const guardarEntidad = async () => {
+    if (!formEntidad.codigo_entidad || !formEntidad.nombre) { setErrorEntidad('Código y nombre son obligatorios'); return }
+    setGuardandoEntidad(true)
+    try {
+      if (entidadEditando) {
+        await entidadesApi.actualizar(entidadEditando.codigo_entidad, { nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined })
+      } else {
+        await entidadesApi.crear({ codigo_entidad: formEntidad.codigo_entidad, nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, codigo_grupo: grupoSeleccionado?.codigo_grupo })
+      }
+      setModalEntidad(false)
+      if (grupoSeleccionado) cargarDetalle(grupoSeleccionado.codigo_grupo)
+    } catch (e) {
+      setErrorEntidad(e instanceof Error ? e.message : 'Error')
+    } finally {
+      setGuardandoEntidad(false)
+    }
+  }
+
+  const desactivarEntidad = async (entidad: Entidad) => {
+    try {
+      await entidadesApi.desactivar(entidad.codigo_entidad)
+      if (grupoSeleccionado) cargarDetalle(grupoSeleccionado.codigo_grupo)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al desactivar')
+    }
+    setConfirmarDesactivar(null)
   }
 
   // Usuarios disponibles para asignar (excluir los ya asignados al grupo)
@@ -292,8 +344,8 @@ export default function PaginaGrupos() {
                 {/* Tab Entidades */}
                 {tabActivo === 'entidades' && (
                   <div>
-                    <div className="px-4 py-3 border-b border-borde">
-                      <div className="max-w-sm">
+                    <div className="px-4 py-3 border-b border-borde flex items-center gap-3">
+                      <div className="max-w-sm flex-1">
                         <Input
                           placeholder="Buscar por nombre o código..."
                           value={busquedaEntidades}
@@ -301,21 +353,30 @@ export default function PaginaGrupos() {
                           icono={<Search size={15} />}
                         />
                       </div>
+                      <Boton variante="primario" tamano="sm" onClick={abrirNuevaEntidad}><Plus size={14} />Nueva entidad</Boton>
                     </div>
                   <Tabla>
                     <TablaCabecera>
-                      <tr><TablaTh>Codigo</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Estado</TablaTh></tr>
+                      <tr><TablaTh>Codigo</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Estado</TablaTh><TablaTh className="text-right">Acciones</TablaTh></tr>
                     </TablaCabecera>
                     <TablaCuerpo>
                       {cargandoDetalle ? (
-                        <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={3 as never}>Cargando...</TablaTd></TablaFila>
+                        <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={4 as never}>Cargando...</TablaTd></TablaFila>
                       ) : entidadesFiltradas.length === 0 ? (
-                        <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={3 as never}>{busquedaEntidades ? 'No se encontraron entidades' : 'No hay entidades en este grupo'}</TablaTd></TablaFila>
+                        <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={4 as never}>{busquedaEntidades ? 'No se encontraron entidades' : 'No hay entidades en este grupo'}</TablaTd></TablaFila>
                       ) : entidadesFiltradas.map((e) => (
                         <TablaFila key={e.codigo_entidad}>
                           <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{e.codigo_entidad}</code></TablaTd>
                           <TablaTd className="font-medium">{e.nombre}</TablaTd>
                           <TablaTd><Insignia variante={e.activo ? 'exito' : 'advertencia'}>{e.activo ? 'Activo' : 'Inactivo'}</Insignia></TablaTd>
+                          <TablaTd className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => abrirEditarEntidad(e)} className="p-1 rounded hover:bg-fondo text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                              {e.activo && (
+                                <button onClick={() => setConfirmarDesactivar(e)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Desactivar"><X size={14} /></button>
+                              )}
+                            </div>
+                          </TablaTd>
                         </TablaFila>
                       ))}
                     </TablaCuerpo>
@@ -454,6 +515,30 @@ export default function PaginaGrupos() {
           </div>
         </div>
       </Modal>
+
+      {/* Modal entidad */}
+      <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? `Editar entidad: ${entidadEditando.nombre}` : 'Nueva entidad'}>
+        <div className="flex flex-col gap-4">
+          <Input etiqueta="Código *" value={formEntidad.codigo_entidad} onChange={(e) => setFormEntidad({ ...formEntidad, codigo_entidad: e.target.value.toUpperCase() })} disabled={!!entidadEditando} placeholder="MUNI" />
+          <Input etiqueta="Nombre *" value={formEntidad.nombre} onChange={(e) => setFormEntidad({ ...formEntidad, nombre: e.target.value })} placeholder="Municipalidad" />
+          <Input etiqueta="Descripción" value={formEntidad.descripcion} onChange={(e) => setFormEntidad({ ...formEntidad, descripcion: e.target.value })} placeholder="Descripción opcional" />
+          {errorEntidad && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorEntidad}</p></div>}
+          <div className="flex gap-3 justify-end pt-2">
+            <Boton variante="contorno" onClick={() => setModalEntidad(false)}>Cancelar</Boton>
+            <Boton variante="primario" onClick={guardarEntidad} cargando={guardandoEntidad}>{entidadEditando ? 'Guardar' : 'Crear entidad'}</Boton>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Confirmar desactivar entidad */}
+      <ModalConfirmar
+        abierto={!!confirmarDesactivar}
+        alCerrar={() => setConfirmarDesactivar(null)}
+        alConfirmar={() => confirmarDesactivar && desactivarEntidad(confirmarDesactivar)}
+        titulo="Desactivar entidad"
+        mensaje={`¿Desea desactivar la entidad "${confirmarDesactivar?.nombre}"?`}
+        variante="error"
+      />
     </div>
   )
 }
