@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Plus, Pencil, Trash2, X, Download, Search, ChevronUp, ChevronDown } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -8,13 +8,12 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { aplicacionesApi, funcionesApi, usuariosApi, gruposApi } from '@/lib/api'
+import { aplicacionesApi, funcionesApi, gruposApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Aplicacion, Funcion, Usuario, Grupo } from '@/lib/tipos'
+import type { Aplicacion, Funcion, Grupo } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 
 type FuncionApp = { codigo_funcion: string; funciones: { nombre_funcion: string; activo: boolean } }
-type UsuarioApp = { codigo_usuario: string; usuarios: { nombre: string; activo: boolean } }
 type AppDeFuncion = { codigo_aplicacion: string; aplicaciones?: { nombre_aplicacion: string; activo: boolean } }
 type Dependencia = { codigo_aplicacion_previa: string; orden: number; aplicaciones?: { nombre_aplicacion: string; activo: boolean } }
 type GrupoApp = { codigo_grupo: string; activo: boolean; grupos_entidades: { nombre_grupo: string } }
@@ -24,7 +23,6 @@ export default function PaginaAplicacionesFunciones() {
   const [tabPrincipal, setTabPrincipal] = useState<'aplicaciones' | 'funciones'>('aplicaciones')
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([])
   const [funciones, setFunciones] = useState<Funcion[]>([])
-  const [todosUsuarios, setTodosUsuarios] = useState<Usuario[]>([])
   const [cargando, setCargando] = useState(true)
   const [busquedaApps, setBusquedaApps] = useState('')
   const [busquedaFunciones, setBusquedaFunciones] = useState('')
@@ -33,7 +31,7 @@ export default function PaginaAplicacionesFunciones() {
   const [modalApp, setModalApp] = useState(false)
   const [appEditando, setAppEditando] = useState<Aplicacion | null>(null)
   const [formApp, setFormApp] = useState({ codigo_aplicacion: '', nombre: '', descripcion: '' })
-  const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'usuarios' | 'dependencias' | 'grupos'>('datos')
+  const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'dependencias' | 'grupos'>('datos')
   const [guardandoApp, setGuardandoApp] = useState(false)
   const [errorApp, setErrorApp] = useState('')
 
@@ -42,12 +40,9 @@ export default function PaginaAplicacionesFunciones() {
   const [cargandoFuncionesApp, setCargandoFuncionesApp] = useState(false)
   const [funcionNuevaApp, setFuncionNuevaApp] = useState('')
   const [asignandoFuncionApp, setAsignandoFuncionApp] = useState(false)
-
-  // Usuarios de la app
-  const [usuariosApp, setUsuariosApp] = useState<UsuarioApp[]>([])
-  const [cargandoUsuariosApp, setCargandoUsuariosApp] = useState(false)
-  const [usuarioNuevoApp, setUsuarioNuevoApp] = useState('')
-  const [asignandoUsuarioApp, setAsignandoUsuarioApp] = useState(false)
+  const [busquedaFuncionApp, setBusquedaFuncionApp] = useState('')
+  const [dropdownFuncionAppAbierto, setDropdownFuncionAppAbierto] = useState(false)
+  const dropdownFuncionAppRef = useRef<HTMLDivElement>(null)
 
   // Dependencias de la app
   const [dependenciasApp, setDependenciasApp] = useState<Dependencia[]>([])
@@ -86,27 +81,31 @@ export default function PaginaAplicacionesFunciones() {
   const cargar = useCallback(async () => {
     setCargando(true)
     try {
-      const [a, f, u, g] = await Promise.all([aplicacionesApi.listar(), funcionesApi.listar(), usuariosApi.listar(), gruposApi.listar()])
+      const [a, f, g] = await Promise.all([aplicacionesApi.listar(), funcionesApi.listar(), gruposApi.listar()])
       setAplicaciones(a)
       setFunciones(f)
-      setTodosUsuarios(u)
       setTodosGrupos(g)
     } finally { setCargando(false) }
   }, [])
 
   useEffect(() => { cargar() }, [cargar])
 
+  // Cerrar dropdown de función al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownFuncionAppRef.current && !dropdownFuncionAppRef.current.contains(e.target as Node)) {
+        setDropdownFuncionAppAbierto(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   // ── Aplicación: cargar relaciones ─────────────────────────────────────────
   const cargarFuncionesApp = useCallback(async (c: string) => {
     setCargandoFuncionesApp(true)
     try { setFuncionesApp(await aplicacionesApi.listarFunciones(c)) } catch { setFuncionesApp([]) }
     finally { setCargandoFuncionesApp(false) }
-  }, [])
-
-  const cargarUsuariosApp = useCallback(async (c: string) => {
-    setCargandoUsuariosApp(true)
-    try { setUsuariosApp(await aplicacionesApi.listarUsuarios(c)) } catch { setUsuariosApp([]) }
-    finally { setCargandoUsuariosApp(false) }
   }, [])
 
   const cargarDependenciasApp = useCallback(async (c: string) => {
@@ -128,7 +127,7 @@ export default function PaginaAplicacionesFunciones() {
   }
   const abrirEditarApp = (a: Aplicacion) => {
     setAppEditando(a); setFormApp({ codigo_aplicacion: a.codigo_aplicacion, nombre: a.nombre, descripcion: a.descripcion || '' })
-    setErrorApp(''); setTabModalApp('datos'); cargarFuncionesApp(a.codigo_aplicacion); cargarUsuariosApp(a.codigo_aplicacion); cargarDependenciasApp(a.codigo_aplicacion); cargarGruposApp(a.codigo_aplicacion); setModalApp(true)
+    setErrorApp(''); setTabModalApp('datos'); cargarFuncionesApp(a.codigo_aplicacion); cargarDependenciasApp(a.codigo_aplicacion); cargarGruposApp(a.codigo_aplicacion); setModalApp(true)
   }
   const guardarApp = async () => {
     if (!formApp.codigo_aplicacion || !formApp.nombre) { setErrorApp('Código y nombre son obligatorios'); return }
@@ -144,24 +143,12 @@ export default function PaginaAplicacionesFunciones() {
   // ── Aplicación: funciones ─────────────────────────────────────────────────
   const asignarFuncionApp = async () => {
     if (!funcionNuevaApp || !appEditando) return; setAsignandoFuncionApp(true)
-    try { await aplicacionesApi.asignarFuncion(appEditando.codigo_aplicacion, funcionNuevaApp); setFuncionNuevaApp(''); cargarFuncionesApp(appEditando.codigo_aplicacion) }
+    try { await aplicacionesApi.asignarFuncion(appEditando.codigo_aplicacion, funcionNuevaApp); setFuncionNuevaApp(''); setBusquedaFuncionApp(''); cargarFuncionesApp(appEditando.codigo_aplicacion) }
     catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') } finally { setAsignandoFuncionApp(false) }
   }
   const quitarFuncionApp = async (c: string) => {
     if (!appEditando) return
     try { await aplicacionesApi.quitarFuncion(appEditando.codigo_aplicacion, c); cargarFuncionesApp(appEditando.codigo_aplicacion) }
-    catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') }
-  }
-
-  // ── Aplicación: usuarios ──────────────────────────────────────────────────
-  const asignarUsuarioApp = async () => {
-    if (!usuarioNuevoApp || !appEditando) return; setAsignandoUsuarioApp(true)
-    try { await aplicacionesApi.asignarUsuario(appEditando.codigo_aplicacion, usuarioNuevoApp); setUsuarioNuevoApp(''); cargarUsuariosApp(appEditando.codigo_aplicacion) }
-    catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') } finally { setAsignandoUsuarioApp(false) }
-  }
-  const quitarUsuarioApp = async (c: string) => {
-    if (!appEditando) return
-    try { await aplicacionesApi.quitarUsuario(appEditando.codigo_aplicacion, c); cargarUsuariosApp(appEditando.codigo_aplicacion) }
     catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') }
   }
 
@@ -254,7 +241,11 @@ export default function PaginaAplicacionesFunciones() {
 
   // ── Listas filtradas ──────────────────────────────────────────────────────
   const funcionesDisponiblesApp = funciones.filter((f) => f.activo && !funcionesApp.some((fa) => fa.codigo_funcion === f.codigo_funcion))
-  const usuariosDisponiblesApp = todosUsuarios.filter((u) => u.activo && !usuariosApp.some((ua) => ua.codigo_usuario === u.codigo_usuario))
+  const funcionesAppFiltradas = funcionesDisponiblesApp.filter((f) =>
+    busquedaFuncionApp.length === 0 ||
+    f.nombre.toLowerCase().includes(busquedaFuncionApp.toLowerCase()) ||
+    f.codigo_funcion.toLowerCase().includes(busquedaFuncionApp.toLowerCase())
+  )
   const appsDisponiblesFuncion = aplicaciones.filter((a) => a.activo && !appsDeFuncion.some((af) => af.codigo_aplicacion === a.codigo_aplicacion))
 
   const depsDisponibles = aplicaciones.filter((a) => a.activo && a.codigo_aplicacion !== appEditando?.codigo_aplicacion && !dependenciasApp.some((d) => d.codigo_aplicacion_previa === a.codigo_aplicacion))
@@ -354,13 +345,13 @@ export default function PaginaAplicacionesFunciones() {
       )}
 
       {/* ═══ MODAL APLICACIÓN ═══ */}
-      <Modal abierto={modalApp} alCerrar={() => setModalApp(false)} titulo={appEditando ? `Editar: ${appEditando.codigo_aplicacion}` : 'Nueva aplicación'}>
+      <Modal abierto={modalApp} alCerrar={() => setModalApp(false)} titulo={appEditando ? `Editar aplicación: ${appEditando.nombre}` : 'Nueva aplicación'}>
         <div className="flex flex-col gap-4">
           {appEditando && (
             <div className="flex border-b border-borde -mx-1">
-              {(['datos', 'funciones', 'usuarios', 'dependencias', 'grupos'] as const).map((tab) => (
+              {(['datos', 'funciones', 'dependencias', 'grupos'] as const).map((tab) => (
                 <button key={tab} onClick={() => setTabModalApp(tab)} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalApp === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
-                  {tab === 'datos' ? 'Datos' : tab === 'funciones' ? `Funciones (${funcionesApp.length})` : tab === 'usuarios' ? `Usuarios (${usuariosApp.length})` : tab === 'dependencias' ? `Dependencias (${dependenciasApp.length})` : `Grupos (${gruposApp.length})`}
+                  {tab === 'datos' ? 'Datos' : tab === 'funciones' ? `Funciones (${funcionesApp.length})` : tab === 'dependencias' ? `Dependencias (${dependenciasApp.length})` : `Grupos (${gruposApp.length})`}
                 </button>
               ))}
             </div>
@@ -374,19 +365,45 @@ export default function PaginaAplicacionesFunciones() {
           </>)}
           {tabModalApp === 'funciones' && appEditando && (
             <div className="flex flex-col gap-4">
-              <div className="flex gap-2"><div className="flex-1"><select value={funcionNuevaApp} onChange={(e) => setFuncionNuevaApp(e.target.value)} className={selectClass}><option value="">Seleccionar función...</option>{funcionesDisponiblesApp.map((f) => (<option key={f.codigo_funcion} value={f.codigo_funcion}>{f.nombre} ({f.codigo_funcion})</option>))}</select></div><Boton variante="primario" onClick={asignarFuncionApp} cargando={asignandoFuncionApp} disabled={!funcionNuevaApp}><Plus size={14} />Asignar</Boton></div>
+              <div className="flex gap-2">
+                <div className="flex-1 relative" ref={dropdownFuncionAppRef}>
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
+                    <input
+                      type="text"
+                      placeholder="Buscar función por nombre o código..."
+                      value={busquedaFuncionApp}
+                      onChange={(e) => { setBusquedaFuncionApp(e.target.value); setDropdownFuncionAppAbierto(true); setFuncionNuevaApp('') }}
+                      onFocus={() => setDropdownFuncionAppAbierto(true)}
+                      className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                    />
+                  </div>
+                  {dropdownFuncionAppAbierto && busquedaFuncionApp.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {funcionesAppFiltradas.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron funciones</div>
+                      ) : funcionesAppFiltradas.slice(0, 20).map((f) => (
+                        <button
+                          key={f.codigo_funcion}
+                          onClick={() => {
+                            setFuncionNuevaApp(f.codigo_funcion)
+                            setBusquedaFuncionApp(`${f.nombre} (${f.codigo_funcion})`)
+                            setDropdownFuncionAppAbierto(false)
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
+                        >
+                          <span className="font-medium">{f.nombre}</span>
+                          <span className="ml-2 text-texto-muted text-xs">{f.codigo_funcion}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+                <Boton variante="primario" onClick={asignarFuncionApp} cargando={asignandoFuncionApp} disabled={!funcionNuevaApp}><Plus size={14} />Asignar</Boton>
+              </div>
               {cargandoFuncionesApp ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
               : funcionesApp.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene funciones asignadas</p>
               : <div className="flex flex-col gap-2">{funcionesApp.map((fa) => (<div key={fa.codigo_funcion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</span><span className="ml-2 text-xs text-texto-muted">{fa.codigo_funcion}</span></div><button onClick={() => quitarFuncionApp(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Cerrar</Boton></div>
-            </div>
-          )}
-          {tabModalApp === 'usuarios' && appEditando && (
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-2"><div className="flex-1"><select value={usuarioNuevoApp} onChange={(e) => setUsuarioNuevoApp(e.target.value)} className={selectClass}><option value="">Seleccionar usuario...</option>{usuariosDisponiblesApp.map((u) => (<option key={u.codigo_usuario} value={u.codigo_usuario}>{u.nombre} ({u.codigo_usuario})</option>))}</select></div><Boton variante="primario" onClick={asignarUsuarioApp} cargando={asignandoUsuarioApp} disabled={!usuarioNuevoApp}><Plus size={14} />Asignar</Boton></div>
-              {cargandoUsuariosApp ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-              : usuariosApp.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene usuarios asignados</p>
-              : <div className="flex flex-col gap-2">{usuariosApp.map((ua) => (<div key={ua.codigo_usuario} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{ua.usuarios?.nombre || ua.codigo_usuario}</span><span className="ml-2 text-xs text-texto-muted">{ua.codigo_usuario}</span></div><button onClick={() => quitarUsuarioApp(ua.codigo_usuario)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Cerrar</Boton></div>
             </div>
           )}
@@ -453,7 +470,7 @@ export default function PaginaAplicacionesFunciones() {
       </Modal>
 
       {/* ═══ MODAL FUNCIÓN ═══ */}
-      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar: ${funcionEditando.codigo_funcion}` : 'Nueva función'}>
+      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar función: ${funcionEditando.nombre}` : 'Nueva función'}>
         <div className="flex flex-col gap-4">
           {funcionEditando && (
             <div className="flex border-b border-borde -mx-1">

@@ -17,32 +17,32 @@ interface Estadisticas {
 
 const tarjetasEstadistica = (stats: Estadisticas) => [
   {
-    titulo: 'Usuarios activos',
+    titulo: 'Usuarios del grupo',
     valor: stats.totalUsuarios,
     icono: Users,
     color: 'bg-primario-muy-claro text-primario',
-    tendencia: '+2 este mes',
+    tendencia: 'Activos en el grupo',
   },
   {
-    titulo: 'Roles configurados',
+    titulo: 'Roles del grupo',
     valor: stats.totalRoles,
     icono: ShieldCheck,
     color: 'bg-secundario-muy-claro text-secundario',
-    tendencia: 'Sin cambios',
+    tendencia: 'Configurados',
   },
   {
-    titulo: 'Entidades',
+    titulo: 'Entidades del grupo',
     valor: stats.totalEntidades,
     icono: Building2,
     color: 'bg-acento-muy-claro text-acento',
-    tendencia: 'Sin cambios',
+    tendencia: 'Del grupo activo',
   },
   {
     titulo: 'Registros auditoría',
     valor: stats.totalAuditoria,
     icono: ClipboardList,
     color: 'bg-green-50 text-exito',
-    tendencia: 'Últimos 30 días',
+    tendencia: 'Recientes del grupo',
   },
 ]
 
@@ -94,7 +94,8 @@ export default function PaginaDashboard() {
       <div>
         <h2 className="text-2xl font-bold text-texto">{saludo}, {nombre}</h2>
         <p className="text-texto-muted text-sm mt-1">
-          Entidad activa: <span className="font-medium text-primario">{usuario?.entidad_activa}</span>
+          Grupo: <span className="font-medium text-primario">{usuario?.grupo_activo}</span>
+          {' · '}Entidad: <span className="font-medium text-primario">{usuario?.entidad_activa}</span>
           {usuario?.rol_principal && (
             <> · Rol: <span className="font-medium">{usuario.rol_principal}</span></>
           )}

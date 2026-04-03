@@ -105,14 +105,6 @@ export const usuariosApi = {
     api.post(`/usuarios/${id}/grupos`, { codigo_grupo: codigoGrupo }),
   quitarGrupo: (id: string, codigoGrupo: string) =>
     api.delete(`/usuarios/${id}/grupos/${codigoGrupo}`),
-  listarAplicaciones: (id: string) =>
-    api.get<{ codigo_aplicacion: string; aplicaciones: { nombre: string; activo: boolean } }[]>(
-      `/usuarios/${id}/aplicaciones`
-    ).then((r) => r.data),
-  asignarAplicacion: (id: string, codigoApp: string) =>
-    api.post(`/usuarios/${id}/aplicaciones`, { codigo_aplicacion: codigoApp }),
-  quitarAplicacion: (id: string, codigoApp: string) =>
-    api.delete(`/usuarios/${id}/aplicaciones/${codigoApp}`),
 }
 
 // ─── Roles ────────────────────────────────────────────────────────────────────
@@ -171,14 +163,6 @@ export const aplicacionesApi = {
     api.post(`/aplicaciones/${id}/funciones`, { codigo_funcion: codigoFuncion }),
   quitarFuncion: (id: string, codigoFuncion: string) =>
     api.delete(`/aplicaciones/${id}/funciones/${codigoFuncion}`),
-  listarUsuarios: (id: string) =>
-    api.get<{ codigo_usuario: string; usuarios: { nombre: string; activo: boolean } }[]>(
-      `/aplicaciones/${id}/usuarios`
-    ).then((r) => r.data),
-  asignarUsuario: (id: string, codigoUsuario: string) =>
-    api.post(`/aplicaciones/${id}/usuarios`, { codigo_usuario: codigoUsuario }),
-  quitarUsuario: (id: string, codigoUsuario: string) =>
-    api.delete(`/aplicaciones/${id}/usuarios/${codigoUsuario}`),
   listarDependencias: (id: string) =>
     api.get<{ codigo_aplicacion_previa: string; orden: number; aplicaciones: { nombre_aplicacion: string; activo: boolean } }[]>(
       `/aplicaciones/${id}/dependencias`

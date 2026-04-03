@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -36,6 +36,9 @@ export default function PaginaRoles() {
   const [cargandoFunciones, setCargandoFunciones] = useState(false)
   const [funcionNueva, setFuncionNueva] = useState('')
   const [asignandoFuncion, setAsignandoFuncion] = useState(false)
+  const [busquedaFuncionRol, setBusquedaFuncionRol] = useState('')
+  const [dropdownFuncionRolAbierto, setDropdownFuncionRolAbierto] = useState(false)
+  const dropdownFuncionRolRef = useRef<HTMLDivElement>(null)
 
   // Modal función
   const [modalFuncion, setModalFuncion] = useState(false)
@@ -71,6 +74,17 @@ export default function PaginaRoles() {
 
   useEffect(() => { cargar() }, [cargar])
 
+  // Cerrar dropdown de función al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownFuncionRolRef.current && !dropdownFuncionRolRef.current.contains(e.target as Node)) {
+        setDropdownFuncionRolAbierto(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
   const cargarFuncionesRol = useCallback(async (codigo: string) => {
     setCargandoFunciones(true)
     try {
@@ -97,6 +111,7 @@ export default function PaginaRoles() {
     setError('')
     setTabModalRol('datos')
     setFuncionNueva('')
+    setBusquedaFuncionRol('')
     cargarFuncionesRol(r.codigo_rol)
     setModalRol(true)
   }
@@ -146,6 +161,7 @@ export default function PaginaRoles() {
     try {
       await rolesApi.asignarFuncion(rolEditando.codigo_rol, funcionNueva)
       setFuncionNueva('')
+      setBusquedaFuncionRol('')
       cargarFuncionesRol(rolEditando.codigo_rol)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al asignar función')
@@ -201,6 +217,13 @@ export default function PaginaRoles() {
   const funcionesDisponibles = funciones.filter((f) =>
     f.activo &&
     !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion)
+  )
+
+  // Filtro de búsqueda para el selector de funciones del rol
+  const funcionesRolFiltradas = funcionesDisponibles.filter((f) =>
+    busquedaFuncionRol.length === 0 ||
+    f.nombre.toLowerCase().includes(busquedaFuncionRol.toLowerCase()) ||
+    f.codigo_funcion.toLowerCase().includes(busquedaFuncionRol.toLowerCase())
   )
 
   const cargarAppsFuncion = useCallback(async (codigo: string) => {
@@ -443,7 +466,7 @@ export default function PaginaRoles() {
       )}
 
       {/* Modal Rol */}
-      <Modal abierto={modalRol} alCerrar={() => setModalRol(false)} titulo={rolEditando ? `Editar rol : ${rolEditando.codigo_rol}` : 'Nuevo rol'}>
+      <Modal abierto={modalRol} alCerrar={() => setModalRol(false)} titulo={rolEditando ? `Editar rol: ${rolEditando.nombre}` : 'Nuevo rol'}>
         <div className="flex flex-col gap-4">
           {/* Pestañas (solo en edición) */}
           {rolEditando && (
@@ -510,17 +533,38 @@ export default function PaginaRoles() {
             <div className="flex flex-col gap-4">
               {/* Asignar nueva función */}
               <div className="flex gap-2">
-                <div className="flex-1">
-                  <select
-                    value={funcionNueva}
-                    onChange={(e) => setFuncionNueva(e.target.value)}
-                    className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
-                  >
-                    <option value="">Seleccionar función...</option>
-                    {funcionesDisponibles.map((f) => (
-                      <option key={f.codigo_funcion} value={f.codigo_funcion}>{f.nombre}</option>
-                    ))}
-                  </select>
+                <div className="flex-1 relative" ref={dropdownFuncionRolRef}>
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
+                    <input
+                      type="text"
+                      placeholder="Buscar función por nombre o código..."
+                      value={busquedaFuncionRol}
+                      onChange={(e) => { setBusquedaFuncionRol(e.target.value); setDropdownFuncionRolAbierto(true); setFuncionNueva('') }}
+                      onFocus={() => setDropdownFuncionRolAbierto(true)}
+                      className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                    />
+                  </div>
+                  {dropdownFuncionRolAbierto && busquedaFuncionRol.length > 0 && (
+                    <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {funcionesRolFiltradas.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron funciones</div>
+                      ) : funcionesRolFiltradas.slice(0, 20).map((f) => (
+                        <button
+                          key={f.codigo_funcion}
+                          onClick={() => {
+                            setFuncionNueva(f.codigo_funcion)
+                            setBusquedaFuncionRol(`${f.nombre} (${f.codigo_funcion})`)
+                            setDropdownFuncionRolAbierto(false)
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
+                        >
+                          <span className="font-medium">{f.nombre}</span>
+                          <span className="ml-2 text-texto-muted text-xs">{f.codigo_funcion}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Boton
                   variante="primario"
@@ -605,7 +649,7 @@ export default function PaginaRoles() {
       </Modal>
 
       {/* Modal Función */}
-      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar función: ${funcionEditando.codigo_funcion}` : 'Nueva función'}>
+      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar función: ${funcionEditando.nombre}` : 'Nueva función'}>
         <div className="flex flex-col gap-4">
           {/* Tabs (solo en edición) */}
           {funcionEditando && (

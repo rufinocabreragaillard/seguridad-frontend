@@ -14,6 +14,8 @@ import {
   AppWindow,
   Menu,
   X,
+  MessageSquare,
+  ListChecks,
 } from 'lucide-react'
 import { useState } from 'react'
 import { cn } from '@/lib/utils'
@@ -48,6 +50,14 @@ const navegacion: NavGrupo[] = [
       { nombre: 'Parámetros por Nivel', href: '/parametros', icono: SlidersHorizontal },
       { nombre: 'Entidades, Áreas y Roles', href: '/entidades', icono: Building2 },
       { nombre: 'Grupos', href: '/grupos', icono: Layers },
+    ],
+  },
+  {
+    titulo: 'Compromisos',
+    items: [
+      { nombre: 'Conversaciones', href: '/compromisos/conversaciones', icono: MessageSquare },
+      { nombre: 'Compromisos', href: '/compromisos/compromisos', icono: ListChecks },
+      { nombre: 'Datos Básicos', href: '/compromisos/datos-basicos', icono: Database },
     ],
   },
   {

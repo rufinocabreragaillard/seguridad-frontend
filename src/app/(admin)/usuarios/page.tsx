@@ -8,9 +8,9 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { usuariosApi, rolesApi, entidadesApi, aplicacionesApi } from '@/lib/api'
+import { usuariosApi, rolesApi, entidadesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Usuario, Rol, Entidad, Area, Aplicacion } from '@/lib/tipos'
+import type { Usuario, Rol, Entidad, Area } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 
 type RolAsignado = { codigo_grupo: string; codigo_rol: string; orden: number; roles: { nombre: string; activo: boolean } }
@@ -38,7 +38,7 @@ export default function PaginaUsuarios() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [errorCarga, setErrorCarga] = useState('')
-  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'entidades' | 'aplicaciones'>('datos')
+  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'entidades'>('datos')
 
   // ── Roles ──────────────────────────────────────────────────────────────────
   const [rolesUsuario, setRolesUsuario] = useState<RolAsignado[]>([])
@@ -61,13 +61,6 @@ export default function PaginaUsuarios() {
   const [areaNueva, setAreaNueva] = useState('')
   const [cargandoAreas, setCargandoAreas] = useState(false)
 
-  // ── Aplicaciones del usuario ────────────────────────────────────────────────
-  const [todasApps, setTodasApps] = useState<Aplicacion[]>([])
-  const [appsUsuario, setAppsUsuario] = useState<{ codigo_aplicacion: string; aplicaciones: { nombre: string; activo: boolean } }[]>([])
-  const [cargandoApps, setCargandoApps] = useState(false)
-  const [appNueva, setAppNueva] = useState('')
-  const [asignandoApp, setAsignandoApp] = useState(false)
-
   // Áreas para los DEFAULTS (pestaña Datos)
   const [areasParaDefault, setAreasParaDefault] = useState<Area[]>([])
   const [cargandoAreasDefault, setCargandoAreasDefault] = useState(false)
@@ -89,11 +82,10 @@ export default function PaginaUsuarios() {
     setCargando(true)
     setErrorCarga('')
     try {
-      const [u, r, e, a] = await Promise.all([usuariosApi.listar(), rolesApi.listar(), entidadesApi.listar(), aplicacionesApi.listar()])
+      const [u, r, e] = await Promise.all([usuariosApi.listar(), rolesApi.listar(), entidadesApi.listar()])
       setUsuarios(u)
       setRoles(r)
       setEntidades(e)
-      setTodasApps(a)
     } catch (e) {
       setErrorCarga(e instanceof Error ? e.message : 'Error al cargar usuarios')
     } finally {
@@ -208,7 +200,6 @@ export default function PaginaUsuarios() {
     cargarRolesUsuario(u.codigo_usuario)
     cargarGruposUsuario(u.codigo_usuario)
     cargarEntidadesUsuario(u.codigo_usuario)
-    cargarAppsUsuario(u.codigo_usuario)
     if (u.entidad_por_defecto) cargarAreasDefault(u.entidad_por_defecto)
     setModalAbierto(true)
   }
@@ -326,38 +317,6 @@ export default function PaginaUsuarios() {
       await cargarEntidadesUsuario(usuarioEditando.codigo_usuario)
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al quitar entidad') }
   }
-
-  // ── Aplicaciones del usuario ────────────────────────────────────────────────
-  const cargarAppsUsuario = useCallback(async (codigo: string) => {
-    setCargandoApps(true)
-    try {
-      setAppsUsuario(await usuariosApi.listarAplicaciones(codigo))
-    } catch { setAppsUsuario([]) }
-    finally { setCargandoApps(false) }
-  }, [])
-
-  const asignarApp = async () => {
-    if (!appNueva || !usuarioEditando) return
-    setAsignandoApp(true)
-    try {
-      await usuariosApi.asignarAplicacion(usuarioEditando.codigo_usuario, appNueva)
-      setAppNueva('')
-      cargarAppsUsuario(usuarioEditando.codigo_usuario)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al asignar aplicación') }
-    finally { setAsignandoApp(false) }
-  }
-
-  const quitarApp = async (codigoApp: string) => {
-    if (!usuarioEditando) return
-    try {
-      await usuariosApi.quitarAplicacion(usuarioEditando.codigo_usuario, codigoApp)
-      cargarAppsUsuario(usuarioEditando.codigo_usuario)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al quitar aplicación') }
-  }
-
-  const appsDisponibles = todasApps.filter((a) =>
-    a.activo && !appsUsuario.some((ua) => ua.codigo_aplicacion === a.codigo_aplicacion)
-  )
 
   const [usuarioADesactivar, setUsuarioADesactivar] = useState<Usuario | null>(null)
   const [desactivando, setDesactivando] = useState(false)
@@ -572,7 +531,7 @@ export default function PaginaUsuarios() {
                       : 'text-texto-muted hover:text-texto'
                   }`}
                 >
-                  {tab === 'datos' ? 'Datos' : tab === 'roles' ? 'Roles' : tab === 'entidades' ? 'Entidades' : 'Aplicaciones'}
+                  {tab === 'datos' ? 'Datos' : tab === 'roles' ? 'Roles' : 'Entidades'}
                 </button>
               ))}
             </div>
@@ -926,45 +885,6 @@ export default function PaginaUsuarios() {
             </div>
           )}
 
-          {/* ── Tab Aplicaciones ──────────────────────────────────────────── */}
-          {tabActiva === 'aplicaciones' && usuarioEditando && (
-            <div className="flex flex-col gap-4">
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <select value={appNueva} onChange={(e) => setAppNueva(e.target.value)} className={selectClass}>
-                    <option value="">Seleccionar aplicación...</option>
-                    {appsDisponibles.map((a) => (
-                      <option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre} ({a.codigo_aplicacion})</option>
-                    ))}
-                  </select>
-                </div>
-                <Boton variante="primario" onClick={asignarApp} cargando={asignandoApp} disabled={!appNueva}>
-                  <Plus size={14} />Asignar
-                </Boton>
-              </div>
-              {cargandoApps ? (
-                <div className="flex flex-col gap-2">{[1, 2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-              ) : appsUsuario.length === 0 ? (
-                <p className="text-sm text-texto-muted text-center py-4">No tiene aplicaciones asignadas</p>
-              ) : (
-                <div className="flex flex-col gap-2">
-                  {appsUsuario.map((ua) => (
-                    <div key={ua.codigo_aplicacion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
-                      <div>
-                        <span className="text-sm font-medium text-texto">{ua.aplicaciones?.nombre || ua.codigo_aplicacion}</span>
-                        <span className="ml-2 text-xs text-texto-muted">{ua.codigo_aplicacion}</span>
-                      </div>
-                      <button onClick={() => quitarApp(ua.codigo_aplicacion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-              <div className="flex justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>Cerrar</Boton>
-              </div>
-            </div>
-          )}
         </div>
       </Modal>
 

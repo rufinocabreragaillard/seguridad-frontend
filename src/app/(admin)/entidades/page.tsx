@@ -475,7 +475,7 @@ export default function PaginaEntidades() {
         </div>
       </Modal>
       {/* Modal Rol */}
-      <Modal abierto={modalRol} alCerrar={() => setModalRol(false)} titulo={rolEditando ? `Editar rol: ${rolEditando.codigo_rol}` : 'Nuevo rol'}>
+      <Modal abierto={modalRol} alCerrar={() => setModalRol(false)} titulo={rolEditando ? `Editar rol: ${rolEditando.nombre}` : 'Nuevo rol'}>
         <div className="flex flex-col gap-4">
           {rolEditando && (
             <div className="flex border-b border-borde -mx-1">
