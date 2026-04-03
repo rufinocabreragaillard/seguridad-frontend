@@ -263,7 +263,7 @@ export default function PaginaRoles() {
       if (funcionEditando) {
         await funcionesApi.actualizar(funcionEditando.codigo_funcion, { nombre: formFuncion.nombre, descripcion: formFuncion.descripcion, url_funcion: formFuncion.url_funcion, alias_de_funcion: formFuncion.alias_de_funcion, icono_de_funcion: formFuncion.icono_de_funcion || undefined })
       } else {
-        await funcionesApi.crear({ ...formFuncion, codigo_grupo: grupoActivo || 'ADMIN' })
+        await funcionesApi.crear(formFuncion)
       }
       setModalFuncion(false)
       cargar()
@@ -394,7 +394,6 @@ export default function PaginaRoles() {
                 { titulo: 'Descripción', campo: 'descripcion' },
                 { titulo: 'Icono', campo: 'icono_de_funcion' },
                 { titulo: 'URL función', campo: 'url_funcion' },
-                { titulo: 'Grupo', campo: 'codigo_grupo' },
                 { titulo: 'Estado', campo: 'activo', formato: (v) => v ? 'Activa' : 'Inactiva' },
               ], `funciones_${grupoActivo || 'todos'}`)}
               disabled={funcionesFiltradas.length === 0}

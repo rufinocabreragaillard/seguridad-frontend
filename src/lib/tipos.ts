@@ -130,7 +130,6 @@ export interface Rol {
 export interface Funcion {
   codigo_funcion: string
   nombre: string
-  codigo_grupo?: string
   descripcion?: string
   url_funcion?: string
   alias_de_funcion?: string
@@ -196,6 +195,121 @@ export interface RegistroAuditoria {
   codigo_grupo?: string
   datos_anteriores?: Record<string, unknown>
   datos_nuevos?: Record<string, unknown>
+}
+
+// ─── Compromisos: Datos Básicos ─────────────────────────────────────────────
+
+export interface EstadoCanonicoConversacion {
+  codigo_estado_canonico: string
+  nombre: string
+  activo: boolean
+}
+
+export interface EstadoCanonicoCompromiso {
+  codigo_estado_canonico: string
+  nombre: string
+  activo: boolean
+}
+
+export interface TipoConversacion {
+  codigo_grupo: string
+  codigo_tipo_conversacion: string
+  nombre: string
+  descripcion?: string
+  activo: boolean
+}
+
+export interface TipoCompromiso {
+  codigo_grupo: string
+  codigo_tipo_compromiso: string
+  nombre: string
+  descripcion?: string
+  activo: boolean
+}
+
+export interface EstadoConversacion {
+  codigo_grupo: string
+  codigo_tipo_conversacion: string
+  codigo_estado_conversacion: string
+  nombre: string
+  codigo_estado_canonico: string
+  orden: number
+  activo: boolean
+}
+
+export interface EstadoCompromiso {
+  codigo_grupo: string
+  codigo_tipo_compromiso: string
+  codigo_estado_compromiso: string
+  nombre: string
+  codigo_estado_canonico: string
+  orden: number
+  activo: boolean
+}
+
+// ─── Compromisos: Operación ─────────────────────────────────────────────────
+
+export interface Adjunto {
+  nombre: string
+  url: string
+  tipo_mime: string
+  tamano: number
+}
+
+export interface Conversacion {
+  id_conversacion: number
+  codigo_grupo: string
+  codigo_entidad: string
+  codigo_tipo_conversacion: string
+  tipo_id_persona?: string
+  id_persona?: string
+  verificador_persona?: string
+  nombre_persona: string
+  telefono_persona?: number
+  correo_persona?: string
+  direccion_persona?: string
+  forma_alternativa_contacto?: string
+  tipo_representacion?: string
+  asunto: string
+  comentarios?: string
+  adjunto?: Adjunto
+  fecha_conversacion: string
+  codigo_usuario_responsable: string
+  esfuerzo_horas?: number
+  costo_conversacion?: number
+  codigo_estado_conversacion: string
+  fecha_ingreso?: string
+  fecha_cierre?: string
+}
+
+export interface ParticipanteConversacion {
+  id_conversacion: number
+  id_participante: number
+  tipo_id_persona?: string
+  id_persona?: string
+  nombre_persona: string
+}
+
+export interface Compromiso {
+  id_compromiso: number
+  codigo_grupo: string
+  codigo_entidad: string
+  id_conversacion?: number
+  codigo_tipo_compromiso: string
+  codigo_usuario_destinatario?: string
+  codigo_area_asignada?: string
+  codigo_usuario_asignado?: string
+  asunto: string
+  descripcion?: string
+  adjunto?: Adjunto
+  comentarios?: string
+  prioridad: 'urgente' | 'alto' | 'medio' | 'bajo'
+  codigo_estado_compromiso: string
+  costo_compromiso?: number
+  esfuerzo_horas?: number
+  fecha_creacion?: string
+  fecha_esperada?: string
+  fecha_cierre?: string
 }
 
 // ─── Utilitarios ─────────────────────────────────────────────────────────────
