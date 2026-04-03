@@ -50,6 +50,18 @@ export default function PaginaGrupos() {
   const [errorEntidad, setErrorEntidad] = useState('')
   const [confirmarDesactivar, setConfirmarDesactivar] = useState<Entidad | null>(null)
 
+  // Usuarios de una entidad
+  type UsuarioEntidad = { codigo_usuario: string; usuarios: { nombre_usuario: string; activo: boolean } }
+  const [modalUsuariosEntidad, setModalUsuariosEntidad] = useState(false)
+  const [entidadParaUsuarios, setEntidadParaUsuarios] = useState<Entidad | null>(null)
+  const [usuariosEntidad, setUsuariosEntidad] = useState<UsuarioEntidad[]>([])
+  const [cargandoUsuariosEntidad, setCargandoUsuariosEntidad] = useState(false)
+  const [usuarioNuevoEnt, setUsuarioNuevoEnt] = useState('')
+  const [busquedaUsuarioEnt, setBusquedaUsuarioEnt] = useState('')
+  const [dropdownEntAbierto, setDropdownEntAbierto] = useState(false)
+  const [asignandoUsuarioEnt, setAsignandoUsuarioEnt] = useState(false)
+  const dropdownEntRef = useRef<HTMLDivElement>(null)
+
   const cargar = useCallback(async () => {
     setCargando(true)
     try {
@@ -182,6 +194,69 @@ export default function PaginaGrupos() {
     }
     setConfirmarDesactivar(null)
   }
+
+  // ── Usuarios por entidad ──
+  const abrirUsuariosEntidad = async (entidad: Entidad) => {
+    setEntidadParaUsuarios(entidad)
+    setModalUsuariosEntidad(true)
+    setBusquedaUsuarioEnt('')
+    setUsuarioNuevoEnt('')
+    setCargandoUsuariosEntidad(true)
+    try {
+      const data = await entidadesApi.listarUsuarios(entidad.codigo_entidad)
+      setUsuariosEntidad(data)
+    } finally {
+      setCargandoUsuariosEntidad(false)
+    }
+  }
+
+  const asignarUsuarioAEntidad = async () => {
+    if (!usuarioNuevoEnt || !entidadParaUsuarios || !grupoSeleccionado) return
+    setAsignandoUsuarioEnt(true)
+    try {
+      await usuariosApi.asignarEntidad(usuarioNuevoEnt, entidadParaUsuarios.codigo_entidad, grupoSeleccionado.codigo_grupo)
+      setUsuarioNuevoEnt('')
+      setBusquedaUsuarioEnt('')
+      const data = await entidadesApi.listarUsuarios(entidadParaUsuarios.codigo_entidad)
+      setUsuariosEntidad(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al asignar')
+    } finally {
+      setAsignandoUsuarioEnt(false)
+    }
+  }
+
+  const quitarUsuarioDeEntidad = async (codigoUsuario: string) => {
+    if (!entidadParaUsuarios) return
+    try {
+      await usuariosApi.quitarEntidad(codigoUsuario, entidadParaUsuarios.codigo_entidad)
+      const data = await entidadesApi.listarUsuarios(entidadParaUsuarios.codigo_entidad)
+      setUsuariosEntidad(data)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al quitar')
+    }
+  }
+
+  const usuariosDisponiblesEnt = todosUsuarios.filter((u) =>
+    u.activo && !usuariosEntidad.some((ue) => ue.codigo_usuario === u.codigo_usuario)
+  )
+
+  const usuariosFiltradosEnt = usuariosDisponiblesEnt.filter((u) =>
+    busquedaUsuarioEnt.length === 0 ||
+    u.nombre.toLowerCase().includes(busquedaUsuarioEnt.toLowerCase()) ||
+    u.codigo_usuario.toLowerCase().includes(busquedaUsuarioEnt.toLowerCase())
+  )
+
+  // Cerrar dropdown entidad al hacer clic fuera
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownEntRef.current && !dropdownEntRef.current.contains(e.target as Node)) {
+        setDropdownEntAbierto(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   // Usuarios disponibles para asignar (excluir los ya asignados al grupo)
   const usuariosDisponibles = todosUsuarios.filter((u) =>
@@ -371,6 +446,7 @@ export default function PaginaGrupos() {
                           <TablaTd><Insignia variante={e.activo ? 'exito' : 'advertencia'}>{e.activo ? 'Activo' : 'Inactivo'}</Insignia></TablaTd>
                           <TablaTd className="text-right">
                             <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => abrirUsuariosEntidad(e)} className="p-1 rounded hover:bg-fondo text-texto-muted hover:text-primario transition-colors" title="Usuarios"><Users size={14} /></button>
                               <button onClick={() => abrirEditarEntidad(e)} className="p-1 rounded hover:bg-fondo text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                               {e.activo && (
                                 <button onClick={() => setConfirmarDesactivar(e)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Desactivar"><X size={14} /></button>
@@ -526,6 +602,86 @@ export default function PaginaGrupos() {
           <div className="flex gap-3 justify-end pt-2">
             <Boton variante="contorno" onClick={() => setModalEntidad(false)}>Cancelar</Boton>
             <Boton variante="primario" onClick={guardarEntidad} cargando={guardandoEntidad}>{entidadEditando ? 'Guardar' : 'Crear entidad'}</Boton>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal usuarios de entidad */}
+      <Modal abierto={modalUsuariosEntidad} alCerrar={() => setModalUsuariosEntidad(false)} titulo={`Usuarios de: ${entidadParaUsuarios?.nombre || ''}`}>
+        <div className="flex flex-col gap-4">
+          {/* Selector buscable */}
+          <div className="flex gap-2">
+            <div className="flex-1 relative" ref={dropdownEntRef}>
+              <div className="relative">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
+                <input
+                  type="text"
+                  placeholder="Buscar usuario por nombre o correo..."
+                  value={busquedaUsuarioEnt}
+                  onChange={(e) => { setBusquedaUsuarioEnt(e.target.value); setDropdownEntAbierto(true); setUsuarioNuevoEnt('') }}
+                  onFocus={() => setDropdownEntAbierto(true)}
+                  className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                />
+              </div>
+              {dropdownEntAbierto && busquedaUsuarioEnt.length > 0 && (
+                <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {usuariosFiltradosEnt.length === 0 ? (
+                    <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron usuarios</div>
+                  ) : usuariosFiltradosEnt.slice(0, 20).map((u) => (
+                    <button
+                      key={u.codigo_usuario}
+                      onClick={() => {
+                        setUsuarioNuevoEnt(u.codigo_usuario)
+                        setBusquedaUsuarioEnt(`${u.nombre} (${u.codigo_usuario})`)
+                        setDropdownEntAbierto(false)
+                      }}
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
+                    >
+                      <span className="font-medium">{u.nombre}</span>
+                      <span className="ml-2 text-texto-muted text-xs">{u.codigo_usuario}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <Boton
+              variante="primario"
+              onClick={asignarUsuarioAEntidad}
+              cargando={asignandoUsuarioEnt}
+              disabled={!usuarioNuevoEnt}
+            >
+              <Plus size={14} />
+              Asignar
+            </Boton>
+          </div>
+
+          {/* Lista de usuarios asignados */}
+          {cargandoUsuariosEntidad ? (
+            <div className="text-sm text-texto-muted text-center py-4">Cargando...</div>
+          ) : usuariosEntidad.length === 0 ? (
+            <div className="text-sm text-texto-muted text-center py-4">No hay usuarios asignados a esta entidad</div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {usuariosEntidad.map((u) => (
+                <div key={u.codigo_usuario} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
+                  <div>
+                    <span className="text-sm font-medium text-texto">{u.usuarios?.nombre_usuario ?? u.codigo_usuario}</span>
+                    <span className="ml-2 text-xs text-texto-muted">{u.codigo_usuario}</span>
+                  </div>
+                  <button
+                    onClick={() => quitarUsuarioDeEntidad(u.codigo_usuario)}
+                    className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                    title="Quitar"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div className="flex justify-end pt-2">
+            <Boton variante="contorno" onClick={() => setModalUsuariosEntidad(false)}>Cerrar</Boton>
           </div>
         </div>
       </Modal>

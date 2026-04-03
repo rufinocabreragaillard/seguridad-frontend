@@ -202,6 +202,10 @@ export const entidadesApi = {
   eliminarParametro: (idEntidad: string, categoria: string, tipo: string) =>
     api.delete(`/entidades/${idEntidad}/parametros/${categoria}/${tipo}`),
   desactivar: (id: string) => api.delete(`/entidades/${id}`),
+  listarUsuarios: (id: string) =>
+    api.get<{ codigo_usuario: string; usuarios: { nombre_usuario: string; activo: boolean } }[]>(
+      `/entidades/${id}/usuarios`
+    ).then((r) => r.data),
 }
 
 // ─── Grupos de Entidades ──────────────────────────────────────────────────────
