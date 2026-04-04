@@ -720,11 +720,11 @@ export default function PaginaUsuarios() {
                 <div className="flex flex-col gap-2">
                   {[1, 2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}
                 </div>
-              ) : rolesUsuario.length === 0 ? (
-                <p className="text-sm text-texto-muted text-center py-4">No tiene roles adicionales asignados</p>
+              ) : rolesUsuario.filter((ra) => ra.codigo_grupo === grupoActivo).length === 0 ? (
+                <p className="text-sm text-texto-muted text-center py-4">No tiene roles asignados en este grupo</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {rolesUsuario.map((ra, idx) => {
+                  {rolesUsuario.filter((ra) => ra.codigo_grupo === grupoActivo).map((ra, idx, arr) => {
                     const esPrincipal = form.rol_principal === ra.codigo_rol
                     return (
                       <div
@@ -744,7 +744,7 @@ export default function PaginaUsuarios() {
                           </button>
                           <button
                             onClick={() => moverRol(idx, 'abajo')}
-                            disabled={idx === rolesUsuario.length - 1}
+                            disabled={idx === arr.length - 1}
                             className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                             title="Bajar"
                           >
