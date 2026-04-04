@@ -65,7 +65,7 @@ export default function PaginaEntidades() {
   const cargar = useCallback(async () => {
     setCargando(true)
     try {
-      const [e, r, f] = await Promise.all([entidadesApi.listar(), rolesApi.listar(), funcionesApi.listar()])
+      const [e, r, f] = await Promise.all([entidadesApi.listar(), rolesApi.listar(), funcionesApi.listar(grupoActivo || undefined)])
       setEntidades(e)
       setRoles(r)
       setAllFunciones(f)
@@ -73,7 +73,8 @@ export default function PaginaEntidades() {
     } finally {
       setCargando(false)
     }
-  }, [entidadSeleccionada])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entidadSeleccionada, grupoActivo])
 
   const cargarAreas = useCallback(async (codigoEntidad: string) => {
     setCargandoAreas(true)

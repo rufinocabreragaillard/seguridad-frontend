@@ -44,6 +44,9 @@ export default function PaginaUsuarios() {
   const [rolesUsuario, setRolesUsuario] = useState<RolAsignado[]>([])
   const [cargandoRoles, setCargandoRoles] = useState(false)
   const [rolNuevo, setRolNuevo] = useState('')
+  const [busquedaRol, setBusquedaRol] = useState('')
+  const [dropdownRolAbierto, setDropdownRolAbierto] = useState(false)
+  const dropdownRolRef = useRef<HTMLDivElement>(null)
   const [asignandoRol, setAsignandoRol] = useState(false)
 
   // ── Grupos del usuario (para dropdown de grupo_por_defecto) ────────────────
@@ -54,6 +57,9 @@ export default function PaginaUsuarios() {
   const [entidadesUsuario, setEntidadesUsuario] = useState<EntidadAsignada[]>([])
   const [cargandoEntidades, setCargandoEntidades] = useState(false)
   const [entidadNueva, setEntidadNueva] = useState('')
+  const [busquedaEntidad, setBusquedaEntidad] = useState('')
+  const [dropdownEntidadAbierto, setDropdownEntidadAbierto] = useState(false)
+  const dropdownEntidadRef = useRef<HTMLDivElement>(null)
   const [asignandoEntidad, setAsignandoEntidad] = useState(false)
 
   // Áreas de la entidad seleccionada para ASIGNAR (pestaña Entidades)
@@ -209,7 +215,9 @@ export default function PaginaUsuarios() {
     setGuardando(false)
     setTabActiva('datos')
     setRolNuevo('')
+    setBusquedaRol('')
     setEntidadNueva('')
+    setBusquedaEntidad('')
     setAreaNueva('')
     setAreasParaEntidad([])
     setAreasParaDefault([])
@@ -264,6 +272,7 @@ export default function PaginaUsuarios() {
     try {
       await usuariosApi.asignarRol(usuarioEditando.codigo_usuario, rolNuevo, grupoActivo || 'ADMIN')
       setRolNuevo('')
+      setBusquedaRol('')
       await cargarRolesUsuario(usuarioEditando.codigo_usuario)
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al asignar rol') }
     finally { setAsignandoRol(false) }
@@ -320,6 +329,7 @@ export default function PaginaUsuarios() {
         areaNueva || undefined,
       )
       setEntidadNueva('')
+      setBusquedaEntidad('')
       setAreaNueva('')
       setAreasParaEntidad([])
       await cargarEntidadesUsuario(usuarioEditando.codigo_usuario)
@@ -353,14 +363,34 @@ export default function PaginaUsuarios() {
     }
   }
 
+  // ── Click-outside para dropdowns buscables ─────────────────────────────────
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRolRef.current && !dropdownRolRef.current.contains(e.target as Node)) setDropdownRolAbierto(false)
+      if (dropdownEntidadRef.current && !dropdownEntidadRef.current.contains(e.target as Node)) setDropdownEntidadAbierto(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   // ── Listas derivadas ───────────────────────────────────────────────────────
   const rolesDisponibles = roles.filter((r) =>
-    r.activo && !rolesUsuario.some((ra) => ra.codigo_rol === r.codigo_rol)
+    r.activo && !rolesUsuario.some((ra) => ra.codigo_grupo === r.codigo_grupo && ra.codigo_rol === r.codigo_rol)
+  )
+  const rolesDisponiblesFiltrados = rolesDisponibles.filter((r) =>
+    busquedaRol.length === 0 ||
+    r.nombre.toLowerCase().includes(busquedaRol.toLowerCase()) ||
+    r.codigo_rol.toLowerCase().includes(busquedaRol.toLowerCase())
   )
 
   const entidadesDisponibles = entidades.filter((e) =>
     e.activo !== false &&
     !entidadesUsuario.some((ea) => ea.codigo_entidad === e.codigo_entidad)
+  )
+  const entidadesDisponiblesFiltradas = entidadesDisponibles.filter((e) =>
+    busquedaEntidad.length === 0 ||
+    e.nombre.toLowerCase().includes(busquedaEntidad.toLowerCase()) ||
+    e.codigo_entidad.toLowerCase().includes(busquedaEntidad.toLowerCase())
   )
 
   // Grupos únicos del usuario, derivados de sus entidades asignadas
@@ -733,17 +763,38 @@ export default function PaginaUsuarios() {
             <div className="flex flex-col gap-4">
               {/* Asignar nuevo rol */}
               <div className="flex gap-2">
-                <div className="flex-1">
-                  <select
-                    value={rolNuevo}
-                    onChange={(e) => setRolNuevo(e.target.value)}
-                    className={selectClass}
-                  >
-                    <option value="">Seleccionar rol...</option>
-                    {rolesDisponibles.map((r) => (
-                      <option key={r.codigo_rol} value={r.codigo_rol}>{r.nombre}</option>
-                    ))}
-                  </select>
+                <div className="flex-1 relative" ref={dropdownRolRef}>
+                  <div className="relative">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
+                    <input
+                      type="text"
+                      placeholder="Buscar rol por nombre o código..."
+                      value={busquedaRol}
+                      onChange={(e) => { setBusquedaRol(e.target.value); setDropdownRolAbierto(true); setRolNuevo('') }}
+                      onFocus={() => setDropdownRolAbierto(true)}
+                      className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                    />
+                  </div>
+                  {dropdownRolAbierto && (
+                    <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {rolesDisponiblesFiltrados.length === 0 ? (
+                        <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron roles</div>
+                      ) : rolesDisponiblesFiltrados.slice(0, 20).map((r) => (
+                        <button
+                          key={r.codigo_rol}
+                          onClick={() => {
+                            setRolNuevo(r.codigo_rol)
+                            setBusquedaRol(`${r.nombre} (${r.codigo_rol})`)
+                            setDropdownRolAbierto(false)
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
+                        >
+                          <span className="font-medium">{r.nombre}</span>
+                          <span className="ml-2 text-texto-muted text-xs">{r.codigo_rol}</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <Boton variante="primario" onClick={asignarRol} cargando={asignandoRol} disabled={!rolNuevo}>
                   <Plus size={14} /> Asignar
@@ -834,17 +885,38 @@ export default function PaginaUsuarios() {
               {/* Asignar nueva entidad */}
               <div className="flex flex-col gap-2">
                 <div className="flex gap-2">
-                  <div className="flex-1">
-                    <select
-                      value={entidadNueva}
-                      onChange={(e) => setEntidadNueva(e.target.value)}
-                      className={selectClass}
-                    >
-                      <option value="">Seleccionar entidad...</option>
-                      {entidadesDisponibles.map((e) => (
-                        <option key={e.codigo_entidad} value={e.codigo_entidad}>{e.nombre}</option>
-                      ))}
-                    </select>
+                  <div className="flex-1 relative" ref={dropdownEntidadRef}>
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
+                      <input
+                        type="text"
+                        placeholder="Buscar entidad por nombre o código..."
+                        value={busquedaEntidad}
+                        onChange={(e) => { setBusquedaEntidad(e.target.value); setDropdownEntidadAbierto(true); setEntidadNueva('') }}
+                        onFocus={() => setDropdownEntidadAbierto(true)}
+                        className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                      />
+                    </div>
+                    {dropdownEntidadAbierto && (
+                      <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                        {entidadesDisponiblesFiltradas.length === 0 ? (
+                          <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron entidades</div>
+                        ) : entidadesDisponiblesFiltradas.slice(0, 20).map((e) => (
+                          <button
+                            key={e.codigo_entidad}
+                            onClick={() => {
+                              setEntidadNueva(e.codigo_entidad)
+                              setBusquedaEntidad(`${e.nombre} (${e.codigo_entidad})`)
+                              setDropdownEntidadAbierto(false)
+                            }}
+                            className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
+                          >
+                            <span className="font-medium">{e.nombre}</span>
+                            <span className="ml-2 text-texto-muted text-xs">{e.codigo_entidad}</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <Boton
                     variante="primario"
