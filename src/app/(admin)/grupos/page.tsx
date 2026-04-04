@@ -26,6 +26,7 @@ export default function PaginaGrupos() {
   const [cargando, setCargando] = useState(true)
   const [cargandoDetalle, setCargandoDetalle] = useState(false)
   const [tabActivo, setTabActivo] = useState<'entidades' | 'usuarios'>('entidades')
+  const [busquedaGrupos, setBusquedaGrupos] = useState('')
   const [busquedaEntidades, setBusquedaEntidades] = useState('')
   const [busquedaUsuariosLista, setBusquedaUsuariosLista] = useState('')
 
@@ -308,13 +309,27 @@ export default function PaginaGrupos() {
         {/* Lista de grupos */}
         <div className="flex flex-col gap-2">
           <h3 className="text-sm font-semibold text-texto-muted uppercase tracking-wider px-1">Grupos</h3>
+          <div className="relative">
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
+            <input
+              type="text"
+              placeholder="Filtrar grupos..."
+              value={busquedaGrupos}
+              onChange={(e) => setBusquedaGrupos(e.target.value)}
+              className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+            />
+          </div>
           {cargando ? (
             <div className="flex flex-col gap-2">
               {Array.from({ length: 3 }).map((_, i) => (
                 <div key={i} className="h-16 bg-surface border border-borde rounded-xl animate-pulse" />
               ))}
             </div>
-          ) : grupos.map((g) => (
+          ) : grupos.filter((g) =>
+            busquedaGrupos.length === 0 ||
+            g.nombre.toLowerCase().includes(busquedaGrupos.toLowerCase()) ||
+            g.codigo_grupo.toLowerCase().includes(busquedaGrupos.toLowerCase())
+          ).map((g) => (
             <button
               key={g.codigo_grupo}
               onClick={() => setGrupoSeleccionado(g)}
