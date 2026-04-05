@@ -86,7 +86,7 @@ export default function PaginaDashboard() {
 
   const hora = new Date().getHours()
   const saludo = hora < 12 ? 'Buenos días' : hora < 19 ? 'Buenas tardes' : 'Buenas noches'
-  const nombre = usuario?.nombre?.split(' ')[0] || 'Usuario'
+  const nombre = usuario?.alias || usuario?.nombre?.split(' ')[0] || 'Usuario'
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl">

@@ -164,8 +164,9 @@ export function Header({ titulo }: { titulo?: string }) {
     (g) => g.codigo_grupo === usuario?.grupo_activo
   )
 
-  const iniciales = usuario?.nombre
-    ? usuario.nombre.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
+  const nombreMostrar = usuario?.alias || usuario?.nombre || ''
+  const iniciales = nombreMostrar
+    ? nombreMostrar.split(' ').map((n) => n[0]).slice(0, 2).join('').toUpperCase()
     : '?'
 
   const tieneMultiplesGrupos = (usuario?.grupos?.length ?? 0) > 1
@@ -277,8 +278,7 @@ export function Header({ titulo }: { titulo?: string }) {
                   <Avatar.Fallback className="text-white text-xs font-semibold">{iniciales}</Avatar.Fallback>
                 </Avatar.Root>
                 <div className="text-left hidden sm:block">
-                  <p className="text-xs font-medium text-texto leading-none truncate max-w-[120px]">{usuario?.nombre}</p>
-                  <p className="text-[11px] text-texto-muted truncate max-w-[120px]">{usuario?.rol_principal}</p>
+                  <p className="text-xs font-medium text-texto leading-none truncate max-w-[120px]">{nombreMostrar}</p>
                 </div>
               </button>
             </DropdownMenu.Trigger>
