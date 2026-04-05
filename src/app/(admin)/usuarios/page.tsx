@@ -392,9 +392,12 @@ export default function PaginaUsuarios() {
     r.codigo_rol.toLowerCase().includes(busquedaRol.toLowerCase())
   )
 
+  // Entidades del usuario en el grupo activo (para tab Entidades)
+  const entidadesUsuarioGrupoActivo = entidadesUsuario.filter((ea) => ea.codigo_grupo === grupoActivo)
+
   const entidadesDisponibles = entidades.filter((e) =>
     e.activo !== false &&
-    !entidadesUsuario.some((ea) => ea.codigo_entidad === e.codigo_entidad)
+    !entidadesUsuarioGrupoActivo.some((ea) => ea.codigo_entidad === e.codigo_entidad)
   )
   const entidadesDisponiblesFiltradas = entidadesDisponibles.filter((e) =>
     busquedaEntidad.length === 0 ||
@@ -850,11 +853,11 @@ export default function PaginaUsuarios() {
                 <div className="flex flex-col gap-2">
                   {[1, 2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}
                 </div>
-              ) : entidadesUsuario.length === 0 ? (
-                <p className="text-sm text-texto-muted text-center py-4">No tiene entidades asignadas</p>
+              ) : entidadesUsuarioGrupoActivo.length === 0 ? (
+                <p className="text-sm text-texto-muted text-center py-4">No tiene entidades asignadas en este grupo</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {entidadesUsuario.map((ea) => (
+                  {entidadesUsuarioGrupoActivo.map((ea) => (
                     <div
                       key={ea.codigo_entidad}
                       className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"
@@ -896,7 +899,7 @@ export default function PaginaUsuarios() {
           {/* ── Tab Roles del usuario ─────────────────────────────────────── */}
           {tabActiva === 'roles' && usuarioEditando && (
             <div className="flex flex-col gap-4">
-              {entidadesUsuario.filter((ea) => ea.codigo_grupo === grupoActivo).length === 0 ? (
+              {entidadesUsuarioGrupoActivo.length === 0 ? (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
                   <p className="text-sm text-yellow-700">
                     Debe asignar al menos una entidad de este grupo antes de asignar roles. Vaya a la pestaña &quot;Entidades&quot;.

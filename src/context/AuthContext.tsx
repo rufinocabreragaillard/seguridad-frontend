@@ -55,9 +55,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUsuario(ctx)
       actualizarMapaFunciones(ctx.menu)
       return ctx
-    } catch {
+    } catch (e: unknown) {
       setUsuario(null)
       actualizarMapaFunciones()
+      let msg = 'Error al cargar datos del usuario'
+      if (e instanceof Error) {
+        msg =
+          e.message === 'Network Error'
+            ? 'No se pudo conectar con el servidor. Verifique su conexión o intente más tarde.'
+            : e.message
+      }
+      setError(msg)
       return null
     }
   }, [])
@@ -96,6 +104,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
               setCargando(false)
               if (ctx) {
                 router.push(ctx.url_inicio || '/dashboard')
+              } else {
+                // Backend rechazó: cerrar sesión de Supabase para permitir reintento
+                await supabase.auth.signOut()
               }
             }
           }

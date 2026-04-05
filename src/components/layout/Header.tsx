@@ -63,6 +63,11 @@ export function Header({ titulo }: { titulo?: string }) {
     try {
       await cambiarAplicacion(codigoApp)
       setModalAplicacion(false)
+      // Navegar a la URL base de la app seleccionada
+      const urlBase = usuario?.aplicaciones_url?.[codigoApp]
+      if (urlBase) {
+        window.location.href = urlBase
+      }
     } catch {
       // error manejado en AuthContext
     } finally {
