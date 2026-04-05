@@ -14,7 +14,9 @@ export default function AuthCallback() {
     // intercambio es asíncrono y aún no ha terminado.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
+        if (event === 'PASSWORD_RECOVERY' && session) {
+          router.push('/auth/reset-password')
+        } else if (event === 'SIGNED_IN' && session) {
           router.push('/dashboard')
         } else if (event === 'SIGNED_OUT') {
           router.push('/login')

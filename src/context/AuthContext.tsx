@@ -6,6 +6,7 @@ import {
   useEffect,
   useState,
   useCallback,
+  useMemo,
   useRef,
   type ReactNode,
 } from 'react'
@@ -14,7 +15,7 @@ import { supabase } from '@/lib/supabase'
 import { authApi } from '@/lib/api'
 import type { UsuarioContexto } from '@/lib/tipos'
 
-const PUBLIC_ROUTES = ['/login', '/auth/callback']
+const PUBLIC_ROUTES = ['/login', '/auth/callback', '/auth/reset-password']
 
 interface AuthContextType {
   usuario: UsuarioContexto | null
@@ -26,6 +27,7 @@ interface AuthContextType {
   cambiarEntidad: (codigoEntidad: string) => Promise<void>
   cambiarGrupo: (codigoGrupo: string) => Promise<void>
   tieneFuncion: (codigoFuncion: string) => boolean
+  tieneAccesoRuta: (ruta: string) => boolean
   esAdmin: () => boolean
   esSuperAdmin: () => boolean
   entidadActiva: string | null
@@ -205,6 +207,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const tieneFuncion = (codigoFuncion: string) =>
     usuario?.funciones?.includes(codigoFuncion) ?? false
 
+  // URLs permitidas extraídas del menú dinámico (se recalcula solo cuando cambia usuario)
+  const urlsPermitidas = useMemo(() => {
+    const urls = new Set<string>(['/dashboard']) // dashboard siempre accesible
+    if (usuario?.menu) {
+      for (const rol of usuario.menu) {
+        for (const fn of rol.funciones) {
+          if (fn.url) urls.add(fn.url)
+        }
+      }
+    }
+    return urls
+  }, [usuario])
+
+  const tieneAccesoRuta = useCallback((ruta: string) => {
+    if (!usuario) return false
+    // Super-admins (grupo ADMIN) tienen acceso a todo
+    if (usuario.grupos?.some((g) => g.codigo_grupo === 'ADMIN')) return true
+    // Verificar si la ruta coincide con alguna URL del menú
+    for (const url of urlsPermitidas) {
+      if (ruta === url || ruta.startsWith(url + '/')) return true
+    }
+    return false
+  }, [usuario, urlsPermitidas])
+
   const esAdmin = () =>
     usuario?.roles?.includes('ADMIN') || usuario?.rol_principal === 'ADMIN' ? true : false
 
@@ -218,8 +244,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     <AuthContext.Provider
       value={{
         usuario, cargando, error, login, loginConGoogle, logout,
-        cambiarEntidad, cambiarGrupo, tieneFuncion, esAdmin, esSuperAdmin,
-        entidadActiva, grupoActivo,
+        cambiarEntidad, cambiarGrupo, tieneFuncion, tieneAccesoRuta,
+        esAdmin, esSuperAdmin, entidadActiva, grupoActivo,
       }}
     >
       {children}

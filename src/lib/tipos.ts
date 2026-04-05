@@ -325,6 +325,69 @@ export interface Documento {
   activo: boolean
 }
 
+// ─── Personas ───────────────────────────────────────────────────────────────
+
+export interface TipoDocumentoPersona {
+  codigo_grupo: string
+  codigo_tipo_doc: string
+  nombre: string
+  descripcion?: string | null
+  activo: boolean
+}
+
+export interface Persona {
+  id_persona: number
+  codigo_grupo: string
+  codigo_entidad?: string | null
+  nombre: string
+  codigo_tipo_doc?: string | null
+  documento_id?: string | null
+  activo: boolean
+}
+
+export interface CategoriaCaractPers {
+  codigo_grupo: string
+  codigo_cat_pers: string
+  nombre_cat_pers: string
+  descripcion_cat_pers?: string | null
+  es_unica_pers: boolean
+  editable_en_detalle_pers: boolean
+  activo: boolean
+}
+
+export interface TipoCaractPers {
+  codigo_grupo: string
+  codigo_cat_pers: string
+  codigo_tipo_pers: string
+  nombre_tipo_pers: string
+  activo: boolean
+}
+
+export interface CaracteristicaPersona {
+  id_caracteristica_pers: number
+  id_persona: number
+  codigo_grupo: string
+  codigo_cat_pers: string
+  codigo_tipo_pers: string
+  valor_texto_pers?: string | null
+  valor_numerico_pers?: number | null
+  valor_fecha_pers?: string | null
+  tipos_caract_pers?: { nombre_tipo_pers: string } | null
+}
+
+export interface RolCaractPers {
+  codigo_grupo: string
+  codigo_rol: string
+  codigo_cat_pers: string
+  orden: number
+  roles?: { nombre_rol: string; activo: boolean } | null
+}
+
+export interface CategoriaConCaracteristicas {
+  categoria: CategoriaCaractPers
+  caracteristicas: CaracteristicaPersona[]
+}
+
 // ─── Utilitarios ─────────────────────────────────────────────────────────────
 
 export interface RespuestaPaginada<T> {

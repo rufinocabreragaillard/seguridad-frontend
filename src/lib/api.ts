@@ -16,6 +16,13 @@ import type {
   TipoParametro,
   Aplicacion,
   Documento,
+  TipoDocumentoPersona,
+  Persona,
+  CategoriaCaractPers,
+  TipoCaractPers,
+  CaracteristicaPersona,
+  CategoriaConCaracteristicas,
+  RolCaractPers,
   EstadoCanonicoConversacion,
   EstadoCanonicoCompromiso,
   TipoConversacion,
@@ -289,6 +296,78 @@ export const datosBasicosApi = {
     api.put<TipoParametro>(`/datos-basicos/tipos/${categoria}/${tipo}`, datos).then((r) => r.data),
   eliminarTipo: (categoria: string, tipo: string) =>
     api.delete(`/datos-basicos/tipos/${categoria}/${tipo}`),
+}
+
+// ─── Documentos ──────────────────────────────────────────────────────────────
+
+export const documentosApi = {
+  listar: () => api.get<Documento[]>('/documentos').then((r) => r.data),
+  crear: (datos: Partial<Documento>) =>
+    api.post<Documento>('/documentos', datos).then((r) => r.data),
+  actualizar: (id: number, datos: Partial<Documento>) =>
+    api.put<Documento>(`/documentos/${id}`, datos).then((r) => r.data),
+  desactivar: (id: number) => api.delete(`/documentos/${id}`),
+}
+
+// ─── Tipos Documento Persona ─────────────────────────────────────────────────
+
+export const tiposDocumentoPersonaApi = {
+  listar: () => api.get<TipoDocumentoPersona[]>('/tipos-documento-persona').then((r) => r.data),
+  crear: (datos: Partial<TipoDocumentoPersona>) =>
+    api.post<TipoDocumentoPersona>('/tipos-documento-persona', datos).then((r) => r.data),
+  actualizar: (codigo: string, datos: Partial<TipoDocumentoPersona>) =>
+    api.put<TipoDocumentoPersona>(`/tipos-documento-persona/${codigo}`, datos).then((r) => r.data),
+  desactivar: (codigo: string) => api.delete(`/tipos-documento-persona/${codigo}`),
+}
+
+// ─── Categorías Características Persona ─────────────────────────────────────
+
+export const categoriasCaractPersApi = {
+  listar: () => api.get<CategoriaCaractPers[]>('/categorias-caracteristica').then((r) => r.data),
+  crear: (datos: Partial<CategoriaCaractPers>) =>
+    api.post<CategoriaCaractPers>('/categorias-caracteristica', datos).then((r) => r.data),
+  actualizar: (codigo: string, datos: Partial<CategoriaCaractPers>) =>
+    api.put<CategoriaCaractPers>(`/categorias-caracteristica/${codigo}`, datos).then((r) => r.data),
+  desactivar: (codigo: string) => api.delete(`/categorias-caracteristica/${codigo}`),
+  // Tipos
+  listarTipos: (codigo: string) =>
+    api.get<TipoCaractPers[]>(`/categorias-caracteristica/${codigo}/tipos`).then((r) => r.data),
+  crearTipo: (codigo: string, datos: Partial<TipoCaractPers>) =>
+    api.post<TipoCaractPers>(`/categorias-caracteristica/${codigo}/tipos`, datos).then((r) => r.data),
+  actualizarTipo: (codigo: string, codigoTipo: string, datos: Partial<TipoCaractPers>) =>
+    api.put<TipoCaractPers>(`/categorias-caracteristica/${codigo}/tipos/${codigoTipo}`, datos).then((r) => r.data),
+  desactivarTipo: (codigo: string, codigoTipo: string) =>
+    api.delete(`/categorias-caracteristica/${codigo}/tipos/${codigoTipo}`),
+  // Roles
+  listarRoles: (codigo: string) =>
+    api.get<RolCaractPers[]>(`/categorias-caracteristica/${codigo}/roles`).then((r) => r.data),
+  asignarRol: (codigo: string, codigoRol: string) =>
+    api.post(`/categorias-caracteristica/${codigo}/roles`, { codigo_rol: codigoRol }),
+  reordenarRoles: (codigo: string, orden: { codigo_rol: string; orden: number }[]) =>
+    api.put(`/categorias-caracteristica/${codigo}/roles/orden`, orden),
+  quitarRol: (codigo: string, codigoRol: string) =>
+    api.delete(`/categorias-caracteristica/${codigo}/roles/${codigoRol}`),
+}
+
+// ─── Personas ────────────────────────────────────────────────────────────────
+
+export const personasApi = {
+  listar: (search?: string) =>
+    api.get<Persona[]>('/personas', { params: search ? { search } : {} }).then((r) => r.data),
+  crear: (datos: Partial<Persona>) =>
+    api.post<Persona>('/personas', datos).then((r) => r.data),
+  actualizar: (id: number, datos: Partial<Persona>) =>
+    api.put<Persona>(`/personas/${id}`, datos).then((r) => r.data),
+  desactivar: (id: number) => api.delete(`/personas/${id}`),
+  // Características
+  listarCaracteristicas: (id: number) =>
+    api.get<CategoriaConCaracteristicas[]>(`/personas/${id}/caracteristicas`).then((r) => r.data),
+  crearCaracteristica: (id: number, datos: Partial<CaracteristicaPersona>) =>
+    api.post<CaracteristicaPersona>(`/personas/${id}/caracteristicas`, datos).then((r) => r.data),
+  actualizarCaracteristica: (id: number, idCar: number, datos: Partial<CaracteristicaPersona>) =>
+    api.put<CaracteristicaPersona>(`/personas/${id}/caracteristicas/${idCar}`, datos).then((r) => r.data),
+  eliminarCaracteristica: (id: number, idCar: number) =>
+    api.delete(`/personas/${id}/caracteristicas/${idCar}`),
 }
 
 // ─── Compromisos: Datos Básicos ──────────────────────────────────────────────
