@@ -38,6 +38,7 @@ import type {
   Conversacion,
   ParticipanteConversacion,
   Compromiso,
+  UbicacionDoc,
 } from './tipos'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -551,6 +552,27 @@ export const compromisosApi = {
     api.put(`/compromisos/compromisos-lista/${id}`, datos).then((r) => r.data),
   eliminarCompromiso: (id: number) =>
     api.delete(`/compromisos/compromisos-lista/${id}`),
+}
+
+// ─── Ubicaciones Docs ──────────────────────────────────────────────────────
+
+export const ubicacionesDocsApi = {
+  listar: (codigoEntidad?: string) =>
+    api.get<UbicacionDoc[]>('/ubicaciones-docs', { params: codigoEntidad ? { codigo_entidad: codigoEntidad } : undefined }).then((r) => r.data),
+  crear: (datos: Partial<UbicacionDoc>) =>
+    api.post<UbicacionDoc>('/ubicaciones-docs', datos).then((r) => r.data),
+  actualizar: (codigo: string, datos: Partial<UbicacionDoc>) =>
+    api.put<UbicacionDoc>(`/ubicaciones-docs/${codigo}`, datos).then((r) => r.data),
+  desactivar: (codigo: string) => api.delete(`/ubicaciones-docs/${codigo}`),
+  sincronizar: (datos: { codigo_entidad?: string; directorios: { codigo_ubicacion: string; nombre_ubicacion: string; codigo_ubicacion_superior: string | null; ruta_completa: string; nivel: number }[] }) =>
+    api.post<{ insertadas: number; eliminadas: number; actualizadas: number; total: number }>('/ubicaciones-docs/sincronizar', datos).then((r) => r.data),
+  // Documentos en ubicación
+  listarDocumentos: (codigo: string) =>
+    api.get(`/ubicaciones-docs/${codigo}/documentos`).then((r) => r.data),
+  asignarDocumento: (codigo: string, idDoc: number) =>
+    api.post(`/ubicaciones-docs/${codigo}/documentos/${idDoc}`).then((r) => r.data),
+  quitarDocumento: (codigo: string, idDoc: number) =>
+    api.delete(`/ubicaciones-docs/${codigo}/documentos/${idDoc}`),
 }
 
 export default api

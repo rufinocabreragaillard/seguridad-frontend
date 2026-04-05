@@ -29,6 +29,7 @@ import {
   Key,
   UserCheck,
   FolderOpen,
+  FolderTree,
   Globe,
   Briefcase,
   Calendar,
@@ -84,6 +85,7 @@ const iconMap: Record<string, LucideIcon> = {
   Layers,
   Briefcase,
   FolderOpen,
+  FolderTree,
 
   // Configuracion
   Settings,

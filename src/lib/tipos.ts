@@ -450,6 +450,21 @@ export interface CategoriaConCaracteristicasDocs {
   caracteristicas: CaracteristicaDocumento[]
 }
 
+// ─── Ubicaciones Docs ──────────────────────────────────────────────────────
+
+export interface UbicacionDoc {
+  codigo_ubicacion: string
+  codigo_grupo: string
+  codigo_entidad?: string | null
+  nombre_ubicacion: string
+  descripcion?: string | null
+  codigo_ubicacion_superior?: string | null
+  ruta_completa?: string | null
+  nivel: number
+  orden: number
+  activo: boolean
+}
+
 // ─── Utilitarios ─────────────────────────────────────────────────────────────
 
 export interface RespuestaPaginada<T> {
