@@ -399,6 +399,14 @@ export const documentosApi = {
     api.put<CaracteristicaGeneDocumento>(`/documentos/${id}/caracteristicas-genericas/${idCar}`, datos).then((r) => r.data),
   eliminarCaracteristicaGenerica: (id: number, idCar: number) =>
     api.delete(`/documentos/${id}/caracteristicas-genericas/${idCar}`),
+  // Procesamiento LLM
+  resumir: (id: number, texto: string, idModelo: number) =>
+    api.post<{ resumen: string; tiempo_ms: number; modelo: string }>(`/documentos/${id}/resumir`, { texto, id_modelo: idModelo }, { timeout: 120000 }).then((r) => r.data),
+  escanear: (id: number, idModelo: number) =>
+    api.post<{ clasificaciones: { categoria: string; valor: string }[]; tiempo_ms: number; modelo: string }>(`/documentos/${id}/escanear`, { id_modelo: idModelo }, { timeout: 120000 }).then((r) => r.data),
+  // Carga desde ubicaciones
+  cargarDesdeUbicaciones: (archivos: { nombre_documento: string; ubicacion_documento: string; tamano_kb: number; fecha_modificacion: string; ruta_directorio: string }[]) =>
+    api.post<{ insertados: number; actualizados: number }>('/documentos/cargar-desde-ubicaciones', { archivos }).then((r) => r.data),
 }
 
 // ─── Tipos Documento Persona ─────────────────────────────────────────────────
