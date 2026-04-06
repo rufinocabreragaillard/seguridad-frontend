@@ -485,6 +485,19 @@ export interface CategoriaConCaracteristicasGeneDocs {
   caracteristicas: CaracteristicaGeneDocumento[]
 }
 
+// ─── Registro LLM ─────────────────────────────────────────────────────────
+
+export interface RegistroLLM {
+  id_modelo: number
+  proveedor: string
+  nombre_tecnico: string
+  nombre_visible: string
+  descripcion?: string | null
+  estado_valido: boolean
+  fecha_validacion?: string | null
+  activo: boolean
+}
+
 // ─── Estados Docs ──────────────────────────────────────────────────────────
 
 export interface EstadoDoc {

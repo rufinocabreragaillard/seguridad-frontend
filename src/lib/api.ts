@@ -1,6 +1,6 @@
 import axios, { AxiosError } from 'axios'
 import { obtenerToken } from './supabase'
-import type { RolMenu } from './tipos'
+import type { RolMenu, RegistroLLM } from './tipos'
 import type {
   UsuarioContexto,
   Usuario,
@@ -486,6 +486,17 @@ export const categoriasCaractGeneDocsApi = {
     api.put<TipoCaractGeneDocs>(`/categorias-caracteristica-gene-docs/${codigo}/tipos/${codigoTipo}`, datos).then((r) => r.data),
   desactivarTipo: (codigo: string, codigoTipo: string) =>
     api.delete(`/categorias-caracteristica-gene-docs/${codigo}/tipos/${codigoTipo}`),
+}
+
+// ─── Registro LLM ───────────────────────────────────────────────────────────
+
+export const registroLLMApi = {
+  listar: () => api.get<RegistroLLM[]>('/registro-llm').then((r) => r.data),
+  crear: (datos: Partial<RegistroLLM>) =>
+    api.post<RegistroLLM>('/registro-llm', datos).then((r) => r.data),
+  actualizar: (id: number, datos: Partial<RegistroLLM>) =>
+    api.put<RegistroLLM>(`/registro-llm/${id}`, datos).then((r) => r.data),
+  desactivar: (id: number) => api.delete(`/registro-llm/${id}`),
 }
 
 // ─── Personas ────────────────────────────────────────────────────────────────
