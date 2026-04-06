@@ -141,6 +141,89 @@ export async function escanearDirectorio(): Promise<{
  *
  * @returns null si el usuario canceló, o un solo directorio
  */
+// ── Escaneo de archivos (para carga de documentos) ─────────────────────────
+
+export interface ArchivoEscaneado {
+  nombre: string
+  ruta_completa: string
+  ruta_directorio: string   // ruta del directorio que lo contiene
+  tamano_kb: number
+  fecha_modificacion: string  // ISO 8601
+}
+
+/**
+ * Escanea recursivamente un directorio y retorna todos los archivos
+ * encontrados junto con la ruta del directorio que los contiene.
+ *
+ * @param rutasHabilitadas - Set de rutas de ubicaciones habilitadas en BD.
+ *   Solo se listan archivos de directorios cuya ruta está en este Set.
+ * @returns archivos encontrados + carpetas sin match en BD
+ */
+export async function escanearArchivosDirectorio(): Promise<{
+  nombreRaiz: string
+  archivos: ArchivoEscaneado[]
+  carpetasSinMatch: string[]    // rutas de carpetas que no están en BD
+  rutasEscaneadas: string[]     // todas las rutas de carpetas encontradas
+} | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const dirHandle = await (window as any).showDirectoryPicker().catch(() => null)
+  if (!dirHandle) return null
+
+  const nombreRaiz: string = dirHandle.name
+  const archivos: ArchivoEscaneado[] = []
+  const rutasEscaneadas: string[] = []
+
+  // Recorrer recursivamente y recopilar archivos
+  async function recorrerArchivos(
+    handle: FileSystemDirectoryHandle,
+    rutaActual: string,
+  ): Promise<void> {
+    rutasEscaneadas.push(rutaActual)
+
+    const entries: { handle: FileSystemHandle; kind: string }[] = []
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for await (const entry of (handle as any).values()) {
+      entries.push({ handle: entry, kind: entry.kind })
+    }
+
+    // Archivos de este directorio
+    for (const entry of entries) {
+      if (entry.kind === 'file') {
+        const nombre = entry.handle.name
+        if (nombre.startsWith('.')) continue // ignorar ocultos
+        try {
+          const file = await (entry.handle as FileSystemFileHandle).getFile()
+          archivos.push({
+            nombre: file.name,
+            ruta_completa: `${rutaActual}/${file.name}`,
+            ruta_directorio: rutaActual,
+            tamano_kb: Math.round((file.size / 1024) * 100) / 100,
+            fecha_modificacion: new Date(file.lastModified).toISOString(),
+          })
+        } catch {
+          // archivo no accesible, ignorar
+        }
+      }
+    }
+
+    // Recursión en subdirectorios
+    for (const entry of entries) {
+      if (entry.kind === 'directory') {
+        const nombre = entry.handle.name
+        if (nombre.startsWith('.') || nombre === 'node_modules' || nombre === '__pycache__') continue
+        await recorrerArchivos(
+          entry.handle as FileSystemDirectoryHandle,
+          `${rutaActual}/${nombre}`,
+        )
+      }
+    }
+  }
+
+  await recorrerArchivos(dirHandle, `/${nombreRaiz}`)
+
+  return { nombreRaiz, archivos, carpetasSinMatch: [], rutasEscaneadas }
+}
+
 export async function escanearDirectorioSinHijos(): Promise<{
   nombreRaiz: string
   directorio: DirectorioEscaneado

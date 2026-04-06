@@ -630,4 +630,22 @@ export const ubicacionesDocsApi = {
     api.delete(`/ubicaciones-docs/${codigo}/documentos/${idDoc}`),
 }
 
+// ── Carga masiva de documentos ────────────────────────────────────────────
+
+export const cargaDocumentosApi = {
+  cargar: (datos: {
+    codigo_entidad?: string
+    archivos: {
+      nombre: string
+      ruta_completa: string
+      ruta_directorio: string
+      tamano_kb?: number
+      fecha_modificacion?: string
+    }[]
+  }) =>
+    api.post<{ insertados: number; actualizados: number; total: number }>(
+      '/documentos/cargar-desde-ubicaciones', datos
+    ).then((r) => r.data),
+}
+
 export default api
