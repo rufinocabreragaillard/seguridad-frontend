@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Pencil, Trash2, X, Download, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Download, Search } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,7 +16,6 @@ import { exportarExcel } from '@/lib/exportar-excel'
 
 type FuncionApp = { codigo_funcion: string; funciones: { nombre_funcion: string; activo: boolean } }
 type AppDeFuncion = { codigo_aplicacion: string; aplicaciones?: { nombre_aplicacion: string; activo: boolean } }
-type Dependencia = { codigo_aplicacion_previa: string; orden: number; aplicaciones?: { nombre_aplicacion: string; activo: boolean } }
 type GrupoApp = { codigo_grupo: string; activo: boolean; grupos_entidades: { nombre_grupo: string } }
 
 export default function PaginaAplicacionesFunciones() {
@@ -32,7 +31,7 @@ export default function PaginaAplicacionesFunciones() {
   const [modalApp, setModalApp] = useState(false)
   const [appEditando, setAppEditando] = useState<Aplicacion | null>(null)
   const [formApp, setFormApp] = useState({ codigo_aplicacion: '', nombre: '', descripcion: '' })
-  const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'dependencias' | 'grupos'>('datos')
+  const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'grupos'>('datos')
   const [guardandoApp, setGuardandoApp] = useState(false)
   const [errorApp, setErrorApp] = useState('')
 
@@ -44,12 +43,6 @@ export default function PaginaAplicacionesFunciones() {
   const [busquedaFuncionApp, setBusquedaFuncionApp] = useState('')
   const [dropdownFuncionAppAbierto, setDropdownFuncionAppAbierto] = useState(false)
   const dropdownFuncionAppRef = useRef<HTMLDivElement>(null)
-
-  // Dependencias de la app
-  const [dependenciasApp, setDependenciasApp] = useState<Dependencia[]>([])
-  const [cargandoDeps, setCargandoDeps] = useState(false)
-  const [depNueva, setDepNueva] = useState('')
-  const [asignandoDep, setAsignandoDep] = useState(false)
 
   // Grupos de la app
   const [gruposApp, setGruposApp] = useState<GrupoApp[]>([])
@@ -109,12 +102,6 @@ export default function PaginaAplicacionesFunciones() {
     finally { setCargandoFuncionesApp(false) }
   }, [])
 
-  const cargarDependenciasApp = useCallback(async (c: string) => {
-    setCargandoDeps(true)
-    try { setDependenciasApp(await aplicacionesApi.listarDependencias(c)) } catch { setDependenciasApp([]) }
-    finally { setCargandoDeps(false) }
-  }, [])
-
   const cargarGruposApp = useCallback(async (c: string) => {
     setCargandoGruposApp(true)
     try { setGruposApp(await aplicacionesApi.listarGrupos(c)) } catch { setGruposApp([]) }
@@ -128,7 +115,7 @@ export default function PaginaAplicacionesFunciones() {
   }
   const abrirEditarApp = (a: Aplicacion) => {
     setAppEditando(a); setFormApp({ codigo_aplicacion: a.codigo_aplicacion, nombre: a.nombre, descripcion: a.descripcion || '' })
-    setErrorApp(''); setTabModalApp('datos'); cargarFuncionesApp(a.codigo_aplicacion); cargarDependenciasApp(a.codigo_aplicacion); cargarGruposApp(a.codigo_aplicacion); setModalApp(true)
+    setErrorApp(''); setTabModalApp('datos'); cargarFuncionesApp(a.codigo_aplicacion); cargarGruposApp(a.codigo_aplicacion); setModalApp(true)
   }
   const guardarApp = async () => {
     if (!formApp.codigo_aplicacion || !formApp.nombre) { setErrorApp('Código y nombre son obligatorios'); return }
@@ -151,29 +138,6 @@ export default function PaginaAplicacionesFunciones() {
     if (!appEditando) return
     try { await aplicacionesApi.quitarFuncion(appEditando.codigo_aplicacion, c); cargarFuncionesApp(appEditando.codigo_aplicacion) }
     catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') }
-  }
-
-  // ── Aplicación: dependencias ────────────────────────────────────────────────
-  const asignarDep = async () => {
-    if (!depNueva || !appEditando) return; setAsignandoDep(true)
-    try { await aplicacionesApi.agregarDependencia(appEditando.codigo_aplicacion, depNueva); setDepNueva(''); cargarDependenciasApp(appEditando.codigo_aplicacion) }
-    catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') } finally { setAsignandoDep(false) }
-  }
-  const quitarDep = async (c: string) => {
-    if (!appEditando) return
-    try { await aplicacionesApi.quitarDependencia(appEditando.codigo_aplicacion, c); cargarDependenciasApp(appEditando.codigo_aplicacion) }
-    catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') }
-  }
-  const moverDep = async (index: number, dir: 'arriba' | 'abajo') => {
-    if (!appEditando) return
-    const lista = [...dependenciasApp]; const swap = dir === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const oA = lista[index].orden; const oB = lista[swap].orden
-    lista[index].orden = oB; lista[swap].orden = oA
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setDependenciasApp(lista)
-    try { await aplicacionesApi.reordenarDependencias(appEditando.codigo_aplicacion, lista.map((d) => ({ codigo_aplicacion_previa: d.codigo_aplicacion_previa, orden: d.orden }))) }
-    catch { cargarDependenciasApp(appEditando.codigo_aplicacion) }
   }
 
   // ── Aplicación: grupos ────────────────────────────────────────────────────
@@ -249,7 +213,6 @@ export default function PaginaAplicacionesFunciones() {
   )
   const appsDisponiblesFuncion = aplicaciones.filter((a) => a.activo && !appsDeFuncion.some((af) => af.codigo_aplicacion === a.codigo_aplicacion))
 
-  const depsDisponibles = aplicaciones.filter((a) => a.activo && a.codigo_aplicacion !== appEditando?.codigo_aplicacion && !dependenciasApp.some((d) => d.codigo_aplicacion_previa === a.codigo_aplicacion))
   const gruposDisponiblesApp = todosGrupos.filter((g) => g.activo && !gruposApp.some((ga) => ga.codigo_grupo === g.codigo_grupo))
 
   const appsFiltradas = aplicaciones.filter((a) => a.nombre.toLowerCase().includes(busquedaApps.toLowerCase()) || a.codigo_aplicacion.toLowerCase().includes(busquedaApps.toLowerCase())).sort((a, b) => a.nombre.localeCompare(b.nombre))
@@ -350,9 +313,9 @@ export default function PaginaAplicacionesFunciones() {
         <div className="flex flex-col gap-4">
           {appEditando && (
             <div className="flex border-b border-borde -mx-1">
-              {(['datos', 'funciones', 'dependencias', 'grupos'] as const).map((tab) => (
+              {(['datos', 'funciones', 'grupos'] as const).map((tab) => (
                 <button key={tab} onClick={() => setTabModalApp(tab)} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalApp === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
-                  {tab === 'datos' ? 'Datos' : tab === 'funciones' ? `Funciones (${funcionesApp.length})` : tab === 'dependencias' ? `Dependencias (${dependenciasApp.length})` : `Grupos (${gruposApp.length})`}
+                  {tab === 'datos' ? 'Datos' : tab === 'funciones' ? `Funciones (${funcionesApp.length})` : `Grupos (${gruposApp.length})`}
                 </button>
               ))}
             </div>
@@ -405,38 +368,6 @@ export default function PaginaAplicacionesFunciones() {
               {cargandoFuncionesApp ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
               : funcionesApp.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene funciones asignadas</p>
               : <div className="flex flex-col gap-2">{funcionesApp.map((fa) => (<div key={fa.codigo_funcion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</span><span className="ml-2 text-xs text-texto-muted">{fa.codigo_funcion}</span></div><button onClick={() => quitarFuncionApp(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Cerrar</Boton></div>
-            </div>
-          )}
-          {tabModalApp === 'dependencias' && appEditando && (
-            <div className="flex flex-col gap-4">
-              <p className="text-xs text-texto-muted">Aplicaciones que deben estar habilitadas antes de poder activar esta aplicación.</p>
-              <div className="flex gap-2">
-                <div className="flex-1">
-                  <select value={depNueva} onChange={(e) => setDepNueva(e.target.value)} className={selectClass}>
-                    <option value="">Seleccionar aplicación previa...</option>
-                    {depsDisponibles.map((a) => (<option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre} ({a.codigo_aplicacion})</option>))}
-                  </select>
-                </div>
-                <Boton variante="primario" onClick={asignarDep} cargando={asignandoDep} disabled={!depNueva}><Plus size={14} />Agregar</Boton>
-              </div>
-              {cargandoDeps ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-              : dependenciasApp.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene dependencias</p>
-              : <div className="flex flex-col gap-2">{dependenciasApp.map((d, idx) => (
-                <div key={d.codigo_aplicacion_previa} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
-                  <div className="flex flex-col">
-                    <button onClick={() => moverDep(idx, 'arriba')} disabled={idx === 0} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp size={14} /></button>
-                    <button onClick={() => moverDep(idx, 'abajo')} disabled={idx === dependenciasApp.length - 1} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown size={14} /></button>
-                  </div>
-                  <span className="text-xs text-texto-muted w-5 text-center">{d.orden}</span>
-                  <div className="flex-1 min-w-0">
-                    <span className="text-sm font-medium text-texto">{d.aplicaciones?.nombre_aplicacion || d.codigo_aplicacion_previa}</span>
-                    <span className="ml-2 text-xs text-texto-muted">{d.codigo_aplicacion_previa}</span>
-                  </div>
-                  <button onClick={() => quitarDep(d.codigo_aplicacion_previa)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
-                </div>
-              ))}</div>}
-              {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Cerrar</Boton></div>
             </div>
           )}

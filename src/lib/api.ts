@@ -29,6 +29,10 @@ import type {
   CaracteristicaDocumento,
   CategoriaConCaracteristicasDocs,
   RolCaractDocs,
+  CategoriaCaractGeneDocs,
+  TipoCaractGeneDocs,
+  CaracteristicaGeneDocumento,
+  CategoriaConCaracteristicasGeneDocs,
   EstadoCanonicoConversacion,
   EstadoCanonicoCompromiso,
   TipoConversacion,
@@ -255,16 +259,6 @@ export const aplicacionesApi = {
     api.post(`/aplicaciones/${id}/funciones`, { codigo_funcion: codigoFuncion }),
   quitarFuncion: (id: string, codigoFuncion: string) =>
     api.delete(`/aplicaciones/${id}/funciones/${codigoFuncion}`),
-  listarDependencias: (id: string) =>
-    api.get<{ codigo_aplicacion_previa: string; orden: number; aplicaciones: { nombre_aplicacion: string; activo: boolean } }[]>(
-      `/aplicaciones/${id}/dependencias`
-    ).then((r) => r.data),
-  agregarDependencia: (id: string, codigoPrevia: string) =>
-    api.post(`/aplicaciones/${id}/dependencias`, { codigo_aplicacion_previa: codigoPrevia }),
-  quitarDependencia: (id: string, codigoPrevia: string) =>
-    api.delete(`/aplicaciones/${id}/dependencias/${codigoPrevia}`),
-  reordenarDependencias: (id: string, orden: { codigo_aplicacion_previa: string; orden: number }[]) =>
-    api.put(`/aplicaciones/${id}/dependencias/orden`, orden),
   listarGrupos: (id: string) =>
     api.get<{ codigo_grupo: string; activo: boolean; grupos_entidades: { nombre_grupo: string } }[]>(
       `/aplicaciones/${id}/grupos`
@@ -394,6 +388,15 @@ export const documentosApi = {
     api.put<CaracteristicaDocumento>(`/documentos/${id}/caracteristicas/${idCar}`, datos).then((r) => r.data),
   eliminarCaracteristica: (id: number, idCar: number) =>
     api.delete(`/documentos/${id}/caracteristicas/${idCar}`),
+  // Características genéricas
+  listarCaracteristicasGenericas: (id: number) =>
+    api.get<CategoriaConCaracteristicasGeneDocs[]>(`/documentos/${id}/caracteristicas-genericas`).then((r) => r.data),
+  crearCaracteristicaGenerica: (id: number, datos: Partial<CaracteristicaGeneDocumento>) =>
+    api.post<CaracteristicaGeneDocumento>(`/documentos/${id}/caracteristicas-genericas`, datos).then((r) => r.data),
+  actualizarCaracteristicaGenerica: (id: number, idCar: number, datos: Partial<CaracteristicaGeneDocumento>) =>
+    api.put<CaracteristicaGeneDocumento>(`/documentos/${id}/caracteristicas-genericas/${idCar}`, datos).then((r) => r.data),
+  eliminarCaracteristicaGenerica: (id: number, idCar: number) =>
+    api.delete(`/documentos/${id}/caracteristicas-genericas/${idCar}`),
 }
 
 // ─── Tipos Documento Persona ─────────────────────────────────────────────────
@@ -463,6 +466,26 @@ export const categoriasCaractDocsApi = {
     api.put(`/categorias-caracteristica-docs/${codigo}/roles/orden`, orden),
   quitarRol: (codigo: string, codigoRol: string) =>
     api.delete(`/categorias-caracteristica-docs/${codigo}/roles/${codigoRol}`),
+}
+
+// ─── Categorías Genéricas Características Documentos ─────────────────────────
+
+export const categoriasCaractGeneDocsApi = {
+  listar: () => api.get<CategoriaCaractGeneDocs[]>('/categorias-caracteristica-gene-docs').then((r) => r.data),
+  crear: (datos: Partial<CategoriaCaractGeneDocs>) =>
+    api.post<CategoriaCaractGeneDocs>('/categorias-caracteristica-gene-docs', datos).then((r) => r.data),
+  actualizar: (codigo: string, datos: Partial<CategoriaCaractGeneDocs>) =>
+    api.put<CategoriaCaractGeneDocs>(`/categorias-caracteristica-gene-docs/${codigo}`, datos).then((r) => r.data),
+  desactivar: (codigo: string) => api.delete(`/categorias-caracteristica-gene-docs/${codigo}`),
+  // Tipos
+  listarTipos: (codigo: string) =>
+    api.get<TipoCaractGeneDocs[]>(`/categorias-caracteristica-gene-docs/${codigo}/tipos`).then((r) => r.data),
+  crearTipo: (codigo: string, datos: Partial<TipoCaractGeneDocs>) =>
+    api.post<TipoCaractGeneDocs>(`/categorias-caracteristica-gene-docs/${codigo}/tipos`, datos).then((r) => r.data),
+  actualizarTipo: (codigo: string, codigoTipo: string, datos: Partial<TipoCaractGeneDocs>) =>
+    api.put<TipoCaractGeneDocs>(`/categorias-caracteristica-gene-docs/${codigo}/tipos/${codigoTipo}`, datos).then((r) => r.data),
+  desactivarTipo: (codigo: string, codigoTipo: string) =>
+    api.delete(`/categorias-caracteristica-gene-docs/${codigo}/tipos/${codigoTipo}`),
 }
 
 // ─── Personas ────────────────────────────────────────────────────────────────
