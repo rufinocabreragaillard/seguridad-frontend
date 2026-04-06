@@ -96,7 +96,7 @@ export default function PaginaLogin() {
           <div>
             <h2 className="text-3xl font-bold text-white">{tema.app.nombre}</h2>
             <p className="text-sidebar-texto-muted mt-3 text-sm leading-relaxed">
-              Gestión centralizada de usuarios, roles y permisos para todas tus aplicaciones.
+              Aplicaciones de RAG y mucho más
             </p>
           </div>
         </div>
