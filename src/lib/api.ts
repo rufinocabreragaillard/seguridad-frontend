@@ -659,6 +659,10 @@ export const colaEstadosDocsApi = {
   cerrar: () =>
     api.post<{ eliminados: number }>('/cola-estados-docs/cerrar').then((r) => r.data),
   eliminar: (id: number) => api.delete(`/cola-estados-docs/${id}`),
+  procesar: (id: number, idModelo: number, texto?: string) =>
+    api.post<{ id_cola: number; estado_cola: string; resultado: string | null; tiempo_ms: number }>(
+      `/cola-estados-docs/${id}/procesar`, { id_modelo: idModelo, texto }, { timeout: 120000 }
+    ).then((r) => r.data),
 }
 
 // ─── Ubicaciones Docs ──────────────────────────────────────────────────────
