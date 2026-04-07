@@ -290,7 +290,14 @@ export default function PaginaProcesarDocumentos() {
                 {seleccionados.size}/{documentos.length} seleccionados
               </span>
               {ejecutando ? (
-                <Boton variante="contorno" tamano="sm" onClick={detener}><Square size={14} />Detener</Boton>
+                <>
+                  <Boton variante="primario" disabled>
+                    <Loader2 size={16} className="animate-spin" />Procesando...
+                  </Boton>
+                  <Boton variante="contorno" tamano="sm" onClick={detener}>
+                    <Square size={14} />Detener
+                  </Boton>
+                </>
               ) : (
                 <Boton variante="primario" onClick={ejecutar}
                   disabled={seleccionados.size === 0 || !modeloId}>
