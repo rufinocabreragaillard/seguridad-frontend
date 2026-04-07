@@ -547,7 +547,16 @@ export default function PaginaProcesarDocumentos() {
                     </div>
                   </TablaTd>
                   <TablaTd className="text-xs text-texto-muted max-w-[250px] truncate">{d.ubicacion_documento || '—'}</TablaTd>
-                  <TablaTd><Insignia variante="advertencia">{d.codigo_estado_doc}</Insignia></TablaTd>
+                  <TablaTd>
+                    <div className="flex items-center gap-2">
+                      <Insignia variante="advertencia">{d.codigo_estado_doc}</Insignia>
+                      {seleccionados.has(d.codigo_documento) && (
+                        <Insignia variante="exito">
+                          <CheckCircle size={12} className="mr-1" />Procesar
+                        </Insignia>
+                      )}
+                    </div>
+                  </TablaTd>
                 </TablaFila>
               ))}
             </TablaCuerpo>
