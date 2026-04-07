@@ -96,10 +96,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
           }
         } else if (event === 'SIGNED_IN') {
+          // Login fresco (email/password o OAuth callback): SIEMPRE limpiar overrides
+          // para que se inicialice con los defaults de BD del usuario
+          clearOverridesSesion()
           // Solo redirigir si fue un login explícito del usuario
           if (loginExplicito.current) {
             loginExplicito.current = false
-            clearOverridesSesion()  // Limpiar overrides de sesión anterior al hacer login
             const ctx = await cargarContexto()
             if (isMounted) {
               setCargando(false)
@@ -163,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null)
     setCargando(true)
     loginExplicito.current = true  // Marcar que es login explícito
+    clearOverridesSesion()  // Garantizar inicio con defaults de BD
     try {
       const { error: err } = await supabase.auth.signInWithPassword({ email, password })
       if (err) {
@@ -180,6 +183,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const loginConGoogle = async () => {
     setError(null)
     loginExplicito.current = true
+    clearOverridesSesion()  // Garantizar inicio con defaults de BD
     const { error: err } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
