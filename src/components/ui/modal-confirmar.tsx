@@ -36,7 +36,7 @@ export function ModalConfirmar({
               <AlertTriangle size={20} className="text-error" />
             </div>
           )}
-          <p className="text-sm text-texto-muted pt-2">{mensaje}</p>
+          <p className="text-sm text-texto-muted pt-2 whitespace-pre-line">{mensaje}</p>
         </div>
         <div className="flex gap-3 justify-end pt-2">
           <Boton variante="contorno" onClick={alCerrar} disabled={cargando}>

@@ -38,6 +38,11 @@ export default function PaginaUbicacionesDocs() {
 
   // ── Modal Confirmar ───────────────────────────────────────────────────────
   const [confirmacion, setConfirmacion] = useState<UbicacionDoc | null>(null)
+  const [previewEliminar, setPreviewEliminar] = useState<{
+    ubicaciones: number
+    documentos_afectados: number
+    documentos_a_eliminar: number
+  } | null>(null)
   const [eliminando, setEliminando] = useState(false)
 
   // ── Cargar Ubicaciones (escaneo) ──────────────────────────────────────────
@@ -180,16 +185,29 @@ export default function PaginaUbicacionesDocs() {
     }
   }
 
+  const abrirConfirmacionEliminar = async (u: UbicacionDoc) => {
+    setConfirmacion(u)
+    setPreviewEliminar(null)
+    try {
+      const p = await ubicacionesDocsApi.previewEliminar(u.codigo_ubicacion)
+      setPreviewEliminar(p)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error obteniendo preview')
+    }
+  }
+
   const ejecutarEliminacion = async () => {
     if (!confirmacion) return
     setEliminando(true)
     try {
-      await ubicacionesDocsApi.desactivar(confirmacion.codigo_ubicacion)
+      await ubicacionesDocsApi.eliminar(confirmacion.codigo_ubicacion)
       setConfirmacion(null)
+      setPreviewEliminar(null)
       cargar()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al desactivar')
+      setError(e instanceof Error ? e.message : 'Error al eliminar')
       setConfirmacion(null)
+      setPreviewEliminar(null)
     } finally {
       setEliminando(false)
     }
@@ -394,7 +412,7 @@ export default function PaginaUbicacionesDocs() {
               <Pencil size={14} />
             </button>
             <button
-              onClick={() => setConfirmacion(u)}
+              onClick={() => abrirConfirmacionEliminar(u)}
               className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
               title="Desactivar"
             >
@@ -571,23 +589,27 @@ export default function PaginaUbicacionesDocs() {
         </div>
       </Modal>
 
-      {/* Modal Confirmar */}
+      {/* Modal Confirmar — Hard delete cascade */}
       <ModalConfirmar
         abierto={!!confirmacion}
-        alCerrar={() => setConfirmacion(null)}
+        alCerrar={() => { setConfirmacion(null); setPreviewEliminar(null) }}
         alConfirmar={ejecutarEliminacion}
-        titulo="Desactivar ubicación"
+        titulo="⚠️ Eliminar ubicación en cascada"
         mensaje={
           confirmacion
-            ? `¿Desactivar la ubicación "${confirmacion.nombre_ubicacion}"?${
-                tieneHijos(confirmacion.codigo_ubicacion)
-                  ? ' Esta ubicación tiene subdirectorios.'
-                  : ''
-              }`
+            ? (previewEliminar
+                ? `Se eliminará DEFINITIVAMENTE "${confirmacion.nombre_ubicacion}".\n\n` +
+                  `• Carpetas a borrar: ${previewEliminar.ubicaciones}\n` +
+                  `• Documentos afectados: ${previewEliminar.documentos_afectados}\n` +
+                  `• Documentos que serán eliminados (quedan sin ubicación): ${previewEliminar.documentos_a_eliminar}\n` +
+                  `  — incluye todas sus características y resúmenes\n\n` +
+                  `Los documentos que existan en otras ubicaciones NO serán borrados; solo se quitará su relación con las carpetas eliminadas.\n\n` +
+                  `Esta acción NO se puede deshacer.`
+                : `Calculando impacto de la eliminación de "${confirmacion.nombre_ubicacion}"...`)
             : ''
         }
-        textoConfirmar="Desactivar"
-        cargando={eliminando}
+        textoConfirmar="Eliminar definitivamente"
+        cargando={eliminando || !previewEliminar}
       />
 
       {/* Modal Cargar Ubicaciones */}
