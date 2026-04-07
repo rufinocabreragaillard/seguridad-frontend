@@ -77,7 +77,8 @@ function TabRolesGlobales() {
   const cargar = async () => {
     setCargando(true)
     try {
-      setRoles(await rolesApi.listarGlobales())
+      const data = await rolesApi.listarGlobales()
+      setRoles(data.sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar roles globales')
     } finally {
