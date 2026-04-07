@@ -30,6 +30,7 @@ export interface FuncionMenu {
 }
 
 export interface RolMenu {
+  id_rol: number
   codigo_rol: string
   alias: string
   orden: number
@@ -49,8 +50,10 @@ export interface UsuarioContexto {
   grupo_activo: string
   nombre_grupo?: string
   grupos: GrupoResumen[]
-  rol_principal: string | null
-  roles: string[]
+  id_rol_principal: number | null
+  rol_principal: string | null  // codigo_rol del id_rol_principal (conveniencia)
+  roles: string[]               // codigo_rol[] del usuario en el grupo activo
+  id_roles: number[]            // id_rol[] equivalente
   funciones: string[]
   entidades: EntidadResumen[]
   entidad_activa: string
@@ -108,7 +111,8 @@ export interface Usuario {
   fono_verificado?: boolean
   descripcion?: string
   activo: boolean
-  rol_principal?: string
+  id_rol_principal?: number | null
+  codigo_rol_principal?: string | null  // conveniencia: codigo_rol asociado
   entidad_por_defecto?: string
   grupo_por_defecto?: string
   codigo_area_por_defecto?: string
@@ -124,7 +128,7 @@ export interface CrearUsuarioRequest {
   password?: string
   telefono?: string
   descripcion?: string
-  rol_principal?: string
+  id_rol_principal?: number | null
   entidad_por_defecto?: string
   grupo_por_defecto?: string
   codigo_area_por_defecto?: string
@@ -134,9 +138,10 @@ export interface CrearUsuarioRequest {
 // ─── Roles y Funciones ───────────────────────────────────────────────────────
 
 export interface Rol {
+  id_rol: number
   codigo_rol: string
   nombre: string
-  codigo_grupo?: string
+  codigo_grupo?: string | null  // null = rol global
   alias_de_rol?: string
   descripcion?: string
   url_inicio?: string
@@ -397,11 +402,12 @@ export interface CaracteristicaPersona {
 }
 
 export interface RolCaractPers {
+  id_rol: number
   codigo_grupo: string
-  codigo_rol: string
+  codigo_rol?: string  // resuelto vía join
   codigo_cat_pers: string
   orden: number
-  roles?: { nombre_rol: string; activo: boolean } | null
+  roles?: { codigo_rol: string; nombre_rol: string; activo: boolean } | null
 }
 
 export interface CategoriaConCaracteristicas {
@@ -409,30 +415,32 @@ export interface CategoriaConCaracteristicas {
   caracteristicas: CaracteristicaPersona[]
 }
 
-// ─── Características Documentos ─────────────────────────────────────────────
+// ─── Características Documentos (consolidadas tras migración 051) ─────────
+// codigo_grupo nullable: NULL = global, visible en todos los grupos
 export interface CategoriaCaractDocs {
-  codigo_grupo: string
+  codigo_grupo?: string | null
   codigo_cat_docs: string
   nombre_cat_docs: string
   descripcion_cat_docs?: string | null
   es_unica_docs: boolean
   editable_en_detalle_docs: boolean
   orden?: number
+  id_modelo?: number | null
   activo: boolean
 }
 
 export interface TipoCaractDocs {
-  codigo_grupo: string
   codigo_cat_docs: string
   codigo_tipo_docs: string
   nombre_tipo_docs: string
+  descripcion?: string | null
+  orden?: number
   activo: boolean
 }
 
 export interface CaracteristicaDocumento {
   id_caracteristica_docs: number
   codigo_documento: number
-  codigo_grupo: string
   codigo_cat_docs: string
   codigo_tipo_docs: string
   valor_texto_docs?: string | null
@@ -441,52 +449,9 @@ export interface CaracteristicaDocumento {
   tipos_caract_docs?: { nombre_tipo_docs: string } | null
 }
 
-export interface RolCaractDocs {
-  codigo_grupo: string
-  codigo_rol: string
-  codigo_cat_docs: string
-  orden: number
-  roles?: { nombre_rol: string; activo: boolean } | null
-}
-
 export interface CategoriaConCaracteristicasDocs {
   categoria: CategoriaCaractDocs
   caracteristicas: CaracteristicaDocumento[]
-}
-
-// ─── Categorías Genéricas Características Documento ────────────────────────
-
-export interface CategoriaCaractGeneDocs {
-  codigo_cat_gene_docs: string
-  nombre_cat_gene_docs: string
-  descripcion_cat_gene_docs?: string | null
-  es_unica_gene_docs: boolean
-  editable_en_detalle_gene_docs: boolean
-  orden?: number
-  activo: boolean
-}
-
-export interface TipoCaractGeneDocs {
-  codigo_cat_gene_docs: string
-  codigo_tipo_gene_docs: string
-  nombre_tipo_gene_docs: string
-  activo: boolean
-}
-
-export interface CaracteristicaGeneDocumento {
-  id_caracteristica_gene_docs: number
-  codigo_documento: number
-  codigo_cat_gene_docs: string
-  codigo_tipo_gene_docs: string
-  valor_texto_gene_docs?: string | null
-  valor_numerico_gene_docs?: number | null
-  valor_fecha_gene_docs?: string | null
-  tipos_caract_gene_docs?: { nombre_tipo_gene_docs: string } | null
-}
-
-export interface CategoriaConCaracteristicasGeneDocs {
-  categoria: CategoriaCaractGeneDocs
-  caracteristicas: CaracteristicaGeneDocumento[]
 }
 
 // ─── Registro LLM ─────────────────────────────────────────────────────────

@@ -73,13 +73,15 @@ export default function PaginaUsuarios() {
   const [cargandoAreasDefault, setCargandoAreasDefault] = useState(false)
 
   // ── Formulario ─────────────────────────────────────────────────────────────
+  // id_rol_principal se mantiene como string en el form (value de <select>)
+  // y se convierte a number al persistir en BD.
   const [form, setForm] = useState({
     codigo_usuario: '',
     nombre: '',
     alias: '',
     telefono: '',
     descripcion: '',
-    rol_principal: '',
+    id_rol_principal: '',
     grupo_por_defecto: '',
     entidad_por_defecto: '',
     codigo_area_por_defecto: '',
@@ -189,7 +191,7 @@ export default function PaginaUsuarios() {
   // ── Abrir modal ────────────────────────────────────────────────────────────
   const abrirNuevo = () => {
     setUsuarioEditando(null)
-    setForm({ codigo_usuario: '', nombre: '', alias: '', telefono: '', descripcion: '', rol_principal: '',
+    setForm({ codigo_usuario: '', nombre: '', alias: '', telefono: '', descripcion: '', id_rol_principal: '',
       grupo_por_defecto: '', entidad_por_defecto: '', codigo_area_por_defecto: '', aplicacion_por_defecto: '', invitar: true })
     setError('')
     setGuardando(false)
@@ -209,7 +211,7 @@ export default function PaginaUsuarios() {
       alias: u.alias || '',
       telefono: u.telefono || '',
       descripcion: u.descripcion || '',
-      rol_principal: u.rol_principal || '',
+      id_rol_principal: u.id_rol_principal != null ? String(u.id_rol_principal) : '',
       grupo_por_defecto: u.grupo_por_defecto || '',
       entidad_por_defecto: u.entidad_por_defecto || '',
       codigo_area_por_defecto: u.codigo_area_por_defecto || '',
@@ -248,7 +250,7 @@ export default function PaginaUsuarios() {
           alias: form.alias || undefined,
           telefono: form.telefono || undefined,
           descripcion: form.descripcion || undefined,
-          rol_principal: form.rol_principal || undefined,
+          id_rol_principal: form.id_rol_principal ? Number(form.id_rol_principal) : null,
           grupo_por_defecto: form.grupo_por_defecto || undefined,
           entidad_por_defecto: form.entidad_por_defecto || undefined,
           codigo_area_por_defecto: form.codigo_area_por_defecto || undefined,
@@ -261,7 +263,7 @@ export default function PaginaUsuarios() {
           alias: form.alias || undefined,
           telefono: form.telefono || undefined,
           descripcion: form.descripcion || undefined,
-          rol_principal: form.rol_principal || undefined,
+          id_rol_principal: form.id_rol_principal ? Number(form.id_rol_principal) : null,
           invitar: form.invitar,
         })
       }
@@ -275,11 +277,12 @@ export default function PaginaUsuarios() {
   }
 
   // ── Roles ──────────────────────────────────────────────────────────────────
+  // rolNuevo guarda el id_rol como string (value de <select>/dropdown).
   const asignarRol = async () => {
     if (!rolNuevo || !usuarioEditando) return
     setAsignandoRol(true)
     try {
-      await usuariosApi.asignarRol(usuarioEditando.codigo_usuario, rolNuevo, grupoActivo || 'ADMIN')
+      await usuariosApi.asignarRol(usuarioEditando.codigo_usuario, Number(rolNuevo), grupoActivo || 'ADMIN')
       setRolNuevo('')
       setBusquedaRol('')
       await cargarRolesUsuario(usuarioEditando.codigo_usuario)
@@ -287,27 +290,24 @@ export default function PaginaUsuarios() {
     finally { setAsignandoRol(false) }
   }
 
-  const quitarRol = async (codigoRol: string) => {
+  const quitarRol = async (idRol: number) => {
     if (!usuarioEditando) return
     try {
-      await usuariosApi.quitarRol(usuarioEditando.codigo_usuario, codigoRol)
+      await usuariosApi.quitarRol(usuarioEditando.codigo_usuario, idRol)
       await cargarRolesUsuario(usuarioEditando.codigo_usuario)
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al quitar rol') }
   }
 
   const moverRol = async (filteredIndex: number, direccion: 'arriba' | 'abajo') => {
     if (!usuarioEditando) return
-    // Trabajar con los roles filtrados del grupo activo
     const rolesFiltrados = rolesUsuario.filter((r) => r.codigo_grupo === grupoActivo)
     const swapFilteredIndex = direccion === 'arriba' ? filteredIndex - 1 : filteredIndex + 1
     if (swapFilteredIndex < 0 || swapFilteredIndex >= rolesFiltrados.length) return
-    // Encontrar los índices reales en el array completo
     const rolA = rolesFiltrados[filteredIndex]
     const rolB = rolesFiltrados[swapFilteredIndex]
-    const realIndexA = rolesUsuario.findIndex((r) => r.codigo_grupo === rolA.codigo_grupo && r.codigo_rol === rolA.codigo_rol)
-    const realIndexB = rolesUsuario.findIndex((r) => r.codigo_grupo === rolB.codigo_grupo && r.codigo_rol === rolB.codigo_rol)
+    const realIndexA = rolesUsuario.findIndex((r) => r.codigo_grupo === rolA.codigo_grupo && r.id_rol === rolA.id_rol)
+    const realIndexB = rolesUsuario.findIndex((r) => r.codigo_grupo === rolB.codigo_grupo && r.id_rol === rolB.id_rol)
     if (realIndexA === -1 || realIndexB === -1) return
-    // Intercambiar órdenes y posiciones
     const lista = [...rolesUsuario]
     const ordenA = lista[realIndexA].orden
     const ordenB = lista[realIndexB].orden
@@ -318,7 +318,7 @@ export default function PaginaUsuarios() {
     try {
       await usuariosApi.reordenarRoles(usuarioEditando.codigo_usuario, lista.map((r) => ({
         codigo_grupo: r.codigo_grupo,
-        codigo_rol: r.codigo_rol,
+        id_rol: r.id_rol,
         orden: r.orden,
       })))
     } catch (e) {
@@ -327,11 +327,11 @@ export default function PaginaUsuarios() {
     }
   }
 
-  const marcarComoPrincipal = async (codigoRol: string) => {
+  const marcarComoPrincipal = async (idRol: number) => {
     if (!usuarioEditando) return
     try {
-      await usuariosApi.actualizar(usuarioEditando.codigo_usuario, { rol_principal: codigoRol })
-      setForm({ ...form, rol_principal: codigoRol })
+      await usuariosApi.actualizar(usuarioEditando.codigo_usuario, { id_rol_principal: idRol })
+      setForm({ ...form, id_rol_principal: String(idRol) })
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al cambiar rol principal') }
   }
 
@@ -392,8 +392,13 @@ export default function PaginaUsuarios() {
   }, [])
 
   // ── Listas derivadas ───────────────────────────────────────────────────────
+  // Roles disponibles para asignar al usuario en el grupo activo:
+  // - Roles del grupo activo + roles globales (codigo_grupo NULL)
+  // - Excluyendo los que ya tiene asignados en el grupo activo
   const rolesDisponibles = roles.filter((r) =>
-    r.activo && !rolesUsuario.some((ra) => ra.codigo_grupo === r.codigo_grupo && ra.codigo_rol === r.codigo_rol)
+    r.activo &&
+    (r.codigo_grupo === grupoActivo || r.codigo_grupo == null) &&
+    !rolesUsuario.some((ra) => ra.codigo_grupo === grupoActivo && ra.id_rol === r.id_rol)
   )
   const rolesDisponiblesFiltrados = rolesDisponibles.filter((r) =>
     busquedaRol.length === 0 ||
@@ -442,7 +447,7 @@ export default function PaginaUsuarios() {
 
   // ── Handlers de cascada en Datos ──────────────────────────────────────────
   const handleGrupoDefaultChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setForm({ ...form, grupo_por_defecto: e.target.value, rol_principal: '', entidad_por_defecto: '', codigo_area_por_defecto: '', aplicacion_por_defecto: '' })
+    setForm({ ...form, grupo_por_defecto: e.target.value, id_rol_principal: '', entidad_por_defecto: '', codigo_area_por_defecto: '', aplicacion_por_defecto: '' })
     setAreasParaDefault([])
   }
 
@@ -482,7 +487,7 @@ export default function PaginaUsuarios() {
             { titulo: 'Correo', campo: 'codigo_usuario' },
             { titulo: 'Nombre', campo: 'nombre' },
             { titulo: 'Teléfono', campo: 'telefono' },
-            { titulo: 'Rol principal', campo: 'rol_principal' },
+            { titulo: 'Rol principal', campo: 'codigo_rol_principal' },
             { titulo: 'Grupo por defecto', campo: 'grupo_por_defecto' },
             { titulo: 'Entidad por defecto', campo: 'entidad_por_defecto' },
             { titulo: 'Área por defecto', campo: 'codigo_area_por_defecto' },
@@ -540,7 +545,7 @@ export default function PaginaUsuarios() {
                     </div>
                   </TablaTd>
                   <TablaTd className="text-texto-muted">{u.codigo_usuario}</TablaTd>
-                  <TablaTd>{u.rol_principal || <span className="text-texto-light">—</span>}</TablaTd>
+                  <TablaTd>{u.codigo_rol_principal || <span className="text-texto-light">—</span>}</TablaTd>
                   <TablaTd>
                     <Insignia variante={u.activo ? 'exito' : 'error'}>
                       {u.activo ? 'Activo' : 'Inactivo'}
@@ -704,8 +709,8 @@ export default function PaginaUsuarios() {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-texto">Rol principal</label>
                       <select
-                        value={form.rol_principal}
-                        onChange={(e) => setForm({ ...form, rol_principal: e.target.value })}
+                        value={form.id_rol_principal}
+                        onChange={(e) => setForm({ ...form, id_rol_principal: e.target.value })}
                         disabled={!form.grupo_por_defecto}
                         className={selectClass}
                       >
@@ -713,8 +718,8 @@ export default function PaginaUsuarios() {
                         {rolesUsuario
                           .filter((ra) => ra.codigo_grupo === form.grupo_por_defecto)
                           .map((ra) => (
-                            <option key={ra.codigo_rol} value={ra.codigo_rol}>
-                              {ra.roles?.nombre || ra.codigo_rol}
+                            <option key={ra.id_rol} value={String(ra.id_rol)}>
+                              {ra.roles?.nombre || ra.codigo_rol || ra.roles?.codigo_rol || `id ${ra.id_rol}`}
                             </option>
                           ))
                         }
@@ -942,16 +947,17 @@ export default function PaginaUsuarios() {
                         <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron roles</div>
                       ) : rolesDisponiblesFiltrados.slice(0, 20).map((r) => (
                         <button
-                          key={r.codigo_rol}
+                          key={r.id_rol}
                           onClick={() => {
-                            setRolNuevo(r.codigo_rol)
-                            setBusquedaRol(`${r.nombre} (${r.codigo_rol})`)
+                            setRolNuevo(String(r.id_rol))
+                            setBusquedaRol(`${r.nombre} (${r.codigo_rol})${r.codigo_grupo == null ? ' [Global]' : ''}`)
                             setDropdownRolAbierto(false)
                           }}
                           className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
                         >
                           <span className="font-medium">{r.nombre}</span>
                           <span className="ml-2 text-texto-muted text-xs">{r.codigo_rol}</span>
+                          {r.codigo_grupo == null && <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">Global</span>}
                         </button>
                       ))}
                     </div>
@@ -972,10 +978,11 @@ export default function PaginaUsuarios() {
               ) : (
                 <div className="flex flex-col gap-2">
                   {rolesUsuario.filter((ra) => ra.codigo_grupo === grupoActivo).map((ra, idx, arr) => {
-                    const esPrincipal = form.rol_principal === ra.codigo_rol
+                    const esPrincipal = form.id_rol_principal === String(ra.id_rol)
+                    const codigoRolDisplay = ra.codigo_rol || ra.roles?.codigo_rol || `id ${ra.id_rol}`
                     return (
                       <div
-                        key={`${ra.codigo_grupo}_${ra.codigo_rol}`}
+                        key={`${ra.codigo_grupo}_${ra.id_rol}`}
                         className={`flex items-center gap-2 px-3 py-2 rounded-lg border bg-surface ${
                           esPrincipal ? 'border-primario bg-primario-muy-claro' : 'border-borde'
                         }`}
@@ -999,8 +1006,8 @@ export default function PaginaUsuarios() {
                           </button>
                         </div>
                         <div className="flex-1 min-w-0 flex items-center gap-2">
-                          <span className="text-sm font-medium text-texto">{ra.roles?.nombre || ra.codigo_rol}</span>
-                          <span className="text-xs text-texto-muted">{ra.codigo_rol}</span>
+                          <span className="text-sm font-medium text-texto">{ra.roles?.nombre || codigoRolDisplay}</span>
+                          <span className="text-xs text-texto-muted">{codigoRolDisplay}</span>
                           {esPrincipal && (
                             <span className="text-xs bg-primario text-white px-1.5 py-0.5 rounded">Principal</span>
                           )}
@@ -1008,7 +1015,7 @@ export default function PaginaUsuarios() {
                         <div className="flex items-center gap-1">
                           {!esPrincipal && (
                             <button
-                              onClick={() => marcarComoPrincipal(ra.codigo_rol)}
+                              onClick={() => marcarComoPrincipal(ra.id_rol)}
                               className="p-1 rounded hover:bg-yellow-50 text-texto-muted hover:text-yellow-600 transition-colors"
                               title="Marcar como rol principal"
                             >
@@ -1016,7 +1023,7 @@ export default function PaginaUsuarios() {
                             </button>
                           )}
                           <button
-                            onClick={() => quitarRol(ra.codigo_rol)}
+                            onClick={() => quitarRol(ra.id_rol)}
                             className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
                             title="Quitar rol"
                           >

@@ -74,8 +74,7 @@ export default function PaginaDocumentosDashboard() {
   const accesos = [
     { nombre: 'Procesar documentos', href: '/procesar-documentos', icono: Cpu },
     { nombre: 'Cargar documentos', href: '/cargar-documentos', icono: FolderTree },
-    { nombre: 'Categorías genéricas', href: '/categorias-caracteristica-gene-docs', icono: BookOpen },
-    { nombre: 'Categorías por grupo', href: '/categorias-caracteristica-docs', icono: Tags },
+    { nombre: 'Categorías de documentos', href: '/categorias-caracteristica-docs', icono: Tags },
   ]
 
   return (

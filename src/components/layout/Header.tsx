@@ -22,7 +22,7 @@ export function Header({ titulo }: { titulo?: string }) {
   const [modalCuenta, setModalCuenta] = useState(false)
   const [tabCuenta, setTabCuenta] = useState<'cuenta' | 'parametros'>('cuenta')
   const [formCuenta, setFormCuenta] = useState({
-    nombre: '', telefono: '', rol_principal: '', alias: '', descripcion: '',
+    nombre: '', telefono: '', id_rol_principal: '', alias: '', descripcion: '',
     aplicacion_por_defecto: '', grupo_por_defecto: '', entidad_por_defecto: '',
   })
   const [guardandoCuenta, setGuardandoCuenta] = useState(false)
@@ -32,7 +32,7 @@ export function Header({ titulo }: { titulo?: string }) {
   // Datos para cascada en Mi Cuenta
   const [gruposCuenta, setGruposCuenta] = useState<{ codigo_grupo: string; nombre: string }[]>([])
   const [entidadesCuenta, setEntidadesCuenta] = useState<{ codigo_entidad: string; codigo_grupo: string; nombre: string }[]>([])
-  const [rolesCuenta, setRolesCuenta] = useState<{ codigo_rol: string; codigo_grupo: string; nombre: string }[]>([])
+  const [rolesCuenta, setRolesCuenta] = useState<{ id_rol: number; codigo_rol: string; codigo_grupo: string; nombre: string }[]>([])
   const [appsCuenta, setAppsCuenta] = useState<{ codigo_aplicacion: string; nombre: string }[]>([])
 
   // Parametros (dentro de Mi Cuenta, tab Parametros)
@@ -101,7 +101,7 @@ export function Header({ titulo }: { titulo?: string }) {
     setFormCuenta({
       nombre: usuario?.nombre || '',
       telefono: '',
-      rol_principal: usuario?.rol_principal || '',
+      id_rol_principal: usuario?.id_rol_principal != null ? String(usuario.id_rol_principal) : '',
       alias: '',
       descripcion: '',
       aplicacion_por_defecto: '',
@@ -122,7 +122,7 @@ export function Header({ titulo }: { titulo?: string }) {
           const datos = {
             nombre: u.nombre,
             telefono: u.telefono || '',
-            rol_principal: u.rol_principal || '',
+            id_rol_principal: u.id_rol_principal != null ? String(u.id_rol_principal) : '',
             alias: u.alias || '',
             descripcion: u.descripcion || '',
             aplicacion_por_defecto: u.aplicacion_por_defecto || '',
@@ -140,7 +140,7 @@ export function Header({ titulo }: { titulo?: string }) {
         }
         setGruposCuenta(gs.map((g: any) => ({ codigo_grupo: g.codigo_grupo, nombre: g.grupos_entidades?.nombre || g.codigo_grupo })))
         setEntidadesCuenta(es.map((e: any) => ({ codigo_entidad: e.codigo_entidad, codigo_grupo: e.codigo_grupo, nombre: e.entidades?.nombre || e.codigo_entidad })))
-        setRolesCuenta(rs.map((r: any) => ({ codigo_rol: r.codigo_rol, codigo_grupo: r.codigo_grupo, nombre: r.roles?.nombre || r.codigo_rol })))
+        setRolesCuenta(rs.map((r: any) => ({ id_rol: r.id_rol, codigo_rol: r.codigo_rol || r.roles?.codigo_rol || '', codigo_grupo: r.codigo_grupo, nombre: r.roles?.nombre || r.roles?.nombre_rol || r.codigo_rol || String(r.id_rol) })))
       })
     }
     setModalCuenta(true)
@@ -163,8 +163,8 @@ export function Header({ titulo }: { titulo?: string }) {
       if (formCuenta.grupo_por_defecto !== datosOriginales.grupo_por_defecto) {
         cambios.grupo_por_defecto = formCuenta.grupo_por_defecto || undefined
       }
-      if (formCuenta.rol_principal !== datosOriginales.rol_principal) {
-        cambios.rol_principal = formCuenta.rol_principal || undefined
+      if (formCuenta.id_rol_principal !== datosOriginales.id_rol_principal) {
+        cambios.id_rol_principal = formCuenta.id_rol_principal ? Number(formCuenta.id_rol_principal) : null
       }
       if (formCuenta.entidad_por_defecto !== datosOriginales.entidad_por_defecto) {
         cambios.entidad_por_defecto = formCuenta.entidad_por_defecto || undefined
@@ -449,7 +449,7 @@ export function Header({ titulo }: { titulo?: string }) {
                     value={formCuenta.grupo_por_defecto}
                     onChange={(e) => {
                       const g = e.target.value
-                      setFormCuenta({ ...formCuenta, grupo_por_defecto: g, rol_principal: '', entidad_por_defecto: '', aplicacion_por_defecto: '' })
+                      setFormCuenta({ ...formCuenta, grupo_por_defecto: g, id_rol_principal: '', entidad_por_defecto: '', aplicacion_por_defecto: '' })
                       if (g) {
                         aplicacionesApi.listar(g).then(apps =>
                           setAppsCuenta(apps.map(a => ({ codigo_aplicacion: a.codigo_aplicacion, nombre: a.nombre })))
@@ -470,8 +470,8 @@ export function Header({ titulo }: { titulo?: string }) {
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-texto">Rol principal</label>
                   <select
-                    value={formCuenta.rol_principal}
-                    onChange={(e) => setFormCuenta({ ...formCuenta, rol_principal: e.target.value })}
+                    value={formCuenta.id_rol_principal}
+                    onChange={(e) => setFormCuenta({ ...formCuenta, id_rol_principal: e.target.value })}
                     disabled={!formCuenta.grupo_por_defecto}
                     className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50"
                   >
@@ -479,7 +479,7 @@ export function Header({ titulo }: { titulo?: string }) {
                     {rolesCuenta
                       .filter(r => r.codigo_grupo === formCuenta.grupo_por_defecto)
                       .map((r) => (
-                        <option key={r.codigo_rol} value={r.codigo_rol}>{r.nombre}</option>
+                        <option key={r.id_rol} value={String(r.id_rol)}>{r.nombre}</option>
                       ))}
                   </select>
                 </div>

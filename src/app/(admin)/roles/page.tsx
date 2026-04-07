@@ -86,10 +86,10 @@ export default function PaginaRoles() {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  const cargarFuncionesRol = useCallback(async (codigo: string) => {
+  const cargarFuncionesRol = useCallback(async (idRol: number) => {
     setCargandoFunciones(true)
     try {
-      const f = await rolesApi.listarFunciones(codigo)
+      const f = await rolesApi.listarFunciones(idRol)
       setFuncionesRol(f)
     } catch {
       setFuncionesRol([])
@@ -113,7 +113,7 @@ export default function PaginaRoles() {
     setTabModalRol('datos')
     setFuncionNueva('')
     setBusquedaFuncionRol('')
-    cargarFuncionesRol(r.codigo_rol)
+    cargarFuncionesRol(r.id_rol)
     setModalRol(true)
   }
 
@@ -122,7 +122,7 @@ export default function PaginaRoles() {
     setGuardando(true)
     try {
       if (rolEditando) {
-        await rolesApi.actualizar(rolEditando.codigo_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined })
+        await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined })
       } else {
         await rolesApi.crear({ ...formRol, codigo_grupo: grupoActivo || 'ADMIN' })
       }
@@ -142,7 +142,7 @@ export default function PaginaRoles() {
     setEliminando(true)
     try {
       if (confirmacion.tipo === 'rol') {
-        await rolesApi.eliminar((confirmacion.item as Rol).codigo_rol)
+        await rolesApi.eliminar((confirmacion.item as Rol).id_rol)
       } else {
         await funcionesApi.eliminar((confirmacion.item as Funcion).codigo_funcion)
       }
@@ -160,10 +160,10 @@ export default function PaginaRoles() {
     if (!funcionNueva || !rolEditando) return
     setAsignandoFuncion(true)
     try {
-      await rolesApi.asignarFuncion(rolEditando.codigo_rol, funcionNueva)
+      await rolesApi.asignarFuncion(rolEditando.id_rol, funcionNueva)
       setFuncionNueva('')
       setBusquedaFuncionRol('')
-      cargarFuncionesRol(rolEditando.codigo_rol)
+      cargarFuncionesRol(rolEditando.id_rol)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al asignar función')
     } finally {
@@ -174,8 +174,8 @@ export default function PaginaRoles() {
   const quitarFuncion = async (codigoFuncion: string) => {
     if (!rolEditando) return
     try {
-      await rolesApi.quitarFuncion(rolEditando.codigo_rol, codigoFuncion)
-      cargarFuncionesRol(rolEditando.codigo_rol)
+      await rolesApi.quitarFuncion(rolEditando.id_rol, codigoFuncion)
+      cargarFuncionesRol(rolEditando.id_rol)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al quitar función')
     }
@@ -186,22 +186,20 @@ export default function PaginaRoles() {
     const lista = [...funcionesRol]
     const swapIndex = direccion === 'arriba' ? index - 1 : index + 1
     if (swapIndex < 0 || swapIndex >= lista.length) return
-    // Intercambiar órdenes
     const ordenA = lista[index].orden
     const ordenB = lista[swapIndex].orden
     lista[index].orden = ordenB
     lista[swapIndex].orden = ordenA
-    // Intercambiar posiciones en el array
     ;[lista[index], lista[swapIndex]] = [lista[swapIndex], lista[index]]
     setFuncionesRol(lista)
     try {
-      await rolesApi.reordenarFunciones(rolEditando.codigo_rol, lista.map((f) => ({
+      await rolesApi.reordenarFunciones(rolEditando.id_rol, lista.map((f) => ({
         codigo_funcion: f.codigo_funcion,
         orden: f.orden,
       })))
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al reordenar')
-      cargarFuncionesRol(rolEditando.codigo_rol)
+      cargarFuncionesRol(rolEditando.id_rol)
     }
   }
 
@@ -376,8 +374,11 @@ export default function PaginaRoles() {
               ) : rolesFiltrados.length === 0 ? (
                 <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron roles</TablaTd></TablaFila>
               ) : rolesFiltrados.map((r) => (
-                <TablaFila key={r.codigo_rol}>
-                  <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_rol}</code></TablaTd>
+                <TablaFila key={r.id_rol}>
+                  <TablaTd>
+                    <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_rol}</code>
+                    {r.codigo_grupo == null && <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">Global</span>}
+                  </TablaTd>
                   <TablaTd className="text-sm">{r.alias_de_rol || '—'}</TablaTd>
                   <TablaTd className="font-medium">{r.nombre}</TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{r.url_inicio || '—'}</TablaTd>

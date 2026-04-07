@@ -232,9 +232,9 @@ export default function PaginaCategoriasCaracteristica() {
     }
   }
 
-  // ── Roles: asignar / quitar / reordenar ───────────────────────────────────
+  // ── Roles: asignar / quitar / reordenar (usa id_rol tras migración 051) ──
   const rolesNoAsignados = rolesDisponibles.filter(
-    (r) => !rolesCategoria.some((rc) => rc.codigo_rol === r.codigo_rol)
+    (r) => !rolesCategoria.some((rc) => rc.id_rol === r.id_rol)
   )
 
   const rolesNoAsignadosFiltrados = rolesNoAsignados.filter(
@@ -244,19 +244,19 @@ export default function PaginaCategoriasCaracteristica() {
       r.codigo_rol.toLowerCase().includes(busquedaRol.toLowerCase())
   )
 
-  const asignarRol = async (codigoRol: string) => {
+  const asignarRol = async (idRol: number) => {
     if (!catSeleccionada) return
     try {
-      await categoriasCaractPersApi.asignarRol(catSeleccionada.codigo_cat_pers, codigoRol)
+      await categoriasCaractPersApi.asignarRol(catSeleccionada.codigo_cat_pers, idRol)
       setBusquedaRol('')
       setDropdownRolAbierto(false)
       cargarRolesCategoria()
     } catch { /* silencioso */ }
   }
 
-  const quitarRol = async (codigoRol: string) => {
+  const quitarRol = async (idRol: number) => {
     if (!catSeleccionada) return
-    await categoriasCaractPersApi.quitarRol(catSeleccionada.codigo_cat_pers, codigoRol)
+    await categoriasCaractPersApi.quitarRol(catSeleccionada.codigo_cat_pers, idRol)
     cargarRolesCategoria()
   }
 
@@ -272,7 +272,7 @@ export default function PaginaCategoriasCaracteristica() {
     try {
       await categoriasCaractPersApi.reordenarRoles(
         catSeleccionada.codigo_cat_pers,
-        lista.map((r) => ({ codigo_rol: r.codigo_rol, orden: r.orden }))
+        lista.map((r) => ({ id_rol: r.id_rol, orden: r.orden }))
       )
     } catch {
       cargarRolesCategoria()
@@ -492,12 +492,12 @@ export default function PaginaCategoriasCaracteristica() {
                   <div className="absolute z-50 mt-1 w-full bg-white border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
                     {rolesNoAsignadosFiltrados.slice(0, 20).map((r) => (
                       <button
-                        key={r.codigo_rol}
-                        onClick={() => asignarRol(r.codigo_rol)}
+                        key={r.id_rol}
+                        onClick={() => asignarRol(r.id_rol)}
                         className="w-full px-3 py-2 text-left text-sm hover:bg-primario-muy-claro transition-colors flex justify-between"
                       >
                         <span className="font-medium">{r.nombre}</span>
-                        <span className="text-texto-muted text-xs">{r.codigo_rol}</span>
+                        <span className="text-texto-muted text-xs">{r.codigo_rol}{r.codigo_grupo == null ? ' [Global]' : ''}</span>
                       </button>
                     ))}
                   </div>
@@ -519,7 +519,7 @@ export default function PaginaCategoriasCaracteristica() {
                   ) : rolesCategoria.length === 0 ? (
                     <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={3 as never}>Sin roles asignados</TablaTd></TablaFila>
                   ) : rolesCategoria.map((rc, idx) => (
-                    <TablaFila key={rc.codigo_rol}>
+                    <TablaFila key={rc.id_rol}>
                       <TablaTd>
                         <div className="flex items-center gap-1">
                           <button disabled={idx === 0} onClick={() => moverRol(idx, 'arriba')}
@@ -530,11 +530,11 @@ export default function PaginaCategoriasCaracteristica() {
                         </div>
                       </TablaTd>
                       <TablaTd className="font-medium">
-                        {rc.roles?.nombre_rol || rc.codigo_rol}
+                        {rc.roles?.nombre_rol || rc.codigo_rol || `id ${rc.id_rol}`}
                       </TablaTd>
                       <TablaTd>
                         <div className="flex justify-end">
-                          <button onClick={() => quitarRol(rc.codigo_rol)}
+                          <button onClick={() => quitarRol(rc.id_rol)}
                             className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"><Trash2 size={14} /></button>
                         </div>
                       </TablaTd>

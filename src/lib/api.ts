@@ -28,11 +28,6 @@ import type {
   TipoCaractDocs,
   CaracteristicaDocumento,
   CategoriaConCaracteristicasDocs,
-  RolCaractDocs,
-  CategoriaCaractGeneDocs,
-  TipoCaractGeneDocs,
-  CaracteristicaGeneDocumento,
-  CategoriaConCaracteristicasGeneDocs,
   EstadoCanonicoConversacion,
   EstadoCanonicoCompromiso,
   TipoConversacion,
@@ -166,15 +161,15 @@ export const usuariosApi = {
     api.put<Usuario>(`/usuarios/${id}`, datos).then((r) => r.data),
   desactivar: (id: string) => api.delete(`/usuarios/${id}`),
   listarRoles: (id: string) =>
-    api.get<{ codigo_grupo: string; codigo_rol: string; orden: number; roles: { nombre: string; activo: boolean } }[]>(
+    api.get<{ codigo_grupo: string; id_rol: number; codigo_rol?: string; orden: number; roles?: { codigo_rol: string; nombre: string; activo: boolean; codigo_grupo: string | null } }[]>(
       `/usuarios/${id}/roles`
     ).then((r) => r.data),
-  asignarRol: (id: string, codigoRol: string, codigoGrupo: string) =>
-    api.post(`/usuarios/${id}/roles`, { codigo_rol: codigoRol, codigo_grupo: codigoGrupo }),
-  reordenarRoles: (id: string, orden: { codigo_grupo: string; codigo_rol: string; orden: number }[]) =>
+  asignarRol: (id: string, idRol: number, codigoGrupo: string) =>
+    api.post(`/usuarios/${id}/roles`, { id_rol: idRol, codigo_grupo: codigoGrupo }),
+  reordenarRoles: (id: string, orden: { codigo_grupo: string; id_rol: number; orden: number }[]) =>
     api.put(`/usuarios/${id}/roles/orden`, orden),
-  quitarRol: (id: string, codigoRol: string) =>
-    api.delete(`/usuarios/${id}/roles/${codigoRol}`),
+  quitarRol: (id: string, idRol: number) =>
+    api.delete(`/usuarios/${id}/roles/${idRol}`),
   listarEntidades: (id: string) =>
     api.get<{ codigo_entidad: string; codigo_grupo: string; codigo_area?: string; entidades: { nombre: string; activo: boolean } }[]>(
       `/usuarios/${id}/entidades`
@@ -201,26 +196,27 @@ export const usuariosApi = {
 
 export const rolesApi = {
   listar: () => api.get<Rol[]>('/roles').then((r) => r.data),
-  obtener: (id: string) => api.get<Rol>(`/roles/${id}`).then((r) => r.data),
+  listarGlobales: () => api.get<Rol[]>('/roles/globales').then((r) => r.data),
+  obtener: (idRol: number) => api.get<Rol>(`/roles/${idRol}`).then((r) => r.data),
   crear: (datos: Partial<Rol>) => api.post<Rol>('/roles', datos).then((r) => r.data),
-  actualizar: (id: string, datos: Partial<Rol>) =>
-    api.put<Rol>(`/roles/${id}`, datos).then((r) => r.data),
-  eliminar: (id: string) => api.delete(`/roles/${id}`),
-  listarFunciones: (id: string) =>
+  actualizar: (idRol: number, datos: Partial<Rol>) =>
+    api.put<Rol>(`/roles/${idRol}`, datos).then((r) => r.data),
+  eliminar: (idRol: number) => api.delete(`/roles/${idRol}`),
+  listarFunciones: (idRol: number) =>
     api.get<{ codigo_funcion: string; orden: number; funciones: { nombre_funcion: string; activo: boolean } }[]>(
-      `/roles/${id}/funciones`
+      `/roles/${idRol}/funciones`
     ).then((r) => r.data),
-  asignarFuncion: (id: string, codigoFuncion: string) =>
-    api.post(`/roles/${id}/funciones`, { codigo_funcion: codigoFuncion }),
-  reordenarFunciones: (id: string, orden: { codigo_funcion: string; orden: number }[]) =>
-    api.put(`/roles/${id}/funciones/orden`, orden),
-  quitarFuncion: (id: string, codigoFuncion: string) =>
-    api.delete(`/roles/${id}/funciones/${codigoFuncion}`),
-  reordenar: (orden: { codigo_rol: string; orden: number }[]) =>
+  asignarFuncion: (idRol: number, codigoFuncion: string) =>
+    api.post(`/roles/${idRol}/funciones`, { codigo_funcion: codigoFuncion }),
+  reordenarFunciones: (idRol: number, orden: { codigo_funcion: string; orden: number }[]) =>
+    api.put(`/roles/${idRol}/funciones/orden`, orden),
+  quitarFuncion: (idRol: number, codigoFuncion: string) =>
+    api.delete(`/roles/${idRol}/funciones/${codigoFuncion}`),
+  reordenar: (orden: { id_rol: number; orden: number }[]) =>
     api.put('/roles/orden', orden),
-  listarPorGrupo: (codigoGrupo: string) =>
-    api.get<Rol[]>('/roles', { params: { codigo_grupo: codigoGrupo } }).then((r) => r.data),
-  copiar: (datos: { codigo_grupo_origen: string; codigo_rol: string; codigo_grupo_destino: string }) =>
+  listarPorGrupo: (codigoGrupo: string, incluirGlobales: boolean = true) =>
+    api.get<Rol[]>('/roles', { params: { codigo_grupo: codigoGrupo, incluir_globales: incluirGlobales } }).then((r) => r.data),
+  copiar: (datos: { id_rol_origen: number; codigo_grupo_destino: string }) =>
     api.post<Rol>('/roles/copiar', datos).then((r) => r.data),
 }
 
@@ -391,15 +387,6 @@ export const documentosApi = {
     api.put<CaracteristicaDocumento>(`/documentos/${id}/caracteristicas/${idCar}`, datos).then((r) => r.data),
   eliminarCaracteristica: (id: number, idCar: number) =>
     api.delete(`/documentos/${id}/caracteristicas/${idCar}`),
-  // Características genéricas
-  listarCaracteristicasGenericas: (id: number) =>
-    api.get<CategoriaConCaracteristicasGeneDocs[]>(`/documentos/${id}/caracteristicas-genericas`).then((r) => r.data),
-  crearCaracteristicaGenerica: (id: number, datos: Partial<CaracteristicaGeneDocumento>) =>
-    api.post<CaracteristicaGeneDocumento>(`/documentos/${id}/caracteristicas-genericas`, datos).then((r) => r.data),
-  actualizarCaracteristicaGenerica: (id: number, idCar: number, datos: Partial<CaracteristicaGeneDocumento>) =>
-    api.put<CaracteristicaGeneDocumento>(`/documentos/${id}/caracteristicas-genericas/${idCar}`, datos).then((r) => r.data),
-  eliminarCaracteristicaGenerica: (id: number, idCar: number) =>
-    api.delete(`/documentos/${id}/caracteristicas-genericas/${idCar}`),
   // Procesamiento LLM
   resumir: (id: number, texto: string, idModelo: number) =>
     api.post<{ resumen: string; tiempo_ms: number; modelo: string }>(`/documentos/${id}/resumir`, { texto, id_modelo: idModelo }, { timeout: 120000 }).then((r) => r.data),
@@ -444,15 +431,17 @@ export const categoriasCaractPersApi = {
   // Roles
   listarRoles: (codigo: string) =>
     api.get<RolCaractPers[]>(`/categorias-caracteristica/${codigo}/roles`).then((r) => r.data),
-  asignarRol: (codigo: string, codigoRol: string) =>
-    api.post(`/categorias-caracteristica/${codigo}/roles`, { codigo_rol: codigoRol }),
-  reordenarRoles: (codigo: string, orden: { codigo_rol: string; orden: number }[]) =>
+  asignarRol: (codigo: string, idRol: number) =>
+    api.post(`/categorias-caracteristica/${codigo}/roles`, { id_rol: idRol }),
+  reordenarRoles: (codigo: string, orden: { id_rol: number; orden: number }[]) =>
     api.put(`/categorias-caracteristica/${codigo}/roles/orden`, orden),
-  quitarRol: (codigo: string, codigoRol: string) =>
-    api.delete(`/categorias-caracteristica/${codigo}/roles/${codigoRol}`),
+  quitarRol: (codigo: string, idRol: number) =>
+    api.delete(`/categorias-caracteristica/${codigo}/roles/${idRol}`),
 }
 
-// ─── Categorías Características Documentos ──────────────────────────────────
+// ─── Categorías Características Documentos (consolidadas tras migración 051) ──
+// Sin endpoints de roles — todas las categorías visibles para el grupo activo
+// son accesibles para todos los usuarios del grupo.
 
 export const categoriasCaractDocsApi = {
   listar: () => api.get<CategoriaCaractDocs[]>('/categorias-caracteristica-docs').then((r) => r.data),
@@ -472,37 +461,6 @@ export const categoriasCaractDocsApi = {
     api.put<TipoCaractDocs>(`/categorias-caracteristica-docs/${codigo}/tipos/${codigoTipo}`, datos).then((r) => r.data),
   desactivarTipo: (codigo: string, codigoTipo: string) =>
     api.delete(`/categorias-caracteristica-docs/${codigo}/tipos/${codigoTipo}`),
-  // Roles
-  listarRoles: (codigo: string) =>
-    api.get<RolCaractDocs[]>(`/categorias-caracteristica-docs/${codigo}/roles`).then((r) => r.data),
-  asignarRol: (codigo: string, codigoRol: string) =>
-    api.post(`/categorias-caracteristica-docs/${codigo}/roles`, { codigo_rol: codigoRol }),
-  reordenarRoles: (codigo: string, orden: { codigo_rol: string; orden: number }[]) =>
-    api.put(`/categorias-caracteristica-docs/${codigo}/roles/orden`, orden),
-  quitarRol: (codigo: string, codigoRol: string) =>
-    api.delete(`/categorias-caracteristica-docs/${codigo}/roles/${codigoRol}`),
-}
-
-// ─── Categorías Genéricas Características Documentos ─────────────────────────
-
-export const categoriasCaractGeneDocsApi = {
-  listar: () => api.get<CategoriaCaractGeneDocs[]>('/categorias-caracteristica-gene-docs').then((r) => r.data),
-  crear: (datos: Partial<CategoriaCaractGeneDocs>) =>
-    api.post<CategoriaCaractGeneDocs>('/categorias-caracteristica-gene-docs', datos).then((r) => r.data),
-  actualizar: (codigo: string, datos: Partial<CategoriaCaractGeneDocs>) =>
-    api.put<CategoriaCaractGeneDocs>(`/categorias-caracteristica-gene-docs/${codigo}`, datos).then((r) => r.data),
-  desactivar: (codigo: string) => api.delete(`/categorias-caracteristica-gene-docs/${codigo}`),
-  reordenar: (orden: { codigo: string; orden: number }[]) =>
-    api.put('/categorias-caracteristica-gene-docs/orden', orden),
-  // Tipos
-  listarTipos: (codigo: string) =>
-    api.get<TipoCaractGeneDocs[]>(`/categorias-caracteristica-gene-docs/${codigo}/tipos`).then((r) => r.data),
-  crearTipo: (codigo: string, datos: Partial<TipoCaractGeneDocs>) =>
-    api.post<TipoCaractGeneDocs>(`/categorias-caracteristica-gene-docs/${codigo}/tipos`, datos).then((r) => r.data),
-  actualizarTipo: (codigo: string, codigoTipo: string, datos: Partial<TipoCaractGeneDocs>) =>
-    api.put<TipoCaractGeneDocs>(`/categorias-caracteristica-gene-docs/${codigo}/tipos/${codigoTipo}`, datos).then((r) => r.data),
-  desactivarTipo: (codigo: string, codigoTipo: string) =>
-    api.delete(`/categorias-caracteristica-gene-docs/${codigo}/tipos/${codigoTipo}`),
 }
 
 // ─── Registro LLM ───────────────────────────────────────────────────────────

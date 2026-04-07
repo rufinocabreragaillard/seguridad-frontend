@@ -11,7 +11,7 @@ export default function PaginaCopiarRoles() {
   const [grupos, setGrupos] = useState<Grupo[]>([])
   const [grupoOrigen, setGrupoOrigen] = useState('')
   const [rolesOrigen, setRolesOrigen] = useState<Rol[]>([])
-  const [rolCopiar, setRolCopiar] = useState('')
+  const [rolCopiar, setRolCopiar] = useState('')  // id_rol como string
   const [grupoDestino, setGrupoDestino] = useState('')
   const [cargandoRoles, setCargandoRoles] = useState(false)
   const [copiando, setCopiando] = useState(false)
@@ -29,7 +29,8 @@ export default function PaginaCopiarRoles() {
     if (!codigoGrupo) return
     setCargandoRoles(true)
     try {
-      setRolesOrigen(await rolesApi.listarPorGrupo(codigoGrupo))
+      // Solo roles per-grupo (no globales) — los globales no se copian
+      setRolesOrigen(await rolesApi.listarPorGrupo(codigoGrupo, false))
     } catch {
       setRolesOrigen([])
     } finally {
@@ -43,11 +44,11 @@ export default function PaginaCopiarRoles() {
     setMensaje(null)
     try {
       await rolesApi.copiar({
-        codigo_grupo_origen: grupoOrigen,
-        codigo_rol: rolCopiar,
+        id_rol_origen: Number(rolCopiar),
         codigo_grupo_destino: grupoDestino,
       })
-      setMensaje({ tipo: 'exito', texto: `Rol "${rolCopiar}" copiado exitosamente al grupo "${grupoDestino}".` })
+      const rolNombre = rolesOrigen.find(r => String(r.id_rol) === rolCopiar)?.nombre || rolCopiar
+      setMensaje({ tipo: 'exito', texto: `Rol "${rolNombre}" copiado exitosamente al grupo "${grupoDestino}".` })
     } catch (e) {
       setMensaje({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al copiar rol' })
     } finally {
@@ -92,7 +93,7 @@ export default function PaginaCopiarRoles() {
               >
                 <option value="">{cargandoRoles ? 'Cargando...' : 'Seleccionar rol...'}</option>
                 {rolesOrigen.map((r) => (
-                  <option key={r.codigo_rol} value={r.codigo_rol}>{r.nombre} ({r.codigo_rol})</option>
+                  <option key={r.id_rol} value={String(r.id_rol)}>{r.nombre} ({r.codigo_rol})</option>
                 ))}
               </select>
             </div>

@@ -134,7 +134,7 @@ export function Sidebar() {
         {menuDinamico ? (
           /* Menu dinamico: roles como secciones, funciones como items */
           menuFiltrado.map((rol) => (
-            <div key={rol.codigo_rol}>
+            <div key={rol.id_rol}>
               {!colapsado && (
                 <span className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-texto-muted">
                   {rol.alias}
