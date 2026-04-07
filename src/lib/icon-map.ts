@@ -67,6 +67,7 @@ import {
   ListOrdered,
   Brain,
   Cpu,
+  MessageCircle,
 } from 'lucide-react'
 
 const iconMap: Record<string, LucideIcon> = {
@@ -138,6 +139,7 @@ const iconMap: Record<string, LucideIcon> = {
   // IA / Procesamiento
   Brain,
   Cpu,
+  MessageCircle,
 
   // Varios
   Calendar,

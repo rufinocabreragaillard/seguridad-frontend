@@ -158,6 +158,35 @@ export interface Funcion {
   alias_de_funcion?: string
   icono_de_funcion?: string
   activo: boolean
+  id_modelo?: number | null  // FK a registro_llm. NULL = sin LLM
+  system_prompt?: string | null  // instrucciones extra al LLM
+}
+
+// ─── Chat con LLM ───────────────────────────────────────────────────────────
+
+export interface ChatConversacion {
+  id_conversacion: number
+  codigo_grupo: string
+  codigo_usuario: string
+  codigo_funcion?: string | null
+  id_modelo?: number | null
+  nombre_modelo?: string | null
+  titulo: string
+  activo: boolean
+  fecha_creacion: string
+  fecha_actualizacion: string
+}
+
+export interface ChatMensaje {
+  id_mensaje: number
+  id_conversacion: number
+  rol: 'user' | 'assistant' | 'system'
+  contenido: string
+  fecha_creacion: string
+}
+
+export interface ChatConversacionDetalle extends ChatConversacion {
+  mensajes: ChatMensaje[]
 }
 
 // ─── Aplicaciones ────────────────────────────────────────────────────────────

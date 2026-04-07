@@ -40,6 +40,8 @@ import type {
   UbicacionDoc,
   EstadoDoc,
   ColaEstadoDoc,
+  ChatConversacion,
+  ChatConversacionDetalle,
 } from './tipos'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -666,6 +668,122 @@ export const cargaDocumentosApi = {
     api.post<{ insertados: number; actualizados: number; total: number }>(
       '/documentos/cargar-desde-ubicaciones', datos
     ).then((r) => r.data),
+}
+
+// ─── Chat con LLM ────────────────────────────────────────────────────────────
+
+export const chatApi = {
+  listarConversaciones: () =>
+    api.get<ChatConversacion[]>('/chat/conversaciones').then((r) => r.data),
+  obtenerConversacion: (id: number) =>
+    api.get<ChatConversacionDetalle>(`/chat/conversaciones/${id}`).then((r) => r.data),
+  crearConversacion: (codigoFuncion: string, titulo?: string) =>
+    api.post<ChatConversacion>('/chat/conversaciones', {
+      codigo_funcion: codigoFuncion,
+      ...(titulo ? { titulo } : {}),
+    }).then((r) => r.data),
+  renombrarConversacion: (id: number, titulo: string) =>
+    api.put<ChatConversacion>(`/chat/conversaciones/${id}`, { titulo }).then((r) => r.data),
+  eliminarConversacion: (id: number) =>
+    api.delete(`/chat/conversaciones/${id}`),
+
+  /**
+   * Envía un mensaje de usuario a la conversación y recibe la respuesta del LLM en streaming.
+   * Cada chunk de texto se entrega al callback `onChunk`. Cuando termina, se llama `onDone`
+   * con los IDs persistidos en BD. Si hay error, se llama `onError`.
+   *
+   * Implementado con fetch + ReadableStream porque axios no soporta streams en el navegador
+   * de forma simple. El backend devuelve text/event-stream con líneas `data: {json}\n\n`.
+   */
+  enviarMensajeStream: async (
+    idConversacion: number,
+    contenido: string,
+    callbacks: {
+      onChunk: (text: string) => void
+      onDone: (info: { id_mensaje_user: number | null; id_mensaje_assistant: number | null }) => void
+      onError: (mensaje: string) => void
+    }
+  ): Promise<void> => {
+    const token = await obtenerToken()
+    if (!token) {
+      callbacks.onError('No autenticado.')
+      return
+    }
+    // Headers de override de sesión (igual que el axios interceptor)
+    const overrideHeaders: Record<string, string> = {}
+    if (typeof window !== 'undefined') {
+      const og = localStorage.getItem('cab_override_grupo')
+      const oe = localStorage.getItem('cab_override_entidad')
+      const oa = localStorage.getItem('cab_override_aplicacion')
+      if (og) overrideHeaders['X-Override-Grupo'] = og
+      if (oe) overrideHeaders['X-Override-Entidad'] = oe
+      if (oa) overrideHeaders['X-Override-Aplicacion'] = oa
+      overrideHeaders['X-Codigo-Funcion'] = _urlToFuncion[window.location.pathname] || 'CHAT-USUARIO'
+    }
+    let resp: Response
+    try {
+      resp = await fetch(`${BASE_URL}/chat/conversaciones/${idConversacion}/mensajes/stream`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          'Accept': 'text/event-stream',
+          ...overrideHeaders,
+        },
+        body: JSON.stringify({ contenido }),
+      })
+    } catch (e) {
+      callbacks.onError(e instanceof Error ? e.message : 'Error de red')
+      return
+    }
+    if (!resp.ok || !resp.body) {
+      let detail = `HTTP ${resp.status}`
+      try {
+        const j = await resp.json()
+        detail = j.detail || detail
+      } catch { /* */ }
+      callbacks.onError(detail)
+      return
+    }
+    const reader = resp.body.getReader()
+    const decoder = new TextDecoder()
+    let buffer = ''
+    try {
+      while (true) {
+        const { value, done } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        // Procesar líneas completas separadas por \n\n
+        let idx
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          const linea = buffer.slice(0, idx).trim()
+          buffer = buffer.slice(idx + 2)
+          if (!linea.startsWith('data:')) continue
+          const payload = linea.slice(5).trim()
+          if (!payload) continue
+          try {
+            const evt = JSON.parse(payload)
+            if (evt.error) {
+              callbacks.onError(evt.error)
+              return
+            }
+            if (evt.text) {
+              callbacks.onChunk(evt.text)
+            }
+            if (evt.done) {
+              callbacks.onDone({
+                id_mensaje_user: evt.id_mensaje_user ?? null,
+                id_mensaje_assistant: evt.id_mensaje_assistant ?? null,
+              })
+              return
+            }
+          } catch { /* línea malformada, ignorar */ }
+        }
+      }
+    } catch (e) {
+      callbacks.onError(e instanceof Error ? e.message : 'Error leyendo stream')
+    }
+  },
 }
 
 export default api

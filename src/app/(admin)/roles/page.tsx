@@ -9,9 +9,9 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Tarjeta, TarjetaCabecera, TarjetaTitulo, TarjetaContenido } from '@/components/ui/tarjeta'
-import { rolesApi, funcionesApi, aplicacionesApi } from '@/lib/api'
+import { rolesApi, funcionesApi, aplicacionesApi, registroLLMApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Rol, Funcion, Aplicacion } from '@/lib/tipos'
+import type { Rol, Funcion, Aplicacion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 
 type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string; activo: boolean } }
@@ -43,8 +43,14 @@ export default function PaginaRoles() {
   // Modal función
   const [modalFuncion, setModalFuncion] = useState(false)
   const [funcionEditando, setFuncionEditando] = useState<Funcion | null>(null)
-  const [formFuncion, setFormFuncion] = useState({ codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '', alias_de_funcion: '', icono_de_funcion: '' })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'aplicaciones'>('datos')
+  const [formFuncion, setFormFuncion] = useState({
+    codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '',
+    alias_de_funcion: '', icono_de_funcion: '',
+    id_modelo: '' as string,  // string para el <select>; '' = sin LLM
+    system_prompt: '',
+  })
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'aplicaciones' | 'llm'>('datos')
+  const [modelosLLM, setModelosLLM] = useState<RegistroLLM[]>([])
 
   // Aplicaciones de la función en edición
   const [todasApps, setTodasApps] = useState<Aplicacion[]>([])
@@ -63,10 +69,16 @@ export default function PaginaRoles() {
   const cargar = useCallback(async () => {
     setCargando(true)
     try {
-      const [r, f, a] = await Promise.all([rolesApi.listar(), funcionesApi.listar(grupoActivo || undefined), aplicacionesApi.listar()])
+      const [r, f, a, llms] = await Promise.all([
+        rolesApi.listar(),
+        funcionesApi.listar(grupoActivo || undefined),
+        aplicacionesApi.listar(),
+        registroLLMApi.listar().catch(() => [] as RegistroLLM[]),
+      ])
       setRoles(r)
       setFunciones(f)
       setTodasApps(a)
+      setModelosLLM(llms.filter((m: RegistroLLM) => m.activo))
     } finally {
       setCargando(false)
     }
@@ -263,7 +275,7 @@ export default function PaginaRoles() {
 
   const abrirNuevaFuncion = () => {
     setFuncionEditando(null)
-    setFormFuncion({ codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '', alias_de_funcion: '', icono_de_funcion: '' })
+    setFormFuncion({ codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '', alias_de_funcion: '', icono_de_funcion: '', id_modelo: '', system_prompt: '' })
     setError('')
     setTabModalFuncion('datos')
     setModalFuncion(true)
@@ -271,7 +283,16 @@ export default function PaginaRoles() {
 
   const abrirEditarFuncion = (f: Funcion) => {
     setFuncionEditando(f)
-    setFormFuncion({ codigo_funcion: f.codigo_funcion, nombre: f.nombre, descripcion: f.descripcion || '', url_funcion: f.url_funcion || '', alias_de_funcion: f.alias_de_funcion || '', icono_de_funcion: f.icono_de_funcion || '' })
+    setFormFuncion({
+      codigo_funcion: f.codigo_funcion,
+      nombre: f.nombre,
+      descripcion: f.descripcion || '',
+      url_funcion: f.url_funcion || '',
+      alias_de_funcion: f.alias_de_funcion || '',
+      icono_de_funcion: f.icono_de_funcion || '',
+      id_modelo: f.id_modelo != null ? String(f.id_modelo) : '',
+      system_prompt: f.system_prompt || '',
+    })
     setError('')
     setTabModalFuncion('datos')
     cargarAppsFuncion(f.codigo_funcion)
@@ -282,10 +303,19 @@ export default function PaginaRoles() {
     if (!formFuncion.codigo_funcion || !formFuncion.nombre) { setError('Código y nombre son obligatorios'); return }
     setGuardando(true)
     try {
+      const payload: Partial<Funcion> = {
+        nombre: formFuncion.nombre,
+        descripcion: formFuncion.descripcion,
+        url_funcion: formFuncion.url_funcion,
+        alias_de_funcion: formFuncion.alias_de_funcion,
+        icono_de_funcion: formFuncion.icono_de_funcion || undefined,
+        id_modelo: formFuncion.id_modelo ? Number(formFuncion.id_modelo) : null,
+        system_prompt: formFuncion.system_prompt || null,
+      }
       if (funcionEditando) {
-        await funcionesApi.actualizar(funcionEditando.codigo_funcion, { nombre: formFuncion.nombre, descripcion: formFuncion.descripcion, url_funcion: formFuncion.url_funcion, alias_de_funcion: formFuncion.alias_de_funcion, icono_de_funcion: formFuncion.icono_de_funcion || undefined })
+        await funcionesApi.actualizar(funcionEditando.codigo_funcion, payload)
       } else {
-        await funcionesApi.crear(formFuncion)
+        await funcionesApi.crear({ codigo_funcion: formFuncion.codigo_funcion, ...payload })
       }
       setModalFuncion(false)
       cargar()
@@ -658,6 +688,7 @@ export default function PaginaRoles() {
             <div className="flex border-b border-borde -mx-1">
               <button onClick={() => setTabModalFuncion('datos')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalFuncion === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Datos</button>
               <button onClick={() => setTabModalFuncion('aplicaciones')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalFuncion === 'aplicaciones' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Aplicaciones ({appsFuncion.length})</button>
+              <button onClick={() => setTabModalFuncion('llm')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalFuncion === 'llm' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>LLM</button>
             </div>
           )}
 
@@ -711,6 +742,53 @@ export default function PaginaRoles() {
               )}
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>Cerrar</Boton></div>
+            </div>
+          )}
+
+          {/* Tab LLM (configuración del modelo de IA para esta función) */}
+          {tabModalFuncion === 'llm' && funcionEditando && (
+            <div className="flex flex-col gap-4">
+              <div className="bg-primario/5 border border-primario/20 rounded-lg p-3 text-xs text-texto-muted">
+                Configura el modelo de IA que usará esta función cuando invoque al chat o procesamiento LLM.
+                Si la función no maneja chat, déjalo sin asignar.
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Modelo LLM</label>
+                <select
+                  value={formFuncion.id_modelo}
+                  onChange={(e) => setFormFuncion({ ...formFuncion, id_modelo: e.target.value })}
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                >
+                  <option value="">— Sin modelo asignado —</option>
+                  {modelosLLM.map((m) => (
+                    <option key={m.id_modelo} value={String(m.id_modelo)}>
+                      {m.nombre_visible} ({m.proveedor})
+                    </option>
+                  ))}
+                </select>
+                {modelosLLM.length === 0 && (
+                  <p className="text-xs text-texto-muted">No hay modelos LLM activos. Configura modelos en Registro LLM.</p>
+                )}
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">System prompt (instrucciones extras)</label>
+                <textarea
+                  value={formFuncion.system_prompt}
+                  onChange={(e) => setFormFuncion({ ...formFuncion, system_prompt: e.target.value })}
+                  rows={5}
+                  placeholder="Ej: Eres un asistente legal. Responde con precisión técnica y cita los artículos relevantes."
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto resize-y focus:outline-none focus:ring-2 focus:ring-primario"
+                />
+                <p className="text-xs text-texto-muted">
+                  Opcional. El backend siempre antepone un contexto automático con datos del usuario, grupo y entidad.
+                  Lo que escribas aquí se agrega como instrucciones adicionales.
+                </p>
+              </div>
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalFuncion(false)}>Cancelar</Boton>
+                <Boton variante="primario" onClick={guardarFuncion} cargando={guardando}>Guardar</Boton>
+              </div>
             </div>
           )}
         </div>
