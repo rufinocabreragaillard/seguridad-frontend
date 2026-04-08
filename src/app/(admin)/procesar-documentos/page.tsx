@@ -392,16 +392,12 @@ export default function PaginaProcesarDocumentos() {
         let archivoNoEncontrado = false
         let formatoNoSoportado: string | undefined
         let contenidoVacio = false
+        // Si no hay dirHandle pero el usuario decidio resumir igual, le
+        // decimos al backend que genere resumen basado solo en metadatos.
+        const permitirSinTexto = proceso === 'resumir' && !dirHandle
 
         // Solo en resumir intentamos leer el archivo del filesystem.
-        if (proceso === 'resumir' && item.ubicacion_documento) {
-          if (!dirHandle) {
-            // Sin directorio, no podemos leer el archivo. Mejor abortar la
-            // operacion: marcar la fila como error y NO mandar al backend.
-            // (Si quisieras forzar, podrias seguir, pero el backend ahora
-            // exige texto cuando destino=RESUMIDO y marca NO_ESCANEABLE.)
-            throw new Error('Selecciona el directorio raiz para leer los archivos.')
-          }
+        if (proceso === 'resumir' && dirHandle && item.ubicacion_documento) {
           try {
             const fileHandle = await abrirArchivoPorRuta(dirHandle, item.ubicacion_documento)
             if (!fileHandle) {
@@ -430,6 +426,7 @@ export default function PaginaProcesarDocumentos() {
             archivo_no_encontrado: archivoNoEncontrado || undefined,
             formato_no_soportado: formatoNoSoportado,
             contenido_vacio: contenidoVacio || undefined,
+            permitir_sin_texto: permitirSinTexto || undefined,
           },
         )
 
@@ -450,7 +447,10 @@ export default function PaginaProcesarDocumentos() {
     }
 
     setEjecutando(false)
-    setCola([])
+    // OJO: NO vaciamos setCola([]) para que el usuario vea el resultado
+    // de cada item (COMPLETADO / ERROR / NO_ESCANEABLE / NO_ENCONTRADO).
+    // La lista de documentos sí se refresca para que los procesados
+    // desaparezcan del listado de pendientes.
     cargarDocumentos()
   }
 

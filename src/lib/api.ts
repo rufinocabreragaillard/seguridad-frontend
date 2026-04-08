@@ -744,6 +744,7 @@ export const colaEstadosDocsApi = {
       archivo_no_encontrado?: boolean
       formato_no_soportado?: string
       contenido_vacio?: boolean
+      permitir_sin_texto?: boolean
     },
   ) =>
     api.post<{ id_cola: number; estado_cola: string; resultado: string | null; tiempo_ms: number }>(
