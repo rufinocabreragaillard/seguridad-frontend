@@ -210,11 +210,21 @@ export default function PaginaProcesarDocumentos() {
     }
   }, [proceso, alcance, ubicacionSel, ubicaciones, busqueda])
 
-  // Resetear lista cuando cambian filtros de proceso/alcance/ubicación
+  // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
+  // Si el alcance es "pendientes" (no requiere filtro adicional), autocargamos
+  // para que el usuario vea inmediatamente todos los documentos pendientes
+  // sin tener que presionar "Listar". Para "ubicacion" esperamos a que el
+  // usuario elija una y presione Listar.
+  // Nota: a proposito NO incluimos `busqueda` en las deps; eso lo maneja el
+  // boton/Enter del filtro para no re-cargar con cada tecla.
   useEffect(() => {
     setDocumentos([])
     setSeleccionados(new Set())
     setYaCargado(false)
+    if (alcance === 'pendientes') {
+      cargarDocumentos()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proceso, alcance, ubicacionSel])
 
   const toggleSeleccion = (id: number) => {
