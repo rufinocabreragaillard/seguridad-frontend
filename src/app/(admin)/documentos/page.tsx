@@ -288,7 +288,7 @@ export default function PaginaDocumentos() {
                     {d.codigo_documento}
                   </code>
                 </TablaTd>
-                <TablaTd className="max-w-[200px]">
+                <TablaTd className="max-w-[250px]">
                   <span className="font-medium truncate block" title={d.nombre_documento}>
                     {d.nombre_documento}
                   </span>
