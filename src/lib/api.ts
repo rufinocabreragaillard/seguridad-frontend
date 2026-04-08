@@ -161,7 +161,7 @@ export const usuariosApi = {
   crear: (datos: CrearUsuarioRequest) => api.post<Usuario>('/usuarios', datos).then((r) => r.data),
   actualizar: (id: string, datos: Partial<Usuario>) =>
     api.put<Usuario>(`/usuarios/${id}`, datos).then((r) => r.data),
-  desactivar: (id: string) => api.delete(`/usuarios/${id}`),
+  eliminar: (id: string) => api.delete(`/usuarios/${id}`),
   listarRoles: (id: string) =>
     api.get<{ codigo_grupo: string; id_rol: number; codigo_rol?: string; orden: number; roles?: { codigo_rol: string; nombre: string; activo: boolean; codigo_grupo: string | null } }[]>(
       `/usuarios/${id}/roles`
@@ -476,6 +476,116 @@ export const registroLLMApi = {
   desactivar: (id: number) => api.delete(`/registro-llm/${id}`),
   probar: (id: number, mensaje: string) =>
     api.post<{ respuesta: string; tiempo_ms: number; modelo: string }>(`/registro-llm/${id}/probar`, { mensaje }).then((r) => r.data),
+}
+
+// ─── LLM Credenciales por grupo ──────────────────────────────────────────────
+
+export interface LLMCredencial {
+  codigo_grupo: string
+  proveedor: 'anthropic' | 'google'
+  alias: string
+  api_key_preview: string
+  activo: boolean
+  limite_usd_mes: number | null
+  ultimo_uso_en: string | null
+  creado_por: string | null
+  created_at: string | null
+}
+
+export interface LLMPrecio {
+  proveedor: string
+  nombre_tecnico: string
+  precio_input_1m: number
+  precio_output_1m: number
+  precio_cache_read_1m: number
+  precio_cache_write_1m: number
+  vigente_desde: string
+  activo: boolean
+}
+
+export const llmCredencialesApi = {
+  listar: () => api.get<LLMCredencial[]>('/llm-credenciales').then((r) => r.data),
+  crear: (datos: {
+    proveedor: 'anthropic' | 'google'
+    alias?: string
+    api_key: string
+    limite_usd_mes?: number | null
+    activo?: boolean
+  }) => api.post<LLMCredencial>('/llm-credenciales', datos).then((r) => r.data),
+  actualizar: (
+    proveedor: string,
+    alias: string,
+    datos: { api_key?: string; limite_usd_mes?: number | null; activo?: boolean },
+  ) => api.put<LLMCredencial>(`/llm-credenciales/${proveedor}/${alias}`, datos).then((r) => r.data),
+  eliminar: (proveedor: string, alias: string) =>
+    api.delete(`/llm-credenciales/${proveedor}/${alias}`),
+  probar: (proveedor: string, alias: string) =>
+    api
+      .post<{ ok: boolean; mensaje: string; tiempo_ms: number }>(
+        `/llm-credenciales/${proveedor}/${alias}/probar`,
+      )
+      .then((r) => r.data),
+}
+
+export const llmPreciosApi = {
+  listar: () => api.get<LLMPrecio[]>('/llm-precios').then((r) => r.data),
+  upsert: (proveedor: string, nombre_tecnico: string, datos: Partial<LLMPrecio>) =>
+    api
+      .put(`/llm-precios/${proveedor}/${nombre_tecnico}`, {
+        proveedor,
+        nombre_tecnico,
+        ...datos,
+      })
+      .then((r) => r.data),
+}
+
+// ─── LLM Uso ─────────────────────────────────────────────────────────────────
+
+export interface LLMUsoFila {
+  id: number
+  codigo_grupo: string
+  codigo_entidad: string | null
+  codigo_usuario: string | null
+  proveedor: string
+  modelo: string
+  alias_credencial: string | null
+  uso_key_casa: boolean
+  tokens_input: number
+  tokens_output: number
+  tokens_cache_read: number
+  tokens_cache_write: number
+  costo_estimado_usd: number
+  codigo_funcion: string | null
+  operacion: string | null
+  id_documento: number | null
+  exito: boolean
+  error_mensaje: string | null
+  duracion_ms: number | null
+  created_at: string
+}
+
+export interface LLMUsoResumen {
+  mes: string
+  total_llamadas: number
+  total_costo_usd: number
+  costo_key_casa_usd: number
+  costo_key_grupo_usd: number
+  por_modelo: Array<{ clave: string; llamadas: number; costo_usd: number; tokens_input: number; tokens_output: number; errores: number }>
+  por_usuario: Array<{ clave: string; llamadas: number; costo_usd: number; tokens_input: number; tokens_output: number; errores: number }>
+}
+
+export const llmUsoApi = {
+  listar: (params: {
+    desde?: string
+    hasta?: string
+    proveedor?: string
+    modelo?: string
+    codigo_usuario?: string
+    limit?: number
+  } = {}) => api.get<LLMUsoFila[]>('/llm-uso', { params }).then((r) => r.data),
+  resumen: () => api.get<LLMUsoResumen>('/llm-uso/resumen').then((r) => r.data),
+  mensual: (meses = 6) =>
+    api.get<Array<Record<string, unknown>>>('/llm-uso/mensual', { params: { meses } }).then((r) => r.data),
 }
 
 // ─── Personas ────────────────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Search, Pencil, Trash2, UserCheck, UserX, X, Star, Phone, PhoneOff, Download, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Search, Pencil, Trash2, X, Star, Phone, PhoneOff, Download, ChevronUp, ChevronDown } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -363,21 +363,21 @@ export default function PaginaUsuarios() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al quitar entidad') }
   }
 
-  const [usuarioADesactivar, setUsuarioADesactivar] = useState<Usuario | null>(null)
-  const [desactivando, setDesactivando] = useState(false)
+  const [usuarioAEliminar, setUsuarioAEliminar] = useState<Usuario | null>(null)
+  const [eliminando, setEliminando] = useState(false)
 
-  const ejecutarDesactivar = async () => {
-    if (!usuarioADesactivar) return
-    setDesactivando(true)
+  const ejecutarEliminar = async () => {
+    if (!usuarioAEliminar) return
+    setEliminando(true)
     try {
-      await usuariosApi.desactivar(usuarioADesactivar.codigo_usuario)
-      setUsuarioADesactivar(null)
+      await usuariosApi.eliminar(usuarioAEliminar.codigo_usuario)
+      setUsuarioAEliminar(null)
       cargar()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al desactivar')
-      setUsuarioADesactivar(null)
+      setError(e instanceof Error ? e.message : 'Error al eliminar')
+      setUsuarioAEliminar(null)
     } finally {
-      setDesactivando(false)
+      setEliminando(false)
     }
   }
 
@@ -395,9 +395,12 @@ export default function PaginaUsuarios() {
   // Roles disponibles para asignar al usuario en el grupo activo:
   // - Roles del grupo activo + roles globales (codigo_grupo NULL)
   // - Excluyendo los que ya tiene asignados en el grupo activo
+  // Roles "Administrador General" no se asignan desde la app — solo desde la BD.
+  const ROLES_PROTEGIDOS = new Set(['SEG_ADMIN_GRUPO', 'ADMIN'])
   const rolesDisponibles = roles
     .filter((r) =>
       r.activo &&
+      !ROLES_PROTEGIDOS.has(r.codigo_rol) &&
       (r.codigo_grupo === grupoActivo || r.codigo_grupo == null) &&
       !rolesUsuario.some((ra) => ra.codigo_grupo === grupoActivo && ra.id_rol === r.id_rol)
     )
@@ -566,15 +569,11 @@ export default function PaginaUsuarios() {
                         <Pencil size={14} />
                       </button>
                       <button
-                        onClick={() => setUsuarioADesactivar(u)}
-                        className={`p-1.5 rounded-lg transition-colors ${
-                          u.activo
-                            ? 'hover:bg-red-50 text-texto-muted hover:text-error'
-                            : 'hover:bg-green-50 text-texto-muted hover:text-exito'
-                        }`}
-                        title={u.activo ? 'Desactivar' : 'Activar'}
+                        onClick={() => setUsuarioAEliminar(u)}
+                        className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                        title="Eliminar"
                       >
-                        {u.activo ? <UserX size={14} /> : <UserCheck size={14} />}
+                        <Trash2 size={14} />
                       </button>
                     </div>
                   </TablaTd>
@@ -979,15 +978,7 @@ export default function PaginaUsuarios() {
                 <p className="text-sm text-texto-muted text-center py-4">No tiene roles asignados en este grupo</p>
               ) : (
                 <div className="flex flex-col gap-2">
-                  {rolesUsuario
-                    .filter((ra) => ra.codigo_grupo === grupoActivo)
-                    .slice()
-                    .sort((a, b) => {
-                      const na = (a.roles?.nombre_rol as string | undefined) || a.codigo_rol || String(a.id_rol)
-                      const nb = (b.roles?.nombre_rol as string | undefined) || b.codigo_rol || String(b.id_rol)
-                      return na.localeCompare(nb, 'es')
-                    })
-                    .map((ra, idx, arr) => {
+                  {rolesUsuario.filter((ra) => ra.codigo_grupo === grupoActivo).map((ra, idx, arr) => {
                     const esPrincipal = form.id_rol_principal === String(ra.id_rol)
                     const codigoRolDisplay = ra.codigo_rol || ra.roles?.codigo_rol || `id ${ra.id_rol}`
                     return (
@@ -1062,15 +1053,15 @@ export default function PaginaUsuarios() {
         </div>
       </Modal>
 
-      {/* Modal Confirmar Desactivación */}
+      {/* Modal Confirmar Eliminación */}
       <ModalConfirmar
-        abierto={!!usuarioADesactivar}
-        alCerrar={() => setUsuarioADesactivar(null)}
-        alConfirmar={ejecutarDesactivar}
-        titulo="Desactivar usuario"
-        mensaje={`¿Estás seguro de desactivar al usuario "${usuarioADesactivar?.nombre}"? El usuario no podrá acceder al sistema.`}
-        textoConfirmar="Desactivar"
-        cargando={desactivando}
+        abierto={!!usuarioAEliminar}
+        alCerrar={() => setUsuarioAEliminar(null)}
+        alConfirmar={ejecutarEliminar}
+        titulo="Eliminar usuario"
+        mensaje={`¿Estás seguro de eliminar al usuario "${usuarioAEliminar?.nombre}"? Esta acción es irreversible y borrará en cascada todas sus relaciones (roles, entidades, grupos, parámetros).`}
+        textoConfirmar="Eliminar"
+        cargando={eliminando}
       />
     </div>
   )
