@@ -114,9 +114,9 @@ export default function PaginaGrupos() {
     setGuardando(true)
     try {
       if (grupoEditando) {
-        await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined, tipo: formGrupo.tipo })
+        await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined })
       } else {
-        await gruposApi.crear({ nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined, tipo: formGrupo.tipo })
+        await gruposApi.crear({ nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined })
       }
       setModalGrupo(false)
       cargar()
@@ -597,14 +597,12 @@ export default function PaginaGrupos() {
           <Textarea etiqueta="Descripción" value={formGrupo.descripcion} onChange={(e) => setFormGrupo({ ...formGrupo, descripcion: e.target.value })} rows={3} />
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-texto">Tipo</label>
-            <select
-              value={formGrupo.tipo}
-              onChange={(e) => setFormGrupo({ ...formGrupo, tipo: e.target.value as 'NORMAL' | 'RESTRINGIDO' })}
-              className="rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
-            >
-              <option value="NORMAL">Normal</option>
-              <option value="RESTRINGIDO">Restringido (sistema)</option>
-            </select>
+            <div className="flex items-center gap-2 py-1">
+              {formGrupo.tipo === 'RESTRINGIDO'
+                ? <Insignia variante="advertencia">Restringido</Insignia>
+                : <Insignia variante="primario">Normal</Insignia>}
+              <span className="text-xs text-texto-muted">Solo modificable desde la base de datos</span>
+            </div>
           </div>
           {grupoEditando && (
             <Input etiqueta="Código" value={formGrupo.codigo_grupo} disabled readOnly />

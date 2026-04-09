@@ -140,9 +140,9 @@ export default function PaginaRoles() {
     try {
       const origen = formRol.codigo_aplicacion_origen || null
       if (rolEditando) {
-        await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, tipo: formRol.tipo })
+        await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen })
       } else {
-        const payload: Record<string, unknown> = { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, codigo_grupo: grupoActivo || 'ADMIN', tipo: formRol.tipo }
+        const payload: Record<string, unknown> = { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, codigo_grupo: grupoActivo || 'ADMIN' }
         if (esGlobalCreate && formRol.codigo_rol) payload.codigo_rol = formRol.codigo_rol
         await rolesApi.crear(payload as Parameters<typeof rolesApi.crear>[0])
       }
@@ -574,10 +574,12 @@ export default function PaginaRoles() {
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-texto">Tipo</label>
-                  <select value={formRol.tipo} onChange={(e) => setFormRol({ ...formRol, tipo: e.target.value as 'NORMAL' | 'RESTRINGIDO' })} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
-                    <option value="NORMAL">Normal</option>
-                    <option value="RESTRINGIDO">Restringido (sistema)</option>
-                  </select>
+                  <div className="flex items-center gap-2 py-1">
+                    {formRol.tipo === 'RESTRINGIDO'
+                      ? <Insignia variante="advertencia">Restringido</Insignia>
+                      : <Insignia variante="primario">Normal</Insignia>}
+                    <span className="text-xs text-texto-muted">Solo modificable desde la base de datos</span>
+                  </div>
                 </div>
                 <Input etiqueta="Descripción" value={formRol.descripcion} onChange={(e) => setFormRol({ ...formRol, descripcion: e.target.value })} placeholder="Descripción del rol..." />
                 <Input etiqueta="URL de inicio" value={formRol.url_inicio} onChange={(e) => setFormRol({ ...formRol, url_inicio: e.target.value })} placeholder="/admin/dashboard" />
