@@ -356,16 +356,18 @@ export default function PaginaProcesarDocumentos() {
       return
     }
 
-    if (encoladosRes.encolados === 0) {
-      setEjecutando(false)
-      return
-    }
-
-    // 2. Obtener ítems PENDIENTES de la cola
+    // 2. Obtener ítems PENDIENTES de la cola (recién encolados + huérfanos de
+    // ejecuciones previas que se abandonaron a medio camino). Si encolados=0
+    // NO abortamos: puede que todos los seleccionados ya esten en PENDIENTE
+    // de un intento previo, y queremos retomarlos.
     const pendientes = await colaEstadosDocsApi.listar('PENDIENTE')
     const misCola = pendientes.filter((p) =>
       seleccionados.has(p.codigo_documento) && p.codigo_estado_doc_destino === estadoDestino
     )
+    if (misCola.length === 0) {
+      setEjecutando(false)
+      return
+    }
 
     // Inicializar vista de cola
     const colaInicial: ItemCola[] = misCola.map((p) => {
