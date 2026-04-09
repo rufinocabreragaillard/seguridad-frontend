@@ -645,7 +645,7 @@ export default function PaginaProcesarDocumentos() {
               />
             </div>
             <Boton variante="contorno" tamano="sm" onClick={cargarDocumentos} disabled={cargando}>
-              {cargando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}Listar
+              {cargando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}Buscar
             </Boton>
           </div>
           <Tabla>
