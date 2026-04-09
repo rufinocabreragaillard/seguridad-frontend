@@ -403,6 +403,50 @@ export const documentosApi = {
   // Carga desde ubicaciones
   cargarDesdeUbicaciones: (archivos: { nombre_documento: string; ubicacion_documento: string; tamano_kb: number; fecha_modificacion: string; ruta_directorio: string }[]) =>
     api.post<{ insertados: number; actualizados: number }>('/documentos/cargar-desde-ubicaciones', { archivos }).then((r) => r.data),
+  // EXTRAER: subir texto extraido del archivo (CARGADO -> METADATA)
+  subirTexto: (
+    id: number,
+    body: {
+      texto_fuente: string
+      caracteres?: number
+      paginas?: number
+      archivo_no_encontrado?: boolean
+      formato_no_soportado?: string
+      contenido_vacio?: boolean
+    },
+  ) =>
+    api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
+      `/documentos/${id}/texto`, body, { timeout: 60000 },
+    ).then((r) => r.data),
+}
+
+// ─── Procesos (catálogo genérico multi-dominio) ────────────────────────────
+
+export interface PasoProceso {
+  id_paso: number
+  codigo_proceso: string
+  orden: number
+  nombre_paso: string
+  estado_origen: string | null
+  estado_destino: string
+  id_modelo: number | null
+  descripcion_paso: string | null
+  activo: boolean
+}
+
+export interface Proceso {
+  codigo_proceso: string
+  nombre_proceso: string
+  descripcion: string | null
+  tipo_entidad: string
+  activo: boolean
+  pasos: PasoProceso[]
+}
+
+export const procesosApi = {
+  listar: (tipoEntidad?: string) =>
+    api.get<Proceso[]>('/procesos', { params: tipoEntidad ? { tipo_entidad: tipoEntidad } : undefined }).then((r) => r.data),
+  obtener: (codigo: string) => api.get<Proceso>(`/procesos/${codigo}`).then((r) => r.data),
 }
 
 // ─── Tipos Documento Persona ─────────────────────────────────────────────────
@@ -736,21 +780,18 @@ export const colaEstadosDocsApi = {
   cerrar: () =>
     api.post<{ eliminados: number }>('/cola-estados-docs/cerrar').then((r) => r.data),
   eliminar: (id: number) => api.delete(`/cola-estados-docs/${id}`),
-  procesar: (
-    id: number,
-    idModelo: number,
-    texto?: string,
-    opts?: {
-      archivo_no_encontrado?: boolean
-      formato_no_soportado?: string
-      contenido_vacio?: boolean
-      permitir_sin_texto?: boolean
-    },
-  ) =>
-    api.post<{ id_cola: number; estado_cola: string; resultado: string | null; tiempo_ms: number }>(
-      `/cola-estados-docs/${id}/procesar`,
-      { id_modelo: idModelo, texto, ...(opts || {}) },
-      { timeout: 120000 },
+  // Dispara el worker backend (BackgroundTasks). Retorna inmediato; el
+  // procesamiento corre en el servidor. El cliente hace polling de listar().
+  ejecutar: (estadoDestino?: string) =>
+    api.post<{ mensaje: string; pendientes_al_iniciar: number }>(
+      '/cola-estados-docs/ejecutar',
+      { estado_destino: estadoDestino || null },
+    ).then((r) => r.data),
+  recuperarHuerfanos: (minutos = 5) =>
+    api.post<{ recuperados: number }>(
+      '/cola-estados-docs/recuperar-huerfanos',
+      undefined,
+      { params: { minutos } },
     ).then((r) => r.data),
 }
 

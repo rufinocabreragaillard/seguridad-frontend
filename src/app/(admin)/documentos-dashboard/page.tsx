@@ -57,8 +57,8 @@ export default function PaginaDocumentosDashboard() {
       color: 'bg-green-50 text-exito',
     },
     {
-      titulo: 'Pendientes',
-      valor: conteoPorEstado['PENDIENTE'] || 0,
+      titulo: 'Revisar',
+      valor: conteoPorEstado['REVISAR'] || 0,
       icono: Clock,
       color: 'bg-acento-muy-claro text-acento',
     },
