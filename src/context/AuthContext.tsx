@@ -48,6 +48,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Flag: true solo cuando el usuario hace login explícito (clic en "Iniciar sesión")
   // Se usa para distinguir SIGNED_IN por login vs SIGNED_IN por restauración de sesión
   const loginExplicito = useRef(false)
+  // Ref para pathname: permite leerlo dentro del efecto de auth sin que cambie
+  // de pathname dispare un re-registro de onAuthStateChange (lo que causaba el
+  // lock de Supabase de 5s en la primera carga).
+  const pathnameRef = useRef(pathname)
+  useEffect(() => { pathnameRef.current = pathname }, [pathname])
 
   const cargarContexto = useCallback(async () => {
     try {
@@ -83,14 +88,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const ctx = await cargarContexto()
             if (isMounted) {
               setCargando(false)
-              if (!ctx && !PUBLIC_ROUTES.includes(pathname)) {
+              if (!ctx && !PUBLIC_ROUTES.includes(pathnameRef.current)) {
                 router.push('/login')
               }
             }
           } else {
             if (isMounted) {
               setCargando(false)
-              if (!PUBLIC_ROUTES.includes(pathname)) {
+              if (!PUBLIC_ROUTES.includes(pathnameRef.current)) {
                 router.push('/login')
               }
             }
@@ -133,7 +138,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isMounted = false
       listener.subscription.unsubscribe()
     }
-  }, [cargarContexto, router, pathname])
+  }, [cargarContexto, router]) // pathname se lee via pathnameRef para evitar re-registro del lock
 
   // Timeout de inactividad: usa la duración configurada desde el backend
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
