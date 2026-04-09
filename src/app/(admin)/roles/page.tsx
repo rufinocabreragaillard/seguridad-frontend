@@ -17,7 +17,7 @@ import { exportarExcel } from '@/lib/exportar-excel'
 type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string; activo: boolean } }
 
 export default function PaginaRoles() {
-  const { grupoActivo } = useAuth()
+  const { grupoActivo, aplicacionActiva } = useAuth()
   const [roles, setRoles] = useState<Rol[]>([])
   const [funciones, setFunciones] = useState<Funcion[]>([])
   const [cargando, setCargando] = useState(true)
@@ -113,7 +113,7 @@ export default function PaginaRoles() {
 
   const abrirNuevoRol = () => {
     setRolEditando(null)
-    setFormRol({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: '' })
+    setFormRol({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: aplicacionActiva || '' })
     setError('')
     setTabModalRol('datos')
     setModalRol(true)
@@ -288,7 +288,7 @@ export default function PaginaRoles() {
 
   const abrirNuevaFuncion = () => {
     setFuncionEditando(null)
-    setFormFuncion({ codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '', alias_de_funcion: '', icono_de_funcion: '', id_modelo: '', system_prompt: '', codigo_aplicacion_origen: '' })
+    setFormFuncion({ codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '', alias_de_funcion: '', icono_de_funcion: '', id_modelo: '', system_prompt: '', codigo_aplicacion_origen: aplicacionActiva || '' })
     setError('')
     setTabModalFuncion('datos')
     setModalFuncion(true)

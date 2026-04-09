@@ -19,7 +19,7 @@ type AppDeFuncion = { codigo_aplicacion: string; aplicaciones?: { nombre_aplicac
 type GrupoApp = { codigo_grupo: string; activo: boolean; grupos_entidades: { nombre_grupo: string } }
 
 export default function PaginaAplicacionesFunciones() {
-  const { grupoActivo } = useAuth()
+  const { grupoActivo, aplicacionActiva } = useAuth()
   const [tabPrincipal, setTabPrincipal] = useState<'aplicaciones' | 'funciones'>('aplicaciones')
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([])
   const [funciones, setFunciones] = useState<Funcion[]>([])
@@ -154,7 +154,7 @@ export default function PaginaAplicacionesFunciones() {
 
   // ── Función: CRUD ─────────────────────────────────────────────────────────
   const abrirNuevaFuncion = () => {
-    setFuncionEditando(null); setFormFuncion({ codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '', alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: '' })
+    setFuncionEditando(null); setFormFuncion({ codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '', alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: aplicacionActiva || '' })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
   const abrirEditarFuncion = (f: Funcion) => {

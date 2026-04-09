@@ -409,6 +409,7 @@ export default function PaginaUsuarios() {
   const ROLES_PROTEGIDOS = new Set(['SEG_ADMIN_GRUPO', 'ADMIN'])
   const esSuperAdmin = (usuarioActual?.grupos || []).some((g) => g.codigo_grupo === 'ADMIN')
   const appsRestringidas = new Set(catalogoApps.filter((a) => a.tipo === 'RESTRINGIDA').map((a) => a.codigo_aplicacion))
+  const mapaAppNombre = Object.fromEntries(catalogoApps.map((a) => [a.codigo_aplicacion, a.nombre]))
   const rolesDisponibles = roles
     .filter((r) =>
       r.activo &&
@@ -418,7 +419,15 @@ export default function PaginaUsuarios() {
       // Filtro RESTRINGIDA: ocultar roles de apps restringidas a no-super-admin
       (esSuperAdmin || !r.codigo_aplicacion_origen || !appsRestringidas.has(r.codigo_aplicacion_origen))
     )
-    .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es'))
+    // Orden: nombre app origen → nombre rol. Sin app origen al final.
+    .sort((a, b) => {
+      const na = a.codigo_aplicacion_origen ? (mapaAppNombre[a.codigo_aplicacion_origen] || a.codigo_aplicacion_origen) : ''
+      const nb = b.codigo_aplicacion_origen ? (mapaAppNombre[b.codigo_aplicacion_origen] || b.codigo_aplicacion_origen) : ''
+      const sa = na ? 0 : 1; const sb = nb ? 0 : 1
+      if (sa !== sb) return sa - sb
+      if (na !== nb) return na.localeCompare(nb, 'es')
+      return a.nombre.localeCompare(b.nombre, 'es')
+    })
   const rolesDisponiblesFiltrados = rolesDisponibles.filter((r) =>
     busquedaRol.length === 0 ||
     r.nombre.toLowerCase().includes(busquedaRol.toLowerCase()) ||
