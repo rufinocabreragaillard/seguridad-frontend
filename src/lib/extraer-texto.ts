@@ -40,16 +40,40 @@ export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle): P
 }
 
 /**
+ * Singleton de PDF.js para evitar race conditions con procesamiento paralelo.
+ *
+ * Con N_CONCURRENTE>1, múltiples llamadas a getDocument() ocurren simultáneamente.
+ * Si cada una intenta inicializar el worker de PDF.js por separado, todas fallan con
+ * "Setting up fake worker failed". La solución: un único PDFWorker compartido que
+ * se crea una sola vez y se reutiliza en todos los documentos concurrentes.
+ */
+type PdfjsLib = typeof import('pdfjs-dist')
+let _pdfjsPromise: Promise<PdfjsLib> | null = null
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let _pdfWorker: any = null  // PDFWorker instance (tipo any para evitar imports circulares)
+
+async function getPdfjsLib(): Promise<PdfjsLib> {
+  if (!_pdfjsPromise) {
+    _pdfjsPromise = (async () => {
+      const lib = await import('pdfjs-dist')
+      lib.GlobalWorkerOptions.workerSrc =
+        `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${lib.version}/pdf.worker.min.mjs`
+      // Crear el PDFWorker una sola vez — se reutiliza en todos los getDocument()
+      _pdfWorker = new lib.PDFWorker({ name: 'cab-pdf-worker' })
+      return lib
+    })()
+  }
+  return _pdfjsPromise
+}
+
+/**
  * Extrae texto de un archivo PDF usando pdf.js
  */
 async function extraerTextoPDF(file: File): Promise<string> {
-  const pdfjsLib = await import('pdfjs-dist')
-
-  // Configurar worker
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`
+  const pdfjsLib = await getPdfjsLib()
 
   const arrayBuffer = await file.arrayBuffer()
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer, worker: _pdfWorker }).promise
 
   const paginas: string[] = []
   for (let i = 1; i <= pdf.numPages; i++) {
