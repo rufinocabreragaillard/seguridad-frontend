@@ -14,7 +14,7 @@ import { useAuth } from '@/context/AuthContext'
 import type { Documento, ColaEstadoDoc, EstadoDoc } from '@/lib/tipos'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta } from '@/lib/extraer-texto'
 
-import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle } from '@/lib/file-handle-store'
+import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
 
 const ESTADO_COLA_CONFIG: Record<string, { variante: 'exito' | 'error' | 'advertencia' | 'neutro'; icono: typeof Clock }> = {
   PENDIENTE: { variante: 'neutro', icono: Clock },
@@ -360,27 +360,37 @@ export default function PaginaProcesarDocumentos() {
 
     // ── EXTRAER (client-side): CARGADO → METADATA ─────────────────────────
     if (esExtraer) {
-      // Si no hay dirHandle, auto-disparar el picker antes de continuar.
-      // El sistema sugiere la raíz del árbol de ubicaciones_docs (nivel mínimo)
-      // como referencia textual; el usuario navega hasta allí en el diálogo del browser.
+      // Obtener handle efectivo siguiendo la jerarquía:
+      // 1. Handle ya activo en estado (permiso vigente)
+      // 2. Handle guardado en IndexedDB + requestPermission (pequeño banner del browser, NO el Finder)
+      // 3. Solo como último recurso: showDirectoryPicker (abre el Finder)
+      // La raíz correcta es la ubicación con nivel mínimo del árbol de ubicaciones_docs.
       let handleEfectivo = dirHandle
-      if (!handleEfectivo) {
-        try {
-          const opts: Record<string, unknown> = { mode: 'read', id: 'cab-procesar-docs' }
-          handleEfectivo = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
-          setDirHandle(handleEfectivo)
-          idbSetHandle(handleEfectivo)
-          setEscaneandoDir(true)
+      if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
+        // Intentar handle guardado en IndexedDB
+        const stored = await idbGetHandle()
+        if (stored && (await ensureReadPermission(stored))) {
+          handleEfectivo = stored
+          setDirHandle(stored)
+        } else {
+          // Último recurso: abrir Finder
+          // El hint de texto en pantalla indica la ruta raíz del árbol de ubicaciones.
           try {
-            const archivos = await escanearDirectorio(handleEfectivo)
-            setArchivosEnDir(archivos)
-          } finally {
-            setEscaneandoDir(false)
+            const opts: Record<string, unknown> = { mode: 'read', id: 'cab-procesar-docs' }
+            handleEfectivo = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
+            setDirHandle(handleEfectivo)
+            idbSetHandle(handleEfectivo)
+            setEscaneandoDir(true)
+            try {
+              const archivos = await escanearDirectorio(handleEfectivo)
+              setArchivosEnDir(archivos)
+            } finally {
+              setEscaneandoDir(false)
+            }
+          } catch {
+            setEjecutando(false)
+            return
           }
-        } catch {
-          // Usuario canceló el picker
-          setEjecutando(false)
-          return
         }
       }
 
@@ -440,7 +450,9 @@ export default function PaginaProcesarDocumentos() {
       }
 
       setEjecutando(false)
-      cargarDocumentos()
+      // Solo recargar si el proceso terminó normalmente; si se abortó, dejar
+      // la lista como está para que el usuario pueda relanzar con Ejecutar.
+      if (!abortRef.current) cargarDocumentos()
       return
     }
 
@@ -526,7 +538,7 @@ export default function PaginaProcesarDocumentos() {
         }
       }
       setEjecutando(false)
-      cargarDocumentos()
+      if (!abortRef.current) cargarDocumentos()
     }
     poll()
   }
@@ -631,15 +643,18 @@ export default function PaginaProcesarDocumentos() {
                     Quitar
                   </Boton>
                 )}
-                {!dirHandle && (
-                  <span className="text-xs text-texto-muted">
-                    Al ejecutar se solicitará acceso al directorio
-                    {ubicaciones.length > 0 && (() => {
-                      const raiz = ubicaciones.reduce((min, u) => u.nivel < min.nivel ? u : min, ubicaciones[0])
-                      return raiz?.ruta_completa ? ` (navega a: ${raiz.ruta_completa})` : ''
-                    })()}.
-                  </span>
-                )}
+                {!dirHandle && (() => {
+                  const raiz = ubicaciones.length > 0
+                    ? ubicaciones.reduce((min, u) => u.nivel < min.nivel ? u : min, ubicaciones[0])
+                    : null
+                  return (
+                    <span className="text-xs text-texto-muted">
+                      {raiz?.ruta_completa
+                        ? <>Al ejecutar se pedirá acceso al directorio. Selecciona la carpeta raíz: <strong className="text-texto">{raiz.ruta_completa.split('/').filter(Boolean)[0] ?? raiz.ruta_completa}</strong> (no subcarpetas).</>
+                        : 'Al ejecutar se pedirá acceso al directorio raíz de los archivos.'}
+                    </span>
+                  )
+                })()}
               </>
             )}
             {usaLLM && (

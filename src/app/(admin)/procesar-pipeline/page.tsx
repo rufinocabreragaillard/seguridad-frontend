@@ -220,17 +220,26 @@ export default function PaginaProcesarPipeline() {
 
   // ── Ejecutar pipeline completo ────────────────────────────────────────────
   const ejecutarPipeline = async () => {
-    // Si no hay dirHandle, auto-disparar el picker antes de continuar.
-    // El usuario verá el diálogo de permisos del browser al presionar "Procesar Todo".
+    // Obtener handle efectivo siguiendo la jerarquía:
+    // 1. Handle activo en estado (permiso vigente)
+    // 2. Handle guardado en IndexedDB + requestPermission (banner del browser, NO el Finder)
+    // 3. Solo como último recurso: showDirectoryPicker (abre el Finder)
     let handleEfectivo = dirHandle
-    if (!handleEfectivo) {
-      try {
-        handleEfectivo = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
-          .showDirectoryPicker()
-        setDirHandleState(handleEfectivo)
-        await setDirectoryHandle(handleEfectivo)
-      } catch {
-        return // usuario canceló el picker
+    if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
+      const stored = await getDirectoryHandle()
+      if (stored && (await ensureReadPermission(stored))) {
+        handleEfectivo = stored
+        setDirHandleState(stored)
+        await setDirectoryHandle(stored)
+      } else {
+        try {
+          handleEfectivo = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
+            .showDirectoryPicker()
+          setDirHandleState(handleEfectivo)
+          await setDirectoryHandle(handleEfectivo)
+        } catch {
+          return // usuario canceló el picker
+        }
       }
     }
 
