@@ -186,7 +186,7 @@ export const usuariosApi = {
       codigo_entidad: codigoEntidad,
       codigo_grupo: codigoGrupo,
       ...(codigoArea ? { codigo_area: codigoArea } : {}),
-    }),
+    }, { timeout: 45000 }),
   listarGrupos: (id: string) =>
     api.get<{ codigo_grupo: string; grupos_entidades: { nombre: string; activo: boolean } }[]>(
       `/usuarios/${id}/grupos`

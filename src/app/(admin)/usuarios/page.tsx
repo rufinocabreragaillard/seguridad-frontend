@@ -375,17 +375,23 @@ export default function PaginaUsuarios() {
       setBusquedaEntidad('')
       setAreaNueva('')
       setAreasParaEntidad([])
-      await cargarEntidadesUsuario(usuarioEditando.codigo_usuario)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al asignar entidad') }
-    finally { setAsignandoEntidad(false) }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error al asignar entidad'
+      setError(msg.includes('timeout') ? 'El servidor tardó demasiado. Intente nuevamente.' : msg)
+      return
+    } finally {
+      setAsignandoEntidad(false)
+    }
+    // Recargar lista de entidades de forma independiente (sin bloquear el spinner)
+    cargarEntidadesUsuario(usuarioEditando.codigo_usuario)
   }
 
   const quitarEntidad = async (codigoEntidad: string) => {
     if (!usuarioEditando) return
     try {
       await usuariosApi.quitarEntidad(usuarioEditando.codigo_usuario, codigoEntidad)
-      await cargarEntidadesUsuario(usuarioEditando.codigo_usuario)
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al quitar entidad') }
+    } catch (e) { setError(e instanceof Error ? e.message : 'Error al quitar entidad'); return }
+    cargarEntidadesUsuario(usuarioEditando.codigo_usuario)
   }
 
   const [usuarioAEliminar, setUsuarioAEliminar] = useState<Usuario | null>(null)
