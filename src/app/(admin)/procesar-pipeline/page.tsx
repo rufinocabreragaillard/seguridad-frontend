@@ -1,76 +1,46 @@
 'use client'
 
 import { useEffect, useRef, useState, useCallback } from 'react'
-import { FolderOpen } from 'lucide-react'
+import { FolderOpen, CheckCircle, AlertTriangle, RefreshCw, Upload } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
-import { CirculoProgreso } from '@/components/ui/circulo-progreso'
+import { BarraProgresoPipeline } from '@/components/ui/barra-progreso-pipeline'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi } from '@/lib/api'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta } from '@/lib/extraer-texto'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
+import { escanearDirectorio } from '@/lib/escanear-directorio'
 import { useAuth } from '@/context/AuthContext'
 
-// ── Configuración del pipeline ────────────────────────────────────────────────
+// ── Pipeline ──────────────────────────────────────────────────────────────────
 
 const PASOS = [
-  {
-    key: 'EXTRAER',
-    nombre: 'EXTRAER',
-    estadoOrigen: 'CARGADO',
-    estadoDestino: 'METADATA',
-    colorDisco: '#EF4444',   // rojo
-    clienteSide: true,
-  },
-  {
-    key: 'RESUMIR',
-    nombre: 'RESUMIR',
-    estadoOrigen: 'METADATA',
-    estadoDestino: 'RESUMIDO',
-    colorDisco: '#F97316',   // naranja
-    clienteSide: false,
-  },
-  {
-    key: 'ESCANEAR',
-    nombre: 'ESCANEAR',
-    estadoOrigen: 'RESUMIDO',
-    estadoDestino: 'ESCANEADO',
-    colorDisco: '#EAB308',   // amarillo
-    clienteSide: false,
-  },
-  {
-    key: 'CHUNKEAR',
-    nombre: 'CHUNKEAR',
-    estadoOrigen: 'ESCANEADO',
-    estadoDestino: 'CHUNKEADO',
-    colorDisco: '#84CC16',   // amarillo-verde
-    clienteSide: false,
-  },
-  {
-    key: 'VECTORIZAR',
-    nombre: 'VECTORIZAR',
-    estadoOrigen: 'CHUNKEADO',
-    estadoDestino: 'VECTORIZADO',
-    colorDisco: '#22C55E',   // verde
-    clienteSide: false,
-  },
+  { key: 'EXTRAER',    estadoOrigen: 'CARGADO',   estadoDestino: 'METADATA',    color: '#EF4444', clienteSide: true },
+  { key: 'RESUMIR',    estadoOrigen: 'METADATA',  estadoDestino: 'RESUMIDO',    color: '#F97316', clienteSide: false },
+  { key: 'ESCANEAR',   estadoOrigen: 'RESUMIDO',  estadoDestino: 'ESCANEADO',   color: '#EAB308', clienteSide: false },
+  { key: 'CHUNKEAR',   estadoOrigen: 'ESCANEADO', estadoDestino: 'CHUNKEADO',   color: '#84CC16', clienteSide: false },
+  { key: 'VECTORIZAR', estadoOrigen: 'CHUNKEADO', estadoDestino: 'VECTORIZADO', color: '#22C55E', clienteSide: false },
 ] as const
 
 type EstadoPaso = 'esperando' | 'activo' | 'listo' | 'error'
-
-interface ProgresoPaso {
-  total: number
-  completados: number
-  estado: EstadoPaso
-  error?: string
-}
+interface ProgresoPaso { total: number; completados: number; estado: EstadoPaso }
 
 const progresosIniciales = (): Record<string, ProgresoPaso> =>
   Object.fromEntries(PASOS.map((p) => [p.key, { total: 0, completados: 0, estado: 'esperando' }]))
 
 // ── Componente ────────────────────────────────────────────────────────────────
 
-export default function PaginaProcesarPipeline() {
+export default function PaginaCargaDocsUsuario() {
   const { grupoActivo } = useAuth()
+  const [tab, setTab] = useState<'ubicaciones' | 'documentos'>('ubicaciones')
 
+  // ── Estado tab Ubicaciones ────────────────────────────────────────────────
+  const [sincronizando, setSincronizando] = useState(false)
+  const [escaneando, setEscaneando] = useState(false)
+  const [resultadoSync, setResultadoSync] = useState<{
+    insertadas: number; actualizadas: number; eliminadas: number; excluidas: number
+  } | null>(null)
+  const [errorSync, setErrorSync] = useState('')
+
+  // ── Estado tab Documentos ─────────────────────────────────────────────────
   const [progresos, setProgresos] = useState<Record<string, ProgresoPaso>>(progresosIniciales)
   const [ejecutando, setEjecutando] = useState(false)
   const [dirHandle, setDirHandleState] = useState<FileSystemDirectoryHandle | null>(null)
@@ -94,7 +64,7 @@ export default function PaginaProcesarPipeline() {
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [ejecutando, tiempoInicio])
 
-  // ── Cargar dirHandle persistido, conteos y raíz de ubicaciones ───────────
+  // ── Cargar handle persistido, conteos y carpeta raíz ─────────────────────
   useEffect(() => {
     getDirectoryHandle().then((h) => { if (h) setDirHandleState(h) })
     cargarConteos()
@@ -114,43 +84,48 @@ export default function PaginaProcesarPipeline() {
       setProgresos((prev) => {
         const next = { ...prev }
         for (const paso of PASOS) {
-          next[paso.key] = {
-            ...next[paso.key],
-            total: conteos[paso.estadoOrigen] ?? 0,
-            completados: 0,
-            estado: 'esperando',
-          }
+          next[paso.key] = { ...next[paso.key], total: conteos[paso.estadoOrigen] ?? 0, completados: 0, estado: 'esperando' }
         }
         return next
       })
     } catch { /* ignorar */ }
   }, [])
 
-  // ── Seleccionar directorio ────────────────────────────────────────────────
-  const seleccionarDirectorio = async () => {
+  // ── Sync de ubicaciones ───────────────────────────────────────────────────
+  const sincronizarUbicaciones = async () => {
+    setErrorSync('')
+    setResultadoSync(null)
+    setEscaneando(true)
     try {
-      const handle = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
-        .showDirectoryPicker()
-      setDirHandleState(handle)
-      await setDirectoryHandle(handle)
-    } catch { /* usuario canceló */ }
+      const datos = await escanearDirectorio()
+      if (!datos) { setEscaneando(false); return }
+      setEscaneando(false)
+      setSincronizando(true)
+      const res = await ubicacionesDocsApi.sincronizar({ directorios: datos.directorios })
+      setResultadoSync(res as { insertadas: number; actualizadas: number; eliminadas: number; excluidas: number })
+    } catch (e) {
+      setEscaneando(false)
+      setSincronizando(false)
+      const msg = e && typeof e === 'object' && 'response' in e
+        ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Error al sincronizar.'
+        : 'Error al sincronizar.'
+      setErrorSync(msg)
+    } finally {
+      setSincronizando(false)
+    }
   }
 
-  // ── Helpers de progreso ───────────────────────────────────────────────────
+  // ── Helpers pipeline ──────────────────────────────────────────────────────
   const setPaso = (key: string, patch: Partial<ProgresoPaso>) =>
     setProgresos((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
 
-  // ── EXTRAER (client-side) ─────────────────────────────────────────────────
   const ejecutarExtraer = async (handle: FileSystemDirectoryHandle): Promise<boolean> => {
     const docs = await documentosApi.listar({ codigo_estado_doc: 'CARGADO', activo: true })
     if (docs.length === 0) { setPaso('EXTRAER', { estado: 'listo' }); return true }
-
     setPaso('EXTRAER', { total: docs.length, completados: 0, estado: 'activo' })
-
     let completados = 0
     for (const doc of docs) {
       if (abortRef.current) return false
-
       try {
         if (!doc.ubicacion_documento) {
           await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true })
@@ -166,72 +141,43 @@ export default function PaginaProcesarPipeline() {
             } else if (!contenido.trim()) {
               await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
             } else {
-              await documentosApi.subirTexto(doc.codigo_documento, {
-                texto_fuente: contenido,
-                caracteres: contenido.length,
-              })
+              await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: contenido, caracteres: contenido.length })
             }
           }
         }
-      } catch { /* continuar con el siguiente */ }
-
+      } catch { /* continuar */ }
       completados++
       setPaso('EXTRAER', { completados })
     }
-
     setPaso('EXTRAER', { completados: docs.length, estado: 'listo' })
     return true
   }
 
-  // ── Paso backend (RESUMIR, ESCANEAR, CHUNKEAR, VECTORIZAR) ───────────────
-  const ejecutarPasoBackend = async (
-    key: string,
-    estadoOrigen: string,
-    estadoDestino: string,
-  ): Promise<boolean> => {
-    // Obtener documentos en el estado origen
+  const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string): Promise<boolean> => {
     const docs = await documentosApi.listar({ codigo_estado_doc: estadoOrigen, activo: true })
     if (docs.length === 0) { setPaso(key, { estado: 'listo' }); return true }
-
     setPaso(key, { total: docs.length, completados: 0, estado: 'activo' })
-
-    // Encolar
-    const items = docs.map((d) => ({
-      codigo_documento: d.codigo_documento,
-      codigo_estado_doc_destino: estadoDestino,
-    }))
+    const items = docs.map((d) => ({ codigo_documento: d.codigo_documento, codigo_estado_doc_destino: estadoDestino }))
     await colaEstadosDocsApi.inicializar(items)
-
-    // Disparar worker
     await colaEstadosDocsApi.ejecutar(estadoDestino)
-
-    // Polling hasta completar
     const idsSet = new Set(docs.map((d) => d.codigo_documento))
     while (!abortRef.current) {
       await new Promise((r) => setTimeout(r, 3000))
       if (abortRef.current) return false
-
       try {
         const cola = await colaEstadosDocsApi.listar()
         const propios = cola.filter((c) => idsSet.has(c.codigo_documento) && c.codigo_estado_doc_destino === estadoDestino)
         const activos = propios.filter((c) => c.estado_cola === 'PENDIENTE' || c.estado_cola === 'EN_PROCESO').length
-        const completados = propios.filter((c) => c.estado_cola === 'COMPLETADO').length
-        setPaso(key, { completados })
+        setPaso(key, { completados: propios.filter((c) => c.estado_cola === 'COMPLETADO').length })
         if (activos === 0) break
       } catch { /* reintentar */ }
     }
-
     if (abortRef.current) return false
     setPaso(key, { completados: docs.length, estado: 'listo' })
     return true
   }
 
-  // ── Ejecutar pipeline completo ────────────────────────────────────────────
   const ejecutarPipeline = async () => {
-    // Obtener handle efectivo siguiendo la jerarquía:
-    // 1. Handle activo en estado (permiso vigente)
-    // 2. Handle guardado en IndexedDB + requestPermission (banner del browser, NO el Finder)
-    // 3. Solo como último recurso: showDirectoryPicker (abre el Finder)
     let handleEfectivo = dirHandle
     if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
       const stored = await getDirectoryHandle()
@@ -241,44 +187,32 @@ export default function PaginaProcesarPipeline() {
         await setDirectoryHandle(stored)
       } else {
         try {
-          handleEfectivo = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> })
-            .showDirectoryPicker()
+          handleEfectivo = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker()
           setDirHandleState(handleEfectivo)
           await setDirectoryHandle(handleEfectivo)
-        } catch {
-          return // usuario canceló el picker
-        }
+        } catch { return }
       }
     }
-
-    const ok = await ensureReadPermission(handleEfectivo)
-    if (!ok) {
-      setMensajeError('Sin permiso de lectura sobre el directorio seleccionado.')
+    if (!(await ensureReadPermission(handleEfectivo))) {
+      setMensajeError('Sin permiso de lectura sobre el directorio.')
       return
     }
-
     setMensajeError('')
     abortRef.current = false
     setEjecutando(true)
     setTiempoInicio(Date.now())
     setTiempoTranscurrido(0)
     setProgresos(progresosIniciales())
-
     try {
       for (const paso of PASOS) {
         if (abortRef.current) break
-
-        let ok: boolean
-        if (paso.clienteSide) {
-          ok = await ejecutarExtraer(handleEfectivo)
-        } else {
-          ok = await ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
-        }
-
+        const ok = paso.clienteSide
+          ? await ejecutarExtraer(handleEfectivo)
+          : await ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
         if (!ok) break
       }
     } catch (e) {
-      setMensajeError(e instanceof Error ? e.message : 'Error inesperado en el pipeline')
+      setMensajeError(e instanceof Error ? e.message : 'Error inesperado')
     } finally {
       setEjecutando(false)
       await cargarConteos()
@@ -287,7 +221,6 @@ export default function PaginaProcesarPipeline() {
 
   const detener = () => { abortRef.current = true }
 
-  // ── Formato tiempo ────────────────────────────────────────────────────────
   const formatTiempo = (seg: number) => {
     const m = Math.floor(seg / 60)
     const s = seg % 60
@@ -295,119 +228,201 @@ export default function PaginaProcesarPipeline() {
   }
 
   const todosListos = PASOS.every((p) => progresos[p.key]?.estado === 'listo')
+  const hayPendientes = PASOS.some((p) => (progresos[p.key]?.total ?? 0) > 0)
 
+  const segmentosBarra = PASOS.map((p) => ({
+    color: p.color,
+    total: progresos[p.key]?.total ?? 0,
+    completados: progresos[p.key]?.completados ?? 0,
+    estado: progresos[p.key]?.estado ?? 'esperando',
+  }))
+
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="flex flex-col gap-8 p-6 max-w-5xl mx-auto">
-      {/* Encabezado */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-texto">Procesar Documentos</h1>
-          <p className="text-sm text-texto-muted mt-1">
-            Ejecuta el pipeline completo: Extraer → Resumir → Escanear → Chunkear → Vectorizar
-          </p>
-        </div>
-
-        {/* Selector de directorio */}
-        <div className="flex flex-col items-end gap-1">
-          <button
-            onClick={seleccionarDirectorio}
-            className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-2 text-sm text-texto hover:border-primario transition-colors"
-          >
-            <FolderOpen size={16} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
-            {dirHandle ? dirHandle.name : 'Seleccionar directorio'}
-          </button>
-          {!dirHandle && carpetaRaiz && (
-            <span className="text-xs text-texto-muted text-right">
-              Al ejecutar se pedirá acceso. Selecciona: <strong className="text-texto">{carpetaRaiz}</strong> (no subcarpetas)
-            </span>
-          )}
-        </div>
+    <div className="flex flex-col gap-6 max-w-3xl">
+      <div>
+        <h2 className="text-2xl font-bold text-texto">Carga de Documentos</h2>
+        <p className="text-sm text-texto-muted mt-1">Sincroniza carpetas y procesa documentos del grupo</p>
       </div>
 
-      {/* Error */}
-      {mensajeError && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-          {mensajeError}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-borde">
+        <button
+          onClick={() => setTab('ubicaciones')}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'ubicaciones' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+        >
+          <FolderOpen size={15} />Ubicaciones
+        </button>
+        <button
+          onClick={() => setTab('documentos')}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'documentos' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+        >
+          <Upload size={15} />Documentos
+        </button>
+      </div>
+
+      {/* ── Tab: Ubicaciones ─────────────────────────────────────────────── */}
+      {tab === 'ubicaciones' && (
+        <div className="flex flex-col gap-6">
+          <div className="rounded-lg border border-borde bg-fondo-tarjeta p-6 flex flex-col gap-4">
+            <div>
+              <p className="text-sm font-medium text-texto mb-1">Sincronizar estructura de carpetas</p>
+              <p className="text-xs text-texto-muted">
+                Selecciona el directorio raíz de tus documentos. El sistema leerá la estructura de carpetas
+                y la sincronizará automáticamente con el árbol de ubicaciones del grupo.
+              </p>
+            </div>
+
+            <Boton
+              variante="primario"
+              onClick={sincronizarUbicaciones}
+              disabled={sincronizando || escaneando}
+            >
+              {escaneando ? (
+                <><RefreshCw size={16} className="animate-spin" />Leyendo carpetas...</>
+              ) : sincronizando ? (
+                <><RefreshCw size={16} className="animate-spin" />Sincronizando...</>
+              ) : (
+                <><FolderOpen size={16} />Sincronizar Carpetas</>
+              )}
+            </Boton>
+
+            {!resultadoSync && !errorSync && carpetaRaiz && (
+              <p className="text-xs text-texto-muted">
+                Se pedirá acceso al directorio. Selecciona la carpeta raíz:{' '}
+                <strong className="text-texto">{carpetaRaiz}</strong> (no subcarpetas).
+              </p>
+            )}
+
+            {errorSync && (
+              <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+                {errorSync}
+              </div>
+            )}
+
+            {resultadoSync && (
+              <div className="flex items-start gap-2 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                <CheckCircle size={16} className="mt-0.5 shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-medium">Sincronización completada</span>
+                  <span>
+                    {resultadoSync.insertadas} nuevas · {resultadoSync.actualizadas} actualizadas ·{' '}
+                    {resultadoSync.eliminadas} eliminadas
+                    {resultadoSync.excluidas > 0 && ` · ${resultadoSync.excluidas} excluidas`}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <p className="text-xs text-texto-muted">
+            Tras sincronizar las carpetas, ve a la pestaña <strong>Documentos</strong> para procesar los archivos.
+          </p>
         </div>
       )}
 
-      {/* Pipeline visual */}
-      <div className="flex items-center justify-center gap-0 flex-wrap">
-        {PASOS.map((paso, i) => {
-          const prog = progresos[paso.key]
-          return (
-            <div key={paso.key} className="flex items-center">
-              <CirculoProgreso
-                nombre={paso.nombre}
-                total={prog.total}
-                completados={prog.completados}
-                estado={prog.estado}
-                colorDisco={paso.colorDisco}
-                size={148}
-              />
-              {i < PASOS.length - 1 && (
-                <div className="flex items-center px-2">
-                  <svg width="40" height="16" viewBox="0 0 40 16">
-                    <line x1="0" y1="8" x2="30" y2="8" stroke="#9CA3AF" strokeWidth="2" />
-                    <polygon points="28,4 36,8 28,12" fill="#9CA3AF" />
-                  </svg>
-                </div>
+      {/* ── Tab: Documentos ──────────────────────────────────────────────── */}
+      {tab === 'documentos' && (
+        <div className="flex flex-col gap-6">
+          {/* Directorio */}
+          <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-1">
+              <p className="text-sm font-medium text-texto">Directorio de documentos</p>
+              {!dirHandle && carpetaRaiz && (
+                <p className="text-xs text-texto-muted">
+                  Selecciona la carpeta raíz: <strong className="text-texto">{carpetaRaiz}</strong>
+                </p>
               )}
             </div>
-          )
-        })}
-      </div>
-
-      {/* Tiempo transcurrido */}
-      {(ejecutando || todosListos) && (
-        <p className="text-center text-sm text-texto-muted">
-          {ejecutando
-            ? `Tiempo transcurrido: ${formatTiempo(tiempoTranscurrido)}`
-            : `Pipeline completado en ${formatTiempo(tiempoTranscurrido)}`
-          }
-        </p>
-      )}
-
-      {/* Botones */}
-      <div className="flex gap-3 justify-center">
-        {!ejecutando ? (
-          <Boton
-            variante="primario"
-            onClick={ejecutarPipeline}
-          >
-            {todosListos ? 'Procesar de nuevo' : 'Procesar Todo'}
-          </Boton>
-        ) : (
-          <Boton variante="peligro" onClick={detener}>
-            Detener
-          </Boton>
-        )}
-      </div>
-
-      {/* Resumen de conteos iniciales */}
-      {!ejecutando && !todosListos && (
-        <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4">
-          <p className="text-xs font-semibold text-texto-muted uppercase mb-3">
-            Documentos por procesar
-          </p>
-          <div className="grid grid-cols-5 gap-2">
-            {PASOS.map((paso) => {
-              const total = progresos[paso.key]?.total ?? 0
-              return (
-                <div key={paso.key} className="flex flex-col items-center gap-1">
-                  <span
-                    className="text-2xl font-bold"
-                    style={{ color: total > 0 ? paso.colorDisco : '#9CA3AF' }}
-                  >
-                    {total}
-                  </span>
-                  <span className="text-xs text-texto-muted text-center leading-tight">
-                    {paso.nombre}
-                  </span>
-                </div>
-              )
-            })}
+            <button
+              onClick={async () => {
+                try {
+                  const handle = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker()
+                  setDirHandleState(handle)
+                  await setDirectoryHandle(handle)
+                } catch { /* cancelado */ }
+              }}
+              className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-2 text-sm text-texto hover:border-primario transition-colors"
+            >
+              <FolderOpen size={16} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
+              {dirHandle ? dirHandle.name : 'Seleccionar directorio'}
+            </button>
           </div>
+
+          {mensajeError && (
+            <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              <AlertTriangle size={16} className="mt-0.5 shrink-0" />{mensajeError}
+            </div>
+          )}
+
+          {/* Barra de progreso horizontal segmentada */}
+          <div className="flex flex-col gap-3">
+            <BarraProgresoPipeline segmentos={segmentosBarra} altura={36} />
+
+            {/* Conteos por paso */}
+            {(ejecutando || hayPendientes) && (
+              <div className="grid grid-cols-5 gap-2">
+                {PASOS.map((paso) => {
+                  const prog = progresos[paso.key]
+                  const total = prog?.total ?? 0
+                  const completados = prog?.completados ?? 0
+                  const estado = prog?.estado ?? 'esperando'
+                  return (
+                    <div key={paso.key} className="flex flex-col items-center gap-0.5">
+                      <span
+                        className="text-lg font-bold"
+                        style={{ color: estado === 'esperando' && total === 0 ? '#9CA3AF' : paso.color }}
+                      >
+                        {estado === 'listo' ? total : completados}
+                        {total > 0 && estado !== 'listo' && (
+                          <span className="text-xs font-normal text-texto-muted">/{total}</span>
+                        )}
+                      </span>
+                      {estado === 'listo' && (
+                        <CheckCircle size={12} style={{ color: paso.color }} />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Timer */}
+          {(ejecutando || todosListos) && (
+            <p className="text-center text-sm text-texto-muted">
+              {ejecutando
+                ? `Procesando... ${formatTiempo(tiempoTranscurrido)}`
+                : `Completado en ${formatTiempo(tiempoTranscurrido)}`}
+            </p>
+          )}
+
+          {/* Botones */}
+          <div className="flex gap-3">
+            {!ejecutando ? (
+              <Boton variante="primario" className="flex-1" onClick={ejecutarPipeline}>
+                <Upload size={16} />
+                {todosListos ? 'Cargar de nuevo' : 'Cargar Documentos'}
+              </Boton>
+            ) : (
+              <Boton variante="peligro" className="flex-1" onClick={detener}>
+                Detener
+              </Boton>
+            )}
+          </div>
+
+          {!ejecutando && !todosListos && hayPendientes && (
+            <p className="text-xs text-texto-muted text-center">
+              Los documentos se procesarán automáticamente. Puedes cerrar esta pestaña y volver más tarde.
+            </p>
+          )}
+
+          {!ejecutando && !hayPendientes && !todosListos && (
+            <p className="text-xs text-texto-muted text-center">
+              No hay documentos pendientes de procesar. Si acabas de cargar archivos, presiona <strong>Cargar Documentos</strong>.
+            </p>
+          )}
         </div>
       )}
     </div>

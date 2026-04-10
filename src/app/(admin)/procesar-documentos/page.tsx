@@ -15,6 +15,7 @@ import type { Documento, ColaEstadoDoc, EstadoDoc } from '@/lib/tipos'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
+import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 
 const ESTADO_COLA_CONFIG: Record<string, { variante: 'exito' | 'error' | 'advertencia' | 'neutro'; icono: typeof Clock }> = {
   PENDIENTE: { variante: 'neutro', icono: Clock },
@@ -98,6 +99,9 @@ export default function PaginaProcesarDocumentos() {
   const [cerrando, setCerrando] = useState(false)
   const [confirmEliminar, setConfirmEliminar] = useState<ColaEstadoDoc | null>(null)
   const [eliminando, setEliminando] = useState(false)
+
+  // Tab principal: "Paso a Paso" (control granular) | "Todo" (pipeline completo)
+  const [tabPrincipal, setTabPrincipal] = useState<'paso-a-paso' | 'todo'>('paso-a-paso')
 
   const cargarCola = useCallback(async () => {
     setCargandoCola(true)
@@ -587,7 +591,26 @@ export default function PaginaProcesarDocumentos() {
         <p className="text-sm text-texto-muted mt-1">Ejecuta procesos LLM sobre documentos del grupo</p>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs principales */}
+      <div className="flex gap-1 border-b border-borde">
+        <button
+          onClick={() => setTabPrincipal('paso-a-paso')}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'paso-a-paso' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+        >
+          <ListOrdered size={15} />Paso a Paso
+        </button>
+        <button
+          onClick={() => setTabPrincipal('todo')}
+          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'todo' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+        >
+          <Cpu size={15} />Todo
+        </button>
+      </div>
+
+      {tabPrincipal === 'todo' && <TabPipelineTodo />}
+
+      {tabPrincipal === 'paso-a-paso' && (<>
+      {/* Tabs internas */}
       <div className="flex gap-1 border-b border-borde">
         <button
           onClick={() => setTab('procesar')}
@@ -923,6 +946,7 @@ export default function PaginaProcesarDocumentos() {
         textoConfirmar="Eliminar"
         cargando={eliminando}
       />
+    </>)}
     </div>
   )
 }
