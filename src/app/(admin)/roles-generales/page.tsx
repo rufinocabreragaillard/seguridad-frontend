@@ -166,10 +166,10 @@ function TabRolesGlobales() {
       setAplicaciones(apps)
       // Orden por (nombre app origen, nombre rol). Sin app origen al final.
       const mapaApp = Object.fromEntries(apps.map((a) => [a.codigo_aplicacion, a.nombre]))
-      // Orden: tipo (RESTRINGIDO primero), app origen, nombre
+      // Orden: tipo (NORMAL primero), app origen, nombre
       const ordenado = data.sort((a, b) => {
-        const ta = a.tipo === 'RESTRINGIDO' ? 0 : 1
-        const tb = b.tipo === 'RESTRINGIDO' ? 0 : 1
+        const ta = a.tipo === 'NORMAL' ? 0 : 1
+        const tb = b.tipo === 'NORMAL' ? 0 : 1
         if (ta !== tb) return ta - tb
         const na = a.codigo_aplicacion_origen ? (mapaApp[a.codigo_aplicacion_origen] || a.codigo_aplicacion_origen) : ''
         const nb = b.codigo_aplicacion_origen ? (mapaApp[b.codigo_aplicacion_origen] || b.codigo_aplicacion_origen) : ''
