@@ -110,7 +110,7 @@ export function Sidebar() {
     >
       {/* Cabecera: logo + botón colapsar */}
       <div className={cn(
-        'flex items-center border-b border-sidebar-texto/20 min-h-[64px]',
+        'flex items-center border-b border-sidebar-texto/40 min-h-[64px]',
         colapsado ? 'justify-center px-2' : 'justify-between px-4'
       )}>
         {!colapsado && (
@@ -153,7 +153,7 @@ export function Sidebar() {
               )}
               {/* Separador fino cuando está colapsado */}
               {colapsado && (
-                <div className="w-6 mx-auto border-t border-sidebar-texto/20 mb-1" />
+                <div className="w-6 mx-auto border-t border-sidebar-texto/40 mb-1" />
               )}
               <div className="flex flex-col gap-1 mt-1">
                 {rol.funciones.map((fn) => {
@@ -187,7 +187,7 @@ export function Sidebar() {
                   </span>
                 )}
                 {colapsado && (
-                  <div className="w-6 mx-auto border-t border-sidebar-texto/20 mb-1" />
+                  <div className="w-6 mx-auto border-t border-sidebar-texto/40 mb-1" />
                 )}
                 <div className="flex flex-col gap-1 mt-1">
                   {itemsVisibles.map((item) => {
@@ -213,7 +213,7 @@ export function Sidebar() {
       </nav>
 
       {/* Pie */}
-      <div className="px-2 py-4 border-t border-sidebar-texto/20" />
+      <div className="px-2 py-4 border-t border-sidebar-texto/40" />
     </aside>
   )
 }
