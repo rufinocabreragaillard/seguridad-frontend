@@ -69,16 +69,16 @@ export default function PaginaLogin() {
       {/* Panel izquierdo — branding */}
       <div
         className="hidden lg:flex lg:w-1/2 flex-col items-center justify-center p-12 relative overflow-hidden"
-        style={{ backgroundColor: '#074B91' }}
+        style={{ backgroundColor: '#ebebeb' }}
       >
         {/* Círculos decorativos */}
         <div
-          className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-10"
-          style={{ backgroundColor: tema.colores.acento }}
+          className="absolute -top-20 -left-20 w-72 h-72 rounded-full opacity-20"
+          style={{ backgroundColor: tema.colores.primario }}
         />
         <div
-          className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full opacity-10"
-          style={{ backgroundColor: tema.colores.secundario }}
+          className="absolute -bottom-20 -right-20 w-96 h-96 rounded-full opacity-15"
+          style={{ backgroundColor: tema.colores.primario }}
         />
 
         <div className="relative z-10 flex flex-col items-center text-center gap-6 max-w-sm">
@@ -94,8 +94,8 @@ export default function PaginaLogin() {
             }}
           />
           <div>
-            <h2 className="text-3xl font-bold text-white">{tema.app.nombre}</h2>
-            <p className="text-sidebar-texto-muted mt-3 text-sm leading-relaxed">
+            <h2 className="text-3xl font-bold" style={{ color: tema.colores.primario }}>{tema.app.nombre}</h2>
+            <p className="mt-3 text-sm leading-relaxed text-gray-500">
               Aplicaciones de RAG y mucho más
             </p>
           </div>
