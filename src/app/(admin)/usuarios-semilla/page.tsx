@@ -11,8 +11,8 @@
  *  - Solo accesible para super-admin (grupo ADMIN).
  */
 
-import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Search, Trash2 } from 'lucide-react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Plus, Pencil, Search, Trash2, X, Star, ChevronUp, ChevronDown } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
@@ -22,6 +22,14 @@ import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '
 import { usuariosApi, gruposApi, entidadesApi, rolesApi, aplicacionesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Usuario, Grupo, Entidad, Rol, Aplicacion, Area } from '@/lib/tipos'
+
+type RolAsignado = {
+  codigo_grupo: string
+  id_rol: number
+  codigo_rol?: string
+  orden: number
+  roles?: { nombre: string; codigo_rol: string; codigo_grupo: string | null; codigo_aplicacion_origen?: string | null } | null
+}
 
 export default function PaginaUsuariosSemilla() {
   const { usuario: usuarioActual, esSuperAdmin } = useAuth()
@@ -65,6 +73,18 @@ export default function PaginaUsuariosSemilla() {
   })
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+
+  // Tab del modal
+  const [tabActiva, setTabActiva] = useState<'datos' | 'roles'>('datos')
+
+  // Roles del usuario (tab Roles)
+  const [rolesUsuario, setRolesUsuario] = useState<RolAsignado[]>([])
+  const [cargandoRolesUsuario, setCargandoRolesUsuario] = useState(false)
+  const [rolNuevo, setRolNuevo] = useState('')
+  const [busquedaRol, setBusquedaRol] = useState('')
+  const [dropdownRolAbierto, setDropdownRolAbierto] = useState(false)
+  const dropdownRolRef = useRef<HTMLDivElement>(null)
+  const [asignandoRol, setAsignandoRol] = useState(false)
 
   // Confirmación de eliminación
   const [confirmarEliminar, setConfirmarEliminar] = useState<Usuario | null>(null)
@@ -150,6 +170,8 @@ export default function PaginaUsuariosSemilla() {
     setError('')
     setEntidadesGrupo([])
     setAreasEntidad([])
+    setRolesUsuario([])
+    setTabActiva('datos')
     setModalAbierto(true)
   }
 
@@ -169,6 +191,8 @@ export default function PaginaUsuariosSemilla() {
       invitar: false,
     })
     setError('')
+    setTabActiva('datos')
+    cargarRolesUsuario(u.codigo_usuario)
     setModalAbierto(true)
   }
 
@@ -228,6 +252,100 @@ export default function PaginaUsuariosSemilla() {
       setEliminando(false)
     }
   }
+
+  // ── Roles del usuario ──────────────────────────────────────────────────────
+  const cargarRolesUsuario = useCallback(async (codigo: string) => {
+    setCargandoRolesUsuario(true)
+    try {
+      setRolesUsuario(await usuariosApi.listarRoles(codigo))
+    } catch { setRolesUsuario([]) }
+    finally { setCargandoRolesUsuario(false) }
+  }, [])
+
+  const asignarRol = async () => {
+    if (!rolNuevo || !usuarioEditando || !form.grupo_por_defecto) return
+    setAsignandoRol(true)
+    try {
+      await usuariosApi.asignarRol(usuarioEditando.codigo_usuario, Number(rolNuevo), form.grupo_por_defecto)
+      setRolNuevo('')
+      setBusquedaRol('')
+      await cargarRolesUsuario(usuarioEditando.codigo_usuario)
+    } catch (e) { setError(e instanceof Error ? e.message : 'Error al asignar rol') }
+    finally { setAsignandoRol(false) }
+  }
+
+  const quitarRol = async (idRol: number) => {
+    if (!usuarioEditando) return
+    try {
+      await usuariosApi.quitarRol(usuarioEditando.codigo_usuario, idRol)
+      await cargarRolesUsuario(usuarioEditando.codigo_usuario)
+    } catch (e) { setError(e instanceof Error ? e.message : 'Error al quitar rol') }
+  }
+
+  const moverRol = async (filteredIndex: number, direccion: 'arriba' | 'abajo') => {
+    if (!usuarioEditando) return
+    const grupo = form.grupo_por_defecto
+    const rolesFiltrados = rolesUsuario.filter((r) => r.codigo_grupo === grupo)
+    const swapIdx = direccion === 'arriba' ? filteredIndex - 1 : filteredIndex + 1
+    if (swapIdx < 0 || swapIdx >= rolesFiltrados.length) return
+    const rolA = rolesFiltrados[filteredIndex]
+    const rolB = rolesFiltrados[swapIdx]
+    const realA = rolesUsuario.findIndex((r) => r.codigo_grupo === rolA.codigo_grupo && r.id_rol === rolA.id_rol)
+    const realB = rolesUsuario.findIndex((r) => r.codigo_grupo === rolB.codigo_grupo && r.id_rol === rolB.id_rol)
+    if (realA === -1 || realB === -1) return
+    const lista = [...rolesUsuario]
+    const ordenA = lista[realA].orden; const ordenB = lista[realB].orden
+    lista[realA].orden = ordenB; lista[realB].orden = ordenA
+    ;[lista[realA], lista[realB]] = [lista[realB], lista[realA]]
+    setRolesUsuario(lista)
+    try {
+      await usuariosApi.reordenarRoles(usuarioEditando.codigo_usuario, lista.map((r) => ({
+        codigo_grupo: r.codigo_grupo, id_rol: r.id_rol, orden: r.orden,
+      })))
+    } catch {
+      cargarRolesUsuario(usuarioEditando.codigo_usuario)
+    }
+  }
+
+  const marcarComoPrincipal = async (idRol: number) => {
+    if (!usuarioEditando) return
+    try {
+      await usuariosApi.actualizar(usuarioEditando.codigo_usuario, { id_rol_principal: idRol })
+      setForm({ ...form, id_rol_principal: String(idRol) })
+    } catch (e) { setError(e instanceof Error ? e.message : 'Error al cambiar rol principal') }
+  }
+
+  // Cerrar dropdown al hacer click fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRolRef.current && !dropdownRolRef.current.contains(e.target as Node)) setDropdownRolAbierto(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Roles disponibles para asignar (en el grupo del formulario)
+  const grupoForm = form.grupo_por_defecto
+  const appsRestringidas = new Set(aplicaciones.filter((a) => a.tipo === 'RESTRINGIDA').map((a) => a.codigo_aplicacion))
+  const mapaAppNombre = Object.fromEntries(aplicaciones.map((a) => [a.codigo_aplicacion, a.nombre]))
+  const rolesDisponibles = rolesGrupo
+    .filter((r) =>
+      (r.codigo_grupo === grupoForm || r.codigo_grupo == null) &&
+      !rolesUsuario.some((ra) => ra.codigo_grupo === grupoForm && ra.id_rol === r.id_rol)
+    )
+    .sort((a, b) => {
+      const na = a.codigo_aplicacion_origen ? (mapaAppNombre[a.codigo_aplicacion_origen] || a.codigo_aplicacion_origen) : ''
+      const nb = b.codigo_aplicacion_origen ? (mapaAppNombre[b.codigo_aplicacion_origen] || b.codigo_aplicacion_origen) : ''
+      const sa = na ? 0 : 1; const sb = nb ? 0 : 1
+      if (sa !== sb) return sa - sb
+      if (na !== nb) return na.localeCompare(nb, 'es')
+      return a.nombre.localeCompare(b.nombre, 'es')
+    })
+  const rolesDisponiblesFiltrados = rolesDisponibles.filter((r) =>
+    busquedaRol.length === 0 ||
+    r.nombre.toLowerCase().includes(busquedaRol.toLowerCase()) ||
+    r.codigo_rol.toLowerCase().includes(busquedaRol.toLowerCase())
+  )
 
   // ── Filtros ────────────────────────────────────────────────────────────────
   const usuariosFiltrados = usuarios.filter((u) =>
@@ -347,6 +465,28 @@ export default function PaginaUsuariosSemilla() {
         className="max-w-2xl"
       >
         <div className="flex flex-col gap-4">
+          {/* Tabs (solo si editando) */}
+          {usuarioEditando && (
+            <div className="flex gap-1 border-b border-borde -mt-2">
+              {(['datos', 'roles'] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  onClick={() => setTabActiva(t)}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                    tabActiva === t
+                      ? 'border-primario text-primario'
+                      : 'border-transparent text-texto-muted hover:text-texto'
+                  }`}
+                >
+                  {t === 'datos' ? 'Datos' : `Roles (${rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).length})`}
+                </button>
+              ))}
+            </div>
+          )}
+
+          {tabActiva === 'datos' && (
+            <>
           <p className="text-sm text-texto-muted bg-fondo border border-borde rounded-lg px-4 py-3">
             Este formulario no filtra por grupo activo. El usuario semilla puede pertenecer a cualquier grupo del sistema.
           </p>
@@ -497,6 +637,141 @@ export default function PaginaUsuariosSemilla() {
               {usuarioEditando ? 'Guardar' : 'Crear usuario semilla'}
             </Boton>
           </div>
+            </>
+          )}
+
+          {/* ── Tab Roles ─────────────────────────────────────────────── */}
+          {tabActiva === 'roles' && usuarioEditando && (
+            <div className="flex flex-col gap-4">
+              {!form.grupo_por_defecto ? (
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
+                  <p className="text-sm text-yellow-700">
+                    Debe seleccionar un grupo por defecto en la pestaña &quot;Datos&quot; antes de asignar roles.
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {/* Asignar nuevo rol */}
+                  <div className="flex gap-2">
+                    <div className="flex-1 relative" ref={dropdownRolRef}>
+                      <div className="relative">
+                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
+                        <input
+                          type="text"
+                          placeholder="Buscar rol por nombre o código..."
+                          value={busquedaRol}
+                          onChange={(e) => { setBusquedaRol(e.target.value); setDropdownRolAbierto(true); setRolNuevo('') }}
+                          onFocus={() => setDropdownRolAbierto(true)}
+                          className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                        />
+                      </div>
+                      {dropdownRolAbierto && (
+                        <div className="absolute z-50 w-full bottom-full mb-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {rolesDisponiblesFiltrados.length === 0 ? (
+                            <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron roles</div>
+                          ) : rolesDisponiblesFiltrados.slice(0, 20).map((r) => (
+                            <button
+                              key={r.id_rol}
+                              onClick={() => {
+                                setRolNuevo(String(r.id_rol))
+                                setBusquedaRol(`${r.nombre} (${r.codigo_rol})${r.codigo_grupo == null ? ' [Global]' : ''}`)
+                                setDropdownRolAbierto(false)
+                              }}
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
+                            >
+                              <span className="font-medium">{r.nombre}</span>
+                              <span className="ml-2 text-texto-muted text-xs">{r.codigo_rol}</span>
+                              {r.codigo_grupo == null && <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">Global</span>}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    <Boton variante="primario" onClick={asignarRol} cargando={asignandoRol} disabled={!rolNuevo}>
+                      <Plus size={14} /> Asignar
+                    </Boton>
+                  </div>
+
+                  {/* Lista de roles asignados */}
+                  {cargandoRolesUsuario ? (
+                    <div className="flex flex-col gap-2">
+                      {[1, 2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}
+                    </div>
+                  ) : rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).length === 0 ? (
+                    <p className="text-sm text-texto-muted text-center py-4">No tiene roles asignados en este grupo</p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).map((ra, idx, arr) => {
+                        const esPrincipal = form.id_rol_principal === String(ra.id_rol)
+                        const codigoRolDisplay = ra.codigo_rol || ra.roles?.codigo_rol || `id ${ra.id_rol}`
+                        return (
+                          <div
+                            key={`${ra.codigo_grupo}_${ra.id_rol}`}
+                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border bg-surface ${
+                              esPrincipal ? 'border-primario bg-primario-muy-claro' : 'border-borde'
+                            }`}
+                          >
+                            <div className="flex flex-col">
+                              <button
+                                onClick={() => moverRol(idx, 'arriba')}
+                                disabled={idx === 0}
+                                className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Subir"
+                              >
+                                <ChevronUp size={14} />
+                              </button>
+                              <button
+                                onClick={() => moverRol(idx, 'abajo')}
+                                disabled={idx === arr.length - 1}
+                                className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                                title="Bajar"
+                              >
+                                <ChevronDown size={14} />
+                              </button>
+                            </div>
+                            <div className="flex-1 min-w-0 flex items-center gap-2">
+                              <span className="text-sm font-medium text-texto">{ra.roles?.nombre || codigoRolDisplay}</span>
+                              <span className="text-xs text-texto-muted">{codigoRolDisplay}</span>
+                              {esPrincipal && (
+                                <span className="text-xs bg-primario text-white px-1.5 py-0.5 rounded">Principal</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1">
+                              {!esPrincipal && (
+                                <button
+                                  onClick={() => marcarComoPrincipal(ra.id_rol)}
+                                  className="p-1 rounded hover:bg-yellow-50 text-texto-muted hover:text-yellow-600 transition-colors"
+                                  title="Marcar como rol principal"
+                                >
+                                  <Star size={14} />
+                                </button>
+                              )}
+                              <button
+                                onClick={() => quitarRol(ra.id_rol)}
+                                className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                                title="Quitar rol"
+                              >
+                                <X size={14} />
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                  <p className="text-sm text-error">{error}</p>
+                </div>
+              )}
+              <div className="flex justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>Cerrar</Boton>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
 
