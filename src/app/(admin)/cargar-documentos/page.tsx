@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Upload, FolderOpen, FileText, AlertTriangle, CheckCircle, Search, Folder } from 'lucide-react'
+import { Upload, FolderOpen, FileText, AlertTriangle, CheckCircle, Search, Folder, Loader2 } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
 import { useAuth } from '@/context/AuthContext'
-import { ubicacionesDocsApi, cargaDocumentosApi } from '@/lib/api'
+import { ubicacionesDocsApi, cargaDocumentosApi, parametrosApi } from '@/lib/api'
 import { escanearArchivosDirectorio, soportaDirectoryPicker, type ArchivoEscaneado } from '@/lib/escanear-directorio'
+import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import type { UbicacionDoc } from '@/lib/tipos'
 
 export default function PaginaCargarDocumentos() {
@@ -16,9 +17,13 @@ export default function PaginaCargarDocumentos() {
   // ── State ─────────────────────────────────────────────────────────────────
   const [ubicaciones, setUbicaciones] = useState<UbicacionDoc[]>([])
   const [cargandoUbicaciones, setCargandoUbicaciones] = useState(true)
+  const [nivelesDirectorio, setNivelesDirectorio] = useState(5)
+
+  // Directorio
+  const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null)
+  const [escaneando, setEscaneando] = useState(false)
 
   // Escaneo
-  const [escaneando, setEscaneando] = useState(false)
   const [datosEscaneo, setDatosEscaneo] = useState<{
     nombreRaiz: string
     archivos: ArchivoEscaneado[]
@@ -38,7 +43,7 @@ export default function PaginaCargarDocumentos() {
   // Filtro de preview
   const [busquedaArchivos, setBusquedaArchivos] = useState('')
 
-  // ── Cargar ubicaciones de BD ──────────────────────────────────────────────
+  // ── Cargar ubicaciones, parámetro y dirHandle persistido ──────────────────
   const cargarUbicaciones = useCallback(async () => {
     setCargandoUbicaciones(true)
     try {
@@ -48,95 +53,112 @@ export default function PaginaCargarDocumentos() {
     }
   }, [])
 
-  useEffect(() => { cargarUbicaciones() }, [cargarUbicaciones])
+  useEffect(() => {
+    const init = async () => {
+      const [, nivelParam] = await Promise.all([
+        cargarUbicaciones(),
+        parametrosApi.obtenerValor('DOCUMENTOS', 'NIVELES_DIRECTORIO').catch(() => null),
+      ])
+      if (nivelParam?.valor != null) {
+        const n = parseInt(nivelParam.valor, 10)
+        if (!isNaN(n) && n >= 0 && n <= 5) setNivelesDirectorio(n)
+      }
 
-  // ── Escanear directorio ───────────────────────────────────────────────────
-  const iniciarEscaneo = async () => {
-    if (!soportaDirectoryPicker()) {
-      alert('Su navegador no soporta la selección de directorios. Use Chrome, Edge o Safari.')
-      return
+      // Restaurar dirHandle persistido
+      const h = await idbGetHandle()
+      if (!h) return
+      try {
+        const perm = await (h as unknown as { queryPermission: (opts: { mode: string }) => Promise<PermissionState> }).queryPermission({ mode: 'read' })
+        if (perm === 'granted') setDirHandle(h)
+      } catch { /* ignore */ }
     }
+    init()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // ── Clasificar archivos del escaneo ───────────────────────────────────────
+  const clasificarEscaneo = useCallback((
+    scan: Awaited<ReturnType<typeof escanearArchivosDirectorio>> & object,
+    ubicacionesActuales: UbicacionDoc[],
+  ) => {
+    const nombreRaiz = scan.nombreRaiz
+    const rutaRaizFS = `/${nombreRaiz}`
+
+    const ubicacionRaiz = ubicacionesActuales.find(
+      (u) => u.ruta_completa?.endsWith(`/${nombreRaiz}`) || u.ruta_completa === `/${nombreRaiz}`
+    )
+    let prefijoRemap = ''
+    if (ubicacionRaiz?.ruta_completa) {
+      const rutaBD = ubicacionRaiz.ruta_completa
+      prefijoRemap = rutaBD.slice(0, rutaBD.length - rutaRaizFS.length)
+    }
+    const remapear = (rutaFS: string) => prefijoRemap + rutaFS
+
+    const rutasHabilitadas = new Set<string>()
+    const rutasNoHabilitadas = new Set<string>()
+    const todasRutasBD = new Set<string>()
+    for (const u of ubicacionesActuales) {
+      if (u.ruta_completa) {
+        todasRutasBD.add(u.ruta_completa)
+        if (u.ubicacion_habilitada && u.activo) rutasHabilitadas.add(u.ruta_completa)
+        else rutasNoHabilitadas.add(u.ruta_completa)
+      }
+    }
+
+    const archivosConMatch: ArchivoEscaneado[] = []
+    const archivosEnNoHabilitadas: ArchivoEscaneado[] = []
+    for (const archivo of scan.archivos) {
+      const rutaBD = remapear(archivo.ruta_directorio)
+      if (rutasHabilitadas.has(rutaBD)) {
+        archivosConMatch.push({ ...archivo, ruta_directorio: rutaBD, ruta_completa: remapear(archivo.ruta_completa) })
+      } else if (rutasNoHabilitadas.has(rutaBD)) {
+        archivosEnNoHabilitadas.push(archivo)
+      }
+    }
+
+    const carpetasSinMatch = scan.rutasEscaneadas
+      .map(remapear)
+      .filter((ruta) => !todasRutasBD.has(ruta))
+
+    return { nombreRaiz: scan.nombreRaiz, archivos: scan.archivos, carpetasSinMatch, archivosConMatch, archivosEnNoHabilitadas }
+  }, [])
+
+  // ── Escanear usando handle dado (sin abrir picker) ────────────────────────
+  const ejecutarEscaneo = useCallback(async (handle: FileSystemDirectoryHandle) => {
     setEscaneando(true)
     setResultado(null)
     setDatosEscaneo(null)
     setBusquedaArchivos('')
     try {
-      const scan = await escanearArchivosDirectorio()
-      if (!scan) {
-        setEscaneando(false)
-        return
-      }
-
-      // Encontrar la ubicación raíz en BD que coincida con el directorio seleccionado.
-      // El filesystem genera rutas como /inversiones/betterplan pero en BD es
-      // /cab/inversiones/betterplan. Buscamos la ubicación cuya ruta_completa
-      // termine en /nombreRaiz para calcular el prefijo de remapeo.
-      const nombreRaiz = scan.nombreRaiz
-      const rutaRaizFS = `/${nombreRaiz}` // lo que genera el filesystem
-
-      // Buscar match en BD: ubicación cuya ruta termine en /nombreRaiz
-      const ubicacionRaiz = ubicaciones.find(
-        (u) => u.ruta_completa?.endsWith(`/${nombreRaiz}`) || u.ruta_completa === `/${nombreRaiz}`
-      )
-
-      // Prefijo para remapear: si en BD es /cab/inversiones y FS genera /inversiones,
-      // el prefijo es /cab (lo que hay antes de /inversiones en la ruta BD)
-      let prefijoRemap = ''
-      if (ubicacionRaiz?.ruta_completa) {
-        const rutaBD = ubicacionRaiz.ruta_completa
-        prefijoRemap = rutaBD.slice(0, rutaBD.length - rutaRaizFS.length)
-      }
-
-      // Función para convertir ruta FS → ruta BD
-      const remapear = (rutaFS: string) => prefijoRemap + rutaFS
-
-      // Mapas de ubicaciones BD
-      const rutasHabilitadas = new Set<string>()
-      const rutasNoHabilitadas = new Set<string>()
-      const todasRutasBD = new Set<string>()
-
-      for (const u of ubicaciones) {
-        if (u.ruta_completa) {
-          todasRutasBD.add(u.ruta_completa)
-          if (u.ubicacion_habilitada && u.activo) {
-            rutasHabilitadas.add(u.ruta_completa)
-          } else {
-            rutasNoHabilitadas.add(u.ruta_completa)
-          }
-        }
-      }
-
-      // Clasificar archivos usando rutas remapeadas
-      const archivosConMatch: ArchivoEscaneado[] = []
-      const archivosEnNoHabilitadas: ArchivoEscaneado[] = []
-
-      for (const archivo of scan.archivos) {
-        const rutaBD = remapear(archivo.ruta_directorio)
-        if (rutasHabilitadas.has(rutaBD)) {
-          // Guardar con ruta remapeada para que el backend encuentre la ubicación
-          archivosConMatch.push({ ...archivo, ruta_directorio: rutaBD, ruta_completa: remapear(archivo.ruta_completa) })
-        } else if (rutasNoHabilitadas.has(rutaBD)) {
-          archivosEnNoHabilitadas.push(archivo)
-        }
-      }
-
-      // Carpetas sin match en BD (remapeadas)
-      const carpetasSinMatch = scan.rutasEscaneadas
-        .map(remapear)
-        .filter((ruta) => !todasRutasBD.has(ruta))
-
-      setDatosEscaneo({
-        nombreRaiz: scan.nombreRaiz,
-        archivos: scan.archivos,
-        carpetasSinMatch,
-        archivosConMatch,
-        archivosEnNoHabilitadas,
+      const scan = await escanearArchivosDirectorio(handle, nivelesDirectorio)
+      if (!scan) return
+      // ubicaciones puede haberse cargado después del init; leemos el estado fresco
+      setUbicaciones((prev) => {
+        setDatosEscaneo(clasificarEscaneo(scan, prev))
+        return prev
       })
     } catch {
       alert('Error al escanear el directorio.')
     } finally {
       setEscaneando(false)
     }
+  }, [nivelesDirectorio, clasificarEscaneo])
+
+  // ── Seleccionar directorio (picker) ───────────────────────────────────────
+  const seleccionarDirectorio = async () => {
+    if (!soportaDirectoryPicker()) {
+      alert('Su navegador no soporta la selección de directorios. Use Chrome, Edge o Safari.')
+      return
+    }
+    try {
+      const opts: Record<string, unknown> = { mode: 'read', id: 'cab-procesar-docs' }
+      if (dirHandle) opts.startIn = dirHandle
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const handle = await (window as any).showDirectoryPicker(opts)
+      setDirHandle(handle)
+      idbSetHandle(handle)
+      await ejecutarEscaneo(handle)
+    } catch { /* cancelado */ }
   }
 
   // ── Ejecutar carga ────────────────────────────────────────────────────────
@@ -173,8 +195,10 @@ export default function PaginaCargarDocumentos() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   const ubicacionesHabilitadas = ubicaciones.filter((u) => u.ubicacion_habilitada && u.activo)
+  const carpetaRaiz = ubicaciones.length > 0
+    ? ubicaciones.reduce((min, u) => (u.nivel ?? 99) < (min.nivel ?? 99) ? u : min, ubicaciones[0])
+    : null
 
-  // Filtrar archivos del preview
   const archivosFiltrados = datosEscaneo
     ? busquedaArchivos
       ? datosEscaneo.archivosConMatch.filter((a) =>
@@ -194,7 +218,7 @@ export default function PaginaCargarDocumentos() {
         </p>
       </div>
 
-      {/* Info ubicaciones — resumen compacto */}
+      {/* Info ubicaciones */}
       <div className="border border-borde rounded-lg bg-fondo-tarjeta p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Folder size={20} className="text-primario shrink-0" />
@@ -214,23 +238,43 @@ export default function PaginaCargarDocumentos() {
         )}
       </div>
 
-      {/* Botón escanear */}
+      {/* Selector de directorio */}
       {!datosEscaneo && !resultado && (
-        <div className="border-2 border-dashed border-borde rounded-lg p-8 text-center">
-          <Upload size={48} className="mx-auto text-texto-muted/50 mb-4" />
-          <p className="text-texto mb-2">Seleccione un directorio para escanear sus archivos</p>
-          <p className="text-sm text-texto-muted mb-4">
-            Solo se cargarán archivos de directorios que coincidan con ubicaciones habilitadas en el sistema
+        <div className="border-2 border-dashed border-borde rounded-lg p-8 text-center flex flex-col items-center gap-4">
+          <Upload size={48} className="text-texto-muted/50" />
+          <div>
+            <p className="text-texto mb-1">Seleccione el directorio raíz para escanear</p>
+            <p className="text-sm text-texto-muted">
+              Solo se cargarán archivos de directorios que coincidan con ubicaciones habilitadas
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3 flex-wrap justify-center">
+            <Boton
+              variante="primario"
+              onClick={seleccionarDirectorio}
+              disabled={ubicacionesHabilitadas.length === 0 || escaneando}
+            >
+              {escaneando
+                ? <><Loader2 size={16} className="animate-spin" />Escaneando...</>
+                : <><FolderOpen size={16} />{dirHandle ? `📂 ${dirHandle.name}` : 'Seleccionar directorio raíz'}</>
+              }
+            </Boton>
+            {dirHandle && !escaneando && (
+              <Boton variante="contorno" onClick={() => ejecutarEscaneo(dirHandle!)}>
+                Re-escanear
+              </Boton>
+            )}
+          </div>
+
+          {/* Hint de carpeta raíz + niveles */}
+          <p className="text-xs text-texto-muted">
+            {carpetaRaiz?.ruta_completa
+              ? <>Selecciona la carpeta raíz: <strong className="text-texto">{carpetaRaiz.ruta_completa.split('/').filter(Boolean)[0] ?? carpetaRaiz.ruta_completa}</strong> (no subcarpetas) · </>
+              : null}
+            {nivelesDirectorio === 0 ? 'Solo raíz' : `Hasta ${nivelesDirectorio} nivel${nivelesDirectorio !== 1 ? 'es' : ''}`}
+            {' '}· configurable en Parámetros → DOCUMENTOS/NIVELES_DIRECTORIO
           </p>
-          <Boton
-            variante="primario"
-            onClick={iniciarEscaneo}
-            cargando={escaneando}
-            disabled={ubicacionesHabilitadas.length === 0}
-          >
-            <FolderOpen size={16} />
-            Seleccionar directorio
-          </Boton>
         </div>
       )}
 
@@ -238,14 +282,20 @@ export default function PaginaCargarDocumentos() {
       {datosEscaneo && !resultado && (
         <div className="flex flex-col gap-4">
           {/* Resumen del escaneo */}
-          <div className="bg-fondo rounded-lg p-4 flex items-center gap-3">
-            <FolderOpen size={24} className="text-primario shrink-0" />
-            <div>
-              <p className="font-medium text-texto">{datosEscaneo.nombreRaiz}</p>
-              <p className="text-sm text-texto-muted">
-                {datosEscaneo.archivos.length} archivo{datosEscaneo.archivos.length !== 1 ? 's' : ''} encontrado{datosEscaneo.archivos.length !== 1 ? 's' : ''} en total
-              </p>
+          <div className="bg-fondo rounded-lg p-4 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <FolderOpen size={24} className="text-primario shrink-0" />
+              <div>
+                <p className="font-medium text-texto">{datosEscaneo.nombreRaiz}</p>
+                <p className="text-sm text-texto-muted">
+                  {datosEscaneo.archivos.length} archivo{datosEscaneo.archivos.length !== 1 ? 's' : ''} encontrados
+                  {' '}· {nivelesDirectorio === 0 ? 'Solo raíz' : `${nivelesDirectorio} nivel${nivelesDirectorio !== 1 ? 'es' : ''}`}
+                </p>
+              </div>
             </div>
+            <Boton variante="contorno" tamano="sm" onClick={seleccionarDirectorio} disabled={escaneando}>
+              <FolderOpen size={14} />Cambiar
+            </Boton>
           </div>
 
           {/* Contadores */}
@@ -283,7 +333,7 @@ export default function PaginaCargarDocumentos() {
             </details>
           )}
 
-          {/* Preview archivos con filtro */}
+          {/* Preview archivos */}
           {datosEscaneo.archivosConMatch.length > 0 && (
             <div className="border border-borde rounded-lg">
               <div className="px-3 py-2 border-b border-borde bg-fondo rounded-t-lg">

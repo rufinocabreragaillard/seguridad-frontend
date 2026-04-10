@@ -159,24 +159,41 @@ export interface ArchivoEscaneado {
  *   Solo se listan archivos de directorios cuya ruta está en este Set.
  * @returns archivos encontrados + carpetas sin match en BD
  */
-export async function escanearArchivosDirectorio(): Promise<{
+/**
+ * Escanea archivos en un directorio dado (o abre el picker si no se provee handle).
+ * Respeta el límite de profundidad maxNiveles (0 = solo la raíz, 5 = cinco niveles).
+ *
+ * @param handleExterno - FileSystemDirectoryHandle ya obtenido (con permisos). Si es null/undefined, abre el picker.
+ * @param maxNiveles - Profundidad máxima a recorrer (default 5).
+ */
+export async function escanearArchivosDirectorio(
+  handleExterno?: FileSystemDirectoryHandle | null,
+  maxNiveles = 5,
+): Promise<{
   nombreRaiz: string
   archivos: ArchivoEscaneado[]
-  carpetasSinMatch: string[]    // rutas de carpetas que no están en BD
-  rutasEscaneadas: string[]     // todas las rutas de carpetas encontradas
+  carpetasSinMatch: string[]
+  rutasEscaneadas: string[]
+  dirHandle: FileSystemDirectoryHandle
 } | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dirHandle = await (window as any).showDirectoryPicker().catch(() => null)
-  if (!dirHandle) return null
+  let dirHandle: FileSystemDirectoryHandle
+  if (handleExterno) {
+    dirHandle = handleExterno
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const picked = await (window as any).showDirectoryPicker().catch(() => null)
+    if (!picked) return null
+    dirHandle = picked
+  }
 
   const nombreRaiz: string = dirHandle.name
   const archivos: ArchivoEscaneado[] = []
   const rutasEscaneadas: string[] = []
 
-  // Recorrer recursivamente y recopilar archivos
   async function recorrerArchivos(
     handle: FileSystemDirectoryHandle,
     rutaActual: string,
+    nivel: number,
   ): Promise<void> {
     rutasEscaneadas.push(rutaActual)
 
@@ -190,7 +207,7 @@ export async function escanearArchivosDirectorio(): Promise<{
     for (const entry of entries) {
       if (entry.kind === 'file') {
         const nombre = entry.handle.name
-        if (nombre.startsWith('.')) continue // ignorar ocultos
+        if (nombre.startsWith('.')) continue
         try {
           const file = await (entry.handle as FileSystemFileHandle).getFile()
           archivos.push({
@@ -206,22 +223,25 @@ export async function escanearArchivosDirectorio(): Promise<{
       }
     }
 
-    // Recursión en subdirectorios
-    for (const entry of entries) {
-      if (entry.kind === 'directory') {
-        const nombre = entry.handle.name
-        if (nombre.startsWith('.') || nombre === 'node_modules' || nombre === '__pycache__') continue
-        await recorrerArchivos(
-          entry.handle as FileSystemDirectoryHandle,
-          `${rutaActual}/${nombre}`,
-        )
+    // Recursión en subdirectorios (respeta límite de niveles)
+    if (nivel < maxNiveles) {
+      for (const entry of entries) {
+        if (entry.kind === 'directory') {
+          const nombre = entry.handle.name
+          if (nombre.startsWith('.') || nombre === 'node_modules' || nombre === '__pycache__') continue
+          await recorrerArchivos(
+            entry.handle as FileSystemDirectoryHandle,
+            `${rutaActual}/${nombre}`,
+            nivel + 1,
+          )
+        }
       }
     }
   }
 
-  await recorrerArchivos(dirHandle, `/${nombreRaiz}`)
+  await recorrerArchivos(dirHandle, `/${nombreRaiz}`, 0)
 
-  return { nombreRaiz, archivos, carpetasSinMatch: [], rutasEscaneadas }
+  return { nombreRaiz, archivos, carpetasSinMatch: [], rutasEscaneadas, dirHandle }
 }
 
 export async function escanearDirectorioSinHijos(): Promise<{
