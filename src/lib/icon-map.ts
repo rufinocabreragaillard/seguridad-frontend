@@ -28,6 +28,7 @@ import {
   Lock,
   Key,
   UserCheck,
+  UserCog,
   FolderOpen,
   FolderTree,
   Globe,
@@ -86,6 +87,7 @@ const iconMap: Record<string, LucideIcon> = {
   Lock,
   Key,
   UserCheck,
+  UserCog,
 
   // Organizacion
   Building2,
