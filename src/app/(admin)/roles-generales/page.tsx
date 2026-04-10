@@ -11,7 +11,7 @@ import { rolesApi, gruposApi, funcionesApi, aplicacionesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Rol, Grupo, Funcion, Aplicacion } from '@/lib/tipos'
 
-type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string; activo: boolean } }
+type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }
 
 type Tab = 'globales' | 'copiar'
 
@@ -150,7 +150,7 @@ function TabRolesGlobales() {
   }
 
   const funcionesDisponibles = todasFunciones.filter(
-    (f) => f.activo && !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion),
+    (f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion),
   )
   const funcionesRolFiltradas = funcionesDisponibles.filter(
     (f) =>
