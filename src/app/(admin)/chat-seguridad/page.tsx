@@ -406,7 +406,7 @@ function Mensaje({ mensaje, streaming = false }: { mensaje: ChatMensaje; streami
       <div
         className={`${tieneTabla ? 'max-w-[95%] w-full' : 'max-w-[80%]'} px-4 py-2 rounded-lg text-sm ${
           esUser
-            ? 'bg-primario text-white'
+            ? 'bg-primario text-primario-texto'
             : 'bg-fondo border border-borde text-texto'
         }`}
       >

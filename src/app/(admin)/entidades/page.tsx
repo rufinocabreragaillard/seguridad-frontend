@@ -305,7 +305,7 @@ export default function PaginaEntidades() {
             >
               <div className={`p-2 rounded-lg ${
                 entidadSeleccionada?.codigo_entidad === e.codigo_entidad
-                  ? 'bg-primario text-white'
+                  ? 'bg-primario text-primario-texto'
                   : 'bg-fondo text-texto-muted'
               }`}>
                 <Building2 size={16} />

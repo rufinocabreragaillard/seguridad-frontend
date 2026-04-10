@@ -346,7 +346,7 @@ export default function PaginaGrupos() {
             >
               <div className={`p-2 rounded-lg ${
                 grupoSeleccionado?.codigo_grupo === g.codigo_grupo
-                  ? 'bg-primario text-white'
+                  ? 'bg-primario text-primario-texto'
                   : 'bg-fondo text-texto-muted'
               }`}>
                 <Layers size={16} />

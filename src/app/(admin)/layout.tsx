@@ -49,7 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </p>
               <button
                 onClick={() => router.push('/dashboard')}
-                className="mt-2 px-4 py-2 text-sm bg-primario text-white rounded-md hover:bg-primario-hover transition-colors"
+                className="mt-2 px-4 py-2 text-sm bg-primario text-primario-texto rounded-md hover:bg-primario-hover transition-colors"
               >
                 Volver al inicio
               </button>

@@ -746,7 +746,7 @@ export default function PaginaUsuariosSemilla() {
                               <span className="text-sm font-medium text-texto">{ra.roles?.nombre || codigoRolDisplay}</span>
                               <span className="text-xs text-texto-muted">{codigoRolDisplay}</span>
                               {esPrincipal && (
-                                <span className="text-xs bg-primario text-white px-1.5 py-0.5 rounded">Principal</span>
+                                <span className="text-xs bg-primario text-primario-texto px-1.5 py-0.5 rounded">Principal</span>
                               )}
                             </div>
                             <div className="flex items-center gap-1">
