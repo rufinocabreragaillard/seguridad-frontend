@@ -405,9 +405,9 @@ export const documentosApi = {
   actualizar: (id: number, datos: Partial<Documento>) =>
     api.put<Documento>(`/documentos/${id}`, datos).then((r) => r.data),
   desactivar: (id: number) => api.delete(`/documentos/${id}`),
-  // Restablecer documentos NO_ESCANEABLE / NO_ENCONTRADO a CARGADO/RESUMIDO
+  // Restablecer documentos NO_ESCANEABLE / NO_ENCONTRADO a CARGADO/METADATA
   restablecerEstado: (codigos_documento: number[]) =>
-    api.post<{ restablecidos: number; a_cargado: number; a_resumido: number; omitidos: number }>(
+    api.post<{ restablecidos: number; a_cargado: number; a_metadata: number; omitidos: number }>(
       '/documentos/restablecer-estado',
       { codigos_documento },
     ).then((r) => r.data),

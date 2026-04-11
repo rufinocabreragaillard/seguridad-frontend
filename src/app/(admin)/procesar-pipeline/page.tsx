@@ -14,8 +14,7 @@ import { useAuth } from '@/context/AuthContext'
 
 const PASOS = [
   { key: 'EXTRAER',    estadoOrigen: 'CARGADO',   estadoDestino: 'METADATA',    color: '#EF4444', clienteSide: true },
-  { key: 'RESUMIR',    estadoOrigen: 'METADATA',  estadoDestino: 'RESUMIDO',    color: '#F97316', clienteSide: false },
-  { key: 'ESCANEAR',   estadoOrigen: 'RESUMIDO',  estadoDestino: 'ESCANEADO',   color: '#EAB308', clienteSide: false },
+  { key: 'ANALIZAR',   estadoOrigen: 'METADATA',  estadoDestino: 'ESCANEADO',   color: '#F97316', clienteSide: false },
   { key: 'CHUNKEAR',   estadoOrigen: 'ESCANEADO', estadoDestino: 'CHUNKEADO',   color: '#84CC16', clienteSide: false },
   { key: 'VECTORIZAR', estadoOrigen: 'CHUNKEADO', estadoDestino: 'VECTORIZADO', color: '#22C55E', clienteSide: false },
 ] as const

@@ -10,11 +10,10 @@ import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/
 import { useAuth } from '@/context/AuthContext'
 
 const PASOS = [
-  { key: 'EXTRAER',   nombre: 'EXTRAER',   estadoOrigen: 'CARGADO',   estadoDestino: 'METADATA',    colorDisco: '#EF4444', clienteSide: true },
-  { key: 'RESUMIR',   nombre: 'RESUMIR',   estadoOrigen: 'METADATA',  estadoDestino: 'RESUMIDO',    colorDisco: '#F97316', clienteSide: false },
-  { key: 'ESCANEAR',  nombre: 'ESCANEAR',  estadoOrigen: 'RESUMIDO',  estadoDestino: 'ESCANEADO',   colorDisco: '#EAB308', clienteSide: false },
-  { key: 'CHUNKEAR',  nombre: 'CHUNKEAR',  estadoOrigen: 'ESCANEADO', estadoDestino: 'CHUNKEADO',   colorDisco: '#84CC16', clienteSide: false },
-  { key: 'VECTORIZAR',nombre: 'VECTORIZAR',estadoOrigen: 'CHUNKEADO', estadoDestino: 'VECTORIZADO', colorDisco: '#22C55E', clienteSide: false },
+  { key: 'EXTRAER',    nombre: 'EXTRAER',    estadoOrigen: 'CARGADO',   estadoDestino: 'METADATA',    colorDisco: '#EF4444', clienteSide: true },
+  { key: 'ANALIZAR',   nombre: 'ANALIZAR',   estadoOrigen: 'METADATA',  estadoDestino: 'ESCANEADO',   colorDisco: '#F97316', clienteSide: false },
+  { key: 'CHUNKEAR',   nombre: 'CHUNKEAR',   estadoOrigen: 'ESCANEADO', estadoDestino: 'CHUNKEADO',   colorDisco: '#84CC16', clienteSide: false },
+  { key: 'VECTORIZAR', nombre: 'VECTORIZAR', estadoOrigen: 'CHUNKEADO', estadoDestino: 'VECTORIZADO', colorDisco: '#22C55E', clienteSide: false },
 ] as const
 
 type EstadoPaso = 'esperando' | 'activo' | 'listo' | 'error'

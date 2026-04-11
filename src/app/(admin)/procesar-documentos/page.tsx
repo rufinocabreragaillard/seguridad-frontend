@@ -354,7 +354,7 @@ export default function PaginaProcesarDocumentos() {
         setCola([{
           id_cola: 0,
           codigo_documento: 0,
-          nombre_documento: `Restablecidos: ${res.restablecidos} (${res.a_cargado} a CARGADO, ${res.a_resumido} a RESUMIDO)`,
+          nombre_documento: `Restablecidos: ${res.restablecidos} (${res.a_cargado} a CARGADO, ${res.a_metadata} a METADATA)`,
           ubicacion_documento: undefined,
           estado_cola: 'COMPLETADO',
         }])
@@ -643,7 +643,7 @@ export default function PaginaProcesarDocumentos() {
                     </option>
                   )
                 })}
-                <option value={PROCESO_RESTABLECER}>Restablecer (NO_ESCANEABLE / NO_ENCONTRADO → CARGADO/RESUMIDO)</option>
+                <option value={PROCESO_RESTABLECER}>Restablecer (NO_ESCANEABLE / NO_ENCONTRADO → CARGADO/METADATA)</option>
               </select>
             </div>
 
