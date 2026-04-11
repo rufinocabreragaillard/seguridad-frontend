@@ -546,10 +546,14 @@ export default function PaginaProcesarDocumentos() {
       return
     }
 
-    // 2. Cargar cola inicial para mostrar en UI
+    // 2. Cargar cola inicial para mostrar en UI.
+    // Filtrar por estado_destino del proceso. Si se encolaron nuevos, priorizar
+    // los seleccionados; si todos ya estaban en cola (encolados=0), mostrar
+    // todos los ítems activos del grupo para ese destino.
     const pendientes = await colaEstadosDocsApi.listar()
     const misItems = pendientes.filter((p) =>
-      seleccionados.has(p.codigo_documento) && p.codigo_estado_doc_destino === estadoDestino,
+      p.codigo_estado_doc_destino === estadoDestino &&
+      (seleccionados.has(p.codigo_documento) || seleccionados.size === 0),
     )
     const colaInicial: ItemCola[] = misItems.map((p) => {
       const doc = documentos.find((d) => d.codigo_documento === p.codigo_documento)
