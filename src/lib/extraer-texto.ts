@@ -74,6 +74,11 @@ export class PdfProtegidoError extends Error {
   constructor() { super('PDF protegido con contraseña'); this.name = 'PdfProtegidoError' }
 }
 
+// Error para cualquier archivo que no se puede parsear (corrupto, encoding raro, etc.)
+export class ArchivoNoEscaneable extends Error {
+  constructor(detalle: string) { super(detalle); this.name = 'ArchivoNoEscaneable' }
+}
+
 async function extraerTextoPDF(file: File): Promise<string> {
   const pdfjsLib = await getPdfjsLib()
 
@@ -89,7 +94,8 @@ async function extraerTextoPDF(file: File): Promise<string> {
     if (name === 'PasswordException' || msg.toLowerCase().includes('password')) {
       throw new PdfProtegidoError()
     }
-    throw e
+    // Cualquier otro error de PDF.js (corrupto, truncado, formato inválido)
+    throw new ArchivoNoEscaneable(`PDF inválido: ${msg}`)
   }
 
   const paginas: string[] = []
@@ -111,10 +117,15 @@ async function extraerTextoPDF(file: File): Promise<string> {
  * Extrae texto de un .docx usando mammoth.
  */
 async function extraerTextoDOCX(file: File): Promise<string> {
-  const mammoth = await import('mammoth')
-  const arrayBuffer = await file.arrayBuffer()
-  const result = await mammoth.extractRawText({ arrayBuffer })
-  return result.value
+  try {
+    const mammoth = await import('mammoth')
+    const arrayBuffer = await file.arrayBuffer()
+    const result = await mammoth.extractRawText({ arrayBuffer })
+    return result.value
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    throw new ArchivoNoEscaneable(`DOCX corrupto: ${msg}`)
+  }
 }
 
 /**
@@ -122,18 +133,23 @@ async function extraerTextoDOCX(file: File): Promise<string> {
  * Cada hoja se serializa como CSV; las hojas se separan por encabezado.
  */
 async function extraerTextoExcel(file: File): Promise<string> {
-  const XLSX = await import('xlsx')
-  const arrayBuffer = await file.arrayBuffer()
-  const workbook = XLSX.read(arrayBuffer, { type: 'array' })
-  const partes: string[] = []
-  for (const nombreHoja of workbook.SheetNames) {
-    const hoja = workbook.Sheets[nombreHoja]
-    const csv = XLSX.utils.sheet_to_csv(hoja, { blankrows: false })
-    if (csv.trim()) {
-      partes.push(`### Hoja: ${nombreHoja}\n${csv}`)
+  try {
+    const XLSX = await import('xlsx')
+    const arrayBuffer = await file.arrayBuffer()
+    const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+    const partes: string[] = []
+    for (const nombreHoja of workbook.SheetNames) {
+      const hoja = workbook.Sheets[nombreHoja]
+      const csv = XLSX.utils.sheet_to_csv(hoja, { blankrows: false })
+      if (csv.trim()) {
+        partes.push(`### Hoja: ${nombreHoja}\n${csv}`)
+      }
     }
+    return partes.join('\n\n')
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    throw new ArchivoNoEscaneable(`Excel corrupto: ${msg}`)
   }
-  return partes.join('\n\n')
 }
 
 /**
