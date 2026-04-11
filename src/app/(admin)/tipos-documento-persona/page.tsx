@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
@@ -13,6 +14,8 @@ import { useAuth } from '@/context/AuthContext'
 
 export default function PaginaTiposDocumentoPersona() {
   const { grupoActivo } = useAuth()
+  const t = useTranslations('tiposDocumentoPersona')
+  const tc = useTranslations('common')
 
   const crud = useCrudPage<TipoDocumentoPersona, { codigo_tipo_doc: string; nombre: string; descripcion: string }>({
     cargarFn: tiposDocumentoPersonaApi.listar,
@@ -38,16 +41,16 @@ export default function PaginaTiposDocumentoPersona() {
   return (
     <div className="flex flex-col gap-6 max-w-5xl">
       <div>
-        <h2 className="text-2xl font-bold text-texto">Tipos de Documento de Persona</h2>
-        <p className="text-sm text-texto-muted mt-1">Tipos de documento de identificación</p>
+        <h2 className="text-2xl font-bold text-texto">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       <BarraHerramientas
         busqueda={crud.busqueda}
         onBusqueda={crud.setBusqueda}
-        placeholderBusqueda="Buscar por código o nombre..."
+        placeholderBusqueda={t('buscarPlaceholder')}
         onNuevo={crud.abrirNuevo}
-        textoNuevo="Nuevo tipo"
+        textoNuevo={t('nuevoTipo')}
         excelDatos={filtradosOrdenados as unknown as Record<string, unknown>[]}
         excelColumnas={[
           { titulo: 'Código', campo: 'codigo_tipo_doc' },
@@ -60,38 +63,38 @@ export default function PaginaTiposDocumentoPersona() {
 
       <TablaCrud
         columnas={[
-          columnaNombre<TipoDocumentoPersona>('Nombre', (t) => t.nombre),
-          columnaDescripcion<TipoDocumentoPersona>('Descripción', (t) => t.descripcion),
-          columnaEstado<TipoDocumentoPersona>((t) => t.activo),
-          columnaCodigo<TipoDocumentoPersona>('Código', (t) => t.codigo_tipo_doc),
+          columnaNombre<TipoDocumentoPersona>(t('colNombre'), (item) => item.nombre),
+          columnaDescripcion<TipoDocumentoPersona>(t('colDescripcion'), (item) => item.descripcion),
+          columnaEstado<TipoDocumentoPersona>((item) => item.activo),
+          columnaCodigo<TipoDocumentoPersona>(t('colCodigo'), (item) => item.codigo_tipo_doc),
         ]}
         items={filtradosOrdenados}
         cargando={crud.cargando}
-        getId={(t) => t.codigo_tipo_doc}
+        getId={(item) => item.codigo_tipo_doc}
         onEditar={crud.abrirEditar}
         onEliminar={crud.setConfirmacion}
-        textoVacio="No se encontraron tipos de documento"
+        textoVacio={t('sinTipos')}
       />
 
-      <Modal abierto={crud.modal} alCerrar={crud.cerrarModal} titulo={crud.editando ? `Editar tipo: ${crud.editando.nombre}` : 'Nuevo tipo de documento'}>
+      <Modal abierto={crud.modal} alCerrar={crud.cerrarModal} titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre }) : t('nuevoTitulo')}>
         <div className="flex flex-col gap-4">
           <Input
-            etiqueta="Nombre *"
+            etiqueta={t('etiquetaNombre')}
             value={crud.form.nombre}
             onChange={(e) => crud.updateForm('nombre', e.target.value)}
-            placeholder="Nombre del tipo de documento"
+            placeholder={t('placeholderNombre')}
           />
           <div>
-            <label className="block text-sm font-medium text-texto mb-1.5">Descripción</label>
+            <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaDescripcion')}</label>
             <textarea
               className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none resize-y min-h-[60px]"
               value={crud.form.descripcion}
               onChange={(e) => crud.updateForm('descripcion', e.target.value)}
-              placeholder="Descripción opcional"
+              placeholder={t('placeholderDescripcion')}
             />
           </div>
           {crud.editando && (
-            <Input etiqueta="Código" value={crud.form.codigo_tipo_doc} disabled readOnly />
+            <Input etiqueta={t('etiquetaCodigo')} value={crud.form.codigo_tipo_doc} disabled readOnly />
           )}
           {crud.error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">

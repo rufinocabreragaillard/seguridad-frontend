@@ -718,7 +718,7 @@ export default function PaginaUsuariosSemilla() {
                             {r.id_rol === 0 ? <span className="text-texto-muted italic">Sin rol</span> : <>
                               <span className="font-medium">{r.nombre}</span>
                               <span className="text-texto-muted text-xs">{r.codigo_rol}</span>
-                              {r.codigo_grupo == null && <span className="text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">Global</span>}
+                              {r.codigo_grupo == null && <span className="text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">{tc('global')}</span>}
                             </>}
                           </button>
                         ))}
@@ -809,7 +809,7 @@ export default function PaginaUsuariosSemilla() {
                         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
                         <input
                           type="text"
-                          placeholder="Buscar rol por nombre o código..."
+                          placeholder={t('buscarRol')}
                           value={busquedaRol}
                           onChange={(e) => { setBusquedaRol(e.target.value); setDropdownRolAbierto(true); setRolNuevo('') }}
                           onFocus={() => setDropdownRolAbierto(true)}
@@ -819,20 +819,20 @@ export default function PaginaUsuariosSemilla() {
                       {dropdownRolAbierto && (
                         <div className="absolute z-50 w-full bottom-full mb-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {rolesDisponiblesFiltrados.length === 0 ? (
-                            <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron roles</div>
+                            <div className="px-3 py-2 text-sm text-texto-muted">{tc('sinResultados')}</div>
                           ) : rolesDisponiblesFiltrados.slice(0, 20).map((r) => (
                             <button
                               key={r.id_rol}
                               onClick={() => {
                                 setRolNuevo(String(r.id_rol))
-                                setBusquedaRol(`${r.nombre} (${r.codigo_rol})${r.codigo_grupo == null ? ' [Global]' : ''}`)
+                                setBusquedaRol(`${r.nombre} (${r.codigo_rol})${r.codigo_grupo == null ? ` [${tc('global')}]` : ''}`)
                                 setDropdownRolAbierto(false)
                               }}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
                             >
                               <span className="font-medium">{r.nombre}</span>
                               <span className="ml-2 text-texto-muted text-xs">{r.codigo_rol}</span>
-                              {r.codigo_grupo == null && <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">Global</span>}
+                              {r.codigo_grupo == null && <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">{tc('global')}</span>}
                             </button>
                           ))}
                         </div>
@@ -849,7 +849,7 @@ export default function PaginaUsuariosSemilla() {
                       {[1, 2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}
                     </div>
                   ) : rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).length === 0 ? (
-                    <p className="text-sm text-texto-muted text-center py-4">No tiene roles asignados en este grupo</p>
+                    <p className="text-sm text-texto-muted text-center py-4">No hay roles asignados en este grupo</p>
                   ) : (
                     <div className="flex flex-col gap-2">
                       {rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).map((ra, idx, arr) => {
@@ -919,7 +919,7 @@ export default function PaginaUsuariosSemilla() {
                 </div>
               )}
               <div className="flex justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>Cerrar</Boton>
+                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cerrar')}</Boton>
               </div>
             </div>
           )}
@@ -929,8 +929,8 @@ export default function PaginaUsuariosSemilla() {
       {/* Modal confirmar eliminación */}
       <ModalConfirmar
         abierto={!!confirmarEliminar}
-        titulo="Eliminar usuario"
-        mensaje={`¿Eliminar el usuario "${confirmarEliminar?.nombre}"? Esta acción no se puede deshacer.`}
+        titulo={tc('eliminar')}
+        mensaje={tc('confirmarEliminar', { nombre: confirmarEliminar?.nombre ?? '' })}
         onConfirmar={ejecutarEliminar}
         onCancelar={() => setConfirmarEliminar(null)}
         cargando={eliminando}
