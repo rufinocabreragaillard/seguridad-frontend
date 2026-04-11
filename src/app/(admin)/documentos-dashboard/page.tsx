@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { FileText, Cpu, BookOpen, Tags, FolderTree, AlertTriangle, CheckCircle, Clock } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { FileText, Cpu, Tags, FolderTree, AlertTriangle, CheckCircle, Clock, ArrowRight } from 'lucide-react'
 import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { documentosApi, estadosDocsApi } from '@/lib/api'
 import type { Documento, EstadoDoc } from '@/lib/tipos'
@@ -10,6 +11,7 @@ import type { Documento, EstadoDoc } from '@/lib/tipos'
 export default function PaginaDocumentosDashboard() {
   const t = useTranslations('documentosDashboard')
   const tc = useTranslations('common')
+  const router = useRouter()
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [estados, setEstados] = useState<EstadoDoc[]>([])
   const [cargando, setCargando] = useState(true)
@@ -135,9 +137,15 @@ export default function PaginaDocumentosDashboard() {
                 {estadosOrdenados.map((e) => {
                   const conteo = conteoPorEstado[e.codigo_estado_doc] || 0
                   const pct = (conteo / maxConteo) * 100
+                  const url = `/procesar-documentos?estado=${encodeURIComponent(e.codigo_estado_doc)}`
                   return (
-                    <div key={e.codigo_estado_doc} className="flex items-center gap-3">
-                      <span className="text-sm text-texto min-w-[110px]">{e.nombre_estado}</span>
+                    <div
+                      key={e.codigo_estado_doc}
+                      className="flex items-center gap-3 group cursor-pointer rounded-lg px-1 -mx-1 hover:bg-primario-muy-claro transition-colors"
+                      title={`Ir a Procesar — ${e.nombre_estado}`}
+                      onClick={() => conteo > 0 && router.push(url)}
+                    >
+                      <span className="text-sm text-texto min-w-[110px] group-hover:text-primario transition-colors">{e.nombre_estado}</span>
                       <div className="flex-1 h-7 bg-fondo rounded-md overflow-hidden relative">
                         <div
                           className="h-full bg-primario transition-all"
@@ -147,6 +155,10 @@ export default function PaginaDocumentosDashboard() {
                           {conteo}
                         </span>
                       </div>
+                      <ArrowRight
+                        size={14}
+                        className={`shrink-0 transition-opacity ${conteo > 0 ? 'opacity-0 group-hover:opacity-100 text-primario' : 'opacity-0'}`}
+                      />
                     </div>
                   )
                 })}

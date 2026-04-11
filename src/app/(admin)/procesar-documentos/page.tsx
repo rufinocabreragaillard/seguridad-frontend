@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Play, FileText, CheckCircle, XCircle, Loader2, FolderOpen, Clock, Square, Search, CheckSquare, SquareIcon, Trash2, AlertTriangle, ListOrdered, Cpu } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
@@ -51,6 +52,9 @@ export default function PaginaProcesarDocumentos() {
   const t = useTranslations('procesarDocumentos')
   const tc = useTranslations('common')
   const { grupoActivo } = useAuth()
+  const searchParams = useSearchParams()
+  // Estado del doc desde el que viene el dashboard (ej. "METADATA")
+  const estadoDesdeUrl = searchParams.get('estado')
 
   // Tabs
   const [tab, setTab] = useState<'procesar' | 'cola'>('procesar')
@@ -193,7 +197,22 @@ export default function PaginaProcesarDocumentos() {
       // dispara automáticamente desde el módulo Cargar Docs, no desde aquí).
       const procs = (procsRaw || []).filter((p) => p.pasos && p.pasos.length > 0 && p.codigo_proceso !== 'CARGAR')
       setProcesos(procs)
-      if (procs.length > 0 && !procesoSel) setProcesoSel(procs[0].codigo_proceso)
+
+      // Si venimos del dashboard con ?estado=XXX, seleccionar el proceso cuyo
+      // estado_origen coincide. Estados terminales → RESTABLECER.
+      const TERMINALES = ['NO_ESCANEABLE', 'NO_ENCONTRADO']
+      if (estadoDesdeUrl) {
+        if (TERMINALES.includes(estadoDesdeUrl)) {
+          setProcesoSel(PROCESO_RESTABLECER)
+        } else {
+          const match = procs.find((p) => p.pasos?.[0]?.estado_origen === estadoDesdeUrl)
+          if (match) setProcesoSel(match.codigo_proceso)
+          else if (procs.length > 0) setProcesoSel(procs[0].codigo_proceso)
+        }
+      } else if (procs.length > 0 && !procesoSel) {
+        setProcesoSel(procs[0].codigo_proceso)
+      }
+
       setUbicaciones(
         (u as UbicacionOption[])
           .filter((x: UbicacionOption) => (x as UbicacionOption & { activo?: boolean }).activo !== false)
