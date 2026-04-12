@@ -62,6 +62,8 @@ export default function PaginaProcesarDocumentos() {
   // Config
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([])
   const [procesoSel, setProcesoSel] = useState<string>('')   // codigo_proceso del catálogo o PROCESO_RESTABLECER
+  const [nParallelEdit, setNParallelEdit] = useState<number>(10)
+  const [guardandoParalel, setGuardandoParalel] = useState(false)
   const [alcance, setAlcance] = useState<Alcance>('pendientes')
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>([])
   const [ubicacionSel, setUbicacionSel] = useState('')
@@ -73,6 +75,12 @@ export default function PaginaProcesarDocumentos() {
     const p = procesos.find((x) => x.codigo_proceso === procesoSel)
     return p?.pasos?.[0] || null
   }, [procesos, procesoSel])
+
+  // Sincronizar n_parallel con el proceso seleccionado
+  useEffect(() => {
+    const p = procesos.find((x) => x.codigo_proceso === procesoSel)
+    if (p) setNParallelEdit(p.n_parallel ?? 10)
+  }, [procesoSel, procesos])
 
   // ¿Este proceso usa LLM? Si tiene id_modelo en su paso, lo corre el worker backend.
   // Si no, es un paso client-side (ej. EXTRAER que usa dirHandle).
@@ -372,6 +380,17 @@ export default function PaginaProcesarDocumentos() {
   //   - EXTRAER (destino METADATA): loop client-side que lee el archivo con
   //     dirHandle y sube el texto al backend (POST /documentos/{id}/texto).
   //   - Procesos con LLM (RESUMIR, ESCANEAR): encola + dispara worker backend
+  const guardarNParallel = async () => {
+    if (!procesoSel || procesoSel === PROCESO_RESTABLECER) return
+    setGuardandoParalel(true)
+    try {
+      const updated = await procesosApi.actualizar(procesoSel, { n_parallel: nParallelEdit })
+      setProcesos((prev) => prev.map((p) => p.codigo_proceso === procesoSel ? { ...p, n_parallel: updated.n_parallel } : p))
+    } finally {
+      setGuardandoParalel(false)
+    }
+  }
+
   //     con /cola-estados-docs/ejecutar + polling. El navegador ya no corre
   //     el loop LLM.
   const ejecutar = async () => {
@@ -751,6 +770,23 @@ export default function PaginaProcesarDocumentos() {
                 })}
                 <option value={PROCESO_RESTABLECER}>Restablecer (NO_ESCANEABLE / NO_ENCONTRADO → CARGADO/METADATA)</option>
               </select>
+              {procesoSel && procesoSel !== PROCESO_RESTABLECER && (
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-texto-muted">Paralelo:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={nParallelEdit}
+                    onChange={(e) => setNParallelEdit(Math.max(1, parseInt(e.target.value) || 1))}
+                    onBlur={guardarNParallel}
+                    onKeyDown={(e) => e.key === 'Enter' && guardarNParallel()}
+                    disabled={ejecutando || guardandoParalel}
+                    className="w-16 text-xs border border-borde rounded px-1.5 py-0.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50"
+                  />
+                  {guardandoParalel && <Loader2 className="w-3 h-3 animate-spin text-texto-muted" />}
+                </div>
+              )}
             </div>
 
             <div className="flex flex-col gap-1.5">

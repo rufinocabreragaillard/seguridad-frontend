@@ -492,6 +492,7 @@ export interface Proceso {
   descripcion: string | null
   tipo_entidad: string
   activo: boolean
+  n_parallel: number
   pasos: PasoProceso[]
 }
 
@@ -499,6 +500,8 @@ export const procesosApi = {
   listar: (tipoEntidad?: string) =>
     api.get<Proceso[]>('/procesos', { params: tipoEntidad ? { tipo_entidad: tipoEntidad } : undefined }).then((r) => r.data),
   obtener: (codigo: string) => api.get<Proceso>(`/procesos/${codigo}`).then((r) => r.data),
+  actualizar: (codigo: string, data: { n_parallel?: number; nombre_proceso?: string; descripcion?: string }) =>
+    api.patch<Proceso>(`/procesos/${codigo}`, data).then((r) => r.data),
 }
 
 // ─── Tipos Documento Persona ─────────────────────────────────────────────────
