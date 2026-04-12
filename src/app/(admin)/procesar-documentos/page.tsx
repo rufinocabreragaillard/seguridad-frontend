@@ -919,7 +919,9 @@ export default function PaginaProcesarDocumentos() {
           </div>
 
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
-            {esExtraer && (
+            {/* Directorio: siempre visible si hay handle activo (filtra la lista),
+                más el selector completo cuando el proceso es EXTRAER */}
+            {(esExtraer || dirHandle) && (
               <>
                 <Boton variante="contorno" tamano="sm" onClick={seleccionarDirectorio} disabled={ejecutando || escaneandoDir}>
                   {escaneandoDir ? <Loader2 size={16} className="animate-spin" /> : <FolderOpen size={16} />}
@@ -930,21 +932,25 @@ export default function PaginaProcesarDocumentos() {
                     {t('quitar')}
                   </Boton>
                 )}
-                <span className="text-xs text-texto-muted" title="Niveles del árbol de directorios a escanear (configurable en Parámetros → DOCUMENTOS/NIVELES_DIRECTORIO)">
-                  {nivelesDirectorio === 0 ? t('soloRaiz') : t('hastaXNiveles', { n: nivelesDirectorio })}
-                </span>
-                {!dirHandle && (() => {
-                  const raiz = ubicaciones.length > 0
-                    ? ubicaciones.reduce((min, u) => u.nivel < min.nivel ? u : min, ubicaciones[0])
-                    : null
-                  return (
-                    <span className="text-xs text-texto-muted">
-                      {raiz?.ruta_completa
-                        ? <>Al ejecutar se pedirá acceso al directorio. Selecciona la carpeta raíz: <strong className="text-texto">{raiz.ruta_completa.split('/').filter(Boolean)[0] ?? raiz.ruta_completa}</strong> (no subcarpetas).</>
-                        : 'Al ejecutar se pedirá acceso al directorio raíz de los archivos.'}
+                {esExtraer && (
+                  <>
+                    <span className="text-xs text-texto-muted" title="Niveles del árbol de directorios a escanear (configurable en Parámetros → DOCUMENTOS/NIVELES_DIRECTORIO)">
+                      {nivelesDirectorio === 0 ? t('soloRaiz') : t('hastaXNiveles', { n: nivelesDirectorio })}
                     </span>
-                  )
-                })()}
+                    {!dirHandle && (() => {
+                      const raiz = ubicaciones.length > 0
+                        ? ubicaciones.reduce((min, u) => u.nivel < min.nivel ? u : min, ubicaciones[0])
+                        : null
+                      return (
+                        <span className="text-xs text-texto-muted">
+                          {raiz?.ruta_completa
+                            ? <>Al ejecutar se pedirá acceso al directorio. Selecciona la carpeta raíz: <strong className="text-texto">{raiz.ruta_completa.split('/').filter(Boolean)[0] ?? raiz.ruta_completa}</strong> (no subcarpetas).</>
+                            : 'Al ejecutar se pedirá acceso al directorio raíz de los archivos.'}
+                        </span>
+                      )
+                    })()}
+                  </>
+                )}
               </>
             )}
             {usaLLM && (
