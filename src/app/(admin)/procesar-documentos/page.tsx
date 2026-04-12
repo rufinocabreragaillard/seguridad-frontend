@@ -556,13 +556,20 @@ export default function PaginaProcesarDocumentos() {
     }
     const estadoDestino = pasoActual.estado_destino
 
-    // 1. Encolar
-    const items = Array.from(seleccionados).map((id) => ({
-      codigo_documento: id,
-      codigo_estado_doc_destino: estadoDestino,
-    }))
+    // 1. Encolar — usar inicializarPorEstado para evitar el límite de 1000 filas de Supabase.
+    // El backend consulta directamente todos los docs en el estado origen sin restricciones.
+    const estadoOrigen = pasoActual.estado_origen
     try {
-      await colaEstadosDocsApi.inicializar(items)
+      if (estadoOrigen) {
+        await colaEstadosDocsApi.inicializarPorEstado(estadoOrigen, estadoDestino)
+      } else {
+        // Fallback: encolar solo los seleccionados (no debería ocurrir en procesos normales)
+        const items = Array.from(seleccionados).map((id) => ({
+          codigo_documento: id,
+          codigo_estado_doc_destino: estadoDestino,
+        }))
+        await colaEstadosDocsApi.inicializar(items)
+      }
     } catch {
       setEjecutando(false)
       return

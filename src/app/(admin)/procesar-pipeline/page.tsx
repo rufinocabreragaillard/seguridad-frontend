@@ -155,26 +155,30 @@ export default function PaginaCargaDocsUsuario() {
   }
 
   const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string): Promise<boolean> => {
-    const docs = await documentosApi.listar({ codigo_estado_doc: estadoOrigen, activo: true })
-    if (docs.length === 0) { setPaso(key, { estado: 'listo' }); return true }
-    setPaso(key, { total: docs.length, completados: 0, estado: 'activo' })
-    const items = docs.map((d) => ({ codigo_documento: d.codigo_documento, codigo_estado_doc_destino: estadoDestino }))
-    await colaEstadosDocsApi.inicializar(items)
+    // Usar inicializarPorEstado para evitar el límite de 1000 filas de Supabase.
+    // Obtener total real desde endpoint paginado (no carga todos los docs en memoria).
+    let totalDocs = 0
+    try {
+      const pag = await documentosApi.listarPaginado({ page: 1, limit: 1, codigo_estado_doc: estadoOrigen, activo: true })
+      totalDocs = pag.total
+    } catch { /* continuar con 0 */ }
+    if (totalDocs === 0) { setPaso(key, { estado: 'listo' }); return true }
+    setPaso(key, { total: totalDocs, completados: 0, estado: 'activo' })
+    await colaEstadosDocsApi.inicializarPorEstado(estadoOrigen, estadoDestino)
     await colaEstadosDocsApi.ejecutar(estadoDestino)
-    const idsSet = new Set(docs.map((d) => d.codigo_documento))
     while (!abortRef.current) {
       await new Promise((r) => setTimeout(r, 3000))
       if (abortRef.current) return false
       try {
         const cola = await colaEstadosDocsApi.listar()
-        const propios = cola.filter((c) => idsSet.has(c.codigo_documento) && c.codigo_estado_doc_destino === estadoDestino)
+        const propios = cola.filter((c) => c.codigo_estado_doc_destino === estadoDestino)
         const activos = propios.filter((c) => c.estado_cola === 'PENDIENTE' || c.estado_cola === 'EN_PROCESO').length
         setPaso(key, { completados: propios.filter((c) => c.estado_cola === 'COMPLETADO').length })
         if (activos === 0) break
       } catch { /* reintentar */ }
     }
     if (abortRef.current) return false
-    setPaso(key, { completados: docs.length, estado: 'listo' })
+    setPaso(key, { completados: totalDocs, estado: 'listo' })
     return true
   }
 
