@@ -156,7 +156,7 @@ export default function PaginaFunciones() {
       </div>
 
       <Tabla>
-        <TablaCabecera><tr><TablaTh className="w-16">Orden</TablaTh><TablaTh>Tipo</TablaTh><TablaTh>Alias</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Icono</TablaTh><TablaTh>URL</TablaTh><TablaTh>Codigo</TablaTh><TablaTh className="text-right">Acciones</TablaTh></tr></TablaCabecera>
+        <TablaCabecera><tr><TablaTh className="w-16">Orden</TablaTh><TablaTh>Tipo</TablaTh><TablaTh>Alias</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Icono</TablaTh><TablaTh>URL</TablaTh><TablaTh>Codigo</TablaTh><TablaTh className="text-right w-20">Acciones</TablaTh></tr></TablaCabecera>
         <TablaCuerpo>
           {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>Cargando...</TablaTd></TablaFila>
           ) : funcionesFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>No se encontraron funciones</TablaTd></TablaFila>
