@@ -657,7 +657,8 @@ export default function PaginaProcesarDocumentos() {
     const estadoOrigen = pasoActual.estado_origen
     try {
       if (estadoOrigen) {
-        await colaEstadosDocsApi.inicializarPorEstado(estadoOrigen, estadoDestino, undefined, tope ? parseInt(tope) : null)
+        const ubicacionFiltro = alcance === 'ubicacion' && ubicacionSel ? ubicacionSel : null
+        await colaEstadosDocsApi.inicializarPorEstado(estadoOrigen, estadoDestino, undefined, tope ? parseInt(tope) : null, ubicacionFiltro)
       } else {
         // Fallback: encolar solo los seleccionados (no debería ocurrir en procesos normales)
         const items = Array.from(seleccionados).map((id) => ({
