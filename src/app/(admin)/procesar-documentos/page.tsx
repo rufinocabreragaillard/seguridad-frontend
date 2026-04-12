@@ -318,15 +318,18 @@ export default function PaginaProcesarDocumentos() {
   }, [procesoSel, esRestablecer, pasoActual, alcance, ubicacionSel, ubicaciones, busqueda, estadoFiltro])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
-  // El usuario debe presionar "Buscar" explícitamente para cargar la lista.
+  // Si se seleccionó un estado explícito, auto-cargar inmediatamente.
   // Nota: a proposito NO incluimos `busqueda` en las deps; eso lo maneja el
   // boton/Enter del filtro para no re-cargar con cada tecla.
   useEffect(() => {
     setDocumentos([])
     setSeleccionados(new Set())
     setYaCargado(false)
+    if (estadoFiltro) {
+      cargarDocumentos()
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [procesoSel, alcance, ubicacionSel])
+  }, [procesoSel, alcance, ubicacionSel, estadoFiltro])
 
   const toggleSeleccion = (id: number) => {
     setSeleccionados((prev) => {
