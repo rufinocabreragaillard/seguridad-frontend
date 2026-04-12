@@ -64,6 +64,7 @@ export default function PaginaProcesarDocumentos() {
   const [procesoSel, setProcesoSel] = useState<string>('')   // codigo_proceso del catálogo o PROCESO_RESTABLECER
   const [nParallelEdit, setNParallelEdit] = useState<number>(10)
   const [guardandoParalel, setGuardandoParalel] = useState(false)
+  const [tope, setTope] = useState<string>('')  // vacío = sin tope (procesa todo)
   const [alcance, setAlcance] = useState<Alcance>('pendientes')
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>([])
   const [ubicacionSel, setUbicacionSel] = useState('')
@@ -580,7 +581,7 @@ export default function PaginaProcesarDocumentos() {
     const estadoOrigen = pasoActual.estado_origen
     try {
       if (estadoOrigen) {
-        await colaEstadosDocsApi.inicializarPorEstado(estadoOrigen, estadoDestino)
+        await colaEstadosDocsApi.inicializarPorEstado(estadoOrigen, estadoDestino, undefined, tope ? parseInt(tope) : null)
       } else {
         // Fallback: encolar solo los seleccionados (no debería ocurrir en procesos normales)
         const items = Array.from(seleccionados).map((id) => ({
@@ -771,20 +772,34 @@ export default function PaginaProcesarDocumentos() {
                 <option value={PROCESO_RESTABLECER}>Restablecer (NO_ESCANEABLE / NO_ENCONTRADO → CARGADO/METADATA)</option>
               </select>
               {procesoSel && procesoSel !== PROCESO_RESTABLECER && (
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs text-texto-muted">Paralelo:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={nParallelEdit}
-                    onChange={(e) => setNParallelEdit(Math.max(1, parseInt(e.target.value) || 1))}
-                    onBlur={guardarNParallel}
-                    onKeyDown={(e) => e.key === 'Enter' && guardarNParallel()}
-                    disabled={ejecutando || guardandoParalel}
-                    className="w-16 text-xs border border-borde rounded px-1.5 py-0.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50"
-                  />
-                  {guardandoParalel && <Loader2 className="w-3 h-3 animate-spin text-texto-muted" />}
+                <div className="flex items-center gap-3 mt-1 flex-wrap">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-texto-muted">Paralelo:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={nParallelEdit}
+                      onChange={(e) => setNParallelEdit(Math.max(1, parseInt(e.target.value) || 1))}
+                      onBlur={guardarNParallel}
+                      onKeyDown={(e) => e.key === 'Enter' && guardarNParallel()}
+                      disabled={ejecutando || guardandoParalel}
+                      className="w-14 text-xs border border-borde rounded px-1.5 py-0.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50"
+                    />
+                    {guardandoParalel && <Loader2 className="w-3 h-3 animate-spin text-texto-muted" />}
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-xs text-texto-muted">Tope:</span>
+                    <input
+                      type="number"
+                      min={1}
+                      placeholder="todos"
+                      value={tope}
+                      onChange={(e) => setTope(e.target.value)}
+                      disabled={ejecutando}
+                      className="w-20 text-xs border border-borde rounded px-1.5 py-0.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
+                    />
+                  </div>
                 </div>
               )}
             </div>
