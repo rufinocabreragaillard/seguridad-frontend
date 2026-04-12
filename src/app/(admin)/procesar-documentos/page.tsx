@@ -208,11 +208,13 @@ export default function PaginaProcesarDocumentos() {
   // Cargar procesos (catálogo), ubicaciones y parámetro de niveles
   useEffect(() => {
     const init = async () => {
-      const [procsRaw, u, nivelParam] = await Promise.all([
+      const [procsRaw, u, nivelParam, estados] = await Promise.all([
         procesosApi.listar('DOCUMENTOS').catch(() => []),
         ubicacionesDocsApi.listar().catch(() => []),
         parametrosApi.obtenerValor('DOCUMENTOS', 'NIVELES_DIRECTORIO').catch(() => null),
+        estadosDocsApi.listar().catch(() => []),
       ])
+      setEstadosDocs(estados as EstadoDoc[])
       if (nivelParam?.valor != null) {
         const n = parseInt(nivelParam.valor, 10)
         if (!isNaN(n) && n >= 0 && n <= 5) setNivelesDirectorio(n)
@@ -316,19 +318,13 @@ export default function PaginaProcesarDocumentos() {
   }, [procesoSel, esRestablecer, pasoActual, alcance, ubicacionSel, ubicaciones, busqueda, estadoFiltro])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
-  // Si el alcance es "pendientes" (no requiere filtro adicional), autocargamos
-  // para que el usuario vea inmediatamente todos los documentos pendientes
-  // sin tener que presionar "Listar". Para "ubicacion" esperamos a que el
-  // usuario elija una y presione Listar.
+  // El usuario debe presionar "Buscar" explícitamente para cargar la lista.
   // Nota: a proposito NO incluimos `busqueda` en las deps; eso lo maneja el
   // boton/Enter del filtro para no re-cargar con cada tecla.
   useEffect(() => {
     setDocumentos([])
     setSeleccionados(new Set())
     setYaCargado(false)
-    if (alcance === 'pendientes' && procesoSel) {
-      cargarDocumentos()
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [procesoSel, alcance, ubicacionSel])
 
