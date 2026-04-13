@@ -91,7 +91,7 @@ export default function PaginaLogin() {
           style={{ backgroundColor: tema.colores.primario }}
         />
 
-        <div className="relative z-10 flex flex-col items-center text-center gap-2 max-w-sm">
+        <div className="relative z-10 flex flex-col items-center text-center gap-1 max-w-sm">
           <Image
             src={tema.logo.url}
             alt={tema.logo.alt}
@@ -103,8 +103,8 @@ export default function PaginaLogin() {
               t.style.display = 'none'
             }}
           />
-          <p className="text-sm leading-relaxed text-gray-500">
-            {t('tagline')}
+          <p className="font-semibold tracking-wide text-gray-600" style={{ fontSize: '2.1rem', width: '284px', textAlign: 'center' }}>
+            RAG Framework
           </p>
         </div>
       </div>
