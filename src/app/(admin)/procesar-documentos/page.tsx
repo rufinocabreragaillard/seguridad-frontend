@@ -19,6 +19,7 @@ import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoN
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
+import { ChatProcesar } from './_components/chat-procesar'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 
 const ESTADO_COLA_CONFIG: Record<string, { variante: 'exito' | 'error' | 'advertencia' | 'neutro'; icono: typeof Clock }> = {
@@ -32,7 +33,6 @@ const ESTADO_COLA_CONFIG: Record<string, { variante: 'exito' | 'error' | 'advert
 const PROCESO_RESTABLECER = '__RESTABLECER__'
 type TabDetalle = 'datos' | 'caracteristicas' | 'chunks'
 const ESTADOS_CON_CHUNKS = new Set(['CHUNKEADO', 'VECTORIZADO'])
-type Alcance = 'pendientes' | 'ubicacion'
 
 interface UbicacionOption {
   codigo_ubicacion: string
@@ -60,6 +60,7 @@ export default function PaginaProcesarDocumentos() {
   const estadoDesdeUrl = searchParams.get('estado')
 
   // Tabs
+  const [modoPipeline, setModoPipeline] = useState<'paso-a-paso' | 'todo'>('paso-a-paso')
   const [tab, setTab] = useState<'procesar' | 'cola'>('procesar')
 
   // Config
@@ -69,7 +70,6 @@ export default function PaginaProcesarDocumentos() {
   const [guardandoParalel, setGuardandoParalel] = useState(false)
   const [tope, setTope] = useState<string>('')  // vacío = sin tope (procesa todo)
   const [estadoFiltro, setEstadoFiltro] = useState<string>('')  // override de estado para la lista
-  const [alcance, setAlcance] = useState<Alcance>('pendientes')
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>([])
   const [ubicacionSel, setUbicacionSel] = useState('')
 
@@ -137,9 +137,6 @@ export default function PaginaProcesarDocumentos() {
   // Confirmación para eliminar documento individual de la lista
   const [confirmEliminarDoc, setConfirmEliminarDoc] = useState<Documento | null>(null)
   const [eliminandoDoc, setEliminandoDoc] = useState(false)
-
-  // Tab principal: "Paso a Paso" (control granular) | "Todo" (pipeline completo)
-  const [tabPrincipal, setTabPrincipal] = useState<'paso-a-paso' | 'todo'>('paso-a-paso')
 
   // Modal detalle documento (inline, reemplaza navegación a /documentos)
   const [docDetalle, setDocDetalle] = useState<Documento | null>(null)
@@ -305,7 +302,7 @@ export default function PaginaProcesarDocumentos() {
       }
       let filtrados = todos
 
-      if (alcance === 'ubicacion' && ubicacionSel) {
+      if (ubicacionSel) {
         const ubic = ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)
         if (ubic?.ruta_completa) {
           filtrados = filtrados.filter((d) => d.ubicacion_documento?.includes(ubic.ruta_completa))
@@ -319,7 +316,7 @@ export default function PaginaProcesarDocumentos() {
     } finally {
       setCargando(false)
     }
-  }, [procesoSel, esRestablecer, pasoActual, alcance, ubicacionSel, ubicaciones, busqueda, estadoFiltro])
+  }, [procesoSel, esRestablecer, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
   // Si se seleccionó un estado explícito, auto-cargar inmediatamente.
@@ -333,7 +330,7 @@ export default function PaginaProcesarDocumentos() {
       cargarDocumentos()
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [procesoSel, alcance, ubicacionSel, estadoFiltro])
+  }, [procesoSel, ubicacionSel, estadoFiltro])
 
   const toggleSeleccion = (id: number) => {
     setSeleccionados((prev) => {
@@ -674,7 +671,7 @@ export default function PaginaProcesarDocumentos() {
     const estadoOrigen = pasoActual.estado_origen
     try {
       if (estadoOrigen) {
-        const ubicacionFiltro = alcance === 'ubicacion' && ubicacionSel ? ubicacionSel : null
+        const ubicacionFiltro = ubicacionSel ? ubicacionSel : null
         await colaEstadosDocsApi.inicializarPorEstado(estadoOrigen, estadoDestino, undefined, tope ? parseInt(tope) : null, ubicacionFiltro)
       } else {
         // Fallback: encolar solo los seleccionados (no debería ocurrir en procesos normales)
@@ -811,25 +808,19 @@ export default function PaginaProcesarDocumentos() {
         <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
-      {/* Tabs principales */}
-      <div className="flex gap-1 border-b border-borde">
-        <button
-          onClick={() => setTabPrincipal('paso-a-paso')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'paso-a-paso' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
-        >
-          <ListOrdered size={15} />{t('tabPasoAPaso')}
-        </button>
-        <button
-          onClick={() => setTabPrincipal('todo')}
-          className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'todo' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
-        >
-          <Cpu size={15} />{t('tabTodo')}
-        </button>
+      {/* Selector de modo: Paso a Paso / Pipeline Completo */}
+      <div className="flex gap-2">
+        <Boton variante={modoPipeline === 'paso-a-paso' ? 'primario' : 'contorno'} onClick={() => setModoPipeline('paso-a-paso')}>
+          <ListOrdered size={16} />{t('tabPasoAPaso')}
+        </Boton>
+        <Boton variante={modoPipeline === 'todo' ? 'primario' : 'contorno'} onClick={() => setModoPipeline('todo')}>
+          <Cpu size={16} />{t('tabTodo')}
+        </Boton>
       </div>
 
-      {tabPrincipal === 'todo' && <TabPipelineTodo />}
+      {modoPipeline === 'todo' && <TabPipelineTodo />}
 
-      {tabPrincipal === 'paso-a-paso' && (<>
+      {modoPipeline === 'paso-a-paso' && (<>
       {/* Tabs internas */}
       <div className="flex gap-1 border-b border-borde">
         <button
@@ -866,8 +857,8 @@ export default function PaginaProcesarDocumentos() {
                 })}
                 <option value={PROCESO_RESTABLECER}>Restablecer (NO_ESCANEABLE / NO_ENCONTRADO → CARGADO/METADATA)</option>
               </select>
-              {procesoSel && procesoSel !== PROCESO_RESTABLECER && (
-                <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <div className="flex items-center gap-3 mt-1 flex-wrap">
+                {procesoSel && procesoSel !== PROCESO_RESTABLECER && (
                   <div className="flex items-center gap-1.5">
                     <span className="text-xs text-texto-muted">Paralelo:</span>
                     <input
@@ -883,20 +874,20 @@ export default function PaginaProcesarDocumentos() {
                     />
                     {guardandoParalel && <Loader2 className="w-3 h-3 animate-spin text-texto-muted" />}
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs text-texto-muted">Tope:</span>
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="todos"
-                      value={tope}
-                      onChange={(e) => setTope(e.target.value)}
-                      disabled={ejecutando}
-                      className="w-20 text-xs border border-borde rounded px-1.5 py-0.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
-                    />
-                  </div>
+                )}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-texto-muted">Tope:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    placeholder="todos"
+                    value={tope}
+                    onChange={(e) => setTope(e.target.value)}
+                    disabled={ejecutando}
+                    className="w-20 text-xs border border-borde rounded px-1.5 py-0.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
+                  />
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5 min-w-0">
@@ -931,26 +922,16 @@ export default function PaginaProcesarDocumentos() {
             </div>
 
             <div className="flex flex-col gap-1.5 min-w-0">
-              <label className="text-sm font-medium text-texto">{t('etiquetaAlcance')}</label>
-              <select value={alcance} onChange={(e) => setAlcance(e.target.value as Alcance)} className={selectClass} disabled={ejecutando}>
-                <option value="pendientes">{t('todosPendientes')}</option>
-                <option value="ubicacion">{t('porUbicacion')}</option>
+              <label className="text-sm font-medium text-texto">{t('etiquetaUbicacion')}</label>
+              <select value={ubicacionSel} onChange={(e) => setUbicacionSel(e.target.value)} className={selectClass} disabled={ejecutando}>
+                <option value="">{t('todas')}</option>
+                {ubicaciones.map((u) => (
+                  <option key={u.codigo_ubicacion} value={u.codigo_ubicacion}>
+                    {'—'.repeat(u.nivel || 0)} {u.nombre_ubicacion}
+                  </option>
+                ))}
               </select>
             </div>
-
-            {alcance === 'ubicacion' ? (
-              <div className="flex flex-col gap-1.5 min-w-0">
-                <label className="text-sm font-medium text-texto">{t('etiquetaUbicacion')}</label>
-                <select value={ubicacionSel} onChange={(e) => setUbicacionSel(e.target.value)} className={selectClass} disabled={ejecutando}>
-                  <option value="">{t('todas')}</option>
-                  {ubicaciones.map((u) => (
-                    <option key={u.codigo_ubicacion} value={u.codigo_ubicacion}>
-                      {'—'.repeat(u.nivel || 0)} {u.nombre_ubicacion}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : <div />}
           </div>
 
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
@@ -1267,6 +1248,26 @@ export default function PaginaProcesarDocumentos() {
           </Tabla>
         </>
       )}
+
+      {/* Chat de procesamiento */}
+      <ChatProcesar
+        procesos={procesos}
+        ubicaciones={ubicaciones}
+        estadosDocs={estadosDocs}
+        onEjecutar={(proceso, tope, ubicacion) => {
+          setProcesoSel(proceso)
+          if (tope) setTope(String(tope))
+          if (ubicacion) setUbicacionSel(ubicacion)
+          ejecutar()
+        }}
+        onCambiarEstado={(estadoOrigen, estadoDestino, ubicacion, topeVal) => {
+          setEstadoFiltro(estadoOrigen)
+          const match = procesos.find((p) => p.pasos?.[0]?.estado_origen === estadoOrigen && p.pasos?.[0]?.estado_destino === estadoDestino)
+          if (match) setProcesoSel(match.codigo_proceso)
+          if (ubicacion) setUbicacionSel(ubicacion)
+          if (topeVal) setTope(String(topeVal))
+        }}
+      />
 
       <ModalConfirmar
         abierto={confirmCerrar}
