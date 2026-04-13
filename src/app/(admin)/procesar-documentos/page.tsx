@@ -943,7 +943,7 @@ export default function PaginaProcesarDocumentos() {
                   className={`flex items-center gap-2 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto cursor-text ${ejecutando ? 'opacity-50 pointer-events-none' : ''}`}
                   onClick={() => !ejecutando && setUbicDropdownOpen(true)}
                 >
-                  <Search size={13} className="text-texto-muted shrink-0" />
+                  <FolderOpen size={13} className="text-texto-muted shrink-0" />
                   <input
                     className="flex-1 bg-transparent outline-none text-texto placeholder:text-texto-muted text-sm min-w-0"
                     placeholder={ubicacionSel
@@ -978,13 +978,12 @@ export default function PaginaProcesarDocumentos() {
                       .map(u => (
                         <div
                           key={u.codigo_ubicacion}
-                          className={`px-3 py-2 hover:bg-fondo cursor-pointer ${ubicacionSel === u.codigo_ubicacion ? 'bg-primario-muy-claro text-primario' : 'text-texto'}`}
+                          className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${ubicacionSel === u.codigo_ubicacion ? 'bg-primario-muy-claro text-primario' : 'text-texto'}`}
+                          style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
                           onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
                         >
-                          <div className="text-sm font-medium">{u.nombre_ubicacion}</div>
-                          {u.ruta_completa && u.ruta_completa !== u.nombre_ubicacion && (
-                            <div className="text-xs text-texto-muted truncate">{u.ruta_completa}</div>
-                          )}
+                          <FolderOpen size={13} className={ubicacionSel === u.codigo_ubicacion ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
+                          <span className="text-sm truncate">{u.nombre_ubicacion}</span>
                         </div>
                       ))}
                     {ubicaciones.filter(u => !ubicBusqueda || u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) || u.ruta_completa.toLowerCase().includes(ubicBusqueda.toLowerCase())).length === 0 && (

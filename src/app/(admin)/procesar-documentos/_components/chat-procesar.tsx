@@ -53,7 +53,7 @@ interface Props {
 }
 
 export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, onCambiarEstado }: Props) {
-  const [abierto, setAbierto] = useState(false)
+  const [abierto, setAbierto] = useState(true)
   const [mensajes, setMensajes] = useState<Mensaje[]>([{
     rol: 'assistant',
     texto: '¡Hola! Puedo ayudarte a procesar documentos. Escribe comandos como:\n• "Ejecuta ANALIZAR en los primeros 10"\n• "Cambia a ESCANEADO los de la ubicación X"\n• "¿Cuántos hay en METADATA?"'
@@ -122,22 +122,16 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
 
   return (
     <>
-      {/* Botón flotante */}
-      <button
-        onClick={() => setAbierto((v) => !v)}
-        className="fixed bottom-6 right-6 z-50 w-12 h-12 rounded-full bg-primario text-primario-texto shadow-lg hover:bg-primario-oscuro transition-colors flex items-center justify-center"
-        title="Chat de procesamiento"
-      >
-        {abierto ? <X size={20} /> : <MessageSquare size={20} />}
-      </button>
-
-      {/* Panel de chat */}
+      {/* Panel de chat — siempre en top-right, el botón lo abre/cierra */}
       {abierto && (
         <div className="fixed top-16 right-6 z-50 w-80 h-96 bg-surface border border-borde rounded-xl shadow-xl flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center gap-2 px-3 py-2.5 bg-primario text-primario-texto">
             <Bot size={16} />
-            <span className="text-sm font-medium">Asistente de Procesamiento</span>
+            <span className="text-sm font-medium flex-1">Asistente de Procesamiento</span>
+            <button onClick={() => setAbierto(false)} className="hover:opacity-70 transition-opacity">
+              <X size={16} />
+            </button>
           </div>
 
           {/* Mensajes */}
@@ -201,6 +195,18 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
             </button>
           </div>
         </div>
+      )}
+
+      {/* Botón para reabrir cuando el chat está cerrado */}
+      {!abierto && (
+        <button
+          onClick={() => setAbierto(true)}
+          className="fixed top-[4.5rem] right-6 z-50 flex items-center gap-2 px-3 py-2 rounded-xl bg-primario text-primario-texto shadow-lg hover:bg-primario-oscuro transition-colors text-sm font-medium"
+          title="Abrir asistente"
+        >
+          <MessageSquare size={16} />
+          Asistente
+        </button>
       )}
     </>
   )

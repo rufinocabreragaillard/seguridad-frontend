@@ -298,10 +298,10 @@ export function TabPipelineTodo() {
                 size={99}
               />
               {i < PASOS.length - 1 && (
-                <div className="flex items-center px-2">
-                  <svg width="40" height="16" viewBox="0 0 40 16">
-                    <line x1="0" y1="8" x2="30" y2="8" stroke="#9CA3AF" strokeWidth="2" />
-                    <polygon points="28,4 36,8 28,12" fill="#9CA3AF" />
+                <div className="flex items-center self-center px-1">
+                  <svg width="48" height="24" viewBox="0 0 48 24">
+                    <line x1="0" y1="12" x2="34" y2="12" stroke="#9CA3AF" strokeWidth="6" strokeLinecap="round" />
+                    <polygon points="30,4 46,12 30,20" fill="#9CA3AF" />
                   </svg>
                 </div>
               )}
