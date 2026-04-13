@@ -13,6 +13,7 @@ const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin']
 export const metadata: Metadata = {
   title: tema.app.nombre,
   description: `Panel de administración - ${tema.app.nombre}`,
+  icons: { icon: '/logo_serverlm_A.png' },
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
