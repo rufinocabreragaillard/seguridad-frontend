@@ -11,7 +11,7 @@ import api from '@/lib/api'
 import { useTranslations } from 'next-intl'
 import { locales, type Locale } from '@/i18n/config'
 
-const LOCALE_LABELS: Record<string, string> = { es: 'ES', en: 'EN' }
+const LOCALE_LABELS: Record<string, string> = { es: 'ES', en: 'EN', pt: 'PT', fr: 'FR', de: 'DE' }
 
 function cambiarLocale(nuevoLocale: Locale) {
   document.cookie = `NEXT_LOCALE=${nuevoLocale};path=/;max-age=31536000`
