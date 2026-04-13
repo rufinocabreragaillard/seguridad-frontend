@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -17,6 +18,8 @@ import { exportarExcel } from '@/lib/exportar-excel'
 type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }
 
 export default function PaginaRoles() {
+  const t = useTranslations('roles')
+  const tc = useTranslations('common')
   const { grupoActivo, aplicacionActiva } = useAuth()
   const [roles, setRoles] = useState<Rol[]>([])
   const [funciones, setFunciones] = useState<Funcion[]>([])
@@ -369,8 +372,7 @@ export default function PaginaRoles() {
   return (
     <div className="flex flex-col gap-6 max-w-6xl">
       <div>
-        <h2 className="text-2xl font-bold text-texto">Roles y Funciones</h2>
-        <p className="text-sm text-texto-muted mt-1">Configura los permisos y capacidades del sistema</p>
+        <h2 className="text-2xl font-bold text-texto">{t('titulo')}</h2>
       </div>
 
       {/* Tabs */}
@@ -385,7 +387,7 @@ export default function PaginaRoles() {
                 : 'text-texto-muted hover:text-texto'
             }`}
           >
-            {tab === 'roles' ? 'Roles' : 'Funciones'}
+            {tab === 'roles' ? t('tabRoles') : t('tabFunciones')}
           </button>
         ))}
       </div>

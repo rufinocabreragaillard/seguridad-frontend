@@ -63,6 +63,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const ctx = await authApi.yo()
         setUsuario(ctx)
         actualizarMapaFunciones(ctx.menu)
+        // Cargar traducciones de campos de BD del sistema
+        const { setTraducciones } = await import('@/lib/traducir')
+        setTraducciones(ctx.traducciones ?? {}, ctx.locale ?? 'es')
         return ctx
       } catch (e: unknown) {
         const esUltimoIntento = intento === MAX_INTENTOS

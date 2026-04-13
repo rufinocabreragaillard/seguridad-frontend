@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { useTema } from '@/context/ThemeContext'
 import { obtenerIcono } from '@/lib/icon-map'
+import { tr } from '@/lib/traducir'
 import { tema as temaDefault } from '@/config/tema.config'
 
 interface NavItem {
@@ -155,7 +156,7 @@ export function Sidebar() {
             <div key={rol.id_rol}>
               {!colapsado && (
                 <span className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-texto-muted">
-                  {rol.alias}
+                  {tr('roles', 'alias_de_rol', String(rol.id_rol), rol.alias)}
                 </span>
               )}
               {/* Separador fino cuando está colapsado */}
@@ -172,10 +173,10 @@ export function Sidebar() {
                       key={fn.codigo_funcion}
                       href={href}
                       className={cn(itemBase, activo ? itemActivo : itemInactivo)}
-                      title={fn.alias}
+                      title={tr('funciones', 'alias_de_funcion', fn.codigo_funcion, fn.alias)}
                     >
                       <Icono size={18} className="shrink-0" />
-                      {!colapsado && <span>{fn.alias}</span>}
+                      {!colapsado && <span>{tr('funciones', 'alias_de_funcion', fn.codigo_funcion, fn.alias)}</span>}
                     </Link>
                   )
                 })}
