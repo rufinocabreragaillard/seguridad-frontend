@@ -1484,7 +1484,7 @@ export default function PaginaProcesarDocumentos() {
 
       <ModalConfirmar
         abierto={!!confirmEliminarDoc}
-        alCerrar={() => setConfirmEliminarDoc(null)}
+        alCerrar={() => { setConfirmEliminarDoc(null); setEliminandoDoc(false) }}
         alConfirmar={ejecutarEliminarDoc}
         titulo="Eliminar documento"
         mensaje={confirmEliminarDoc ? `¿Eliminar "${confirmEliminarDoc.nombre_documento}"? Esta acción no se puede deshacer.` : ''}
