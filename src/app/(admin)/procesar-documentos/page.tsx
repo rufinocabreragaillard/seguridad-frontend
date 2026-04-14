@@ -15,7 +15,7 @@ import { documentosApi, ubicacionesDocsApi, colaEstadosDocsApi, estadosDocsApi, 
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Documento, ColaEstadoDoc, EstadoDoc, CategoriaConCaracteristicasDocs } from '@/lib/tipos'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable } from '@/lib/extraer-texto'
+import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
@@ -611,6 +611,21 @@ export default function PaginaProcesarDocumentos() {
               if (contenido === null) {
                 await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', formato_no_soportado: ext || 'desconocido' })
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `NO_ESCANEABLE (.${ext})`, tiempo_ms: Date.now() - t0 } : c))
+              } else if (contenido === NECESITA_OCR) {
+                // PDF sin capa de texto (imagen escaneada / DRM). Intentar OCR en backend.
+                setCola((prev) => prev.map((c, j) => j === idx ? { ...c, resultado: 'OCR en proceso…' } : c))
+                try {
+                  const rawFile = await fileHandle.getFile()
+                  const rawBytes = await rawFile.arrayBuffer()
+                  const ocrRes = await documentosApi.subirOcr(item.codigo_documento, rawBytes)
+                  setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: ocrRes.codigo_estado_doc === 'METADATA' ? `METADATA via OCR (${ocrRes.caracteres} chars)` : 'NO_ESCANEABLE (OCR sin texto)', tiempo_ms: Date.now() - t0 } : c))
+                } catch (ocrErr) {
+                  const ocrMsg = ocrErr instanceof Error ? ocrErr.message : 'Error OCR'
+                  try {
+                    await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', formato_no_soportado: 'pdf-sin-texto-ocr-fallido' })
+                  } catch { /* best effort */ }
+                  setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `NO_ESCANEABLE (OCR: ${ocrMsg})`, tiempo_ms: Date.now() - t0 } : c))
+                }
               } else if (!contenido.trim()) {
                 await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', contenido_vacio: true })
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: 'NO_ESCANEABLE (vacío)', tiempo_ms: Date.now() - t0 } : c))

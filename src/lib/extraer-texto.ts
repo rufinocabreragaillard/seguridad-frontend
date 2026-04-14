@@ -11,7 +11,7 @@ const EXTENSIONES_TEXTO = new Set([
  * Lee un archivo del filesystem y extrae su contenido como texto.
  * Retorna null si el formato no es soportado.
  */
-export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle): Promise<string | null> {
+export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle): Promise<string | typeof NECESITA_OCR | null> {
   const file = await fileHandle.getFile()
   const nombre = file.name.toLowerCase()
   const ext = nombre.split('.').pop() || ''
@@ -69,7 +69,7 @@ async function getPdfjsLib(): Promise<PdfjsLib> {
 /**
  * Extrae texto de un archivo PDF usando pdf.js
  */
-// Error específico para PDFs protegidos con contraseña
+// Error específico para PDFs protegidos con contraseña (password real, no solo DRM)
 export class PdfProtegidoError extends Error {
   constructor() { super('PDF protegido con contraseña'); this.name = 'PdfProtegidoError' }
 }
@@ -79,7 +79,11 @@ export class ArchivoNoEscaneable extends Error {
   constructor(detalle: string) { super(detalle); this.name = 'ArchivoNoEscaneable' }
 }
 
-async function extraerTextoPDF(file: File): Promise<string> {
+// Sentinel: PDF se abrió correctamente pero no tiene capa de texto (imagen escaneada).
+// El caller debe intentar OCR en el backend antes de marcar NO_ESCANEABLE.
+export const NECESITA_OCR: unique symbol = Symbol('NECESITA_OCR')
+
+async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR> {
   const pdfjsLib = await getPdfjsLib()
 
   const arrayBuffer = await file.arrayBuffer()
@@ -110,7 +114,15 @@ async function extraerTextoPDF(file: File): Promise<string> {
 
   // \f (form feed) = separador de página. El backend chunking.py lo usa
   // para dividir exactamente 1 chunk por página en PDFs nativos.
-  return paginas.join('\f')
+  const texto = paginas.join('\f')
+
+  // Si el PDF no tiene capa de texto (imagen escaneada, DRM que bloquea extracción),
+  // el texto queda vacío. Devolvemos el sentinel para que el caller intente OCR.
+  if (!texto.replace(/\f/g, '').trim()) {
+    return NECESITA_OCR
+  }
+
+  return texto
 }
 
 /**

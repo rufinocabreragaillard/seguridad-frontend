@@ -451,6 +451,14 @@ export const documentosApi = {
     api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
       `/documentos/${id}/texto`, body, { timeout: 60000 },
     ).then((r) => r.data),
+  subirOcr: (id: number, pdfBytes: ArrayBuffer) => {
+    const blob = new Blob([pdfBytes], { type: 'application/pdf' })
+    const form = new FormData()
+    form.append('archivo', blob, 'documento.pdf')
+    return api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
+      `/documentos/${id}/ocr`, form, { timeout: 120000 },
+    ).then((r) => r.data)
+  },
   // CHUNKS: ver chunks generados por el proceso CHUNKEAR
   listarChunks: (
     id: number,
