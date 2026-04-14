@@ -1227,7 +1227,7 @@ export default function PaginaProcesarDocumentos() {
                   <TablaTh className="w-[30%]">{t('colDocumento')}</TablaTh>
                   <TablaTh>{t('colResultado')}</TablaTh>
                   <TablaTh className="w-40">
-                    <span title="Modelo de lenguaje (LLM) usado para procesar el documento">Modelo LLM</span>
+                    <span title="Modelo de lenguaje (LLM) usado para procesar el documento">LLM</span>
                   </TablaTh>
                   <TablaTh className="w-24">{t('colTiempo')}</TablaTh>
                 </tr>
@@ -1711,7 +1711,7 @@ export default function PaginaProcesarDocumentos() {
                       </div>
                       {colaItemDetalle.modelo_usado && (
                         <div>
-                          <span className="text-xs text-texto-muted block">Modelo LLM</span>
+                          <span className="text-xs text-texto-muted block">LLM</span>
                           <span className="font-mono text-xs">{colaItemDetalle.modelo_usado}</span>
                         </div>
                       )}
