@@ -1023,7 +1023,14 @@ export default function PaginaProcesarDocumentos() {
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
             <div className="ml-auto flex items-center gap-3">
               <span className="text-sm text-texto-muted">
-                {t('xDeYSeleccionados', { x: seleccionados.size, y: documentos.length })}
+                {(() => {
+                  const topeNum = tope ? parseInt(tope) : 0
+                  const efectivos = topeNum > 0 ? Math.min(seleccionados.size, topeNum) : seleccionados.size
+                  if (efectivos < seleccionados.size) {
+                    return `${efectivos} a procesar (de ${seleccionados.size}/${documentos.length} sel.)`
+                  }
+                  return t('xDeYSeleccionados', { x: seleccionados.size, y: documentos.length })
+                })()}
               </span>
               <Boton variante="primario" onClick={ejecutar}
                 disabled={ejecutando || !procesoSel || ((esExtraer || esRestablecer) && seleccionados.size === 0)}>
