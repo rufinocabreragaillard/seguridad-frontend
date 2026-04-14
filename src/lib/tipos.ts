@@ -147,6 +147,8 @@ export interface CrearUsuarioRequest {
   entidad_por_defecto?: string
   grupo_por_defecto?: string
   codigo_ubicacion_area_por_defecto?: string
+  aplicacion_por_defecto?: string
+  sidebar_colapsado?: boolean
   invitar?: boolean
 }
 

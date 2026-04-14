@@ -73,6 +73,7 @@ export default function PaginaUsuariosSemilla() {
     id_rol_principal: '',
     aplicacion_por_defecto: '',
     invitar: true,
+    sidebar_colapsado: false,
   })
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
@@ -197,7 +198,7 @@ export default function PaginaUsuariosSemilla() {
     setUsuarioEditando(null)
     setForm({ codigo_usuario: '', nombre: '', alias: '', telefono: '', descripcion: '',
       grupo_por_defecto: '', entidad_por_defecto: '', codigo_ubicacion_area_por_defecto: '',
-      id_rol_principal: '', aplicacion_por_defecto: '', invitar: true })
+      id_rol_principal: '', aplicacion_por_defecto: '', invitar: true, sidebar_colapsado: false })
     setBusquedaGrupoForm(''); setBusquedaEntidadForm(''); setBusquedaAreaForm('')
     setBusquedaRolPpal(''); setBusquedaAppForm('')
     setError('')
@@ -224,6 +225,7 @@ export default function PaginaUsuariosSemilla() {
       id_rol_principal: u.id_rol_principal != null ? String(u.id_rol_principal) : '',
       aplicacion_por_defecto: u.aplicacion_por_defecto || '',
       invitar: false,
+      sidebar_colapsado: u.sidebar_colapsado ?? false,
     })
     // El flag se baja en el siguiente tick (después de que el useEffect haya corrido)
     setTimeout(() => { inicializandoFormRef.current = false }, 0)
@@ -256,6 +258,7 @@ export default function PaginaUsuariosSemilla() {
         codigo_ubicacion_area_por_defecto: form.codigo_ubicacion_area_por_defecto || undefined,
         id_rol_principal: form.id_rol_principal ? Number(form.id_rol_principal) : null,
         aplicacion_por_defecto: form.aplicacion_por_defecto || undefined,
+        sidebar_colapsado: form.sidebar_colapsado,
       }
       if (usuarioEditando) {
         await usuariosApi.actualizar(usuarioEditando.codigo_usuario, datos)
@@ -784,6 +787,17 @@ export default function PaginaUsuariosSemilla() {
               <span className="text-sm text-texto">Enviar invitación por correo al crear</span>
             </label>
           )}
+
+          {/* Sidebar colapsado por defecto */}
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={form.sidebar_colapsado}
+              onChange={(e) => setForm({ ...form, sidebar_colapsado: e.target.checked })}
+              className="w-4 h-4 rounded border-borde text-primario focus:ring-primario"
+            />
+            <span className="text-sm text-texto">Menú lateral colapsado por defecto</span>
+          </label>
 
           {error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
