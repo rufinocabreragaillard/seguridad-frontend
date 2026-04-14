@@ -124,7 +124,7 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
     <>
       {/* Panel de chat — siempre en top-right, el botón lo abre/cierra */}
       {abierto && (
-        <div className="fixed top-16 right-6 z-50 w-[420px] h-56 bg-surface border border-borde rounded-xl shadow-xl flex flex-col overflow-hidden">
+        <div className="fixed bottom-6 right-6 z-50 w-[420px] h-64 bg-surface border border-borde rounded-xl shadow-xl flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center gap-2 px-3 py-2.5 bg-primario text-primario-texto">
             <Bot size={16} />
@@ -201,7 +201,7 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
       {!abierto && (
         <button
           onClick={() => setAbierto(true)}
-          className="fixed top-[4.5rem] right-6 z-50 flex items-center gap-2 px-3 py-2 rounded-xl bg-primario text-primario-texto shadow-lg hover:bg-primario-oscuro transition-colors text-sm font-medium"
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 px-3 py-2 rounded-xl bg-primario text-primario-texto shadow-lg hover:bg-primario-oscuro transition-colors text-sm font-medium"
           title="Abrir asistente"
         >
           <MessageSquare size={16} />
