@@ -403,7 +403,14 @@ export default function PaginaDocumentos() {
                 </TablaTd>
                 <TablaTd>
                   {d.codigo_estado_doc ? (
-                    <Insignia variante="primario">{d.codigo_estado_doc}</Insignia>
+                    <div className="flex flex-col gap-0.5">
+                      <Insignia variante="primario">{d.codigo_estado_doc}</Insignia>
+                      {d.detalle_estado && (
+                        <span className="text-xs text-texto-muted" title={d.detalle_estado}>
+                          {d.detalle_estado.length > 40 ? d.detalle_estado.slice(0, 40) + '…' : d.detalle_estado}
+                        </span>
+                      )}
+                    </div>
                   ) : (
                     <span className="text-xs text-texto-muted">—</span>
                   )}
