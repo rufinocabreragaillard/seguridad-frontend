@@ -239,7 +239,10 @@
     "parametroGuardado": "Parámetro guardado correctamente",
     "parametroEliminado": "Parámetro eliminado",
     "eliminarTitulo": "Eliminar parámetro",
-    "eliminarConfirm": "¿Estás seguro de eliminar el parámetro {cat} / {tipo}? Esta acción no se puede deshacer."
+    "eliminarConfirm": "¿Estás seguro de eliminar el parámetro {cat} / {tipo}? Esta acción no se puede deshacer.",
+    "tooltipReplica": "R: Se replica a grupos nuevos al crearlos",
+    "tooltipVisible": "V: Visible en el mantenedor de parámetros por grupo",
+    "tooltipEditable": "E: Editable por los administradores de grupo"
   },
   "personas": {
     "titulo": "Personas",

@@ -236,6 +236,7 @@ export interface ParametroGeneral {
   descripcion?: string
   replica?: boolean
   visible?: boolean
+  editable?: boolean
 }
 
 export interface ParametroUsuario {

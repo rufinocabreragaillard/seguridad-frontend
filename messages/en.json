@@ -239,7 +239,10 @@
     "parametroGuardado": "Parameter saved successfully",
     "parametroEliminado": "Parameter deleted",
     "eliminarTitulo": "Delete parameter",
-    "eliminarConfirm": "Are you sure you want to delete parameter {cat} / {tipo}? This action cannot be undone."
+    "eliminarConfirm": "Are you sure you want to delete parameter {cat} / {tipo}? This action cannot be undone.",
+    "tooltipReplica": "R: Replicated to new groups when created",
+    "tooltipVisible": "V: Visible in the group parameters manager",
+    "tooltipEditable": "E: Editable by group administrators"
   },
   "tiposDocumentoPersona": {
     "titulo": "Person Document Types",

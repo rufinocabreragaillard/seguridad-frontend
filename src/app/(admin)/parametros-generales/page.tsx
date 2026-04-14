@@ -17,6 +17,7 @@ interface ParametroRow {
   descripcion?: string
   replica?: boolean
   visible?: boolean
+  editable?: boolean
 }
 
 export default function PaginaParametrosGenerales() {
@@ -49,6 +50,7 @@ export default function PaginaParametrosGenerales() {
         descripcion: p.descripcion,
         replica: p.replica ?? false,
         visible: p.visible ?? true,
+        editable: p.editable ?? true,
       })))
     } catch { setParams([]) }
     finally { setCargando(false) }
@@ -70,7 +72,7 @@ export default function PaginaParametrosGenerales() {
     finally { setGuardando(null) }
   }
 
-  const toggleFlag = async (p: ParametroRow, campo: 'replica' | 'visible') => {
+  const toggleFlag = async (p: ParametroRow, campo: 'replica' | 'visible' | 'editable') => {
     const nuevoValor = !p[campo]
     setParams((prev) => prev.map((x) => x.categoria_parametro === p.categoria_parametro && x.tipo_parametro === p.tipo_parametro ? { ...x, [campo]: nuevoValor } : x))
     try {
@@ -123,20 +125,29 @@ export default function PaginaParametrosGenerales() {
               {params.map((p) => {
                 const key = `${p.categoria_parametro}/${p.tipo_parametro}`
                 return (
-                  <div key={key} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-borde bg-surface">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-texto-muted mb-1">{p.categoria_parametro}<span className="mx-1 text-texto-light">/</span>{p.tipo_parametro}</p>
-                      <input type="text" defaultValue={p.valor_parametro} onBlur={(e) => { if (e.target.value !== p.valor_parametro) guardarInline(p.categoria_parametro, p.tipo_parametro, e.target.value) }} className="w-full text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5" />
+                  <div key={key} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
+                    <span className="text-xs font-semibold text-texto-muted shrink-0 w-44 truncate" title={`${p.categoria_parametro} / ${p.tipo_parametro}`}>{p.categoria_parametro}<span className="mx-0.5 text-texto-light">/</span>{p.tipo_parametro}</span>
+                    <input
+                      type="text"
+                      defaultValue={p.valor_parametro}
+                      onBlur={(e) => { if (e.target.value !== p.valor_parametro) guardarInline(p.categoria_parametro, p.tipo_parametro, e.target.value, { replica: p.replica, visible: p.visible, editable: p.editable }) }}
+                      className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
+                    />
+                    <div className="flex items-center gap-2 shrink-0">
+                      <label className="flex items-center gap-1 text-xs text-texto-muted cursor-pointer select-none" title={t('tooltipReplica')}>
+                        <input type="checkbox" checked={p.replica ?? false} onChange={(e) => { e.stopPropagation(); toggleFlag(p, 'replica') }} className="rounded border-borde text-primario focus:ring-primario h-3.5 w-3.5 cursor-pointer" />
+                        R
+                      </label>
+                      <label className="flex items-center gap-1 text-xs text-texto-muted cursor-pointer select-none" title={t('tooltipVisible')}>
+                        <input type="checkbox" checked={p.visible ?? true} onChange={(e) => { e.stopPropagation(); toggleFlag(p, 'visible') }} className="rounded border-borde text-primario focus:ring-primario h-3.5 w-3.5 cursor-pointer" />
+                        V
+                      </label>
+                      <label className="flex items-center gap-1 text-xs text-texto-muted cursor-pointer select-none" title={t('tooltipEditable')}>
+                        <input type="checkbox" checked={p.editable ?? true} onChange={(e) => { e.stopPropagation(); toggleFlag(p, 'editable') }} className="rounded border-borde text-primario focus:ring-primario h-3.5 w-3.5 cursor-pointer" />
+                        E
+                      </label>
                     </div>
-                    <label className="flex items-center gap-1 text-xs text-texto-muted shrink-0 cursor-pointer" title="Réplica a grupos nuevos">
-                      <input type="checkbox" checked={p.replica ?? false} onChange={() => toggleFlag(p, 'replica')} className="rounded border-borde text-primario focus:ring-primario h-3.5 w-3.5" />
-                      R
-                    </label>
-                    <label className="flex items-center gap-1 text-xs text-texto-muted shrink-0 cursor-pointer" title="Visible en parámetros de grupo">
-                      <input type="checkbox" checked={p.visible ?? true} onChange={() => toggleFlag(p, 'visible')} className="rounded border-borde text-primario focus:ring-primario h-3.5 w-3.5" />
-                      V
-                    </label>
-                    <button onClick={(e) => { const input = (e.currentTarget.parentElement?.querySelector('input[type=text]') as HTMLInputElement); if (input) guardarInline(p.categoria_parametro, p.tipo_parametro, input.value) }} disabled={guardando === key} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title={tc('guardar')}><Save size={14} /></button>
+                    <button onClick={(e) => { const input = (e.currentTarget.parentElement?.querySelector('input[type=text]') as HTMLInputElement); if (input) guardarInline(p.categoria_parametro, p.tipo_parametro, input.value, { replica: p.replica, visible: p.visible, editable: p.editable }) }} disabled={guardando === key} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title={tc('guardar')}><Save size={14} /></button>
                     <button onClick={() => setParamAEliminar({ cat: p.categoria_parametro, tipo: p.tipo_parametro })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title={t('eliminarTitulo')}><Trash2 size={14} /></button>
                   </div>
                 )
