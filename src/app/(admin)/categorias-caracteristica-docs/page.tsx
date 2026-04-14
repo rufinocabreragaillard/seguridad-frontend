@@ -482,7 +482,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               </p>
               <textarea
                 className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder="Ej: Eres un experto en documentación legal municipal..."
+                placeholder="Ej: Eres un experto en clasificación y análisis de documentos para esta categoría..."
                 value={formCat.system_prompt}
                 onChange={(e) => setFormCat({ ...formCat, system_prompt: e.target.value })}
               />

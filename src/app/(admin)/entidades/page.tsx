@@ -360,7 +360,7 @@ export default function PaginaEntidades() {
               </p>
               <textarea
                 className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder="Ej: Eres un asistente especializado en documentación municipal..."
+                placeholder="Ej: Eres un asistente especializado en la gestión documental de esta entidad..."
                 value={formEntidad.system_prompt}
                 onChange={(e) => setFormEntidad({ ...formEntidad, system_prompt: e.target.value })}
               />

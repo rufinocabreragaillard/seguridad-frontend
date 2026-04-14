@@ -354,7 +354,7 @@ export default function PaginaAplicaciones() {
               <p className="text-sm text-texto-muted">Texto de contexto que se inyecta al LLM cuando se usa esta aplicación.</p>
               <textarea
                 className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder="Ej: Esta aplicación gestiona documentos municipales..."
+                placeholder="Ej: Esta aplicación gestiona documentos y expedientes de la organización..."
                 value={formApp.prompt}
                 onChange={(e) => setFormApp({ ...formApp, prompt: e.target.value })}
               />

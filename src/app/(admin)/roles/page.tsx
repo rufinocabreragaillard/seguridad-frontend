@@ -760,7 +760,7 @@ export default function PaginaRoles() {
               <p className="text-sm text-texto-muted">Texto de contexto que se inyecta al LLM cuando los usuarios de este rol interactúan con funciones LLM.</p>
               <textarea
                 className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder="Ej: El usuario es un funcionario municipal con acceso a expedientes..."
+                placeholder="Ej: El usuario es un responsable de área con acceso a documentos e informes de gestión..."
                 value={formRol.prompt}
                 onChange={(e) => setFormRol({ ...formRol, prompt: e.target.value })}
               />

@@ -374,7 +374,7 @@ export default function PaginaCargos() {
               </p>
               <textarea
                 className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder="Ej: Eres un asistente especializado en documentación municipal..."
+                placeholder="Ej: Eres un asistente especializado en gestión documental para este cargo..."
                 value={crud.form.system_prompt}
                 onChange={(e) => crud.updateForm('system_prompt', e.target.value)}
               />
