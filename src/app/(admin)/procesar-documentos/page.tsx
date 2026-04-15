@@ -1660,7 +1660,7 @@ function PaginaProcesarDocumentosInterna() {
 
       <ModalConfirmar
         abierto={confirmEliminarBulkSinDisco}
-        alCerrar={() => setConfirmEliminarBulkSinDisco(false)}
+        alCerrar={() => { setConfirmEliminarBulkSinDisco(false); setEliminandoBulkSinDisco(false) }}
         alConfirmar={ejecutarEliminarBulkSinDisco}
         titulo="Eliminar archivos no encontrados"
         mensaje={`¿Eliminar ${seleccionadosSinDisco.size > 0 ? seleccionadosSinDisco.size : docsSinDisco.length} documento(s) que no están en el directorio? Esta acción no se puede deshacer.`}
