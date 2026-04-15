@@ -193,7 +193,7 @@ export default function PaginaConversaciones() {
 
   // ── Guardar ──────────────────────────────────────────────────────────────────
 
-  const guardar = async () => {
+  const guardar = async (cerrar: boolean) => {
     if (!form.asunto.trim()) {
       setError('El asunto es obligatorio')
       return
@@ -247,10 +247,16 @@ export default function PaginaConversaciones() {
       if (editando) {
         await compromisosApi.actualizarConversacion(editando.id_conversacion, datos)
       } else {
-        await compromisosApi.crearConversacion(datos)
+        const nuevo = await compromisosApi.crearConversacion(datos)
+        if (!cerrar && nuevo) {
+          setEditando(nuevo)
+          await cargarParticipantes(nuevo.id_conversacion)
+        }
       }
 
-      setModalAbierto(false)
+      if (cerrar) {
+        setModalAbierto(false)
+      }
       await cargarConversaciones()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
@@ -804,11 +810,11 @@ export default function PaginaConversaciones() {
 
         {/* Acciones del modal */}
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-borde">
-          <Boton variante="contorno" onClick={() => setModalAbierto(false)} disabled={guardando}>
-            Cancelar
+          <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>
+            Guardar y salir
           </Boton>
-          <Boton onClick={guardar} disabled={guardando}>
-            {guardando ? 'Guardando...' : editando ? 'Actualizar' : 'Crear'}
+          <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
+            Guardar
           </Boton>
         </div>
       </Modal>

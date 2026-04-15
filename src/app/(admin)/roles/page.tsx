@@ -134,7 +134,7 @@ export default function PaginaRoles() {
     setModalRol(true)
   }
 
-  const guardarRol = async () => {
+  const guardarRol = async (cerrar: boolean) => {
     const esGlobalCreate = !rolEditando && grupoActivo === 'ADMIN'
     if (!formRol.nombre || (esGlobalCreate && !formRol.codigo_rol)) {
       setError(esGlobalCreate ? 'Código y nombre son obligatorios para roles globales' : 'El nombre es obligatorio')
@@ -148,9 +148,16 @@ export default function PaginaRoles() {
       } else {
         const payload: Record<string, unknown> = { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, codigo_grupo: grupoActivo || 'ADMIN' }
         if (esGlobalCreate && formRol.codigo_rol) payload.codigo_rol = formRol.codigo_rol
-        await rolesApi.crear(payload as Parameters<typeof rolesApi.crear>[0])
+        const nuevo = await rolesApi.crear(payload as Parameters<typeof rolesApi.crear>[0])
+        if (!cerrar && nuevo) {
+          setRolEditando(nuevo as Rol)
+          setFormRol({ codigo_rol: (nuevo as Rol).codigo_rol, nombre: (nuevo as Rol).nombre, alias_de_rol: (nuevo as Rol).alias_de_rol || '', descripcion: (nuevo as Rol).descripcion || '', url_inicio: (nuevo as Rol).url_inicio || '', funcion_por_defecto: (nuevo as Rol).funcion_por_defecto || '', codigo_aplicacion_origen: (nuevo as Rol).codigo_aplicacion_origen || '', tipo: normalizarTipo((nuevo as Rol).tipo), prompt: ((nuevo as Record<string, unknown>).prompt as string) || '', system_prompt: ((nuevo as Record<string, unknown>).system_prompt as string) || '' })
+          cargarFuncionesRol((nuevo as Rol).id_rol)
+        }
       }
-      setModalRol(false)
+      if (cerrar || rolEditando) {
+        if (cerrar) setModalRol(false)
+      }
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
@@ -340,7 +347,7 @@ export default function PaginaRoles() {
     setModalFuncion(true)
   }
 
-  const guardarFuncion = async () => {
+  const guardarFuncion = async (cerrar: boolean) => {
     if (!formFuncion.nombre) { setError('El nombre es obligatorio'); return }
     setGuardando(true)
     try {
@@ -357,9 +364,27 @@ export default function PaginaRoles() {
       if (funcionEditando) {
         await funcionesApi.actualizar(funcionEditando.codigo_funcion, payload)
       } else {
-        await funcionesApi.crear({ ...(formFuncion.codigo_funcion ? { codigo_funcion: formFuncion.codigo_funcion } : {}), ...payload })
+        const nueva = await funcionesApi.crear({ ...(formFuncion.codigo_funcion ? { codigo_funcion: formFuncion.codigo_funcion } : {}), ...payload })
+        if (!cerrar && nueva) {
+          const f = nueva as Funcion
+          setFuncionEditando(f)
+          setFormFuncion({
+            codigo_funcion: f.codigo_funcion,
+            nombre: f.nombre,
+            descripcion: f.descripcion || '',
+            url_funcion: f.url_funcion || '',
+            alias_de_funcion: f.alias_de_funcion || '',
+            icono_de_funcion: f.icono_de_funcion || '',
+            id_modelo: f.id_modelo != null ? String(f.id_modelo) : '',
+            system_prompt: f.system_prompt || '',
+            codigo_aplicacion_origen: f.codigo_aplicacion_origen || '',
+          })
+          cargarAppsFuncion(f.codigo_funcion)
+        }
       }
-      setModalFuncion(false)
+      if (cerrar || funcionEditando) {
+        if (cerrar) setModalFuncion(false)
+      }
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
@@ -631,7 +656,8 @@ export default function PaginaRoles() {
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <div className="flex gap-3 justify-end pt-2">
                 <Boton variante="contorno" onClick={() => setModalRol(false)}>{tc('cancelar')}</Boton>
-                <Boton variante="primario" onClick={guardarRol} cargando={guardando}>{rolEditando ? tc('guardar') : t('crearRol')}</Boton>
+                <Boton variante="contorno" onClick={() => guardarRol(true)} cargando={guardando}>Guardar y salir</Boton>
+                <Boton variante="primario" onClick={() => guardarRol(false)} cargando={guardando}>{rolEditando ? tc('guardar') : t('crearRol')}</Boton>
               </div>
             </>
           )}
@@ -748,7 +774,7 @@ export default function PaginaRoles() {
 
               <div className="flex justify-end pt-2">
                 <Boton variante="contorno" onClick={() => setModalRol(false)}>
-                  {tc('cerrar')}
+                  Guardar y salir
                 </Boton>
               </div>
             </div>
@@ -765,7 +791,7 @@ export default function PaginaRoles() {
                 onChange={(e) => setFormRol({ ...formRol, prompt: e.target.value })}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarRol} cargando={guardando}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>{tc('cancelar')}</Boton><Boton variante="contorno" onClick={() => guardarRol(true)} cargando={guardando}>Guardar y salir</Boton><Boton variante="primario" onClick={() => guardarRol(false)} cargando={guardando}>{tc('guardar')}</Boton></div>
             </div>
           )}
 
@@ -780,7 +806,7 @@ export default function PaginaRoles() {
                 onChange={(e) => setFormRol({ ...formRol, system_prompt: e.target.value })}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarRol} cargando={guardando}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>{tc('cancelar')}</Boton><Boton variante="contorno" onClick={() => guardarRol(true)} cargando={guardando}>Guardar y salir</Boton><Boton variante="primario" onClick={() => guardarRol(false)} cargando={guardando}>{tc('guardar')}</Boton></div>
             </div>
           )}
         </div>
@@ -826,7 +852,8 @@ export default function PaginaRoles() {
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <div className="flex gap-3 justify-end pt-2">
                 <Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton>
-                <Boton variante="primario" onClick={guardarFuncion} cargando={guardando}>{funcionEditando ? tc('guardar') : t('crearFuncion')}</Boton>
+                <Boton variante="contorno" onClick={() => guardarFuncion(true)} cargando={guardando}>Guardar y salir</Boton>
+                <Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardando}>{funcionEditando ? tc('guardar') : t('crearFuncion')}</Boton>
               </div>
             </>
           )}
@@ -863,7 +890,7 @@ export default function PaginaRoles() {
                 </div>
               )}
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cerrar')}</Boton></div>
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>Guardar y salir</Boton></div>
             </div>
           )}
 
@@ -909,7 +936,8 @@ export default function PaginaRoles() {
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <div className="flex gap-3 justify-end pt-2">
                 <Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton>
-                <Boton variante="primario" onClick={guardarFuncion} cargando={guardando}>{tc('guardar')}</Boton>
+                <Boton variante="contorno" onClick={() => guardarFuncion(true)} cargando={guardando}>Guardar y salir</Boton>
+                <Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardando}>{tc('guardar')}</Boton>
               </div>
             </div>
           )}

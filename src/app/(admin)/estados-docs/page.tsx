@@ -57,6 +57,47 @@ export default function PaginaEstadosDocs() {
     if (crud.modal) setTabModal('datos')
   }, [crud.modal])
 
+  const [guardandoLocal, setGuardandoLocal] = useState(false)
+  const guardandoEstado = crud.guardando || guardandoLocal
+
+  const guardarEstado = async (cerrar: boolean) => {
+    if (!crud.form.codigo_estado_doc.trim() || !crud.form.nombre_estado.trim()) {
+      crud.setError(t('errorCodigoNombre'))
+      return
+    }
+    if (cerrar) {
+      // Use crud.guardar which auto-closes
+      crud.guardar()
+    } else {
+      // Manual save: don't close modal
+      crud.setError('')
+      setGuardandoLocal(true)
+      try {
+        if (crud.editando) {
+          await estadosDocsApi.actualizar(crud.editando.codigo_estado_doc, {
+            nombre_estado: crud.form.nombre_estado,
+            descripcion: crud.form.descripcion || undefined,
+            prompt: crud.form.prompt || undefined,
+            system_prompt: crud.form.system_prompt || undefined,
+          })
+        } else {
+          const nuevo = await estadosDocsApi.crear({
+            codigo_estado_doc: crud.form.codigo_estado_doc.toUpperCase().replace(/\s+/g, '_'),
+            nombre_estado: crud.form.nombre_estado,
+            descripcion: crud.form.descripcion || undefined,
+          })
+          // Switch to edit mode with new record
+          crud.abrirEditar(nuevo)
+        }
+        crud.cargar()
+      } catch (e) {
+        crud.setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
+      } finally {
+        setGuardandoLocal(false)
+      }
+    }
+  }
+
   const filtradosOrdenados = [...crud.filtrados].sort((a, b) => a.orden - b.orden || a.nombre_estado.localeCompare(b.nombre_estado))
 
   const TABS: { key: TabModal; label: string }[] = [
@@ -167,8 +208,11 @@ export default function PaginaEstadosDocs() {
                 value={crud.form.prompt}
                 onChange={(e) => crud.updateForm('prompt', e.target.value)}
               />
-              <div className="flex justify-end">
-                <Boton variante="primario" tamano="sm" onClick={crud.guardar} cargando={crud.guardando}>
+              <div className="flex gap-3 justify-end">
+                <Boton variante="contorno" tamano="sm" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
+                  Guardar y salir
+                </Boton>
+                <Boton variante="primario" tamano="sm" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
                   {tc('guardar')}
                 </Boton>
               </div>
@@ -187,8 +231,11 @@ export default function PaginaEstadosDocs() {
                 value={crud.form.system_prompt}
                 onChange={(e) => crud.updateForm('system_prompt', e.target.value)}
               />
-              <div className="flex justify-end">
-                <Boton variante="primario" tamano="sm" onClick={crud.guardar} cargando={crud.guardando}>
+              <div className="flex gap-3 justify-end">
+                <Boton variante="contorno" tamano="sm" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
+                  Guardar y salir
+                </Boton>
+                <Boton variante="primario" tamano="sm" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
                   {tc('guardar')}
                 </Boton>
               </div>
@@ -205,18 +252,11 @@ export default function PaginaEstadosDocs() {
           {(!crud.editando || tabModal === 'datos') && (
             <div className="flex gap-3 justify-end pt-2">
               <Boton variante="contorno" onClick={crud.cerrarModal}>{tc('cancelar')}</Boton>
-              <Boton
-                variante="primario"
-                onClick={() => {
-                  if (!crud.form.codigo_estado_doc.trim() || !crud.form.nombre_estado.trim()) {
-                    crud.setError(t('errorCodigoNombre'))
-                    return
-                  }
-                  crud.guardar()
-                }}
-                cargando={crud.guardando}
-              >
-                {crud.editando ? tc('guardar') : tc('crear')}
+              <Boton variante="contorno" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
+                Guardar y salir
+              </Boton>
+              <Boton variante="primario" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
+                {tc('guardar')}
               </Boton>
             </div>
           )}

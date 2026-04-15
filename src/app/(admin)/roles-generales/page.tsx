@@ -228,7 +228,7 @@ function TabRolesGlobales() {
     setModalAbierto(true)
   }
 
-  const guardar = async () => {
+  const guardar = async (cerrar: boolean) => {
     if (!form.codigo_rol.trim() || !form.nombre.trim()) {
       setError('Código y nombre son obligatorios')
       return
@@ -248,9 +248,15 @@ function TabRolesGlobales() {
       if (editando) {
         await rolesApi.actualizar(editando.id_rol, datos)
       } else {
-        await rolesApi.crear(datos)
+        const nuevo = await rolesApi.crear(datos)
+        if (!cerrar) {
+          setEditando(nuevo)
+          cargarFuncionesRol(nuevo.id_rol)
+        }
       }
-      setModalAbierto(false)
+      if (cerrar) {
+        setModalAbierto(false)
+      }
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
@@ -484,8 +490,11 @@ function TabRolesGlobales() {
                 <Boton variante="contorno" onClick={() => setModalAbierto(false)} disabled={guardando}>
                   {tc('cancelar')}
                 </Boton>
-                <Boton variante="primario" onClick={guardar} cargando={guardando}>
-                  {editando ? t('guardarRol') : t('crearRol')}
+                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
+                  {editando ? tc('guardar') : t('crearRol')}
+                </Boton>
+                <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>
+                  Guardar y salir
                 </Boton>
               </div>
             </>

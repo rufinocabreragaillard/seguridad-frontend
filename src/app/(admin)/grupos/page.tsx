@@ -116,16 +116,22 @@ export default function PaginaGrupos() {
     setModalGrupo(true)
   }
 
-  const guardarGrupo = async () => {
+  const guardarGrupo = async (cerrar: boolean) => {
     if (!formGrupo.nombre) { setError('El nombre es obligatorio'); return }
     setGuardando(true)
     try {
       if (grupoEditando) {
         await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined, prompt: formGrupo.prompt || undefined, system_prompt: formGrupo.system_prompt || undefined })
+        if (cerrar) setModalGrupo(false)
       } else {
-        await gruposApi.crear({ nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined })
+        const nuevo = await gruposApi.crear({ nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined })
+        if (cerrar) {
+          setModalGrupo(false)
+        } else {
+          setGrupoEditando(nuevo)
+          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, descripcion: nuevo.descripcion || '', tipo: normalizarTipo(nuevo.tipo), prompt: nuevo.prompt || '', system_prompt: nuevo.system_prompt || '' })
+        }
       }
-      setModalGrupo(false)
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error')
@@ -186,16 +192,29 @@ export default function PaginaGrupos() {
     }
   }
 
-  const guardarEntidad = async () => {
+  const guardarEntidad = async (cerrar: boolean) => {
     if (!formEntidad.nombre) { setErrorEntidad('El nombre es obligatorio'); return }
     setGuardandoEntidad(true)
     try {
       if (entidadEditando) {
         await entidadesApi.actualizar(entidadEditando.codigo_entidad, { nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined })
+        if (cerrar) setModalEntidad(false)
       } else {
-        await entidadesApi.crear({ nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, codigo_grupo: grupoSeleccionado?.codigo_grupo })
+        const nueva = await entidadesApi.crear({ nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, codigo_grupo: grupoSeleccionado?.codigo_grupo })
+        if (cerrar) {
+          setModalEntidad(false)
+        } else {
+          setEntidadEditando(nueva)
+          setFormEntidad({ codigo_entidad: nueva.codigo_entidad, nombre: nueva.nombre, descripcion: nueva.descripcion || '' })
+          // Cargar usuarios de la nueva entidad
+          setCargandoUsuariosEntidad(true)
+          try {
+            setUsuariosEntidad(await entidadesApi.listarUsuarios(nueva.codigo_entidad, grupoSeleccionado?.codigo_grupo))
+          } finally {
+            setCargandoUsuariosEntidad(false)
+          }
+        }
       }
-      setModalEntidad(false)
       if (grupoSeleccionado) cargarDetalle(grupoSeleccionado.codigo_grupo)
     } catch (e) {
       setErrorEntidad(e instanceof Error ? e.message : 'Error')
@@ -667,8 +686,8 @@ export default function PaginaGrupos() {
 
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
           <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="contorno" onClick={() => setModalGrupo(false)}>{tc('cancelar')}</Boton>
-            <Boton variante="primario" onClick={guardarGrupo} cargando={guardando}>{grupoEditando ? tc('guardar') : t('crearGrupo')}</Boton>
+            <Boton variante="contorno" onClick={() => guardarGrupo(true)} cargando={guardando}>Guardar y salir</Boton>
+            <Boton variante="primario" onClick={() => guardarGrupo(false)} cargando={guardando}>{grupoEditando ? tc('guardar') : t('crearGrupo')}</Boton>
           </div>
         </div>
       </Modal>
@@ -694,8 +713,8 @@ export default function PaginaGrupos() {
               )}
               {errorEntidad && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorEntidad}</p></div>}
               <div className="flex gap-3 justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalEntidad(false)}>{tc('cancelar')}</Boton>
-                <Boton variante="primario" onClick={guardarEntidad} cargando={guardandoEntidad}>{entidadEditando ? tc('guardar') : t('crearEntidad')}</Boton>
+                <Boton variante="contorno" onClick={() => guardarEntidad(true)} cargando={guardandoEntidad}>Guardar y salir</Boton>
+                <Boton variante="primario" onClick={() => guardarEntidad(false)} cargando={guardandoEntidad}>{entidadEditando ? tc('guardar') : t('crearEntidad')}</Boton>
               </div>
             </>
           )}
@@ -764,7 +783,7 @@ export default function PaginaGrupos() {
 
               {errorEntidad && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorEntidad}</p></div>}
               <div className="flex justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalEntidad(false)}>{tc('cerrar')}</Boton>
+                <Boton variante="contorno" onClick={() => setModalEntidad(false)}>Guardar y salir</Boton>
               </div>
             </>
           )}

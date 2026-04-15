@@ -84,13 +84,24 @@ export default function PaginaRolesGrupo() {
     setFormRol({ codigo_rol: r.codigo_rol, nombre: r.nombre, alias_de_rol: r.alias_de_rol || '', descripcion: r.descripcion || '', url_inicio: r.url_inicio || '', funcion_por_defecto: r.funcion_por_defecto || '' })
     setErrorRol(''); setTabModalRol('datos'); setFuncionNueva(''); cargarFuncionesRol(r.id_rol); setModalRol(true)
   }
-  const guardarRol = async () => {
+  const guardarRol = async (cerrar: boolean) => {
     if (!formRol.codigo_rol || !formRol.nombre) { setErrorRol('Código y nombre son obligatorios'); return }
     setGuardandoRol(true)
     try {
-      if (rolEditando) { await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined }) }
-      else { await rolesApi.crear({ ...formRol, codigo_grupo: grupoActivo || 'ADMIN' }) }
-      setModalRol(false); cargar()
+      if (rolEditando) {
+        await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined })
+        if (cerrar) setModalRol(false)
+      } else {
+        const nuevo = await rolesApi.crear({ ...formRol, codigo_grupo: grupoActivo || 'ADMIN' })
+        if (!cerrar) {
+          setRolEditando(nuevo)
+          setFormRol({ codigo_rol: nuevo.codigo_rol, nombre: nuevo.nombre, alias_de_rol: nuevo.alias_de_rol || '', descripcion: nuevo.descripcion || '', url_inicio: nuevo.url_inicio || '', funcion_por_defecto: nuevo.funcion_por_defecto || '' })
+          cargarFuncionesRol(nuevo.id_rol)
+        } else {
+          setModalRol(false)
+        }
+      }
+      cargar()
     } catch (e) { setErrorRol(e instanceof Error ? e.message : 'Error') }
     finally { setGuardandoRol(false) }
   }
@@ -238,7 +249,7 @@ export default function PaginaRolesGrupo() {
               </div>
             </div>
             {errorRol && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorRol}</p></div>}
-            <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>Cancelar</Boton><Boton variante="primario" onClick={guardarRol} cargando={guardandoRol}>{rolEditando ? 'Guardar' : 'Crear rol'}</Boton></div>
+            <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>Cancelar</Boton><Boton variante="primario" onClick={() => guardarRol(false)} cargando={guardandoRol}>Guardar</Boton><Boton variante="contorno" onClick={() => guardarRol(true)} cargando={guardandoRol}>Guardar y salir</Boton></div>
           </>)}
           {tabModalRol === 'funciones' && rolEditando && (
             <div className="flex flex-col gap-4">
@@ -289,7 +300,7 @@ export default function PaginaRolesGrupo() {
                 </div>
               ))}</div>}
               {errorRol && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorRol}</p></div>}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>Cerrar</Boton></div>
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalRol(false)}>Guardar y salir</Boton></div>
             </div>
           )}
         </div>

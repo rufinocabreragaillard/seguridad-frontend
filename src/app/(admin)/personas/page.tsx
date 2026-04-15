@@ -146,7 +146,7 @@ export default function PaginaPersonas() {
     cargarCaracteristicas(p.id_persona)
   }
 
-  const guardar = async () => {
+  const guardar = async (cerrar: boolean) => {
     if (!form.nombre.trim()) {
       setError(t('errorNombreObligatorio'))
       return
@@ -160,16 +160,28 @@ export default function PaginaPersonas() {
           documento_id: form.documento_id || undefined,
           codigo_entidad: form.codigo_entidad || undefined,
         })
+        if (cerrar) setModal(false)
       } else {
-        await personasApi.crear({
+        const nuevo = await personasApi.crear({
           nombre: form.nombre,
           codigo_grupo: grupoActivo ?? undefined,
           codigo_tipo_doc: form.codigo_tipo_doc || undefined,
           documento_id: form.documento_id || undefined,
           codigo_entidad: form.codigo_entidad || undefined,
         })
+        if (!cerrar) {
+          setEditando(nuevo)
+          setForm({
+            nombre: nuevo.nombre,
+            codigo_tipo_doc: nuevo.codigo_tipo_doc || '',
+            documento_id: nuevo.documento_id || '',
+            codigo_entidad: nuevo.codigo_entidad || '',
+          })
+          cargarCaracteristicas(nuevo.id_persona)
+        } else {
+          setModal(false)
+        }
       }
-      setModal(false)
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
@@ -398,8 +410,8 @@ export default function PaginaPersonas() {
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
 
               <div className="flex gap-3 justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModal(false)}>{tc('cancelar')}</Boton>
-                <Boton variante="primario" onClick={guardar} cargando={guardando}>{editando ? tc('guardar') : tc('crear')}</Boton>
+                <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>Guardar y salir</Boton>
+                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>{tc('guardar')}</Boton>
               </div>
             </div>
           )}
@@ -492,6 +504,10 @@ export default function PaginaPersonas() {
                   )
                 })
               )}
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>Guardar y salir</Boton>
+                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>{tc('guardar')}</Boton>
+              </div>
             </div>
           )}
         </div>

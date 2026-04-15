@@ -209,7 +209,7 @@ export default function PaginaCompromisos() {
   }
 
   // ── Guardar ───────────────────────────────────────────────────────────────
-  const guardar = async () => {
+  const guardar = async (cerrar: boolean) => {
     setError('')
     if (!form.asunto.trim()) {
       setError('El asunto es obligatorio')
@@ -255,9 +255,14 @@ export default function PaginaCompromisos() {
       if (editando) {
         await compromisosApi.actualizarCompromiso(editando.id_compromiso, datos)
       } else {
-        await compromisosApi.crearCompromiso(datos)
+        const nuevo = await compromisosApi.crearCompromiso(datos)
+        if (!cerrar && nuevo) {
+          setEditando(nuevo)
+        }
       }
-      setModalAbierto(false)
+      if (cerrar) {
+        setModalAbierto(false)
+      }
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
@@ -716,11 +721,11 @@ export default function PaginaCompromisos() {
 
         {/* Botones del modal */}
         <div className="flex gap-3 justify-end pt-4 mt-4 border-t border-borde">
-          <Boton variante="contorno" onClick={() => setModalAbierto(false)} disabled={guardando}>
-            Cancelar
+          <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>
+            Guardar y salir
           </Boton>
-          <Boton variante="primario" onClick={guardar} cargando={guardando}>
-            {editando ? 'Guardar cambios' : 'Crear compromiso'}
+          <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
+            Guardar
           </Boton>
         </div>
       </Modal>

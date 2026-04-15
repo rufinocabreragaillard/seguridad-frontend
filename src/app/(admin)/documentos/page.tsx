@@ -170,7 +170,7 @@ export default function PaginaDocumentos() {
     cargarCaracteristicas(d.codigo_documento)
   }
 
-  const guardar = async () => {
+  const guardar = async (cerrar: boolean) => {
     if (!form.nombre_documento.trim()) {
       setError(t('errorNombreObligatorio'))
       return
@@ -186,8 +186,9 @@ export default function PaginaDocumentos() {
           tamano_kb: form.tamano_kb ? parseFloat(form.tamano_kb) : undefined,
           codigo_estado_doc: form.codigo_estado_doc || undefined,
         })
+        if (cerrar) setModal(false)
       } else {
-        await documentosApi.crear({
+        const nuevo = await documentosApi.crear({
           nombre_documento: form.nombre_documento,
           codigo_grupo: grupoActivo!,
           ubicacion_documento: form.ubicacion_documento || undefined,
@@ -196,8 +197,21 @@ export default function PaginaDocumentos() {
           tamano_kb: form.tamano_kb ? parseFloat(form.tamano_kb) : undefined,
           codigo_estado_doc: form.codigo_estado_doc || undefined,
         })
+        if (!cerrar) {
+          setEditando(nuevo)
+          setForm({
+            nombre_documento: nuevo.nombre_documento,
+            ubicacion_documento: nuevo.ubicacion_documento || '',
+            resumen_documento: nuevo.resumen_documento || '',
+            fecha_modificacion: nuevo.fecha_modificacion ? nuevo.fecha_modificacion.slice(0, 16) : '',
+            tamano_kb: nuevo.tamano_kb != null ? String(nuevo.tamano_kb) : '',
+            codigo_estado_doc: nuevo.codigo_estado_doc || '',
+          })
+          cargarCaracteristicas(nuevo.codigo_documento)
+        } else {
+          setModal(false)
+        }
       }
-      setModal(false)
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
@@ -590,11 +604,11 @@ export default function PaginaDocumentos() {
               )}
 
               <div className="flex gap-3 justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModal(false)}>
-                  {tc('cancelar')}
+                <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>
+                  Guardar y salir
                 </Boton>
-                <Boton variante="primario" onClick={guardar} cargando={guardando}>
-                  {editando ? tc('guardar') : tc('crear')}
+                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
+                  {tc('guardar')}
                 </Boton>
               </div>
             </div>
@@ -636,6 +650,14 @@ export default function PaginaDocumentos() {
                   )
                 })
               )}
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>
+                  Guardar y salir
+                </Boton>
+                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
+                  {tc('guardar')}
+                </Boton>
+              </div>
             </div>
           )}
 
@@ -760,6 +782,11 @@ export default function PaginaDocumentos() {
                   </div>
                 </div>
               )}
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModal(false)}>
+                  Guardar y salir
+                </Boton>
+              </div>
             </div>
           )}
 

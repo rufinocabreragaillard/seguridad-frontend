@@ -110,7 +110,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     setModalCat(true)
   }
 
-  const guardarCat = async () => {
+  const guardarCat = async (cerrar: boolean) => {
     const esGlobalCreate = !catEditando && grupoActivo === 'ADMIN'
     if (!formCat.nombre_cat_docs.trim() || (esGlobalCreate && !formCat.codigo_cat_docs.trim())) {
       setErrorCat(esGlobalCreate ? t('errorObligatorioGlobal') : t('errorNombreObligatorio'))
@@ -128,16 +128,31 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           system_prompt: formCat.system_prompt || undefined,
           id_modelo: formCat.id_modelo ?? undefined,
         })
+        if (cerrar) setModalCat(false)
       } else {
-        await categoriasCaractDocsApi.crear({
+        const nueva = await categoriasCaractDocsApi.crear({
           ...(formCat.codigo_cat_docs.trim() ? { codigo_cat_docs: formCat.codigo_cat_docs.toUpperCase() } : {}),
           nombre_cat_docs: formCat.nombre_cat_docs,
           descripcion_cat_docs: formCat.descripcion_cat_docs || undefined,
           es_unica_docs: formCat.es_unica_docs,
           editable_en_detalle_docs: formCat.editable_en_detalle_docs,
         })
+        if (cerrar) {
+          setModalCat(false)
+        } else {
+          setCatEditando(nueva)
+          setFormCat({
+            codigo_cat_docs: nueva.codigo_cat_docs,
+            nombre_cat_docs: nueva.nombre_cat_docs,
+            descripcion_cat_docs: nueva.descripcion_cat_docs || '',
+            es_unica_docs: nueva.es_unica_docs,
+            editable_en_detalle_docs: nueva.editable_en_detalle_docs,
+            prompt: nueva.prompt || '',
+            system_prompt: nueva.system_prompt || '',
+            id_modelo: nueva.id_modelo ?? null,
+          })
+        }
       }
-      setModalCat(false)
       cargarCategorias()
     } catch (e) {
       setErrorCat(e instanceof Error ? e.message : tc('errorAlGuardar'))
@@ -516,7 +531,8 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
           <div className="flex gap-3 justify-end pt-2">
             <Boton variante="contorno" onClick={() => setModalCat(false)}>{tc('cancelar')}</Boton>
-            <Boton variante="primario" onClick={guardarCat} cargando={guardandoCat}>{catEditando ? tc('guardar') : tc('crear')}</Boton>
+            <Boton variante="contorno" onClick={() => guardarCat(true)} cargando={guardandoCat}>Guardar y salir</Boton>
+            <Boton variante="primario" onClick={() => guardarCat(false)} cargando={guardandoCat}>{tc('guardar')}</Boton>
           </div>
         </div>
       </Modal>

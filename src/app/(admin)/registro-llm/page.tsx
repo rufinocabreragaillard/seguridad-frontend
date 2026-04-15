@@ -90,7 +90,7 @@ export default function PaginaRegistroLLM() {
     }
   }
 
-  const guardar = async () => {
+  const guardar = async (cerrar: boolean) => {
     if (!form.proveedor.trim() || !form.nombre_tecnico.trim() || !form.nombre_visible.trim()) {
       setError(t('errorCamposObligatorios'))
       return
@@ -106,14 +106,19 @@ export default function PaginaRegistroLLM() {
           estado_valido: form.estado_valido,
         })
       } else {
-        await registroLLMApi.crear({
+        const nuevo = await registroLLMApi.crear({
           proveedor: form.proveedor,
           nombre_tecnico: form.nombre_tecnico,
           nombre_visible: form.nombre_visible,
           descripcion: form.descripcion || undefined,
         })
+        if (!cerrar && nuevo) {
+          setEditando(nuevo)
+        }
       }
-      setModal(false)
+      if (cerrar) {
+        setModal(false)
+      }
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
@@ -249,8 +254,8 @@ export default function PaginaRegistroLLM() {
             )}
             {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
             <div className="flex gap-3 justify-end pt-2">
-              <Boton variante="contorno" onClick={() => setModal(false)}>{tc('cancelar')}</Boton>
-              <Boton variante="primario" onClick={guardar} cargando={guardando}>{editando ? tc('guardar') : tc('crear')}</Boton>
+              <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>Guardar y salir</Boton>
+              <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>{tc('guardar')}</Boton>
             </div>
           </>)}
 
@@ -290,7 +295,7 @@ export default function PaginaRegistroLLM() {
               )}
 
               <div className="flex justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModal(false)}>{tc('cerrar')}</Boton>
+                <Boton variante="contorno" onClick={() => setModal(false)}>Guardar y salir</Boton>
               </div>
             </div>
           )}

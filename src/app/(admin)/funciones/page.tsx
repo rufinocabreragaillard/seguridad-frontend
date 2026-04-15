@@ -124,7 +124,7 @@ export default function PaginaFunciones() {
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); cargarAppsDeFuncion(f.codigo_funcion); setModalFuncion(true)
   }
-  const guardarFuncion = async () => {
+  const guardarFuncion = async (cerrar: boolean) => {
     if (!formFuncion.nombre) { setErrorFuncion('El nombre es obligatorio'); return }
     setGuardandoFuncion(true)
     try {
@@ -147,9 +147,14 @@ export default function PaginaFunciones() {
         await funcionesApi.actualizar(funcionEditando.codigo_funcion, payload)
       } else {
         if (formFuncion.codigo_funcion) payload.codigo_funcion = formFuncion.codigo_funcion
-        await funcionesApi.crear(payload as Parameters<typeof funcionesApi.crear>[0])
+        const nuevo = await funcionesApi.crear(payload as Parameters<typeof funcionesApi.crear>[0])
+        if (!cerrar) {
+          setFuncionEditando(nuevo)
+          cargarAppsDeFuncion(nuevo.codigo_funcion)
+        }
       }
-      setModalFuncion(false); cargar()
+      if (cerrar) { setModalFuncion(false) }
+      cargar()
     } catch (e) { setErrorFuncion(e instanceof Error ? e.message : 'Error') }
     finally { setGuardandoFuncion(false) }
   }
@@ -356,7 +361,7 @@ export default function PaginaFunciones() {
               </div>
             </div>
             {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-            <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarFuncion} cargando={guardandoFuncion}>{funcionEditando ? tc('guardar') : t('crearFuncion')}</Boton></div>
+            <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{funcionEditando ? tc('guardar') : t('crearFuncion')}</Boton><Boton variante="contorno" onClick={() => guardarFuncion(true)} cargando={guardandoFuncion}>Guardar y salir</Boton></div>
           </>)}
 
           {/* Tab Aplicaciones */}
@@ -366,7 +371,7 @@ export default function PaginaFunciones() {
               {cargandoAppsFuncion ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
               : appsDeFuncion.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene aplicaciones asignadas</p>
               : <div className="flex flex-col gap-2">{appsDeFuncion.map((af) => (<div key={af.codigo_aplicacion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{af.aplicaciones?.nombre_aplicacion || af.codigo_aplicacion}</span><span className="ml-2 text-xs text-texto-muted">{af.codigo_aplicacion}</span></div><button onClick={() => quitarAppDeFuncion(af.codigo_aplicacion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cerrar')}</Boton></div>
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>Guardar y salir</Boton></div>
             </div>
           )}
 
@@ -381,7 +386,7 @@ export default function PaginaFunciones() {
                 onChange={(e) => setFormFuncion({ ...formFuncion, prompt: e.target.value })}
               />
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarFuncion} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton><Boton variante="contorno" onClick={() => guardarFuncion(true)} cargando={guardandoFuncion}>Guardar y salir</Boton></div>
             </div>
           )}
 
@@ -396,7 +401,7 @@ export default function PaginaFunciones() {
                 onChange={(e) => setFormFuncion({ ...formFuncion, system_prompt: e.target.value })}
               />
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarFuncion} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton><Boton variante="contorno" onClick={() => guardarFuncion(true)} cargando={guardandoFuncion}>Guardar y salir</Boton></div>
             </div>
           )}
 
@@ -423,7 +428,7 @@ export default function PaginaFunciones() {
                 <p className="text-xs text-texto-muted">Sin modelo seleccionado. El chat fallará si esta función se usa para conversaciones LLM.</p>
               )}
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarFuncion} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton><Boton variante="contorno" onClick={() => guardarFuncion(true)} cargando={guardandoFuncion}>Guardar y salir</Boton></div>
             </div>
           )}
         </div>

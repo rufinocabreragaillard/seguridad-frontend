@@ -103,13 +103,21 @@ export default function PaginaAplicaciones() {
     setAppEditando(a); setFormApp({ codigo_aplicacion: a.codigo_aplicacion, nombre: a.nombre, descripcion: a.descripcion || '', tipo: normalizarTipo(a.tipo), sidebar_ancho: a.sidebar_ancho !== false, prompt: (a as Record<string, unknown>).prompt as string || '', system_prompt: (a as Record<string, unknown>).system_prompt as string || '' })
     setErrorApp(''); setTabModalApp('datos'); cargarFuncionesApp(a.codigo_aplicacion); cargarGruposApp(a.codigo_aplicacion); setModalApp(true)
   }
-  const guardarApp = async () => {
+  const guardarApp = async (cerrar: boolean) => {
     if (!formApp.codigo_aplicacion || !formApp.nombre) { setErrorApp('Codigo y nombre son obligatorios'); return }
     setGuardandoApp(true)
     try {
       if (appEditando) { await aplicacionesApi.actualizar(appEditando.codigo_aplicacion, { nombre: formApp.nombre, descripcion: formApp.descripcion || undefined, tipo: formApp.tipo, sidebar_ancho: formApp.sidebar_ancho, prompt: formApp.prompt || undefined, system_prompt: formApp.system_prompt || undefined }) }
-      else { await aplicacionesApi.crear(formApp) }
-      setModalApp(false); cargar()
+      else {
+        const nuevo = await aplicacionesApi.crear(formApp)
+        if (!cerrar) {
+          setAppEditando(nuevo)
+          cargarFuncionesApp(nuevo.codigo_aplicacion)
+          cargarGruposApp(nuevo.codigo_aplicacion)
+        }
+      }
+      if (cerrar) { setModalApp(false) }
+      cargar()
     } catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') }
     finally { setGuardandoApp(false) }
   }
@@ -285,7 +293,7 @@ export default function PaginaAplicaciones() {
               <label htmlFor="sidebar_ancho" className="text-sm text-texto cursor-pointer">Sidebar expandido al iniciar <span className="text-texto-muted">(desmarcar para apps de uso único como Chat)</span></label>
             </div>
             {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
-            <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarApp} cargando={guardandoApp}>{appEditando ? tc('guardar') : t('crearApp')}</Boton></div>
+            <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={() => guardarApp(false)} cargando={guardandoApp}>{appEditando ? tc('guardar') : t('crearApp')}</Boton><Boton variante="contorno" onClick={() => guardarApp(true)} cargando={guardandoApp}>Guardar y salir</Boton></div>
           </>)}
           {tabModalApp === 'funciones' && appEditando && (
             <div className="flex flex-col gap-4">
@@ -347,7 +355,7 @@ export default function PaginaAplicaciones() {
                   ))}
                 </ul>
               )}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('cerrar')}</Boton></div>
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Guardar y salir</Boton></div>
             </div>
           )}
           {tabModalApp === 'prompt' && appEditando && (
@@ -360,7 +368,7 @@ export default function PaginaAplicaciones() {
                 onChange={(e) => setFormApp({ ...formApp, prompt: e.target.value })}
               />
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarApp} cargando={guardandoApp}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={() => guardarApp(false)} cargando={guardandoApp}>{tc('guardar')}</Boton><Boton variante="contorno" onClick={() => guardarApp(true)} cargando={guardandoApp}>Guardar y salir</Boton></div>
             </div>
           )}
           {tabModalApp === 'system_prompt' && appEditando && (
@@ -373,7 +381,7 @@ export default function PaginaAplicaciones() {
                 onChange={(e) => setFormApp({ ...formApp, system_prompt: e.target.value })}
               />
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={guardarApp} cargando={guardandoApp}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('cancelar')}</Boton><Boton variante="primario" onClick={() => guardarApp(false)} cargando={guardandoApp}>{tc('guardar')}</Boton><Boton variante="contorno" onClick={() => guardarApp(true)} cargando={guardandoApp}>Guardar y salir</Boton></div>
             </div>
           )}
           {tabModalApp === 'grupos' && appEditando && (
@@ -400,7 +408,7 @@ export default function PaginaAplicaciones() {
                 </div>
               ))}</div>}
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('cerrar')}</Boton></div>
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Guardar y salir</Boton></div>
             </div>
           )}
         </div>

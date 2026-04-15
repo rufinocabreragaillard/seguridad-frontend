@@ -155,7 +155,7 @@ export default function PaginaUbicacionesDocs() {
     setModal(true)
   }
 
-  const guardar = async () => {
+  const guardar = async (cerrar: boolean) => {
     if (!form.nombre_ubicacion.trim()) {
       setError(t('errorNombreObligatorio'))
       return
@@ -174,16 +174,31 @@ export default function PaginaUbicacionesDocs() {
             system_prompt: form.system_prompt || undefined,
           } : {}),
         })
+        if (cerrar) setModal(false)
       } else {
-        await ubicacionesDocsApi.crear({
+        const nueva = await ubicacionesDocsApi.crear({
           codigo_grupo: grupoActivo!,
           nombre_ubicacion: form.nombre_ubicacion,
           alias_ubicacion: form.alias_ubicacion || undefined,
           descripcion: form.descripcion || undefined,
           codigo_ubicacion_superior: form.codigo_ubicacion_superior || undefined,
         })
+        if (cerrar) {
+          setModal(false)
+        } else {
+          setEditando(nueva)
+          setForm({
+            codigo_ubicacion: nueva.codigo_ubicacion,
+            nombre_ubicacion: nueva.nombre_ubicacion,
+            alias_ubicacion: nueva.alias_ubicacion || '',
+            descripcion: nueva.descripcion || '',
+            codigo_ubicacion_superior: nueva.codigo_ubicacion_superior || '',
+            ubicacion_habilitada: nueva.ubicacion_habilitada,
+            prompt: nueva.prompt || '',
+            system_prompt: nueva.system_prompt || '',
+          })
+        }
       }
-      setModal(false)
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
@@ -658,6 +673,14 @@ export default function PaginaUbicacionesDocs() {
                 value={form.prompt}
                 onChange={(e) => setForm({ ...form, prompt: e.target.value })}
               />
+              <div className="flex gap-3 justify-end">
+                <Boton variante="contorno" tamano="sm" onClick={() => guardar(true)} cargando={guardando}>
+                  Guardar y salir
+                </Boton>
+                <Boton variante="primario" tamano="sm" onClick={() => guardar(false)} cargando={guardando}>
+                  {tc('guardar')}
+                </Boton>
+              </div>
             </div>
           )}
 
@@ -673,6 +696,14 @@ export default function PaginaUbicacionesDocs() {
                 value={form.system_prompt}
                 onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
               />
+              <div className="flex gap-3 justify-end">
+                <Boton variante="contorno" tamano="sm" onClick={() => guardar(true)} cargando={guardando}>
+                  Guardar y salir
+                </Boton>
+                <Boton variante="primario" tamano="sm" onClick={() => guardar(false)} cargando={guardando}>
+                  {tc('guardar')}
+                </Boton>
+              </div>
             </div>
           )}
 
@@ -682,14 +713,20 @@ export default function PaginaUbicacionesDocs() {
             </div>
           )}
 
-          <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="contorno" onClick={() => setModal(false)}>
-              {tc('cancelar')}
-            </Boton>
-            <Boton variante="primario" onClick={guardar} cargando={guardando}>
-              {editando ? tc('guardar') : tc('crear')}
-            </Boton>
-          </div>
+          {/* Botones principales: solo en tab datos o cuando no hay tabs (crear, o editar CONTENIDO) */}
+          {(tabModal === 'datos' || !(editando?.tipo_ubicacion === 'AREA')) && (
+            <div className="flex gap-3 justify-end pt-2">
+              <Boton variante="contorno" onClick={() => setModal(false)}>
+                {tc('cancelar')}
+              </Boton>
+              <Boton variante="contorno" onClick={() => guardar(true)} cargando={guardando}>
+                Guardar y salir
+              </Boton>
+              <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
+                {tc('guardar')}
+              </Boton>
+            </div>
+          )}
         </div>
       </Modal>
 

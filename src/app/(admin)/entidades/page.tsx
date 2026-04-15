@@ -86,16 +86,22 @@ export default function PaginaEntidades() {
     setModalEntidad(true)
   }
 
-  const guardarEntidad = async () => {
+  const guardarEntidad = async (cerrar: boolean) => {
     if (!formEntidad.nombre) { setError('El nombre es obligatorio'); return }
     setGuardando(true)
     try {
       if (entidadEditando) {
         await entidadesApi.actualizar(entidadEditando.codigo_entidad, { nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, prompt: formEntidad.prompt || undefined, system_prompt: formEntidad.system_prompt || undefined })
+        if (cerrar) setModalEntidad(false)
       } else {
-        await entidadesApi.crear({ nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, codigo_grupo: grupoActivo || 'ADMIN' })
+        const nueva = await entidadesApi.crear({ nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, codigo_grupo: grupoActivo || 'ADMIN' })
+        if (!cerrar) {
+          setEntidadEditando(nueva)
+          setFormEntidad({ codigo_entidad: nueva.codigo_entidad, nombre: nueva.nombre, descripcion: nueva.descripcion || '', prompt: nueva.prompt || '', system_prompt: nueva.system_prompt || '' })
+        } else {
+          setModalEntidad(false)
+        }
       }
-      setModalEntidad(false)
       cargar()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error')
@@ -342,6 +348,12 @@ export default function PaginaEntidades() {
               {entidadEditando && (
                 <Input etiqueta="Código" value={formEntidad.codigo_entidad} disabled readOnly />
               )}
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalEntidad(false)}>{tc('cancelar')}</Boton>
+                <Boton variante="primario" onClick={() => guardarEntidad(false)} cargando={guardando}>{tc('guardar')}</Boton>
+                <Boton variante="contorno" onClick={() => guardarEntidad(true)} cargando={guardando}>Guardar y salir</Boton>
+              </div>
             </>
           )}
 
@@ -357,6 +369,11 @@ export default function PaginaEntidades() {
                 value={formEntidad.prompt}
                 onChange={(e) => setFormEntidad({ ...formEntidad, prompt: e.target.value })}
               />
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="primario" onClick={() => guardarEntidad(false)} cargando={guardando}>{tc('guardar')}</Boton>
+                <Boton variante="contorno" onClick={() => guardarEntidad(true)} cargando={guardando}>Guardar y salir</Boton>
+              </div>
             </div>
           )}
 
@@ -372,14 +389,13 @@ export default function PaginaEntidades() {
                 value={formEntidad.system_prompt}
                 onChange={(e) => setFormEntidad({ ...formEntidad, system_prompt: e.target.value })}
               />
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="primario" onClick={() => guardarEntidad(false)} cargando={guardando}>{tc('guardar')}</Boton>
+                <Boton variante="contorno" onClick={() => guardarEntidad(true)} cargando={guardando}>Guardar y salir</Boton>
+              </div>
             </div>
           )}
-
-          {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-          <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="contorno" onClick={() => setModalEntidad(false)}>{tc('cancelar')}</Boton>
-            <Boton variante="primario" onClick={guardarEntidad} cargando={guardando}>{entidadEditando ? tc('guardar') : t('crearEntidad')}</Boton>
-          </div>
         </div>
       </Modal>
 
