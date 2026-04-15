@@ -1411,7 +1411,7 @@ function PaginaProcesarDocumentosInterna() {
                       {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && (
                         <BotonAccion
                           tooltip="Abrir archivo"
-                          onClick={() => fetch(`http://localhost:27182/abrir`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ruta: d.ubicacion_documento }) }).catch(() => alert('No se pudo conectar con Server LM local. Verifica que esté ejecutándose.'))}
+                          onClick={() => abrirDocumentoLocal(d)}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                           <FileText size={15} />
                         </BotonAccion>
