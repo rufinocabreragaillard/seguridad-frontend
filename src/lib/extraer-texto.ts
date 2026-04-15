@@ -193,8 +193,14 @@ async function extraerTextoDOCX(file: File): Promise<string> {
 
 /**
  * Extrae texto de un Excel (.xlsx/.xls/.xlsm) usando SheetJS.
- * Cada hoja se serializa como CSV; las hojas se separan por encabezado.
+ * Cada hoja se serializa como CSV con truncado inteligente:
+ * - Máx. 200 filas iniciales + 20 filas finales (para preservar totales/resúmenes)
+ * - Si hay más filas se agrega una nota indicando cuántas se omitieron
+ * Esto evita tokens excesivos en Excel con miles de filas (ingresos, padrones, etc.)
  */
+const EXCEL_MAX_FILAS_INICIO = 200
+const EXCEL_MAX_FILAS_FINAL  = 20
+
 async function extraerTextoExcel(file: File): Promise<string> {
   try {
     const XLSX = await import('xlsx')
@@ -204,9 +210,29 @@ async function extraerTextoExcel(file: File): Promise<string> {
     for (const nombreHoja of workbook.SheetNames) {
       const hoja = workbook.Sheets[nombreHoja]
       const csv = XLSX.utils.sheet_to_csv(hoja, { blankrows: false })
-      if (csv.trim()) {
-        partes.push(`### Hoja: ${nombreHoja}\n${csv}`)
+      if (!csv.trim()) continue
+
+      const filas = csv.split('\n').filter((f) => f.trim())
+      const totalFilas = filas.length
+
+      let csvTruncado: string
+      if (totalFilas <= EXCEL_MAX_FILAS_INICIO + EXCEL_MAX_FILAS_FINAL) {
+        csvTruncado = filas.join('\n')
+      } else {
+        const inicio = filas.slice(0, EXCEL_MAX_FILAS_INICIO)
+        const final  = filas.slice(-EXCEL_MAX_FILAS_FINAL)
+        const omitidas = totalFilas - EXCEL_MAX_FILAS_INICIO - EXCEL_MAX_FILAS_FINAL
+        csvTruncado = [
+          ...inicio,
+          `... [${omitidas} filas omitidas] ...`,
+          ...final,
+        ].join('\n')
       }
+
+      const notaTruncado = totalFilas > EXCEL_MAX_FILAS_INICIO + EXCEL_MAX_FILAS_FINAL
+        ? ` (${totalFilas} filas totales, muestra representativa)`
+        : ''
+      partes.push(`### Hoja: ${nombreHoja}${notaTruncado}\n${csvTruncado}`)
     }
     return partes.join('\n\n')
   } catch (e) {
