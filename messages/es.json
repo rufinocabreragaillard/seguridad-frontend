@@ -634,7 +634,7 @@
   },
   "procesarPipeline": {
     "titulo": "Carga de Documentos",
-    "subtitulo": "Sincroniza carpetas y procesa documentos del grupo",
+    "subtitulo": "Carga tus ubicaciones, y tus documentos",
     "tabUbicaciones": "Ubicaciones",
     "tabDocumentos": "Documentos",
     "sincronizarTitulo": "Sincronizar estructura de carpetas",
