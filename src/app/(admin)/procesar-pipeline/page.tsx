@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from 'react'
 import {
   FolderOpen, Folder, FolderInput, FolderPlus, FolderTree,
   CheckCircle, AlertTriangle, RefreshCw, Upload,
-  ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2,
+  ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
 } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Insignia } from '@/components/ui/insignia'
@@ -274,6 +274,23 @@ export default function PaginaCargaDocsUsuario() {
   const [docsValidos, setDocsValidos] = useState(0)
   const [docsRechazados, setDocsRechazados] = useState(0)
 
+  // Selector de ubicación para etapa 2 (árbol de ubicaciones, no directorio físico)
+  const [ubicacionDocSel, setUbicacionDocSel] = useState('')
+  const [ubicDocDropdownOpen, setUbicDocDropdownOpen] = useState(false)
+  const [ubicDocBusqueda, setUbicDocBusqueda] = useState('')
+  const ubicDocDropdownRef = useRef<HTMLDivElement>(null)
+
+  // Cerrar dropdown al click fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ubicDocDropdownRef.current && !ubicDocDropdownRef.current.contains(e.target as Node)) {
+        setUbicDocDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
   const abortRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const resolveColaRef = useRef<(() => void) | null>(null)
@@ -511,9 +528,74 @@ export default function PaginaCargaDocsUsuario() {
           <p className="text-xs text-texto-muted mb-4">Ejecuta el pipeline completo sobre tus documentos: extrae, analiza, chunkea y vectoriza.</p>
 
           <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-5">
-            {/* Selector de directorio */}
-            <div className="flex items-center justify-between gap-3 flex-wrap">
-              <p className="text-sm font-medium text-texto">Directorio de documentos</p>
+            {/* Selector: árbol de ubicaciones (izquierda) + directorio físico (derecha, mismo borde) */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Dropdown árbol de ubicaciones */}
+              <div className="relative flex-1 min-w-[200px]" ref={ubicDocDropdownRef}>
+                <button
+                  type="button"
+                  onClick={() => !ejecutando && setUbicDocDropdownOpen(!ubicDocDropdownOpen)}
+                  disabled={ejecutando}
+                  className="flex items-center gap-2 rounded-lg border border-primario bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50"
+                >
+                  <FolderOpen size={15} className={ubicacionDocSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
+                  <span className="flex-1 text-left truncate">
+                    {ubicacionDocSel
+                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel)?.nombre_ubicacion ?? 'Seleccionar ubicación')
+                      : 'Seleccionar ubicación'}
+                  </span>
+                  {ubicacionDocSel ? (
+                    <X size={13} className="text-texto-muted hover:text-error shrink-0" onClick={(e) => { e.stopPropagation(); setUbicacionDocSel(''); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }} />
+                  ) : (
+                    <ChevronDown size={13} className="text-texto-muted shrink-0" />
+                  )}
+                </button>
+                {ubicDocDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '16rem' }}>
+                    <div className="p-2 border-b border-borde shrink-0">
+                      <input
+                        type="text"
+                        placeholder="Buscar ubicación…"
+                        value={ubicDocBusqueda}
+                        onChange={(e) => setUbicDocBusqueda(e.target.value)}
+                        onClick={(e) => e.stopPropagation()}
+                        className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted"
+                        autoFocus
+                      />
+                    </div>
+                    <div className="overflow-y-auto flex-1">
+                      <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { setUbicacionDocSel(''); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }}>
+                        Todas las ubicaciones
+                      </div>
+                      {ubicaciones
+                        .filter(u => !ubicDocBusqueda || u.nombre_ubicacion.toLowerCase().includes(ubicDocBusqueda.toLowerCase()) || (u.ruta_completa || '').toLowerCase().includes(ubicDocBusqueda.toLowerCase()))
+                        .map(u => {
+                          const esArea = u.tipo_ubicacion === 'AREA'
+                          const selec = ubicacionDocSel === u.codigo_ubicacion
+                          return (
+                            <div
+                              key={u.codigo_ubicacion}
+                              className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`}
+                              style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
+                              onClick={() => { setUbicacionDocSel(u.codigo_ubicacion); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }}
+                            >
+                              <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
+                              <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>
+                                {esArea ? 'Área' : 'Contenido'}
+                              </span>
+                            </div>
+                          )
+                        })}
+                      {ubicaciones.filter(u => !ubicDocBusqueda || u.nombre_ubicacion.toLowerCase().includes(ubicDocBusqueda.toLowerCase()) || (u.ruta_completa || '').toLowerCase().includes(ubicDocBusqueda.toLowerCase())).length === 0 && (
+                        <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Directorio físico (para leer archivos del disco) */}
               <button
                 onClick={async () => {
                   try {
@@ -521,10 +603,11 @@ export default function PaginaCargaDocsUsuario() {
                     setDirHandleState(h); await setDirectoryHandle(h)
                   } catch { /* cancelado */ }
                 }}
-                className="flex items-center gap-2 rounded-lg border border-borde bg-surface px-3 py-1.5 text-sm text-texto hover:border-primario transition-colors"
+                className="flex items-center gap-2 rounded-lg border border-primario bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors shrink-0"
+                title="Seleccionar carpeta raíz en tu computador"
               >
                 <FolderOpen size={15} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
-                {dirHandle ? dirHandle.name : 'Seleccionar directorio'}
+                {dirHandle ? dirHandle.name : 'Carpeta'}
               </button>
             </div>
 
