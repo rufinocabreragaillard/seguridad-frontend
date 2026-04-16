@@ -127,13 +127,15 @@ export interface Usuario {
   codigo_rol_principal?: string | null  // conveniencia: codigo_rol asociado
   entidad_por_defecto?: string
   grupo_por_defecto?: string
-  codigo_ubicacion_area_por_defecto?: string
+  codigo_area?: string
   aplicacion_por_defecto?: string
   fecha_creacion?: string
   ultimo_acceso?: string
   sidebar_colapsado?: boolean
   prompt?: string | null
   system_prompt?: string | null
+  fecha_inicial?: string | null
+  fecha_final?: string | null
 }
 
 export interface CrearUsuarioRequest {
@@ -146,10 +148,12 @@ export interface CrearUsuarioRequest {
   id_rol_principal?: number | null
   entidad_por_defecto?: string
   grupo_por_defecto?: string
-  codigo_ubicacion_area_por_defecto?: string
+  codigo_area?: string
   aplicacion_por_defecto?: string
   sidebar_colapsado?: boolean
   invitar?: boolean
+  fecha_inicial?: string | null
+  fecha_final?: string | null
 }
 
 // ─── Roles y Funciones ───────────────────────────────────────────────────────
@@ -612,29 +616,6 @@ export interface RolCargo {
     codigo_grupo: string | null
     codigo_aplicacion_origen?: string | null
   }
-}
-
-// ─── Espacios de Trabajo ─────────────────────────────────────────────────────
-
-export interface EspacioTrabajo {
-  id_espacio: number
-  nombre_espacio: string
-  descripcion?: string | null
-  tipo_espacio: 'TEMPORAL' | 'GUARDADO'
-  codigo_grupo: string
-  codigo_entidad: string
-  codigo_usuario: string
-  fecha_creacion: string
-  fecha_termino?: string | null
-  total_documentos?: number
-}
-
-export interface DocumentoEspacio {
-  codigo_documento: number
-  nombre_documento: string
-  ubicacion_documento?: string | null
-  codigo_estado_doc?: string | null
-  fecha_agregado?: string | null
 }
 
 // ─── Utilitarios ─────────────────────────────────────────────────────────────

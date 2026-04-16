@@ -70,7 +70,7 @@ export default function PaginaUsuarios() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [errorCarga, setErrorCarga] = useState('')
-  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'entidades' | 'prompt'>('datos')
+  const [tabActiva, setTabActiva] = useState<'datos' | 'inicializacion' | 'roles' | 'entidades' | 'prompt'>('datos')
 
   // ── Roles ──────────────────────────────────────────────────────────────────
   const [rolesUsuario, setRolesUsuario] = useState<RolAsignado[]>([])
@@ -115,10 +115,12 @@ export default function PaginaUsuarios() {
     id_rol_principal: '',
     grupo_por_defecto: '',
     entidad_por_defecto: '',
-    codigo_ubicacion_area_por_defecto: '',
+    codigo_area: '',
     aplicacion_por_defecto: '',
     invitar: true,
     prompt: '',
+    fecha_inicial: '',
+    fecha_final: '',
   })
 
   // Apps disponibles para el grupo del usuario editado
@@ -222,7 +224,7 @@ export default function PaginaUsuarios() {
   const abrirNuevo = () => {
     setUsuarioEditando(null)
     setForm({ codigo_usuario: '', nombre: '', alias: '', telefono: '', descripcion: '', id_rol_principal: '',
-      grupo_por_defecto: '', entidad_por_defecto: '', codigo_ubicacion_area_por_defecto: '', aplicacion_por_defecto: '', invitar: true, prompt: '' })
+      grupo_por_defecto: '', entidad_por_defecto: '', codigo_area: '', aplicacion_por_defecto: '', invitar: true, prompt: '', fecha_inicial: '', fecha_final: '' })
     setError('')
     setGuardando(false)
     setTabActiva('datos')
@@ -244,10 +246,12 @@ export default function PaginaUsuarios() {
       id_rol_principal: u.id_rol_principal != null ? String(u.id_rol_principal) : '',
       grupo_por_defecto: u.grupo_por_defecto || '',
       entidad_por_defecto: u.entidad_por_defecto || '',
-      codigo_ubicacion_area_por_defecto: u.codigo_ubicacion_area_por_defecto || '',
+      codigo_area: u.codigo_area || '',
       aplicacion_por_defecto: u.aplicacion_por_defecto || '',
       invitar: false,
       prompt: u.prompt || '',
+      fecha_inicial: u.fecha_inicial || '',
+      fecha_final: u.fecha_final || '',
     })
     setError('')
     setGuardando(false)
@@ -267,11 +271,11 @@ export default function PaginaUsuarios() {
   }
 
   // ── Guardar datos ──────────────────────────────────────────────────────────
-  const guardar = async () => {
+  const guardar = async (): Promise<boolean> => {
     setError('')
     if (!form.codigo_usuario || !form.nombre) {
       setError('El correo y el nombre son obligatorios')
-      return
+      return false
     }
     setGuardando(true)
     try {
@@ -284,9 +288,11 @@ export default function PaginaUsuarios() {
           id_rol_principal: form.id_rol_principal ? Number(form.id_rol_principal) : null,
           grupo_por_defecto: form.grupo_por_defecto || undefined,
           entidad_por_defecto: form.entidad_por_defecto || undefined,
-          codigo_ubicacion_area_por_defecto: form.codigo_ubicacion_area_por_defecto || undefined,
+          codigo_area: form.codigo_area || undefined,
           aplicacion_por_defecto: form.aplicacion_por_defecto || undefined,
           prompt: form.prompt || undefined,
+          fecha_inicial: form.fecha_inicial || undefined,
+          fecha_final: form.fecha_final || undefined,
         })
       } else {
         await usuariosApi.crear({
@@ -299,10 +305,11 @@ export default function PaginaUsuarios() {
           invitar: form.invitar,
         })
       }
-      setModalAbierto(false)
       cargar()
+      return true
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
+      return false
     } finally {
       setGuardando(false)
     }
@@ -502,12 +509,12 @@ export default function PaginaUsuarios() {
 
   // ── Handlers de cascada en Datos ──────────────────────────────────────────
   const handleGrupoDefaultChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setForm({ ...form, grupo_por_defecto: e.target.value, id_rol_principal: '', entidad_por_defecto: '', codigo_ubicacion_area_por_defecto: '', aplicacion_por_defecto: '' })
+    setForm({ ...form, grupo_por_defecto: e.target.value, id_rol_principal: '', entidad_por_defecto: '', codigo_area: '', aplicacion_por_defecto: '' })
     setAreasParaDefault([])
   }
 
   const handleEntidadDefaultChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setForm({ ...form, entidad_por_defecto: e.target.value, codigo_ubicacion_area_por_defecto: '' })
+    setForm({ ...form, entidad_por_defecto: e.target.value, codigo_area: '' })
   }
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -545,7 +552,7 @@ export default function PaginaUsuarios() {
             { titulo: 'Rol principal', campo: 'codigo_rol_principal' },
             { titulo: 'Grupo por defecto', campo: 'grupo_por_defecto' },
             { titulo: 'Entidad por defecto', campo: 'entidad_por_defecto' },
-            { titulo: 'Área por defecto', campo: 'codigo_ubicacion_area_por_defecto' },
+            { titulo: 'Área por defecto', campo: 'codigo_area' },
             { titulo: 'Estado', campo: 'activo', formato: (v) => v ? 'Activo' : 'Inactivo' },
             { titulo: 'Último acceso', campo: 'ultimo_acceso', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL') : '' },
           ], `usuarios_${grupoActivo || 'todos'}`)}
@@ -651,7 +658,7 @@ export default function PaginaUsuarios() {
       <Modal
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
-        titulo={usuarioEditando ? `Usuario: ${usuarioEditando.codigo_usuario}` : 'Nuevo usuario'}
+        titulo={usuarioEditando ? `Editar: ${usuarioEditando.nombre}${usuarioEditando.grupo_por_defecto ? ` - ${usuarioEditando.grupo_por_defecto}` : ''}` : 'Nuevo usuario'}
         descripcion={usuarioEditando ? undefined : 'El usuario recibirá una invitación por correo'}
         className="w-[min(95vw,42rem)] max-w-none min-h-[32rem]"
       >
@@ -659,7 +666,7 @@ export default function PaginaUsuarios() {
           {/* Pestañas (solo en edición) */}
           {usuarioEditando && (
             <div className="flex border-b border-borde -mx-1 overflow-x-auto">
-              {(['datos', 'entidades', 'roles', 'prompt'] as const).map((tab) => (
+              {(['datos', 'inicializacion', 'entidades', 'roles', 'prompt'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setTabActiva(tab)}
@@ -669,7 +676,7 @@ export default function PaginaUsuarios() {
                       : 'text-texto-muted hover:text-texto'
                   }`}
                 >
-                  {tab === 'datos' ? t('tabDatos') : tab === 'entidades' ? t('tabEntidades') : tab === 'roles' ? t('tabRoles') : 'Prompt'}
+                  {tab === 'datos' ? t('tabDatos') : tab === 'inicializacion' ? 'Inicialización' : tab === 'entidades' ? t('tabEntidades') : tab === 'roles' ? t('tabRoles') : 'Prompt'}
                 </button>
               ))}
             </div>
@@ -742,117 +749,6 @@ export default function PaginaUsuarios() {
                 </div>
               </div>
 
-              {/* ── Defaults de preferencia (solo edición) ─────────────────── */}
-              {usuarioEditando && (
-                <div className="border-t border-borde pt-3 mt-1">
-                  <p className="text-xs font-semibold text-texto-muted uppercase tracking-wide mb-3">
-                    Preferencias de inicio de sesión
-                  </p>
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                    {/* Grupo por defecto */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-texto">Grupo por defecto</label>
-                      <select
-                        value={form.grupo_por_defecto}
-                        onChange={handleGrupoDefaultChange}
-                        className={selectClass}
-                      >
-                        <option value="">Sin grupo seleccionado</option>
-                        {gruposDeEntidades.map((g) => (
-                          <option key={g.codigo_grupo} value={g.codigo_grupo}>
-                            {g.grupos_entidades?.nombre || g.codigo_grupo}
-                          </option>
-                        ))}
-                      </select>
-                      {gruposDeEntidades.length === 0 && (
-                        <p className="text-xs text-texto-muted">Asigne entidades en la pestaña &quot;Entidades&quot; primero</p>
-                      )}
-                    </div>
-
-                    {/* Rol principal */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-texto">Rol principal</label>
-                      <select
-                        value={form.id_rol_principal}
-                        onChange={(e) => setForm({ ...form, id_rol_principal: e.target.value })}
-                        disabled={!form.grupo_por_defecto}
-                        className={selectClass}
-                      >
-                        <option value="">Sin rol asignado</option>
-                        {rolesUsuario
-                          .filter((ra) => ra.codigo_grupo === form.grupo_por_defecto)
-                          .map((ra) => (
-                            <option key={ra.id_rol} value={String(ra.id_rol)}>
-                              {ra.roles?.nombre || ra.codigo_rol || ra.roles?.codigo_rol || `id ${ra.id_rol}`}
-                            </option>
-                          ))
-                        }
-                      </select>
-                      {form.grupo_por_defecto && rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).length === 0 && (
-                        <p className="text-xs text-texto-muted">No hay roles asignados en este grupo</p>
-                      )}
-                    </div>
-
-                    {/* Aplicación por defecto */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-texto">Aplicación por defecto</label>
-                      <select
-                        value={form.aplicacion_por_defecto}
-                        onChange={(e) => setForm({ ...form, aplicacion_por_defecto: e.target.value })}
-                        disabled={!form.grupo_por_defecto}
-                        className={selectClass}
-                      >
-                        <option value="">Sin aplicación seleccionada</option>
-                        {appsGrupoUsuario.map((a) => (
-                          <option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>
-                            {a.nombre} ({a.codigo_aplicacion})
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    {/* Entidad por defecto */}
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-sm font-medium text-texto">Entidad por defecto</label>
-                      <select
-                        value={form.entidad_por_defecto}
-                        onChange={handleEntidadDefaultChange}
-                        disabled={!form.grupo_por_defecto}
-                        className={selectClass}
-                      >
-                        <option value="">Sin entidad seleccionada</option>
-                        {entidadesParaDefault.map((ea) => (
-                          <option key={ea.codigo_entidad} value={ea.codigo_entidad}>
-                            {ea.entidades?.nombre || ea.codigo_entidad}
-                          </option>
-                        ))}
-                      </select>
-                      {form.grupo_por_defecto && entidadesParaDefault.length === 0 && (
-                        <p className="text-xs text-texto-muted">Asigne entidades en la pestaña &quot;Entidades&quot; primero</p>
-                      )}
-                    </div>
-
-                    {/* Área por defecto */}
-                    {form.entidad_por_defecto && (
-                      <div className="flex flex-col gap-1.5">
-                        <label className="text-sm font-medium text-texto">Área por defecto <span className="text-texto-muted font-normal">(opcional)</span></label>
-                        <select
-                          value={form.codigo_ubicacion_area_por_defecto}
-                          onChange={(e) => setForm({ ...form, codigo_ubicacion_area_por_defecto: e.target.value })}
-                          disabled={cargandoAreasDefault}
-                          className={selectClass}
-                        >
-                          <option value="">Sin área</option>
-                          {areasParaDefault.map((a) => (
-                            <option key={a.codigo_area} value={a.codigo_area}>{a.nombre}</option>
-                          ))}
-                        </select>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
               {error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
                   <p className="text-sm text-error">{error}</p>
@@ -861,11 +757,152 @@ export default function PaginaUsuarios() {
 
               <div className="flex gap-3 justify-end pt-2">
                 <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cancelar')}</Boton>
-                <Boton variante="primario" onClick={guardar} cargando={guardando}>
-                  {usuarioEditando ? 'Guardar cambios' : 'Crear usuario'}
-                </Boton>
+                {usuarioEditando ? (
+                  <>
+                    <Boton variante="primario" onClick={guardar} cargando={guardando}>Guardar</Boton>
+                    <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Guardar y Salir</Boton>
+                  </>
+                ) : (
+                  <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Crear usuario</Boton>
+                )}
               </div>
             </>
+          )}
+
+          {/* ── Tab Inicialización ─────────────────────────────────────────── */}
+          {tabActiva === 'inicializacion' && usuarioEditando && (
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+                {/* Grupo por defecto */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-texto">Grupo por defecto</label>
+                  <select
+                    value={form.grupo_por_defecto}
+                    onChange={handleGrupoDefaultChange}
+                    className={selectClass}
+                  >
+                    <option value="">Sin grupo seleccionado</option>
+                    {gruposDeEntidades.map((g) => (
+                      <option key={g.codigo_grupo} value={g.codigo_grupo}>
+                        {g.grupos_entidades?.nombre || g.codigo_grupo}
+                      </option>
+                    ))}
+                  </select>
+                  {gruposDeEntidades.length === 0 && (
+                    <p className="text-xs text-texto-muted">Asigne entidades en la pestaña &quot;Entidades&quot; primero</p>
+                  )}
+                </div>
+
+                {/* Entidad por defecto */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-texto">Entidad por defecto</label>
+                  <select
+                    value={form.entidad_por_defecto}
+                    onChange={handleEntidadDefaultChange}
+                    disabled={!form.grupo_por_defecto}
+                    className={selectClass}
+                  >
+                    <option value="">Sin entidad seleccionada</option>
+                    {entidadesParaDefault.map((ea) => (
+                      <option key={ea.codigo_entidad} value={ea.codigo_entidad}>
+                        {ea.entidades?.nombre || ea.codigo_entidad}
+                      </option>
+                    ))}
+                  </select>
+                  {form.grupo_por_defecto && entidadesParaDefault.length === 0 && (
+                    <p className="text-xs text-texto-muted">Asigne entidades en la pestaña &quot;Entidades&quot; primero</p>
+                  )}
+                </div>
+
+                {/* Área por defecto */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-texto">Área por defecto <span className="text-texto-muted font-normal">(opcional)</span></label>
+                  <select
+                    value={form.codigo_area}
+                    onChange={(e) => setForm({ ...form, codigo_area: e.target.value })}
+                    disabled={!form.entidad_por_defecto || cargandoAreasDefault}
+                    className={selectClass}
+                  >
+                    <option value="">Sin área</option>
+                    {areasParaDefault.map((a) => (
+                      <option key={a.codigo_area} value={a.codigo_area}>{a.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Rol principal */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-texto">Rol principal</label>
+                  <select
+                    value={form.id_rol_principal}
+                    onChange={(e) => setForm({ ...form, id_rol_principal: e.target.value })}
+                    disabled={!form.grupo_por_defecto}
+                    className={selectClass}
+                  >
+                    <option value="">Sin rol asignado</option>
+                    {rolesUsuario
+                      .filter((ra) => ra.codigo_grupo === form.grupo_por_defecto)
+                      .map((ra) => (
+                        <option key={ra.id_rol} value={String(ra.id_rol)}>
+                          {ra.roles?.nombre || ra.codigo_rol || ra.roles?.codigo_rol || `id ${ra.id_rol}`}
+                        </option>
+                      ))
+                    }
+                  </select>
+                </div>
+
+                {/* Aplicación por defecto */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-texto">Aplicación por defecto</label>
+                  <select
+                    value={form.aplicacion_por_defecto}
+                    onChange={(e) => setForm({ ...form, aplicacion_por_defecto: e.target.value })}
+                    disabled={!form.grupo_por_defecto}
+                    className={selectClass}
+                  >
+                    <option value="">Sin aplicación seleccionada</option>
+                    {appsGrupoUsuario.map((a) => (
+                      <option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>
+                        {a.nombre} ({a.codigo_aplicacion})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Fecha inicial */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-texto">Fecha inicial</label>
+                  <input
+                    type="date"
+                    value={form.fecha_inicial}
+                    onChange={(e) => setForm({ ...form, fecha_inicial: e.target.value })}
+                    className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                  />
+                </div>
+
+                {/* Fecha final */}
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-texto">Fecha final</label>
+                  <input
+                    type="date"
+                    value={form.fecha_final}
+                    onChange={(e) => setForm({ ...form, fecha_final: e.target.value })}
+                    className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                  />
+                </div>
+              </div>
+
+              {error && (
+                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                  <p className="text-sm text-error">{error}</p>
+                </div>
+              )}
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cancelar')}</Boton>
+                <Boton variante="primario" onClick={guardar} cargando={guardando}>Guardar</Boton>
+                <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Guardar y Salir</Boton>
+              </div>
+            </div>
           )}
 
           {/* ── Tab Entidades ─────────────────────────────────────────────── */}
@@ -974,8 +1011,10 @@ export default function PaginaUsuarios() {
                   <p className="text-sm text-error">{error}</p>
                 </div>
               )}
-              <div className="flex justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cerrar')}</Boton>
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cancelar')}</Boton>
+                <Boton variante="primario" onClick={guardar} cargando={guardando}>Guardar</Boton>
+                <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Guardar y Salir</Boton>
               </div>
             </div>
           )}
@@ -1107,8 +1146,10 @@ export default function PaginaUsuarios() {
                   <p className="text-sm text-error">{error}</p>
                 </div>
               )}
-              <div className="flex justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cerrar')}</Boton>
+              <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cancelar')}</Boton>
+                <Boton variante="primario" onClick={guardar} cargando={guardando}>Guardar</Boton>
+                <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Guardar y Salir</Boton>
               </div>
             </div>
           )}
@@ -1132,7 +1173,8 @@ export default function PaginaUsuarios() {
               )}
               <div className="flex gap-3 justify-end pt-2">
                 <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cancelar')}</Boton>
-                <Boton variante="primario" onClick={guardar} cargando={guardando}>{tc('guardar')}</Boton>
+                <Boton variante="primario" onClick={guardar} cargando={guardando}>Guardar</Boton>
+                <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Guardar y Salir</Boton>
               </div>
             </div>
           )}
