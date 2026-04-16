@@ -451,18 +451,20 @@ export default function PaginaUbicacionesDocs() {
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
         <div className="flex gap-2 flex-wrap">
-          <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion} title="Carga solamente el directorio seleccionado, sin incluir subdirectorios">
-            <span className="pointer-events-none inline-flex items-center gap-2">
+          <div className="flex flex-col items-center">
+            <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion}>
               <FolderPlus size={16} />
               {t('cargarUbicacion')}
-            </span>
-          </Boton>
-          <Boton variante="contorno" onClick={iniciarEscaneo} cargando={escaneando} title="Carga el directorio seleccionado y todos sus subdirectorios de forma recursiva">
-            <span className="pointer-events-none inline-flex items-center gap-2">
+            </Boton>
+            <span className="text-[11px] text-texto-muted mt-0.5">solo un directorio</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <Boton variante="contorno" onClick={iniciarEscaneo} cargando={escaneando}>
               <FolderInput size={16} />
               {t('cargarDesdeDirectorioTitulo')}
-            </span>
-          </Boton>
+            </Boton>
+            <span className="text-[11px] text-texto-muted mt-0.5">y todos los sub-directorios</span>
+          </div>
           <Boton variante="contorno" tamano="sm" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
             {t('expandirTodo')}
           </Boton>
