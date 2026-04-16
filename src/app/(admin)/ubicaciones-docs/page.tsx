@@ -450,7 +450,7 @@ export default function PaginaUbicacionesDocs() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-2 flex-wrap items-start">
           <div className="flex flex-col items-center">
             <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion}>
               <FolderPlus size={16} />
@@ -465,14 +465,15 @@ export default function PaginaUbicacionesDocs() {
             </Boton>
             <span className="text-[11px] text-texto-muted mt-0.5">y todos los sub-directorios</span>
           </div>
-          <Boton variante="contorno" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
+          <Boton variante="contorno" className="h-[38px]" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
             {t('expandirTodo')}
           </Boton>
-          <Boton variante="contorno" onClick={colapsarTodos} disabled={ubicaciones.length === 0}>
+          <Boton variante="contorno" className="h-[38px]" onClick={colapsarTodos} disabled={ubicaciones.length === 0}>
             {t('colapsarTodo')}
           </Boton>
           <Boton
             variante="contorno"
+            className="h-[38px]"
             onClick={() =>
               exportarExcel(
                 filtrados as unknown as Record<string, unknown>[],
