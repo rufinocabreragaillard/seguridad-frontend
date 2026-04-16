@@ -1,10 +1,9 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Pencil, Trash2, Download, Search, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle } from 'lucide-react'
+import { Pencil, Trash2, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
-import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
@@ -23,7 +22,6 @@ export default function PaginaUbicacionesDocs() {
   // ── State ─────────────────────────────────────────────────────────────────
   const [ubicaciones, setUbicaciones] = useState<UbicacionDoc[]>([])
   const [cargando, setCargando] = useState(true)
-  const [busqueda, setBusqueda] = useState('')
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
 
   // ── Modal CRUD ────────────────────────────────────────────────────────────
@@ -339,15 +337,7 @@ export default function PaginaUbicacionesDocs() {
     return { nuevas, aEliminar, sinCambio, excluidas: excluidos }
   }
 
-  // ── Filtro ────────────────────────────────────────────────────────────────
-  const filtrados = busqueda
-    ? ubicaciones.filter(
-        (u) =>
-          u.nombre_ubicacion.toLowerCase().includes(busqueda.toLowerCase()) ||
-          u.codigo_ubicacion.toLowerCase().includes(busqueda.toLowerCase()) ||
-          (u.ruta_completa || '').toLowerCase().includes(busqueda.toLowerCase())
-      )
-    : ubicaciones
+  const filtrados = ubicaciones
 
   // ── Render nodos jerárquicos ──────────────────────────────────────────────
   const renderNodo = (u: UbicacionDoc) => {
@@ -459,15 +449,15 @@ export default function PaginaUbicacionesDocs() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="max-w-sm flex-1">
-          <Input
-            placeholder={t('buscarPlaceholder')}
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            icono={<Search size={15} />}
-          />
-        </div>
-        <div className="flex gap-2 ml-auto flex-wrap">
+        <div className="flex gap-2 flex-wrap">
+          <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion} title="Carga solamente el directorio seleccionado, sin incluir subdirectorios">
+            <FolderPlus size={16} />
+            {t('cargarUbicacion')}
+          </Boton>
+          <Boton variante="contorno" onClick={iniciarEscaneo} cargando={escaneando} title="Carga el directorio seleccionado y todos sus subdirectorios de forma recursiva">
+            <FolderInput size={16} />
+            {t('cargarDesdeDirectorioTitulo')}
+          </Boton>
           <Boton variante="contorno" tamano="sm" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
             {t('expandirTodo')}
           </Boton>
@@ -496,14 +486,6 @@ export default function PaginaUbicacionesDocs() {
           >
             <Download size={15} />
             Excel
-          </Boton>
-          <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion} title="Carga solamente el directorio seleccionado, sin incluir subdirectorios">
-            <FolderPlus size={16} />
-            {t('cargarUbicacion')}
-          </Boton>
-          <Boton variante="contorno" onClick={iniciarEscaneo} cargando={escaneando} title="Carga el directorio seleccionado y todos sus subdirectorios de forma recursiva">
-            <FolderInput size={16} />
-            {t('cargarDesdeDirectorioTitulo')}
           </Boton>
         </div>
       </div>
