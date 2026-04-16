@@ -465,15 +465,14 @@ export default function PaginaUbicacionesDocs() {
             </Boton>
             <span className="text-[11px] text-texto-muted mt-0.5">y todos los sub-directorios</span>
           </div>
-          <Boton variante="contorno" tamano="sm" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
+          <Boton variante="contorno" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
             {t('expandirTodo')}
           </Boton>
-          <Boton variante="contorno" tamano="sm" onClick={colapsarTodos} disabled={ubicaciones.length === 0}>
+          <Boton variante="contorno" onClick={colapsarTodos} disabled={ubicaciones.length === 0}>
             {t('colapsarTodo')}
           </Boton>
           <Boton
             variante="contorno"
-            tamano="sm"
             onClick={() =>
               exportarExcel(
                 filtrados as unknown as Record<string, unknown>[],
@@ -544,33 +543,11 @@ export default function PaginaUbicacionesDocs() {
           {tabModal === 'datos' && (
             <div className="grid grid-cols-2 gap-4">
               <Input
-                etiqueta={t('etiquetaNombre')}
-                value={form.nombre_ubicacion}
-                onChange={(e) => setForm({ ...form, nombre_ubicacion: e.target.value })}
-                placeholder={t('placeholderNombre')}
-              />
-              <Input
                 etiqueta={t('etiquetaAlias')}
                 value={form.alias_ubicacion}
                 onChange={(e) => setForm({ ...form, alias_ubicacion: e.target.value })}
                 placeholder={t('placeholderAlias')}
               />
-
-              <div>
-                <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaPadre')}</label>
-                <select
-                  className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none"
-                  value={form.codigo_ubicacion_superior}
-                  onChange={(e) => setForm({ ...form, codigo_ubicacion_superior: e.target.value })}
-                >
-                  <option value="">{t('opcionRaiz')}</option>
-                  {opcionesPadre(editando?.codigo_ubicacion).map((u) => (
-                    <option key={u.codigo_ubicacion} value={u.codigo_ubicacion}>
-                      {'  '.repeat(u.nivel)}{u.nombre_ubicacion} ({u.codigo_ubicacion})
-                    </option>
-                  ))}
-                </select>
-              </div>
 
               {editando && (
                 <div>

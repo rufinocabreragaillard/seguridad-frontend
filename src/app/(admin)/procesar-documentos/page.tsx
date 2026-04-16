@@ -1018,35 +1018,6 @@ function PaginaProcesarDocumentosInterna() {
                 <option value={PROCESO_RESTABLECER}>Restablecer (NO_ESCANEABLE / NO_ENCONTRADO → CARGADO/METADATA)</option>
                 <option value={PROCESO_RESETEAR_CARGADO}>Resetear a CARGADO (cualquier estado → CARGADO, limpia texto/chunks)</option>
               </select>
-              <div className="flex items-center gap-3 mt-1 flex-wrap">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-texto-muted">Paralelo:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    max={100}
-                    value={nParallelEdit}
-                    onChange={(e) => setNParallelEdit(Math.max(1, parseInt(e.target.value) || 1))}
-                    onBlur={guardarNParallel}
-                    onKeyDown={(e) => e.key === 'Enter' && guardarNParallel()}
-                    disabled={ejecutando || guardandoParalel}
-                    className="w-14 text-xs border border-borde rounded px-1.5 py-0.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50"
-                  />
-                  {guardandoParalel && <Loader2 className="w-3 h-3 animate-spin text-texto-muted" />}
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-xs text-texto-muted">Tope:</span>
-                  <input
-                    type="number"
-                    min={1}
-                    placeholder="todos"
-                    value={tope}
-                    onChange={(e) => setTope(e.target.value)}
-                    disabled={ejecutando}
-                    className="w-20 text-xs border border-borde rounded px-1.5 py-0.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
-                  />
-                </div>
-              </div>
             </div>
 
             <div className="flex flex-col gap-1.5 min-w-0">
@@ -1205,55 +1176,91 @@ function PaginaProcesarDocumentosInterna() {
             </div>
           </div>
 
-          {/* Filtro libre — debajo de los selectores principales */}
-          <div className="flex flex-col gap-1.5 mt-3">
-            <label className="text-sm font-medium text-texto">Filtro libre</label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Filtrar por nombre, directorio, estado o comentarios… (Enter para aplicar)"
-                value={filtroLibreInput}
-                onChange={(e) => setFiltroLibreInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    setFiltroLibre(filtroLibreInput)
-                    setYaCargado(false)
-                  }
-                }}
-                disabled={ejecutando}
-                className="flex-1 text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
-              />
-              {filtroLibreInput && (
-                <button
-                  type="button"
-                  onClick={() => { setFiltroLibreInput(''); setFiltroLibre(''); setYaCargado(false) }}
+          {/* Filtro libre + Paralelo + Tope — misma línea */}
+          <div className="flex items-end gap-3 mt-3 flex-wrap">
+            <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
+              <label className="text-sm font-medium text-texto">Filtro libre</label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Filtrar por nombre, directorio, estado o comentarios… (Enter para aplicar)"
+                  value={filtroLibreInput}
+                  onChange={(e) => setFiltroLibreInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      setFiltroLibre(filtroLibreInput)
+                      setYaCargado(false)
+                    }
+                  }}
                   disabled={ejecutando}
-                  className="px-2 rounded-lg border border-borde text-texto-muted hover:text-error hover:border-error transition-colors disabled:opacity-50"
-                  title="Limpiar filtro"
-                >
-                  <X size={15} />
-                </button>
-              )}
+                  className="flex-1 text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
+                />
+                {filtroLibreInput && (
+                  <button
+                    type="button"
+                    onClick={() => { setFiltroLibreInput(''); setFiltroLibre(''); setYaCargado(false) }}
+                    disabled={ejecutando}
+                    className="px-2 rounded-lg border border-borde text-texto-muted hover:text-error hover:border-error transition-colors disabled:opacity-50"
+                    title="Limpiar filtro"
+                  >
+                    <X size={15} />
+                  </button>
+                )}
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-texto-muted">Paralelo:</span>
+              <input
+                type="number"
+                min={1}
+                max={100}
+                value={nParallelEdit}
+                onChange={(e) => setNParallelEdit(Math.max(1, parseInt(e.target.value) || 1))}
+                onBlur={guardarNParallel}
+                onKeyDown={(e) => e.key === 'Enter' && guardarNParallel()}
+                disabled={ejecutando || guardandoParalel}
+                className="w-14 text-xs border border-borde rounded px-1.5 py-2 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50"
+              />
+              {guardandoParalel && <Loader2 className="w-3 h-3 animate-spin text-texto-muted" />}
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs text-texto-muted">Tope:</span>
+              <input
+                type="number"
+                min={1}
+                placeholder="todos"
+                value={tope}
+                onChange={(e) => setTope(e.target.value)}
+                disabled={ejecutando}
+                className="w-20 text-xs border border-borde rounded px-1.5 py-2 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
+              />
             </div>
           </div>
 
+          {/* Todos/Ninguno + conteo + Ejecutar/Detener — misma línea */}
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
+            <Boton variante="contorno" tamano="sm" onClick={seleccionarTodos} disabled={ejecutando || docsFiltrados.length === 0}>
+              <CheckSquare size={14} />{t('todos')}
+            </Boton>
+            <Boton variante="contorno" tamano="sm" onClick={deseleccionarTodos} disabled={ejecutando || seleccionados.size === 0}>
+              <SquareIcon size={14} />{t('ninguno')}
+            </Boton>
+            <span className="text-sm text-texto-muted flex items-center gap-2">
+              {(() => {
+                const topeNum = tope ? parseInt(tope) : 0
+                const efectivos = topeNum > 0 ? Math.min(seleccionados.size, topeNum) : seleccionados.size
+                const label = efectivos < seleccionados.size
+                  ? `${efectivos} a procesar (Total docs: ${docsEnDisco.length}, Seleccionados: ${seleccionados.size})`
+                  : t('xDeYSeleccionados', { x: seleccionados.size, y: docsEnDisco.length })
+                return <span>{label}</span>
+              })()}
+              {docsSinDisco.length > 0 && (
+                <span className="text-error font-medium">
+                  · {seleccionadosSinDisco.size > 0 ? `${seleccionadosSinDisco.size}/` : ''}{docsSinDisco.length} sin archivo
+                </span>
+              )}
+            </span>
             <div className="ml-auto flex items-center gap-3">
-              <span className="text-sm text-texto-muted flex items-center gap-2">
-                {(() => {
-                  const topeNum = tope ? parseInt(tope) : 0
-                  const efectivos = topeNum > 0 ? Math.min(seleccionados.size, topeNum) : seleccionados.size
-                  const label = efectivos < seleccionados.size
-                    ? `${efectivos} a procesar (Total docs: ${docsEnDisco.length}, Seleccionados: ${seleccionados.size})`
-                    : t('xDeYSeleccionados', { x: seleccionados.size, y: docsEnDisco.length })
-                  return <span>{label}</span>
-                })()}
-                {docsSinDisco.length > 0 && (
-                  <span className="text-error font-medium">
-                    · {seleccionadosSinDisco.size > 0 ? `${seleccionadosSinDisco.size}/` : ''}{docsSinDisco.length} sin archivo
-                  </span>
-                )}
-              </span>
               {docsSinDisco.length > 0 && (
                 <Boton variante="peligro" onClick={() => setConfirmEliminarBulkSinDisco(true)} disabled={ejecutando}>
                   <Trash2 size={14} />
@@ -1346,43 +1353,15 @@ function PaginaProcesarDocumentosInterna() {
       {/* Lista de documentos candidatos (visible antes de ejecución) */}
       {cola.length === 0 && (
         <>
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex gap-2">
-              <Boton variante="contorno" tamano="sm" onClick={seleccionarTodos} disabled={ejecutando || docsFiltrados.length === 0}>
-                <CheckSquare size={14} />{t('todos')}
-              </Boton>
-              <Boton variante="contorno" tamano="sm" onClick={deseleccionarTodos} disabled={ejecutando || seleccionados.size === 0}>
-                <SquareIcon size={14} />{t('ninguno')}
-              </Boton>
-            </div>
-            <div className="max-w-xs flex-1">
-              <Input
-                placeholder={t('buscarPlaceholder')}
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Enter') cargarDocumentos() }}
-                icono={<Search size={15} />}
-              />
-            </div>
-            <div className="max-w-xs flex-1">
-              <Input
-                placeholder="Filtrar por ubicación..."
-                value={filtroUbicacion}
-                onChange={(e) => { setFiltroUbicacion(e.target.value); setPaginaDoc(1) }}
-                icono={<MapPin size={15} />}
-              />
-            </div>
-            <Boton variante="contorno" tamano="sm" onClick={cargarDocumentos} disabled={cargando}>
-              {cargando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}{t('buscar')}
-            </Boton>
-            {documentos.length > 0 && (
-              <span className="text-xs text-texto-muted ml-auto">
+          {documentos.length > 0 && (
+            <div className="flex items-center">
+              <span className="text-xs text-texto-muted">
                 {docsFiltrados.length === documentos.length
                   ? `${documentos.length} documentos`
                   : `${docsFiltrados.length} de ${documentos.length} documentos`}
               </span>
-            )}
-          </div>
+            </div>
+          )}
           <Tabla>
             <TablaCabecera>
               <tr>

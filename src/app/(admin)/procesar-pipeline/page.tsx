@@ -502,6 +502,9 @@ export default function PaginaCargaDocsUsuario() {
 
   const diff = datosEscaneo ? calcularDiff() : null
 
+  // ── State para tabs ────────────────────────────────────────────────────
+  const [tabActiva, setTabActiva] = useState<'ubicaciones' | 'documentos'>('ubicaciones')
+
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="flex flex-col gap-6 max-w-4xl">
@@ -510,19 +513,35 @@ export default function PaginaCargaDocsUsuario() {
         <p className="text-sm text-texto-muted mt-1">Configura las ubicaciones y procesa tus documentos paso a paso.</p>
       </div>
 
+      {/* Tabs */}
+      <div className="flex border-b border-borde">
+        <button
+          onClick={() => setTabActiva('ubicaciones')}
+          className={`px-5 py-2.5 text-sm font-medium transition-colors ${
+            tabActiva === 'ubicaciones'
+              ? 'border-b-2 border-primario text-primario'
+              : 'text-texto-muted hover:text-texto'
+          }`}
+        >
+          <span className="flex items-center gap-2"><FolderTree size={15} />Ubicaciones</span>
+        </button>
+        <button
+          onClick={() => setTabActiva('documentos')}
+          className={`px-5 py-2.5 text-sm font-medium transition-colors ${
+            tabActiva === 'documentos'
+              ? 'border-b-2 border-primario text-primario'
+              : 'text-texto-muted hover:text-texto'
+          }`}
+        >
+          <span className="flex items-center gap-2"><Upload size={15} />Documentos</span>
+        </button>
+      </div>
+
       {/* ══════════════════════════════════════════════════════════════════════
-          ETAPA 1: Cargar Ubicaciones
+          TAB: Ubicaciones
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="flex gap-4">
-        <div className="flex flex-col items-center">
-          {circuloEtapa(1, etapa1Estado)}
-          <div className="w-0.5 flex-1 bg-gray-200 mt-1 min-h-[40px]" />
-        </div>
-
-        <div className="flex-1 pb-8">
-          <h3 className="text-lg font-semibold text-texto mb-0.5">Cargar Ubicaciones</h3>
-          <p className="text-xs text-texto-muted mb-4">Define las carpetas del sistema donde se almacenan tus documentos.</p>
-
+      {tabActiva === 'ubicaciones' && (
+        <div>
           {/* Toolbar */}
           <div className="flex items-center gap-2 mb-3 flex-wrap">
             <Input
@@ -561,19 +580,13 @@ export default function PaginaCargaDocsUsuario() {
             )}
           </div>
         </div>
-      </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
-          ETAPA 2: Cargar Documentos
+          TAB: Documentos
       ══════════════════════════════════════════════════════════════════════ */}
-      <div className="flex gap-4">
-        <div className="flex flex-col items-center">
-          {circuloEtapa(2, etapa2Estado)}
-        </div>
-
-        <div className="flex-1">
-          <h3 className="text-lg font-semibold text-texto mb-0.5">Cargar Documentos</h3>
-          <p className="text-xs text-texto-muted mb-4">Ejecuta el pipeline completo sobre tus documentos: extrae, analiza, chunkea y vectoriza.</p>
+      {tabActiva === 'documentos' && (
+        <div>
 
           <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-5">
             {/* Selector: árbol de ubicaciones (izquierda) + directorio físico (derecha, mismo borde) */}
@@ -837,7 +850,7 @@ export default function PaginaCargaDocsUsuario() {
             </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
           MODALES
