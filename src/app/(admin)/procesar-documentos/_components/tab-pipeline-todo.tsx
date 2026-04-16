@@ -282,14 +282,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     setProgresos(progresosIniciales())
     suscribirCola()
     try {
-      // Filtrar pasos según el proceso seleccionado
-      const pasosAEjecutar = procesoFiltro
-        ? PASOS.filter(p => {
-            const proc = procesos.find(pr => pr.codigo_proceso === procesoFiltro)
-            return proc?.pasos?.some(ps => ps.estado_destino === p.estadoDestino)
-          })
-        : PASOS
-      for (const paso of pasosAEjecutar) {
+      for (const paso of PASOS) {
         if (abortRef.current) break
         const ok = paso.clienteSide
           ? await ejecutarExtraer()
@@ -374,37 +367,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-4">
         <p className="text-xs font-semibold text-texto-muted uppercase">Filtros del pipeline</p>
 
-        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Proceso */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Proceso</label>
-            <select value={procesoFiltro} onChange={(e) => setProcesoFiltro(e.target.value)} className={selectClass} disabled={ejecutando}>
-              <option value="">— Pipeline completo —</option>
-              {procesos.map((p) => {
-                const paso = p.pasos?.[0]
-                const flecha = paso ? `${paso.estado_origen || '—'} → ${paso.estado_destino}` : ''
-                return (
-                  <option key={p.codigo_proceso} value={p.codigo_proceso}>
-                    {p.nombre_proceso} ({flecha})
-                  </option>
-                )
-              })}
-            </select>
-          </div>
-
-          {/* Estado */}
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Estado</label>
-            <select value={estadoFiltro} onChange={(e) => setEstadoFiltro(e.target.value)} className={selectClass} disabled={ejecutando}>
-              <option value="">— Según proceso —</option>
-              {estadosDocs.map((e) => (
-                <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
-                  {e.nombre_estado || e.codigo_estado_doc}
-                </option>
-              ))}
-            </select>
-          </div>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Ubicación */}
           <div className="flex flex-col gap-1.5" ref={ubicDropdownRef}>
             <label className="text-sm font-medium text-texto">Ubicación</label>
@@ -531,7 +494,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       {/* ── Selector de directorio ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between">
         <p className="text-sm text-texto-muted">
-          Ejecuta el pipeline completo: Extraer → Resumir → Escanear → Chunkear → Vectorizar
+          Ejecuta el pipeline completo: Extraer → Analizar → Chunkear → Vectorizar
         </p>
         <div className="flex flex-col items-end gap-1">
           <button
@@ -591,13 +554,12 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       )}
 
       <div className="flex gap-3 justify-center">
-        {!ejecutando ? (
-          <Boton variante="primario" onClick={ejecutarPipeline}>
-            {todosListos ? 'Procesar de nuevo' : 'Procesar Todo'}
-          </Boton>
-        ) : (
-          <Boton variante="peligro" onClick={detener}>Detener</Boton>
-        )}
+        <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando}>
+          Procesar
+        </Boton>
+        <Boton variante="peligro" onClick={detener} disabled={!ejecutando}>
+          Cancelar
+        </Boton>
       </div>
 
       {/* ── Estadísticas por estado (Cambio 4) ────────────────────────────── */}
