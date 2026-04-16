@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Pencil, Trash2, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle } from 'lucide-react'
+import { Pencil, Trash2, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle, XCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -417,10 +417,10 @@ export default function PaginaUbicacionesDocs() {
             </button>
             <button
               onClick={() => abrirConfirmacionEliminar(u)}
-              className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
-              title="Desactivar"
+              className="p-1.5 rounded-lg hover:bg-orange-50 text-texto-muted hover:text-orange-500 transition-colors"
+              title="Quitar de la BD"
             >
-              <Trash2 size={14} />
+              <XCircle size={14} />
             </button>
           </div>
         </div>
