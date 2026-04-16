@@ -389,7 +389,7 @@ export default function PaginaUbicacionesDocs() {
             {u.activo ? tc('activo') : tc('inactivo')}
           </Insignia>
 
-          <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-0.5 transition-opacity">
             <button
               onClick={() => toggleHabilitada(u)}
               className={`p-1.5 rounded-lg transition-colors ${
