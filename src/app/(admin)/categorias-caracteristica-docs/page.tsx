@@ -530,8 +530,8 @@ export default function PaginaCategoriasCaracteristicaDocs() {
 
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
           <div className="flex gap-3 justify-end pt-2">
+            <Boton variante="secundario" onClick={() => setModalCat(false)}>Salir</Boton>
             <Boton variante="primario" onClick={() => guardarCat(false)} cargando={guardandoCat}>{tc('guardar')}</Boton>
-            <Boton variante="secundario" onClick={() => guardarCat(true)} cargando={guardandoCat}>Guardar y salir</Boton>
           </div>
         </div>
       </Modal>

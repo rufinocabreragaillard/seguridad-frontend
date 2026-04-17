@@ -810,11 +810,11 @@ export default function PaginaConversaciones() {
 
         {/* Acciones del modal */}
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-borde">
+          <Boton variante="secundario" onClick={() => setModalAbierto(false)}>
+            Salir
+          </Boton>
           <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
             Guardar
-          </Boton>
-          <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
-            Guardar y salir
           </Boton>
         </div>
       </Modal>

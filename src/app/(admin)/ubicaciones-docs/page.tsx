@@ -634,14 +634,11 @@ export default function PaginaUbicacionesDocs() {
           )}
 
           <div className="flex gap-3 justify-end pt-2">
+            <Boton variante="secundario" onClick={() => setModal(false)}>
+              Salir
+            </Boton>
             <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
               {tc('guardar')}
-            </Boton>
-            <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
-              Guardar y salir
-            </Boton>
-            <Boton variante="contorno" onClick={() => setModal(false)}>
-              Cerrar
             </Boton>
           </div>
         </div>

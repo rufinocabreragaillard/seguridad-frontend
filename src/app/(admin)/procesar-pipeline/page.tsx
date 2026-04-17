@@ -1004,9 +1004,8 @@ export default function PaginaCargaDocsUsuario() {
           )}
           {errorUb && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorUb}</p></div>}
           <div className="flex gap-3 justify-end pt-2">
+            <Boton variante="secundario" onClick={() => setModalUb(false)}>Salir</Boton>
             <Boton variante="primario" onClick={() => guardarUb(false)} cargando={guardandoUb}>Guardar</Boton>
-            <Boton variante="secundario" onClick={() => guardarUb(true)} cargando={guardandoUb}>Guardar y salir</Boton>
-            <Boton variante="contorno" onClick={() => setModalUb(false)}>Cerrar</Boton>
           </div>
         </div>
       </Modal>

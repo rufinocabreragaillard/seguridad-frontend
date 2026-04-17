@@ -672,7 +672,7 @@ export default function PaginaUsuariosSemilla() {
               )}
 
               <div className="flex gap-3 justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>Cancelar</Boton>
+                <Boton variante="secundario" onClick={() => setModalAbierto(false)}>Salir</Boton>
                 <Boton variante="primario" onClick={crearUsuarioSemilla} cargando={creandoSemilla}>
                   Crear usuario semilla
                 </Boton>
@@ -727,9 +727,8 @@ export default function PaginaUsuariosSemilla() {
           )}
 
           <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="contorno" onClick={() => setModalAbierto(false)}>Cancelar</Boton>
+            <Boton variante="secundario" onClick={() => setModalAbierto(false)}>Salir</Boton>
             <Boton variante="primario" onClick={guardar} cargando={guardando}>Guardar</Boton>
-            <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Guardar y Salir</Boton>
           </div>
             </>
           )}
@@ -893,9 +892,8 @@ export default function PaginaUsuariosSemilla() {
                 </div>
               )}
               <div className="flex gap-3 justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>Cancelar</Boton>
+                <Boton variante="secundario" onClick={() => setModalAbierto(false)}>Salir</Boton>
                 <Boton variante="primario" onClick={guardar} cargando={guardando}>Guardar</Boton>
-                <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Guardar y Salir</Boton>
               </div>
             </div>
           )}
@@ -1028,9 +1026,8 @@ export default function PaginaUsuariosSemilla() {
                 </div>
               )}
               <div className="flex gap-3 justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cerrar')}</Boton>
+                <Boton variante="secundario" onClick={() => setModalAbierto(false)}>Salir</Boton>
                 <Boton variante="primario" onClick={guardar} cargando={guardando}>Guardar</Boton>
-                <Boton variante="primario" onClick={async () => { if (await guardar()) setModalAbierto(false) }} cargando={guardando}>Guardar y Salir</Boton>
               </div>
             </div>
           )}

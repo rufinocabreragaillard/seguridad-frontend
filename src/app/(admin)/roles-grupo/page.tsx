@@ -249,7 +249,7 @@ export default function PaginaRolesGrupo() {
               </div>
             </div>
             {errorRol && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorRol}</p></div>}
-            <div className="flex gap-3 justify-end pt-2"><Boton variante="primario" onClick={() => guardarRol(false)} cargando={guardandoRol}>Guardar</Boton><Boton variante="secundario" onClick={() => guardarRol(true)} cargando={guardandoRol}>Guardar y salir</Boton></div>
+            <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalRol(false)}>Salir</Boton><Boton variante="primario" onClick={() => guardarRol(false)} cargando={guardandoRol}>Guardar</Boton></div>
           </>)}
           {tabModalRol === 'funciones' && rolEditando && (
             <div className="flex flex-col gap-4">
@@ -300,7 +300,7 @@ export default function PaginaRolesGrupo() {
                 </div>
               ))}</div>}
               {errorRol && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorRol}</p></div>}
-              <div className="flex justify-end pt-2"><Boton variante="secundario" onClick={() => setModalRol(false)}>Guardar y salir</Boton></div>
+              <div className="flex justify-end pt-2"><Boton variante="secundario" onClick={() => setModalRol(false)}>Cerrar</Boton></div>
             </div>
           )}
         </div>

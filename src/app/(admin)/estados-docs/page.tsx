@@ -209,11 +209,11 @@ export default function PaginaEstadosDocs() {
                 onChange={(e) => crud.updateForm('prompt', e.target.value)}
               />
               <div className="flex gap-3 justify-end">
+                <Boton variante="secundario" tamano="sm" onClick={crud.cerrarModal}>
+                  Salir
+                </Boton>
                 <Boton variante="primario" tamano="sm" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
                   {tc('guardar')}
-                </Boton>
-                <Boton variante="secundario" tamano="sm" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
-                  Guardar y salir
                 </Boton>
               </div>
             </div>
@@ -232,11 +232,11 @@ export default function PaginaEstadosDocs() {
                 onChange={(e) => crud.updateForm('system_prompt', e.target.value)}
               />
               <div className="flex gap-3 justify-end">
+                <Boton variante="secundario" tamano="sm" onClick={crud.cerrarModal}>
+                  Salir
+                </Boton>
                 <Boton variante="primario" tamano="sm" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
                   {tc('guardar')}
-                </Boton>
-                <Boton variante="secundario" tamano="sm" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
-                  Guardar y salir
                 </Boton>
               </div>
             </div>
@@ -251,11 +251,11 @@ export default function PaginaEstadosDocs() {
           {/* Botones principales (solo en tab datos o al crear) */}
           {(!crud.editando || tabModal === 'datos') && (
             <div className="flex gap-3 justify-end pt-2">
+              <Boton variante="secundario" onClick={crud.cerrarModal}>
+                Salir
+              </Boton>
               <Boton variante="primario" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
                 {tc('guardar')}
-              </Boton>
-              <Boton variante="secundario" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
-                Guardar y salir
               </Boton>
             </div>
           )}

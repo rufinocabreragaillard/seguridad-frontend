@@ -350,8 +350,8 @@ export default function PaginaEntidades() {
               )}
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="secundario" onClick={() => setModalEntidad(false)}>Salir</Boton>
                 <Boton variante="primario" onClick={() => guardarEntidad(false)} cargando={guardando}>{tc('guardar')}</Boton>
-                <Boton variante="secundario" onClick={() => guardarEntidad(true)} cargando={guardando}>Guardar y salir</Boton>
               </div>
             </>
           )}
@@ -370,8 +370,8 @@ export default function PaginaEntidades() {
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="secundario" onClick={() => setModalEntidad(false)}>Salir</Boton>
                 <Boton variante="primario" onClick={() => guardarEntidad(false)} cargando={guardando}>{tc('guardar')}</Boton>
-                <Boton variante="secundario" onClick={() => guardarEntidad(true)} cargando={guardando}>Guardar y salir</Boton>
               </div>
             </div>
           )}
@@ -390,8 +390,8 @@ export default function PaginaEntidades() {
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <div className="flex gap-3 justify-end pt-2">
+                <Boton variante="secundario" onClick={() => setModalEntidad(false)}>Salir</Boton>
                 <Boton variante="primario" onClick={() => guardarEntidad(false)} cargando={guardando}>{tc('guardar')}</Boton>
-                <Boton variante="secundario" onClick={() => guardarEntidad(true)} cargando={guardando}>Guardar y salir</Boton>
               </div>
             </div>
           )}

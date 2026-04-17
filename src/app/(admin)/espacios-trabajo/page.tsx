@@ -433,7 +433,7 @@ export default function EspaciosTrabajoPage() {
             </div>
             {error && <p className="text-sm text-error">{error}</p>}
             <div className="flex justify-end gap-2 pt-2">
-              <Boton variante="contorno" onClick={() => setModalAbierto(false)}>Cancelar</Boton>
+              <Boton variante="secundario" onClick={() => setModalAbierto(false)}>Salir</Boton>
               <Boton variante="primario" onClick={guardar} cargando={guardando}>
                 {editando ? 'Guardar cambios' : 'Crear espacio'}
               </Boton>

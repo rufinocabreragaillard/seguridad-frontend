@@ -721,11 +721,11 @@ export default function PaginaCompromisos() {
 
         {/* Botones del modal */}
         <div className="flex gap-3 justify-end pt-4 mt-4 border-t border-borde">
+          <Boton variante="secundario" onClick={() => setModalAbierto(false)}>
+            Salir
+          </Boton>
           <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
             Guardar
-          </Boton>
-          <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
-            Guardar y salir
           </Boton>
         </div>
       </Modal>
