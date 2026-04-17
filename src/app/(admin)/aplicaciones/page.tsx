@@ -15,7 +15,7 @@ import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { TIPOS_ELEMENTO, ETIQUETA_TIPO, DESCRIPCION_TIPO, etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
 
-type FuncionApp = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }
+type FuncionApp = { codigo_funcion: string; orden: number; inicial: boolean; funciones: { nombre_funcion: string } }
 type GrupoApp = { codigo_grupo: string; grupos_entidades: { nombre_grupo: string } }
 
 export default function PaginaAplicaciones() {
@@ -350,6 +350,24 @@ export default function PaginaAplicaciones() {
                         <div className="font-medium truncate">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</div>
                         <div className="text-xs text-texto-muted font-mono">{fa.codigo_funcion}</div>
                       </div>
+                      <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Marcar como función inicial de la aplicación">
+                        <input
+                          type="checkbox"
+                          checked={!!fa.inicial}
+                          onChange={async (e) => {
+                            if (!appEditando) return
+                            const nuevo = e.target.checked
+                            try {
+                              await aplicacionesApi.actualizarRelFuncion(appEditando.codigo_aplicacion, fa.codigo_funcion, { inicial: nuevo })
+                              cargarFuncionesApp(appEditando.codigo_aplicacion)
+                            } catch (err) {
+                              setErrorApp(err instanceof Error ? err.message : 'Error')
+                            }
+                          }}
+                          className="w-4 h-4 rounded accent-primario"
+                        />
+                        <span className="text-texto-muted">Inicial</span>
+                      </label>
                       <button onClick={() => quitarFuncionApp(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
                     </li>
                   ))}

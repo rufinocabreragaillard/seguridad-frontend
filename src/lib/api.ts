@@ -272,7 +272,7 @@ export const aplicacionesApi = {
   reordenar: (orden: { codigo_aplicacion: string; orden: number }[]) =>
     api.put('/aplicaciones/reordenar', orden),
   listarFunciones: (id: string) =>
-    api.get<{ codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }[]>(
+    api.get<{ codigo_funcion: string; orden: number; inicial: boolean; funciones: { nombre_funcion: string } }[]>(
       `/aplicaciones/${id}/funciones`
     ).then((r) => r.data),
   asignarFuncion: (id: string, codigoFuncion: string) =>
@@ -281,6 +281,8 @@ export const aplicacionesApi = {
     api.delete(`/aplicaciones/${id}/funciones/${codigoFuncion}`),
   reordenarFunciones: (id: string, orden: { codigo_funcion: string; orden: number }[]) =>
     api.put(`/aplicaciones/${id}/funciones/reordenar`, orden),
+  actualizarRelFuncion: (id: string, codigoFuncion: string, datos: { inicial?: boolean; orden?: number }) =>
+    api.patch(`/aplicaciones/${id}/funciones/${codigoFuncion}`, datos),
   listarGrupos: (id: string) =>
     api.get<{ codigo_grupo: string; grupos_entidades: { nombre_grupo: string } }[]>(
       `/aplicaciones/${id}/grupos`
