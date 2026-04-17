@@ -133,10 +133,15 @@ api.interceptors.request.use(async (config) => {
   return config
 })
 
+// Detecta si un mensaje de error contiene un código SQLSTATE de PostgreSQL
+function _esErrorPostgres(msg: string): boolean {
+  return /['"]code['"]\s*:\s*['"][0-9A-Z]{5}['"]/.test(msg)
+}
+
 // Interceptor: manejo uniforme de errores
 api.interceptors.response.use(
   (res) => res,
-  (error: AxiosError) => {
+  async (error: AxiosError) => {
     const detail = (error.response?.data as { detail?: unknown })?.detail
     let msg: string
     if (Array.isArray(detail)) {
@@ -147,6 +152,30 @@ api.interceptors.response.use(
     } else {
       msg = error.message || 'Error desconocido'
     }
+
+    // Si es un error PostgreSQL, pedirle al LLM que lo explique en lenguaje claro
+    if (_esErrorPostgres(msg)) {
+      try {
+        const token = await obtenerToken()
+        const r = await fetch(`${BASE_URL}/utils/explicar-error`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ error_tecnico: msg }),
+        })
+        if (r.ok) {
+          const data = await r.json()
+          if (data.es_error_tecnico && data.mensaje_usuario) {
+            msg = data.mensaje_usuario
+          }
+        }
+      } catch {
+        // Mantener el mensaje original si falla la llamada al LLM
+      }
+    }
+
     return Promise.reject(new Error(msg))
   }
 )
