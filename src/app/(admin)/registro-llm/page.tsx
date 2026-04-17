@@ -254,8 +254,9 @@ export default function PaginaRegistroLLM() {
             )}
             {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
             <div className="flex gap-3 justify-end pt-2">
-              <Boton variante="secundario" onClick={() => setModal(false)}>Salir</Boton>
-              <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>{tc('guardar')}</Boton>
+              <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>{tc('grabar')}</Boton>
+              <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>{tc('grabarYSalir')}</Boton>
+              <Boton variante="contorno" onClick={() => setModal(false)}>{tc('salir')}</Boton>
             </div>
           </>)}
 
@@ -295,7 +296,7 @@ export default function PaginaRegistroLLM() {
               )}
 
               <div className="flex justify-end pt-2">
-                <Boton variante="secundario" onClick={() => setModal(false)}>Cerrar</Boton>
+                <Boton variante="contorno" onClick={() => setModal(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}

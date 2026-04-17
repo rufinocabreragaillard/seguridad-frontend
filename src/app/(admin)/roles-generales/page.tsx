@@ -510,14 +510,14 @@ function TabRolesGlobales() {
                 </label>
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <Boton variante="secundario" onClick={() => setModalAbierto(false)}>
-                  {tc('salir')}
+                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
+                  {editando ? tc('grabar') : t('crearRol')}
                 </Boton>
                 <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
                   {tc('grabarYSalir')}
                 </Boton>
-                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
-                  {editando ? tc('grabar') : t('crearRol')}
+                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>
+                  {tc('salir')}
                 </Boton>
               </div>
             </>

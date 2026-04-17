@@ -188,7 +188,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     setModalTipo(true)
   }
 
-  const guardarTipo = async () => {
+  const guardarTipo = async (cerrar = true) => {
     if (!catSeleccionada) return
     if (!formTipo.nombre_tipo_docs.trim()) {
       setErrorTipo(t('errorNombreObligatorio'))
@@ -207,7 +207,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           nombre_tipo_docs: formTipo.nombre_tipo_docs,
         })
       }
-      setModalTipo(false)
+      if (cerrar) setModalTipo(false)
       cargarTipos()
     } catch (e) {
       setErrorTipo(e instanceof Error ? e.message : tc('errorAlGuardar'))
@@ -530,8 +530,9 @@ export default function PaginaCategoriasCaracteristicaDocs() {
 
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
           <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="secundario" onClick={() => setModalCat(false)}>Salir</Boton>
-            <Boton variante="primario" onClick={() => guardarCat(false)} cargando={guardandoCat}>{tc('guardar')}</Boton>
+            <Boton variante="primario" onClick={() => guardarCat(false)} cargando={guardandoCat}>{tc('grabar')}</Boton>
+            <Boton variante="secundario" onClick={() => guardarCat(true)} cargando={guardandoCat}>{tc('grabarYSalir')}</Boton>
+            <Boton variante="contorno" onClick={() => setModalCat(false)}>{tc('salir')}</Boton>
           </div>
         </div>
       </Modal>
@@ -547,8 +548,9 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           )}
           {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}
           <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="contorno" onClick={() => setModalTipo(false)}>{tc('cancelar')}</Boton>
-            <Boton variante="primario" onClick={guardarTipo} cargando={guardandoTipo}>{tipoEditando ? tc('guardar') : tc('crear')}</Boton>
+            <Boton variante="primario" onClick={() => guardarTipo(false)} cargando={guardandoTipo}>{tipoEditando ? tc('grabar') : tc('crear')}</Boton>
+            <Boton variante="secundario" onClick={() => guardarTipo(true)} cargando={guardandoTipo}>{tc('grabarYSalir')}</Boton>
+            <Boton variante="contorno" onClick={() => setModalTipo(false)}>{tc('salir')}</Boton>
           </div>
         </div>
       </Modal>
