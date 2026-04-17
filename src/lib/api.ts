@@ -168,7 +168,9 @@ api.interceptors.response.use(
         if (r.ok) {
           const data = await r.json()
           if (data.es_error_tecnico && data.mensaje_usuario) {
-            msg = data.mensaje_usuario
+            msg = data.detalle_tecnico
+              ? `${data.mensaje_usuario}\n\nDetalle técnico: ${data.detalle_tecnico}`
+              : data.mensaje_usuario
           }
         }
       } catch {
