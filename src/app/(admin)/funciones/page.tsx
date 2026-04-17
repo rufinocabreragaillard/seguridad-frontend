@@ -40,6 +40,7 @@ export default function PaginaFunciones() {
     codigo_funcion: string
     nombre: string
     descripcion: string
+    ayuda_de_funcion: string
     url_funcion: string
     alias_de_funcion: string
     icono_de_funcion: string
@@ -53,7 +54,7 @@ export default function PaginaFunciones() {
     perm_update: boolean
     perm_delete: boolean
   }>({
-    codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '',
+    codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
     alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: '',
     tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt: '',
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
@@ -95,7 +96,7 @@ export default function PaginaFunciones() {
   const abrirNuevaFuncion = () => {
     setFuncionEditando(null)
     setFormFuncion({
-      codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '',
+      codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
       alias_de_funcion: '', icono_de_funcion: '',
       codigo_aplicacion_origen: aplicacionActiva || '',
       tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt: '',
@@ -109,6 +110,7 @@ export default function PaginaFunciones() {
       codigo_funcion: f.codigo_funcion,
       nombre: f.nombre,
       descripcion: f.descripcion || '',
+      ayuda_de_funcion: f.ayuda_de_funcion || '',
       url_funcion: f.url_funcion || '',
       alias_de_funcion: f.alias_de_funcion || '',
       icono_de_funcion: f.icono_de_funcion || '',
@@ -131,6 +133,7 @@ export default function PaginaFunciones() {
       const payload: Record<string, unknown> = {
         nombre: formFuncion.nombre,
         descripcion: formFuncion.descripcion || undefined,
+        ayuda_de_funcion: formFuncion.ayuda_de_funcion || undefined,
         url_funcion: formFuncion.url_funcion || undefined,
         alias_de_funcion: formFuncion.alias_de_funcion || undefined,
         icono_de_funcion: formFuncion.icono_de_funcion || undefined,
@@ -331,7 +334,7 @@ export default function PaginaFunciones() {
               )}
             </div>
             {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-            <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Cerrar</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{funcionEditando ? tc('guardar') : t('crearFuncion')}</Boton></div>
+            <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Salir</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{funcionEditando ? tc('guardar') : t('crearFuncion')}</Boton></div>
           </>)}
 
           {/* Tab Otros Datos */}
@@ -340,6 +343,10 @@ export default function PaginaFunciones() {
               <div className="col-span-2">
                 <label className="text-sm font-medium text-texto">Descripción</label>
                 <textarea value={formFuncion.descripcion} onChange={(e) => setFormFuncion({ ...formFuncion, descripcion: e.target.value })} rows={2} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none" />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium text-texto">Ayuda para el usuario</label>
+                <textarea value={formFuncion.ayuda_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, ayuda_de_funcion: e.target.value })} rows={2} placeholder="Texto descriptivo visible para el usuario final bajo el ícono de la función" className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none placeholder:text-texto-muted" />
               </div>
               <div className="col-span-2">
                 <label className="text-sm font-medium text-texto mb-2 block">Permisos de operación</label>
@@ -369,7 +376,7 @@ export default function PaginaFunciones() {
               </div>
             </div>
             {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-            <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Cerrar</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{funcionEditando ? tc('guardar') : t('crearFuncion')}</Boton></div>
+            <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Salir</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{funcionEditando ? tc('guardar') : t('crearFuncion')}</Boton></div>
           </>)}
 
           {/* Tab Aplicaciones */}
@@ -394,7 +401,7 @@ export default function PaginaFunciones() {
                 onChange={(e) => setFormFuncion({ ...formFuncion, prompt: e.target.value })}
               />
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Cerrar</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Salir</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
             </div>
           )}
 
@@ -409,7 +416,7 @@ export default function PaginaFunciones() {
                 onChange={(e) => setFormFuncion({ ...formFuncion, system_prompt: e.target.value })}
               />
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Cerrar</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Salir</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
             </div>
           )}
 
@@ -436,7 +443,7 @@ export default function PaginaFunciones() {
                 <p className="text-xs text-texto-muted">Sin modelo seleccionado. El chat fallará si esta función se usa para conversaciones LLM.</p>
               )}
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
-              <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Cerrar</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
+              <div className="flex gap-3 justify-end pt-2"><Boton variante="secundario" onClick={() => setModalFuncion(false)}>Salir</Boton><Boton variante="primario" onClick={() => guardarFuncion(false)} cargando={guardandoFuncion}>{tc('guardar')}</Boton></div>
             </div>
           )}
         </div>

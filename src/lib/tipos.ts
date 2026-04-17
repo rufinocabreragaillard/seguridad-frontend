@@ -179,6 +179,7 @@ export interface Funcion {
   codigo_funcion: string
   nombre: string
   descripcion?: string
+  ayuda_de_funcion?: string | null
   url_funcion?: string
   alias_de_funcion?: string
   icono_de_funcion?: string
