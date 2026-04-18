@@ -32,7 +32,7 @@ body {
   }
   /* Número grande en cards de estadísticas (dashboard, documentos-dashboard) */
   .stat-value {
-    @apply text-3xl font-bold;
+    @apply text-[22px] font-bold;
   }
   /* Número mediano en cards de estadísticas y resultados de proceso */
   .stat-number {
