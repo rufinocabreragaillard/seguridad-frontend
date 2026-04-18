@@ -33,7 +33,7 @@ export function Modal({ abierto, alCerrar, titulo, descripcion, children, classN
           {/* Header fijo — no scrollea */}
           <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b border-borde">
             <div>
-              <Dialog.Title className="text-base font-normal text-texto">{titulo}</Dialog.Title>
+              <Dialog.Title className="text-base font-semibold text-texto">{titulo}</Dialog.Title>
               {descripcion && (
                 <Dialog.Description className="text-sm text-texto-muted mt-0.5">
                   {descripcion}
