@@ -20,11 +20,6 @@ import type { LocaleSoportado } from '@/lib/tipos'
 // Cache módulo-nivel para no re-fetchear en cada render
 let _localesCache: LocaleSoportado[] | null = null
 
-function cambiarLocale(nuevoLocale: Locale) {
-  document.cookie = `NEXT_LOCALE=${nuevoLocale};path=/;max-age=31536000`
-  window.location.reload()
-}
-
 export function Header({ titulo }: { titulo?: string }) {
   const t = useTranslations('header')
   const tc = useTranslations('common')
@@ -80,6 +75,16 @@ export function Header({ titulo }: { titulo?: string }) {
     } finally {
       setCambiando(false)
     }
+  }
+
+  const handleCambiarLocale = async (nuevoLocale: Locale) => {
+    document.cookie = `NEXT_LOCALE=${nuevoLocale};path=/;max-age=31536000`
+    if (usuario?.codigo_usuario) {
+      try {
+        await usuariosApi.actualizar(usuario.codigo_usuario, { locale: nuevoLocale })
+      } catch { /* silencioso */ }
+    }
+    window.location.reload()
   }
 
   const handleCambiarAplicacion = async (codigoApp: string) => {
@@ -378,7 +383,7 @@ export function Header({ titulo }: { titulo?: string }) {
                   <button
                     key={codigo}
                     type="button"
-                    onClick={() => cambiarLocale(codigo as Locale)}
+                    onClick={() => handleCambiarLocale(codigo as Locale)}
                     title={typeof loc === 'string' ? codigo : loc.nombre_es}
                     className={`text-xs px-2.5 py-1 rounded border transition-colors ${
                       activo
