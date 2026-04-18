@@ -3,6 +3,27 @@
  * Soporta: PDF, DOCX, PPTX/POTX, XLSX, XLS, TXT, CSV, MD, JSON, XML, HTML
  */
 
+/** Timeout máximo por archivo (ms). Archivos con firma digital o cifrado complejo
+ *  pueden bloquear el parser varios segundos. Con este límite se marca NO_ESCANEABLE
+ *  en vez de bloquear toda la cola. */
+const TIMEOUT_EXTRACCION_MS = 8_000
+
+/**
+ * Envuelve una promesa con un timeout.
+ * Si transcurre más de `ms` lanza ArchivoNoEscaneable en vez de esperar indefinidamente.
+ */
+function conTimeout<T>(promesa: Promise<T>, ms: number, nombreArchivo: string): Promise<T> {
+  return Promise.race([
+    promesa,
+    new Promise<T>((_, reject) =>
+      setTimeout(
+        () => reject(new ArchivoNoEscaneable(`Extracción superó ${ms / 1000}s: ${nombreArchivo}`)),
+        ms,
+      )
+    ),
+  ])
+}
+
 const EXTENSIONES_TEXTO = new Set([
   'txt', 'csv', 'md', 'json', 'xml', 'html', 'htm', 'log', 'sql', 'py', 'js', 'ts', 'yaml', 'yml', 'ini', 'cfg',
 ])
@@ -20,22 +41,22 @@ export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle): P
 
   // PDF
   if (ext === 'pdf') {
-    return extraerTextoPDF(file)
+    return conTimeout(extraerTextoPDF(file), TIMEOUT_EXTRACCION_MS, file.name)
   }
 
   // Word (.docx). Nota: .doc binario antiguo NO soportado.
   if (ext === 'docx') {
-    return extraerTextoDOCX(file)
+    return conTimeout(extraerTextoDOCX(file), TIMEOUT_EXTRACCION_MS, file.name)
   }
 
   // Excel (.xlsx / .xls / .xlsm)
   if (ext === 'xlsx' || ext === 'xls' || ext === 'xlsm') {
-    return extraerTextoExcel(file)
+    return conTimeout(extraerTextoExcel(file), TIMEOUT_EXTRACCION_MS, file.name)
   }
 
   // PowerPoint (.pptx / .potx / .ppsx) — son ZIP con XML internos
   if (EXTENSIONES_PPTX.has(ext)) {
-    return extraerTextoPPTX(file)
+    return conTimeout(extraerTextoPPTX(file), TIMEOUT_EXTRACCION_MS, file.name)
   }
 
   // Archivos de texto plano
@@ -199,7 +220,15 @@ async function extraerTextoExcel(file: File): Promise<string> {
   try {
     const XLSX = await import('xlsx')
     const arrayBuffer = await file.arrayBuffer()
-    const workbook = XLSX.read(arrayBuffer, { type: 'array' })
+    // cellFormula/cellStyles/cellDates/cellNF=false evitan procesamiento innecesario
+    // (fórmulas, estilos, fechas como objetos) — reduce tiempo de parsing ~30-50%
+    const workbook = XLSX.read(arrayBuffer, {
+      type: 'array',
+      cellFormula: false,
+      cellStyles: false,
+      cellDates: false,
+      cellNF: false,
+    })
     const partes: string[] = []
     for (const nombreHoja of workbook.SheetNames) {
       const hoja = workbook.Sheets[nombreHoja]

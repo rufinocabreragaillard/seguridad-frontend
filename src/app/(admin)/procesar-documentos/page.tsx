@@ -751,7 +751,9 @@ function PaginaProcesarDocumentosInterna() {
               setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: 'NO_ENCONTRADO', tiempo_ms: Date.now() - t0 } : c))
             } else {
               const ext = (item.ubicacion_documento.split('.').pop() || '').toLowerCase()
+              const tExtraccion = Date.now()
               const contenido = await extraerTextoDeArchivo(fileHandle)
+              const subDuracionMs = Date.now() - tExtraccion
               if (contenido === null) {
                 await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', formato_no_soportado: ext || 'desconocido' })
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `NO_ESCANEABLE (.${ext})`, tiempo_ms: Date.now() - t0 } : c))
@@ -787,6 +789,7 @@ function PaginaProcesarDocumentosInterna() {
                   texto_fuente: textoTruncado,
                   caracteres: contenido.length,
                   fecha_inicio_extraccion: new Date(t0).toISOString(),
+                  sub_duracion_ms: subDuracionMs,
                 })
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `METADATA (${res.caracteres} chars)`, tiempo_ms: Date.now() - t0 } : c))
               }

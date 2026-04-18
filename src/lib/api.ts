@@ -513,6 +513,7 @@ export const documentosApi = {
       caracteres?: number
       paginas?: number
       fecha_inicio_extraccion?: string
+      sub_duracion_ms?: number
       archivo_no_encontrado?: boolean
       formato_no_soportado?: string
       contenido_vacio?: boolean

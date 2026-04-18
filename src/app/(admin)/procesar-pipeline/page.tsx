@@ -414,10 +414,12 @@ export default function PaginaCargaDocsUsuario() {
             await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true })
           } else {
             const ext = (doc.ubicacion_documento.split('.').pop() || '').toLowerCase()
+            const tExtraccion = Date.now()
             const contenido = await extraerTextoDeArchivo(fh)
+            const subDuracionMs = Date.now() - tExtraccion
             if (contenido === null || contenido === NECESITA_OCR) await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', formato_no_soportado: ext })
             else if (!contenido.trim()) await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
-            else await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: contenido, caracteres: contenido.length, fecha_inicio_extraccion: new Date(t0).toISOString() })
+            else await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: contenido, caracteres: contenido.length, fecha_inicio_extraccion: new Date(t0).toISOString(), sub_duracion_ms: subDuracionMs })
           }
         }
       } catch { /* continuar */ }
