@@ -672,8 +672,16 @@ export interface LocaleSoportado {
   orden: number
 }
 
+export interface ProgresoTraduccion {
+  idioma_actual: string | null
+  idiomas_ok: string[]
+  total: number
+}
+
 export interface EstadoTraducciones {
   pendiente: boolean
+  generando: boolean
+  progreso: ProgresoTraduccion | null
   ultima_generacion: string | null
   cambios_pendientes: number
   idiomas: string[]

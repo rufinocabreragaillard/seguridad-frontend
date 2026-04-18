@@ -1190,11 +1190,13 @@ export const traduccionesApi = {
   eliminarLocale: (codigo: string) =>
     api.delete(`/traducciones/locales/${codigo}`),
 
+  // Devuelve 202 inmediato; la generación corre en background.
+  // Usa polling de /traducciones/estado para seguir el progreso.
   generar: (modo: 'completo' | 'incremental', idiomas?: string[]) =>
-    api.post<{ generadas: number; textos_fuente?: number; idiomas: string[]; modo: string; mensaje?: string }>(
+    api.post<{ status: string; mensaje: string }>(
       '/traducciones/generar',
       { modo, idiomas },
-      { timeout: 300_000 }  // 5 minutos — generación puede tardar
+      { timeout: 30_000 }  // 30s — solo esperar la respuesta 202
     ).then((r) => r.data),
 }
 
