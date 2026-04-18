@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/tabla-crud'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Insignia } from '@/components/ui/insignia'
+import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { cargosApi, entidadesApi, rolesApi } from '@/lib/api'
 import type { Cargo, RolCargo, Entidad, Rol } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
@@ -166,22 +167,10 @@ export default function PaginaCargos() {
     } catch (e) { setErrorRol(e instanceof Error ? e.message : t('errorAlQuitarRol')) }
   }
 
-  const moverRol = async (idx: number, dir: 'arriba' | 'abajo') => {
-    if (!crud.editando) return
-    const lista = [...rolesCargo].sort((a, b) => a.orden - b.orden)
-    const swapIdx = dir === 'arriba' ? idx - 1 : idx + 1
-    if (swapIdx < 0 || swapIdx >= lista.length) return
-    const ordenA = lista[idx].orden
-    const ordenB = lista[swapIdx].orden
-    lista[idx].orden = ordenB
-    lista[swapIdx].orden = ordenA
-    ;[lista[idx], lista[swapIdx]] = [lista[swapIdx], lista[idx]]
-    setRolesCargo(lista)
-    try {
-      await cargosApi.reordenarRoles(crud.editando.codigo_cargo, lista.map((r) => ({ id_rol: r.id_rol, orden: r.orden })))
-    } catch {
-      cargarRolesCargo(crud.editando.codigo_cargo)
-    }
+  const reordenarRolesCargo = async (nuevos: typeof rolesCargo) => {
+    setRolesCargo(nuevos)
+    try { await cargosApi.reordenarRoles(crud.editando!.codigo_cargo, nuevos.map(r => ({ id_rol: r.id_rol, orden: r.orden ?? 0 }))) }
+    catch { if (crud.editando) cargarRolesCargo(crud.editando.codigo_cargo) }
   }
 
   // ── Lista ordenada ──────────────────────────────────────────────────────────
@@ -440,49 +429,45 @@ export default function PaginaCargos() {
               ) : rolesCargo.length === 0 ? (
                 <p className="text-sm text-texto-muted italic">{t('sinRoles')}</p>
               ) : (
-                <Tabla>
-                  <TablaCabecera>
-                    <tr>
-                      <TablaTh>{t('colRol')}</TablaTh>
-                      <TablaTh></TablaTh>
-                      <TablaTh alineacion="derecha">{t('colOrden')}</TablaTh>
-                      <TablaTh alineacion="derecha">{t('colAccion')}</TablaTh>
-                    </tr>
-                  </TablaCabecera>
-                  <TablaCuerpo>
-                    {[...rolesCargo]
-                      .sort((a, b) => a.orden - b.orden)
-                      .map((rc, idx, arr) => (
-                        <TablaFila key={rc.id_rol}>
-                          <TablaTd>
-                            <span className="font-medium text-sm">
-                              {rc.roles?.nombre_rol ?? `Rol ${rc.id_rol}`}
-                            </span>
-                          </TablaTd>
-                          <TablaTd>
-                            {rc.roles?.codigo_grupo == null && (
-                              <Insignia variante="secundario">{t('global')}</Insignia>
-                            )}
-                          </TablaTd>
-                          <TablaTd alineacion="derecha">
-                            <div className="flex items-center justify-end gap-1">
-                              <button onClick={() => moverRol(idx, 'arriba')} disabled={idx === 0} className="p-1 rounded hover:bg-primario/10 disabled:opacity-30">
-                                <ChevronUp className="w-4 h-4" />
-                              </button>
-                              <button onClick={() => moverRol(idx, 'abajo')} disabled={idx === arr.length - 1} className="p-1 rounded hover:bg-primario/10 disabled:opacity-30">
-                                <ChevronDown className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </TablaTd>
-                          <TablaTd alineacion="derecha">
-                            <Boton variante="peligro" tamano="sm" onClick={() => quitarRol(rc.id_rol)}>
-                              {t('quitar')}
-                            </Boton>
-                          </TablaTd>
-                        </TablaFila>
-                      ))}
-                  </TablaCuerpo>
-                </Tabla>
+                <SortableDndContext
+                  items={[...rolesCargo].sort((a, b) => a.orden - b.orden) as unknown as Record<string, unknown>[]}
+                  getId={(r) => String((r as { id_rol: number }).id_rol)}
+                  onReorder={(n) => reordenarRolesCargo(n as typeof rolesCargo)}
+                >
+                  <Tabla>
+                    <TablaCabecera>
+                      <tr>
+                        <TablaTh className="w-8" />
+                        <TablaTh>{t('colRol')}</TablaTh>
+                        <TablaTh></TablaTh>
+                        <TablaTh alineacion="derecha">{t('colAccion')}</TablaTh>
+                      </tr>
+                    </TablaCabecera>
+                    <TablaCuerpo>
+                      {[...rolesCargo]
+                        .sort((a, b) => a.orden - b.orden)
+                        .map((rc) => (
+                          <SortableRow key={rc.id_rol} id={String(rc.id_rol)}>
+                            <TablaTd>
+                              <span className="font-medium text-sm">
+                                {rc.roles?.nombre_rol ?? `Rol ${rc.id_rol}`}
+                              </span>
+                            </TablaTd>
+                            <TablaTd>
+                              {rc.roles?.codigo_grupo == null && (
+                                <Insignia variante="secundario">{t('global')}</Insignia>
+                              )}
+                            </TablaTd>
+                            <TablaTd alineacion="derecha">
+                              <Boton variante="peligro" tamano="sm" onClick={() => quitarRol(rc.id_rol)}>
+                                {t('quitar')}
+                              </Boton>
+                            </TablaTd>
+                          </SortableRow>
+                        ))}
+                    </TablaCuerpo>
+                  </Tabla>
+                </SortableDndContext>
               )}
 
               {errorRol && (

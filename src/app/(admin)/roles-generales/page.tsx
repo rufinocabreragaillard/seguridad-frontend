@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { ArrowDown, ArrowUp, Copy, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { Copy, Pencil, Plus, Search, Trash2, X } from 'lucide-react'
+import { SortableDndContext, SortableRow, SortableListItem } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { Tarjeta, TarjetaCabecera, TarjetaTitulo, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Input } from '@/components/ui/input'
@@ -137,25 +138,10 @@ function TabRolesGlobales() {
     }
   }
 
-  const moverFuncion = async (index: number, direccion: 'arriba' | 'abajo') => {
-    if (!editando) return
-    const lista = [...funcionesRol]
-    const swap = direccion === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const a = lista[index].orden
-    const b = lista[swap].orden
-    lista[index].orden = b
-    lista[swap].orden = a
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setFuncionesRol(lista)
-    try {
-      await rolesApi.reordenarFunciones(
-        editando.id_rol,
-        lista.map((f) => ({ codigo_funcion: f.codigo_funcion, orden: f.orden })),
-      )
-    } catch {
-      cargarFuncionesRol(editando.id_rol)
-    }
+  const reordenarFuncionesRol = async (nuevas: typeof funcionesRol) => {
+    setFuncionesRol(nuevas)
+    try { await rolesApi.reordenarFunciones(editando!.id_rol, nuevas.map(f => ({ codigo_funcion: f.codigo_funcion, orden: f.orden ?? 0 }))) }
+    catch { if (editando) cargarFuncionesRol(editando.id_rol) }
   }
 
   const funcionesDisponibles = todasFunciones.filter(
@@ -168,23 +154,10 @@ function TabRolesGlobales() {
       f.codigo_funcion.toLowerCase().includes(busquedaFuncion.toLowerCase()),
   )
 
-  const moverRol = async (index: number, direccion: 'arriba' | 'abajo') => {
-    const lista = [...roles]
-    const swap = direccion === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const a = lista[index].orden
-    const b = lista[swap].orden
-    lista[index] = { ...lista[index], orden: b }
-    lista[swap] = { ...lista[swap], orden: a }
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setRoles(lista)
-    try {
-      await rolesApi.reordenar(
-        lista.map((r) => ({ id_rol: r.id_rol, orden: r.orden })),
-      )
-    } catch {
-      cargar()
-    }
+  const reordenarRoles = async (nuevos: typeof roles) => {
+    setRoles(nuevos)
+    try { await rolesApi.reordenar(nuevos.map(r => ({ id_rol: r.id_rol, orden: r.orden ?? 0 }))) }
+    catch { cargar() }
   }
 
   const cargar = async () => {
@@ -313,7 +286,7 @@ function TabRolesGlobales() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-borde text-left text-xs uppercase text-texto-muted">
-                  <th className="py-2 pr-2 w-16">Orden</th>
+                  <th className="w-8" />
                   <th className="py-2 pr-4">Tipo</th>
                   <th className="py-2 pr-4">App origen</th>
                   <th className="py-2 pr-4">Nombre</th>
@@ -324,33 +297,14 @@ function TabRolesGlobales() {
                   <th className="py-2 pr-4 w-24 text-right">Acciones</th>
                 </tr>
               </thead>
+              <SortableDndContext items={roles.map(r => String(r.id_rol))} onReorder={(ids) => reordenarRoles(ids.map(id => roles.find(r => String(r.id_rol) === id)!))}>
               <tbody>
-                {roles.map((r, idx) => {
+                {roles.map((r) => {
                   const nombreAppOrigen = r.codigo_aplicacion_origen
                     ? (aplicaciones.find((a) => a.codigo_aplicacion === r.codigo_aplicacion_origen)?.nombre || r.codigo_aplicacion_origen)
                     : '—'
                   return (
-                  <tr key={r.id_rol} className="border-b border-borde/50 hover:bg-surface-hover">
-                    <td className="py-2 pr-2">
-                      <div className="flex flex-col gap-0.5 items-center">
-                        <button
-                          type="button"
-                          onClick={() => moverRol(idx, 'arriba')}
-                          disabled={idx === 0}
-                          className="text-texto-muted hover:text-primario disabled:opacity-30"
-                        >
-                          <ArrowUp size={12} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => moverRol(idx, 'abajo')}
-                          disabled={idx === roles.length - 1}
-                          className="text-texto-muted hover:text-primario disabled:opacity-30"
-                        >
-                          <ArrowDown size={12} />
-                        </button>
-                      </div>
-                    </td>
+                  <SortableRow key={r.id_rol} id={String(r.id_rol)} className="border-b border-borde/50 hover:bg-surface-hover">
                     <td className="py-2 pr-4">
                       <Insignia variante={varianteTipo(r.tipo)}>{etiquetaTipo(r.tipo)}</Insignia>
                     </td>
@@ -384,10 +338,11 @@ function TabRolesGlobales() {
                         </button>
                       </div>
                     </td>
-                  </tr>
+                  </SortableRow>
                   )
                 })}
               </tbody>
+              </SortableDndContext>
             </table>
           </div>
         )}
@@ -582,30 +537,14 @@ function TabRolesGlobales() {
                     Este rol no tiene funciones asignadas.
                   </div>
                 ) : (
+                  <SortableDndContext items={funcionesRol.map(fa => fa.codigo_funcion)} onReorder={(ids) => reordenarFuncionesRol(ids.map(id => funcionesRol.find(fa => fa.codigo_funcion === id)!))}>
                   <ul className="divide-y divide-borde">
-                    {funcionesRol.map((fa, idx) => (
-                      <li
+                    {funcionesRol.map((fa) => (
+                      <SortableListItem
                         key={fa.codigo_funcion}
+                        id={fa.codigo_funcion}
                         className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-fondo"
                       >
-                        <div className="flex flex-col gap-0.5 items-center">
-                          <button
-                            type="button"
-                            onClick={() => moverFuncion(idx, 'arriba')}
-                            disabled={idx === 0}
-                            className="text-texto-muted hover:text-primario disabled:opacity-30"
-                          >
-                            <ArrowUp size={12} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => moverFuncion(idx, 'abajo')}
-                            disabled={idx === funcionesRol.length - 1}
-                            className="text-texto-muted hover:text-primario disabled:opacity-30"
-                          >
-                            <ArrowDown size={12} />
-                          </button>
-                        </div>
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">{fa.funciones?.nombre_funcion}</div>
                           <div className="text-xs text-texto-muted font-mono">{fa.codigo_funcion}</div>
@@ -618,9 +557,10 @@ function TabRolesGlobales() {
                         >
                           <X size={16} />
                         </button>
-                      </li>
+                      </SortableListItem>
                     ))}
                   </ul>
+                  </SortableDndContext>
                 )}
               </div>
 

@@ -1,6 +1,6 @@
 'use client'
 
-import { ChevronUp, ChevronDown, Plus, Trash2 } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -70,26 +70,11 @@ export default function PaginaProcesosGrupo() {
     (a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre_proceso_grupo.localeCompare(b.nombre_proceso_grupo),
   )
 
-  const mover = async (index: number, direccion: 'arriba' | 'abajo') => {
-    const lista = [...filtradosOrdenados]
-    const swap = direccion === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-
-    const ordenA = lista[index].orden ?? 0
-    const ordenB = lista[swap].orden ?? 0
-    const a = { ...lista[index], orden: ordenB }
-    const b = { ...lista[swap], orden: ordenA }
-    lista[index] = b
-    lista[swap] = a
-
+  const reordenar = async (nuevos: ProcesoGrupo[]) => {
     try {
-      await procesosGrupoApi.reordenar(
-        lista.map((p) => ({ id_proceso_grupo: p.id_proceso_grupo, orden: p.orden ?? 0 })),
-      )
+      await procesosGrupoApi.reordenar(nuevos.map(p => ({ id_proceso_grupo: p.id_proceso_grupo, orden: p.orden ?? 0 })))
       crud.cargar()
-    } catch {
-      crud.cargar()
-    }
+    } catch { crud.cargar() }
   }
 
   return (
@@ -122,35 +107,6 @@ export default function PaginaProcesosGrupo() {
 
       <TablaCrud
         columnas={[
-          {
-            titulo: t('colOrden'),
-            render: (p: ProcesoGrupo) => {
-              const idx = filtradosOrdenados.findIndex((x) => x.id_proceso_grupo === p.id_proceso_grupo)
-              return (
-                <div className="flex items-center gap-1">
-                  <div className="flex flex-col">
-                    <button
-                      onClick={() => mover(idx, 'arriba')}
-                      disabled={idx === 0 || !!crud.busqueda}
-                      className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30"
-                      title={tc('subir')}
-                    >
-                      <ChevronUp size={14} />
-                    </button>
-                    <button
-                      onClick={() => mover(idx, 'abajo')}
-                      disabled={idx === filtradosOrdenados.length - 1 || !!crud.busqueda}
-                      className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30"
-                      title={tc('bajar')}
-                    >
-                      <ChevronDown size={14} />
-                    </button>
-                  </div>
-                  <span className="text-xs text-texto-muted w-4 text-center">{p.orden}</span>
-                </div>
-              )
-            },
-          },
           columnaNombre<ProcesoGrupo>(t('colNombre'), (p) => p.nombre_proceso_grupo),
           {
             titulo: t('colTipo'),
@@ -191,6 +147,8 @@ export default function PaginaProcesosGrupo() {
         getId={(p) => String(p.id_proceso_grupo)}
         onEditar={crud.abrirEditar}
         textoVacio={t('sinProcesos')}
+        onReordenar={(nuevos) => reordenar(nuevos as unknown as ProcesoGrupo[])}
+        sortDisabled={!!crud.busqueda}
       />
 
       <Modal

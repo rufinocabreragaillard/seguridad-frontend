@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Pencil, Trash2, X, Download, Search, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Download, Search } from 'lucide-react'
+import { SortableDndContext, SortableRow, SortableListItem } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -144,25 +145,11 @@ export default function PaginaAplicaciones() {
     catch (e) { setErrorApp(e instanceof Error ? e.message : 'Error') }
   }
 
-  const moverFuncionApp = async (index: number, direccion: 'arriba' | 'abajo') => {
-    if (!appEditando) return
-    const lista = [...funcionesApp]
-    const swap = direccion === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const a = lista[index].orden
-    const b = lista[swap].orden
-    lista[index].orden = b
-    lista[swap].orden = a
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setFuncionesApp(lista)
+  const reordenarFuncionesApp = async (nuevas: typeof funcionesApp) => {
+    setFuncionesApp(nuevas)
     try {
-      await aplicacionesApi.reordenarFunciones(
-        appEditando.codigo_aplicacion,
-        lista.map((f) => ({ codigo_funcion: f.codigo_funcion, orden: f.orden })),
-      )
-    } catch {
-      cargarFuncionesApp(appEditando.codigo_aplicacion)
-    }
+      await aplicacionesApi.reordenarFunciones(appEditando!.codigo_aplicacion, nuevas.map(f => ({ codigo_funcion: f.codigo_funcion, orden: f.orden ?? 0 })))
+    } catch { if (appEditando) cargarFuncionesApp(appEditando.codigo_aplicacion) }
   }
 
   // ── Aplicacion: grupos ────────────────────────────────────────────────────
@@ -189,21 +176,11 @@ export default function PaginaAplicaciones() {
   }
 
   // ── Reordenar aplicaciones ────────────────────────────────────────────────
-  const moverApp = async (index: number, direccion: 'arriba' | 'abajo') => {
-    const lista = [...aplicaciones].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
-    const swap = direccion === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const ordenA = lista[index].orden ?? 0
-    const ordenB = lista[swap].orden ?? 0
-    lista[index] = { ...lista[index], orden: ordenB }
-    lista[swap] = { ...lista[swap], orden: ordenA }
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setAplicaciones(lista)
+  const reordenarApps = async (nuevas: Aplicacion[]) => {
+    setAplicaciones(nuevas)
     try {
-      await aplicacionesApi.reordenar(lista.map((a) => ({ codigo_aplicacion: a.codigo_aplicacion, orden: a.orden ?? 0 })))
-    } catch {
-      cargar()
-    }
+      await aplicacionesApi.reordenar(nuevas.map(a => ({ codigo_aplicacion: a.codigo_aplicacion, orden: a.orden ?? 0 })))
+    } catch { cargar() }
   }
 
   // ── Lista filtrada ────────────────────────────────────────────────────────
@@ -229,36 +206,29 @@ export default function PaginaAplicaciones() {
         </div>
       </div>
 
-      <Tabla>
-        <TablaCabecera><tr><TablaTh className="w-16">{t('colOrden')}</TablaTh><TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colTipo')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh><TablaTh className="text-right">{tc('acciones')}</TablaTh></tr></TablaCabecera>
-        <TablaCuerpo>
-          {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>Cargando...</TablaTd></TablaFila>
-          ) : appsFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>No se encontraron aplicaciones</TablaTd></TablaFila>
-          ) : appsFiltradas.map((a, idx) => (
-            <TablaFila key={a.codigo_aplicacion}>
-              <TablaTd>
-                <div className="flex items-center gap-1">
-                  <div className="flex flex-col">
-                    <button onClick={() => moverApp(idx, 'arriba')} disabled={idx === 0} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title="Subir"><ArrowUp size={13} /></button>
-                    <button onClick={() => moverApp(idx, 'abajo')} disabled={idx === appsFiltradas.length - 1} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title="Bajar"><ArrowDown size={13} /></button>
+      <SortableDndContext items={appsFiltradas as unknown as Record<string,unknown>[]} getId={(a) => (a as Aplicacion).codigo_aplicacion} onReorder={(n) => reordenarApps(n as unknown as Aplicacion[])} disabled={!!busqueda}>
+        <Tabla>
+          <TablaCabecera><tr><TablaTh className="w-8" /><TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colTipo')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh><TablaTh className="text-right">{tc('acciones')}</TablaTh></tr></TablaCabecera>
+          <TablaCuerpo>
+            {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>Cargando...</TablaTd></TablaFila>
+            ) : appsFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>No se encontraron aplicaciones</TablaTd></TablaFila>
+            ) : appsFiltradas.map((a) => (
+              <SortableRow key={a.codigo_aplicacion} id={a.codigo_aplicacion}>
+                <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{a.codigo_aplicacion}</code></TablaTd>
+                <TablaTd className="font-medium">{a.nombre}</TablaTd>
+                <TablaTd><Insignia variante={varianteTipo(a.tipo)}>{etiquetaTipo(a.tipo)}</Insignia></TablaTd>
+                <TablaTd className="text-texto-muted text-sm">{a.descripcion || '—'}</TablaTd>
+                <TablaTd>
+                  <div className="flex items-center justify-end gap-1">
+                    <button onClick={() => abrirEditarApp(a)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                    <button onClick={() => setConfirmacion(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                   </div>
-                  <span className="text-xs text-texto-muted w-4 text-center">{a.orden}</span>
-                </div>
-              </TablaTd>
-              <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{a.codigo_aplicacion}</code></TablaTd>
-              <TablaTd className="font-medium">{a.nombre}</TablaTd>
-              <TablaTd><Insignia variante={varianteTipo(a.tipo)}>{etiquetaTipo(a.tipo)}</Insignia></TablaTd>
-              <TablaTd className="text-texto-muted text-sm">{a.descripcion || '—'}</TablaTd>
-              <TablaTd>
-                <div className="flex items-center justify-end gap-1">
-                  <button onClick={() => abrirEditarApp(a)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                  <button onClick={() => setConfirmacion(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
-                </div>
-              </TablaTd>
-            </TablaFila>
-          ))}
-        </TablaCuerpo>
-      </Tabla>
+                </TablaTd>
+              </SortableRow>
+            ))}
+          </TablaCuerpo>
+        </Tabla>
+      </SortableDndContext>
 
       {/* ── MODAL APLICACION ── */}
       <Modal abierto={modalApp} alCerrar={() => setModalApp(false)} titulo={appEditando ? `Editar aplicacion: ${appEditando.nombre}` : 'Nueva aplicacion'} className="max-w-2xl min-h-[680px]">
@@ -342,39 +312,37 @@ export default function PaginaAplicaciones() {
               ) : funcionesApp.length === 0 ? (
                 <p className="text-sm text-texto-muted text-center py-4">No tiene funciones asignadas</p>
               ) : (
-                <ul className="divide-y divide-borde border border-borde rounded-lg overflow-hidden">
-                  {funcionesApp.map((fa, idx) => (
-                    <li key={fa.codigo_funcion} className="flex items-center gap-2 px-3 py-2 text-sm bg-surface hover:bg-fondo">
-                      <div className="flex flex-col gap-0.5 items-center">
-                        <button type="button" onClick={() => moverFuncionApp(idx, 'arriba')} disabled={idx === 0} className="text-texto-muted hover:text-primario disabled:opacity-30" title="Subir"><ArrowUp size={12} /></button>
-                        <button type="button" onClick={() => moverFuncionApp(idx, 'abajo')} disabled={idx === funcionesApp.length - 1} className="text-texto-muted hover:text-primario disabled:opacity-30" title="Bajar"><ArrowDown size={12} /></button>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium truncate">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</div>
-                        <div className="text-xs text-texto-muted font-mono">{fa.codigo_funcion}</div>
-                      </div>
-                      <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Marcar como función inicial de la aplicación">
-                        <input
-                          type="checkbox"
-                          checked={!!fa.inicial}
-                          onChange={async (e) => {
-                            if (!appEditando) return
-                            const nuevo = e.target.checked
-                            try {
-                              await aplicacionesApi.actualizarRelFuncion(appEditando.codigo_aplicacion, fa.codigo_funcion, { inicial: nuevo })
-                              cargarFuncionesApp(appEditando.codigo_aplicacion)
-                            } catch (err) {
-                              setErrorApp(err instanceof Error ? err.message : 'Error')
-                            }
-                          }}
-                          className="w-4 h-4 rounded accent-primario"
-                        />
-                        <span className="text-texto-muted">Inicial</span>
-                      </label>
-                      <button onClick={() => quitarFuncionApp(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
-                    </li>
-                  ))}
-                </ul>
+                <SortableDndContext items={funcionesApp as unknown as Record<string,unknown>[]} getId={(f) => (f as {codigo_funcion:string}).codigo_funcion} onReorder={(n) => reordenarFuncionesApp(n as typeof funcionesApp)}>
+                  <ul className="divide-y divide-borde border border-borde rounded-lg overflow-hidden">
+                    {funcionesApp.map((fa) => (
+                      <SortableListItem key={fa.codigo_funcion} id={fa.codigo_funcion} className="flex items-center gap-2 px-3 py-2 text-sm bg-surface hover:bg-fondo">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</div>
+                          <div className="text-xs text-texto-muted font-mono">{fa.codigo_funcion}</div>
+                        </div>
+                        <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Marcar como función inicial de la aplicación">
+                          <input
+                            type="checkbox"
+                            checked={!!fa.inicial}
+                            onChange={async (e) => {
+                              if (!appEditando) return
+                              const nuevo = e.target.checked
+                              try {
+                                await aplicacionesApi.actualizarRelFuncion(appEditando.codigo_aplicacion, fa.codigo_funcion, { inicial: nuevo })
+                                cargarFuncionesApp(appEditando.codigo_aplicacion)
+                              } catch (err) {
+                                setErrorApp(err instanceof Error ? err.message : 'Error')
+                              }
+                            }}
+                            className="w-4 h-4 rounded accent-primario"
+                          />
+                          <span className="text-texto-muted">Inicial</span>
+                        </label>
+                        <button onClick={() => quitarFuncionApp(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
+                      </SortableListItem>
+                    ))}
+                  </ul>
+                </SortableDndContext>
               )}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Salir</Boton></div>
             </div>

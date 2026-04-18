@@ -955,14 +955,14 @@ export const tareasDatosBasicosApi = {
     api.delete(`/tareas-datos-basicos/estados-conversacion/${tipo}/${codigo}`),
 
   // Estados tarea
-  listarEstadosTar: (tipo?: string) =>
-    api.get<EstadoTarea[]>('/tareas-datos-basicos/estados-tarea', { params: tipo ? { tipo } : {} }).then((r) => r.data),
+  listarEstadosTar: (params?: { categoria?: string; tipo?: string }) =>
+    api.get<EstadoTarea[]>('/tareas-datos-basicos/estados-tarea', { params: params ?? {} }).then((r) => r.data),
   crearEstadoTar: (datos: Partial<EstadoTarea>) =>
     api.post('/tareas-datos-basicos/estados-tarea', datos).then((r) => r.data),
-  actualizarEstadoTar: (tipo: string, codigo: string, datos: Partial<EstadoTarea>) =>
-    api.put(`/tareas-datos-basicos/estados-tarea/${tipo}/${codigo}`, datos).then((r) => r.data),
-  eliminarEstadoTar: (tipo: string, codigo: string) =>
-    api.delete(`/tareas-datos-basicos/estados-tarea/${tipo}/${codigo}`),
+  actualizarEstadoTar: (categoria: string, tipo: string, codigo: string, datos: Partial<EstadoTarea>) =>
+    api.put(`/tareas-datos-basicos/estados-tarea/${categoria}/${tipo}/${codigo}`, datos).then((r) => r.data),
+  eliminarEstadoTar: (categoria: string, tipo: string, codigo: string) =>
+    api.delete(`/tareas-datos-basicos/estados-tarea/${categoria}/${tipo}/${codigo}`),
 }
 
 // ─── Tareas: Operación ───────────────────────────────────────────────────────

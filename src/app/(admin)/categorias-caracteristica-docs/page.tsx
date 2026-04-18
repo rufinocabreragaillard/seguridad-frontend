@@ -2,7 +2,8 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Download, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, Download, Search } from 'lucide-react'
+import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
@@ -229,19 +230,11 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     }
   }
 
-  // ── Mover categoría (orden) ────────────────────────────────────────────────
-  const moverCategoria = async (index: number, dir: 'arriba' | 'abajo') => {
-    const lista = [...categorias]
-    const swap = dir === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const oA = lista[index].orden ?? index
-    const oB = lista[swap].orden ?? swap
-    lista[index] = { ...lista[index], orden: oB }
-    lista[swap] = { ...lista[swap], orden: oA }
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setCategorias(lista)
+  // ── Reordenar categorías (drag-and-drop) ─────────────────────────────────
+  const reordenarCategorias = async (nuevaLista: CategoriaCaractDocs[]) => {
+    setCategorias(nuevaLista)
     try {
-      await categoriasCaractDocsApi.reordenar(lista.map((c, i) => ({ codigo: c.codigo_cat_docs, orden: c.orden ?? i })))
+      await categoriasCaractDocsApi.reordenar(nuevaLista.map((c, i) => ({ codigo: c.codigo_cat_docs, orden: c.orden ?? i })))
     } catch {
       cargarCategorias()
     }
@@ -324,49 +317,47 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             </div>
           </div>
 
-          <Tabla>
-            <TablaCabecera>
-              <tr>
-                <TablaTh>{t('colOrden')}</TablaTh>
-                <TablaTh>{t('colNombre')}</TablaTh>
-                <TablaTh>{t('colUnica')}</TablaTh>
-                <TablaTh>{t('colEditable')}</TablaTh>
-                <TablaTh>{tc('activo')}</TablaTh>
-                <TablaTh>{t('colCodigo')}</TablaTh>
-                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
-              </tr>
-            </TablaCabecera>
-            <TablaCuerpo>
-              {cargandoCat ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{tc('cargando')}</TablaTd></TablaFila>
-              ) : catsFiltradas.length === 0 ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{t('sinCategorias')}</TablaTd></TablaFila>
-              ) : catsFiltradas.map((c, idx) => (
-                <TablaFila key={c.codigo_cat_docs}>
-                  <TablaTd>
-                    <div className="flex items-center gap-1">
-                      <div className="flex flex-col">
-                        <button onClick={() => moverCategoria(idx, 'arriba')} disabled={idx === 0 || !!busquedaCat} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp size={14} /></button>
-                        <button onClick={() => moverCategoria(idx, 'abajo')} disabled={idx === catsFiltradas.length - 1 || !!busquedaCat} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown size={14} /></button>
+          <SortableDndContext
+            items={catsFiltradas as unknown as Record<string, unknown>[]}
+            getId={(item) => item.codigo_cat_docs as string}
+            onReorder={(items) => reordenarCategorias(items as unknown as CategoriaCaractDocs[])}
+            disabled={!!busquedaCat}
+          >
+            <Tabla>
+              <TablaCabecera>
+                <tr>
+                  <TablaTh className="w-8" />
+                  <TablaTh>{t('colNombre')}</TablaTh>
+                  <TablaTh>{t('colUnica')}</TablaTh>
+                  <TablaTh>{t('colEditable')}</TablaTh>
+                  <TablaTh>{tc('activo')}</TablaTh>
+                  <TablaTh>{t('colCodigo')}</TablaTh>
+                  <TablaTh className="text-right">{tc('acciones')}</TablaTh>
+                </tr>
+              </TablaCabecera>
+              <TablaCuerpo>
+                {cargandoCat ? (
+                  <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                ) : catsFiltradas.length === 0 ? (
+                  <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{t('sinCategorias')}</TablaTd></TablaFila>
+                ) : catsFiltradas.map((c) => (
+                  <SortableRow key={c.codigo_cat_docs} id={c.codigo_cat_docs}>
+                    <TablaTd className="font-medium">{c.nombre_cat_docs}</TablaTd>
+                    <TablaTd><Insignia variante={c.es_unica_docs ? 'advertencia' : 'neutro'}>{c.es_unica_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
+                    <TablaTd><Insignia variante={c.editable_en_detalle_docs ? 'exito' : 'neutro'}>{c.editable_en_detalle_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
+                    <TablaTd><Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
+                    <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_docs}</code></TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                        <button onClick={() => setConfirmCat(c)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={t('desactivar')}><Trash2 size={14} /></button>
                       </div>
-                      <span className="text-xs text-texto-muted w-5 text-center">{c.orden ?? idx}</span>
-                    </div>
-                  </TablaTd>
-                  <TablaTd className="font-medium">{c.nombre_cat_docs}</TablaTd>
-                  <TablaTd><Insignia variante={c.es_unica_docs ? 'advertencia' : 'neutro'}>{c.es_unica_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
-                  <TablaTd><Insignia variante={c.editable_en_detalle_docs ? 'exito' : 'neutro'}>{c.editable_en_detalle_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
-                  <TablaTd><Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
-                  <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_docs}</code></TablaTd>
-                  <TablaTd>
-                    <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
-                      <button onClick={() => setConfirmCat(c)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={t('desactivar')}><Trash2 size={14} /></button>
-                    </div>
-                  </TablaTd>
-                </TablaFila>
-              ))}
-            </TablaCuerpo>
-          </Tabla>
+                    </TablaTd>
+                  </SortableRow>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          </SortableDndContext>
         </>
       )}
 

@@ -1,13 +1,14 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Pencil, Download, Search, Trash2, ChevronUp, ChevronDown, X } from 'lucide-react'
+import { Plus, Pencil, Download, Search, Trash2, X } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { SortableDndContext, SortableRow, SortableListItem } from '@/components/ui/sortable'
 import { rolesApi, funcionesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Rol, Funcion } from '@/lib/tipos'
@@ -123,28 +124,15 @@ export default function PaginaRolesGrupo() {
     try { await rolesApi.quitarFuncion(rolEditando.id_rol, c); cargarFuncionesRol(rolEditando.id_rol) }
     catch (e) { setErrorRol(e instanceof Error ? e.message : 'Error') }
   }
-  const moverFuncionRol = async (index: number, dir: 'arriba' | 'abajo') => {
-    if (!rolEditando) return
-    const lista = [...funcionesRol]; const swap = dir === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const oA = lista[index].orden; const oB = lista[swap].orden
-    lista[index].orden = oB; lista[swap].orden = oA
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setFuncionesRol(lista)
-    try { await rolesApi.reordenarFunciones(rolEditando.id_rol, lista.map((f) => ({ codigo_funcion: f.codigo_funcion, orden: f.orden }))) }
-    catch { cargarFuncionesRol(rolEditando.id_rol) }
+  const reordenarFuncionesRol = async (nuevas: typeof funcionesRol) => {
+    setFuncionesRol(nuevas)
+    try { await rolesApi.reordenarFunciones(rolEditando!.codigo_rol, nuevas.map(f => ({ codigo_funcion: f.codigo_funcion, orden: f.orden ?? 0 }))) }
+    catch { if (rolEditando) cargarFuncionesRol(rolEditando.codigo_rol) }
   }
 
-  const moverRol = async (index: number, dir: 'arriba' | 'abajo') => {
-    const lista = [...roles]; const swap = dir === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const oA = lista[index].orden ?? index
-    const oB = lista[swap].orden ?? swap
-    lista[index] = { ...lista[index], orden: oB }
-    lista[swap] = { ...lista[swap], orden: oA }
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setRoles(lista)
-    try { await rolesApi.reordenar(lista.map((r, i) => ({ id_rol: r.id_rol, orden: r.orden ?? i }))) }
+  const reordenarRoles = async (nuevos: typeof roles) => {
+    setRoles(nuevos)
+    try { await rolesApi.reordenar(nuevos.map(r => ({ codigo_rol: r.codigo_rol, orden: r.orden ?? 0 }))) }
     catch { cargar() }
   }
 
@@ -178,10 +166,11 @@ export default function PaginaRolesGrupo() {
             <Boton variante="primario" onClick={abrirNuevoRol}><Plus size={16} />Nuevo rol</Boton>
           </div>
         </div>
+        <SortableDndContext items={rolesFiltrados as unknown as Record<string,unknown>[]} getId={(r) => (r as {codigo_rol:string}).codigo_rol} onReorder={(n) => reordenarRoles(n as typeof roles)} disabled={!!busquedaRoles}>
         <Tabla>
           <TablaCabecera>
             <tr>
-              <TablaTh className="w-16">Orden</TablaTh>
+              <TablaTh className="w-8" />
               <TablaTh>Código</TablaTh>
               <TablaTh>Alias</TablaTh>
               <TablaTh>Nombre</TablaTh>
@@ -195,17 +184,8 @@ export default function PaginaRolesGrupo() {
               <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>Cargando...</TablaTd></TablaFila>
             ) : rolesFiltrados.length === 0 ? (
               <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron roles</TablaTd></TablaFila>
-            ) : rolesFiltrados.map((r, idx) => (
-              <TablaFila key={r.codigo_rol}>
-                <TablaTd>
-                  <div className="flex items-center gap-1">
-                    <div className="flex flex-col">
-                      <button onClick={() => moverRol(idx, 'arriba')} disabled={idx === 0 || !!busquedaRoles} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp size={14} /></button>
-                      <button onClick={() => moverRol(idx, 'abajo')} disabled={idx === rolesFiltrados.length - 1 || !!busquedaRoles} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown size={14} /></button>
-                    </div>
-                    <span className="text-xs text-texto-muted w-5 text-center">{r.orden ?? idx}</span>
-                  </div>
-                </TablaTd>
+            ) : rolesFiltrados.map((r) => (
+              <SortableRow key={r.codigo_rol} id={r.codigo_rol}>
                 <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_rol}</code></TablaTd>
                 <TablaTd className="text-sm">{r.alias_de_rol || '—'}</TablaTd>
                 <TablaTd className="font-medium">{r.nombre}</TablaTd>
@@ -217,10 +197,11 @@ export default function PaginaRolesGrupo() {
                     <button onClick={() => setRolAEliminar(r)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                   </div>
                 </TablaTd>
-              </TablaFila>
+              </SortableRow>
             ))}
           </TablaCuerpo>
         </Tabla>
+        </SortableDndContext>
       </div>
 
       {/* Modal Rol */}
@@ -293,14 +274,12 @@ export default function PaginaRolesGrupo() {
               </div>
               {cargandoFuncionesRol ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
               : funcionesRol.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene funciones asignadas</p>
-              : <div className="flex flex-col gap-2">{funcionesRol.map((fa, idx) => (
-                <div key={fa.codigo_funcion} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
-                  <div className="flex flex-col"><button onClick={() => moverFuncionRol(idx, 'arriba')} disabled={idx === 0} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp size={14} /></button><button onClick={() => moverFuncionRol(idx, 'abajo')} disabled={idx === funcionesRol.length - 1} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown size={14} /></button></div>
-                  <span className="text-xs text-texto-muted w-5 text-center">{fa.orden}</span>
+              : <SortableDndContext items={funcionesRol as unknown as Record<string,unknown>[]} getId={(f) => (f as {codigo_funcion:string}).codigo_funcion} onReorder={(n) => reordenarFuncionesRol(n as typeof funcionesRol)}><div className="flex flex-col gap-2">{funcionesRol.map((fa) => (
+                <SortableListItem key={fa.codigo_funcion} id={fa.codigo_funcion} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
                   <div className="flex-1 min-w-0"><span className="text-sm font-medium text-texto">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</span><span className="ml-2 text-xs text-texto-muted">{fa.codigo_funcion}</span></div>
                   <button onClick={() => quitarFuncionRol(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
-                </div>
-              ))}</div>}
+                </SortableListItem>
+              ))}</div></SortableDndContext>}
               {errorRol && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorRol}</p></div>}
               <div className="flex justify-end pt-2"><Boton variante="secundario" onClick={() => setModalRol(false)}>Salir</Boton></div>
             </div>

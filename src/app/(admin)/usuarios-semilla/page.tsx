@@ -13,7 +13,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Search, Trash2, X, Star, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Search, Trash2, X, Star } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -25,6 +25,7 @@ import { usuariosApi, gruposApi, entidadesApi, rolesApi, aplicacionesApi } from 
 import { useAuth } from '@/context/AuthContext'
 import type { Usuario, Grupo, Entidad, Rol, Aplicacion, Area } from '@/lib/tipos'
 import { normalizarTipo, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
+import { SortableDndContext, SortableListItem } from '@/components/ui/sortable'
 
 type RolAsignado = {
   codigo_grupo: string
@@ -401,29 +402,17 @@ export default function PaginaUsuariosSemilla() {
     } catch (e) { setError(e instanceof Error ? e.message : 'Error al quitar rol') }
   }
 
-  const moverRol = async (filteredIndex: number, direccion: 'arriba' | 'abajo') => {
-    if (!usuarioEditando) return
-    const grupo = form.grupo_por_defecto
-    const rolesFiltrados = rolesUsuario.filter((r) => r.codigo_grupo === grupo)
-    const swapIdx = direccion === 'arriba' ? filteredIndex - 1 : filteredIndex + 1
-    if (swapIdx < 0 || swapIdx >= rolesFiltrados.length) return
-    const rolA = rolesFiltrados[filteredIndex]
-    const rolB = rolesFiltrados[swapIdx]
-    const realA = rolesUsuario.findIndex((r) => r.codigo_grupo === rolA.codigo_grupo && r.id_rol === rolA.id_rol)
-    const realB = rolesUsuario.findIndex((r) => r.codigo_grupo === rolB.codigo_grupo && r.id_rol === rolB.id_rol)
-    if (realA === -1 || realB === -1) return
-    const lista = [...rolesUsuario]
-    const ordenA = lista[realA].orden; const ordenB = lista[realB].orden
-    lista[realA].orden = ordenB; lista[realB].orden = ordenA
-    ;[lista[realA], lista[realB]] = [lista[realB], lista[realA]]
-    setRolesUsuario(lista)
+  const reordenarRoles = async (nuevosFiltered: typeof rolesUsuario) => {
+    const grupoFiltro = form.grupo_por_defecto
+    const otrosGrupos = rolesUsuario.filter(ra => ra.codigo_grupo !== grupoFiltro)
+    const merged = [...otrosGrupos, ...nuevosFiltered]
+    setRolesUsuario(merged)
     try {
-      await usuariosApi.reordenarRoles(usuarioEditando.codigo_usuario, lista.map((r) => ({
-        codigo_grupo: r.codigo_grupo, id_rol: r.id_rol, orden: r.orden,
-      })))
-    } catch {
-      cargarRolesUsuario(usuarioEditando.codigo_usuario)
-    }
+      await usuariosApi.reordenarRoles(
+        usuarioEditando!.codigo_usuario,
+        merged.map(r => ({ id_rol: r.id_rol, codigo_grupo: r.codigo_grupo, orden: r.orden ?? 0 }))
+      )
+    } catch { if (usuarioEditando) cargarRolesUsuario(usuarioEditando.codigo_usuario) }
   }
 
   const marcarComoPrincipal = async (idRol: number) => {
@@ -976,64 +965,53 @@ export default function PaginaUsuariosSemilla() {
                   ) : rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).length === 0 ? (
                     <p className="text-sm text-texto-muted text-center py-4">No hay roles asignados en este grupo</p>
                   ) : (
-                    <div className="flex flex-col gap-2">
-                      {rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).map((ra, idx, arr) => {
-                        const esPrincipal = form.id_rol_principal === String(ra.id_rol)
-                        const codigoRolDisplay = ra.codigo_rol || ra.roles?.codigo_rol || `id ${ra.id_rol}`
-                        return (
-                          <div
-                            key={`${ra.codigo_grupo}_${ra.id_rol}`}
-                            className={`flex items-center gap-2 px-3 py-2 rounded-lg border bg-surface ${
-                              esPrincipal ? 'border-primario bg-primario-muy-claro' : 'border-borde'
-                            }`}
-                          >
-                            <div className="flex flex-col">
-                              <button
-                                onClick={() => moverRol(idx, 'arriba')}
-                                disabled={idx === 0}
-                                className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                title="Subir"
-                              >
-                                <ChevronUp size={14} />
-                              </button>
-                              <button
-                                onClick={() => moverRol(idx, 'abajo')}
-                                disabled={idx === arr.length - 1}
-                                className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                                title="Bajar"
-                              >
-                                <ChevronDown size={14} />
-                              </button>
-                            </div>
-                            <div className="flex-1 min-w-0 flex items-center gap-2">
-                              <span className="text-sm font-medium text-texto">{ra.roles?.nombre || codigoRolDisplay}</span>
-                              <span className="text-xs text-texto-muted">{codigoRolDisplay}</span>
-                              {esPrincipal && (
-                                <span className="text-xs bg-primario text-primario-texto px-1.5 py-0.5 rounded">Principal</span>
-                              )}
-                            </div>
-                            <div className="flex items-center gap-1">
-                              {!esPrincipal && (
+                    <SortableDndContext
+                      items={rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto) as unknown as Record<string, unknown>[]}
+                      getId={(ra) => `${(ra as { codigo_grupo: string }).codigo_grupo}_${(ra as { id_rol: number }).id_rol}`}
+                      onReorder={(n) => reordenarRoles(n as typeof rolesUsuario)}
+                    >
+                      <div className="flex flex-col gap-2">
+                        {rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).map((ra) => {
+                          const esPrincipal = form.id_rol_principal === String(ra.id_rol)
+                          const codigoRolDisplay = ra.codigo_rol || ra.roles?.codigo_rol || `id ${ra.id_rol}`
+                          return (
+                            <SortableListItem
+                              key={`${ra.codigo_grupo}_${ra.id_rol}`}
+                              id={`${ra.codigo_grupo}_${ra.id_rol}`}
+                              className={`flex items-center gap-2 px-3 py-2 rounded-lg border bg-surface ${
+                                esPrincipal ? 'border-primario bg-primario-muy-claro' : 'border-borde'
+                              }`}
+                            >
+                              <div className="flex-1 min-w-0 flex items-center gap-2">
+                                <span className="text-sm font-medium text-texto">{ra.roles?.nombre || codigoRolDisplay}</span>
+                                <span className="text-xs text-texto-muted">{codigoRolDisplay}</span>
+                                {esPrincipal && (
+                                  <span className="text-xs bg-primario text-primario-texto px-1.5 py-0.5 rounded">Principal</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                {!esPrincipal && (
+                                  <button
+                                    onClick={() => marcarComoPrincipal(ra.id_rol)}
+                                    className="p-1 rounded hover:bg-yellow-50 text-texto-muted hover:text-yellow-600 transition-colors"
+                                    title="Marcar como rol principal"
+                                  >
+                                    <Star size={14} />
+                                  </button>
+                                )}
                                 <button
-                                  onClick={() => marcarComoPrincipal(ra.id_rol)}
-                                  className="p-1 rounded hover:bg-yellow-50 text-texto-muted hover:text-yellow-600 transition-colors"
-                                  title="Marcar como rol principal"
+                                  onClick={() => quitarRol(ra.id_rol)}
+                                  className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                                  title="Quitar rol"
                                 >
-                                  <Star size={14} />
+                                  <X size={14} />
                                 </button>
-                              )}
-                              <button
-                                onClick={() => quitarRol(ra.id_rol)}
-                                className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
-                                title="Quitar rol"
-                              >
-                                <X size={14} />
-                              </button>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
+                              </div>
+                            </SortableListItem>
+                          )
+                        })}
+                      </div>
+                    </SortableDndContext>
                   )}
                 </>
               )}

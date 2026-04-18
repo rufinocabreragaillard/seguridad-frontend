@@ -4,6 +4,7 @@ import { type ReactNode } from 'react'
 import { Pencil, Trash2 } from 'lucide-react'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Insignia } from '@/components/ui/insignia'
+import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 
 export interface ColumnaDef<T> {
   titulo: string
@@ -21,9 +22,12 @@ interface TablaCrudProps<T> {
   textoVacio?: string
   /** Acciones extra por fila */
   accionesExtra?: (item: T) => ReactNode
+  /** Drag-and-drop reordering */
+  onReordenar?: (newItems: T[]) => void
+  sortDisabled?: boolean
 }
 
-export function TablaCrud<T>({
+export function TablaCrud<T extends Record<string, unknown>>({
   columnas,
   items,
   cargando,
@@ -32,69 +36,118 @@ export function TablaCrud<T>({
   onEliminar,
   textoVacio = 'No se encontraron registros',
   accionesExtra,
+  onReordenar,
+  sortDisabled = false,
 }: TablaCrudProps<T>) {
-  const totalCols = columnas.length + (onEditar || onEliminar ? 1 : 0)
+  const tieneAcciones = !!(onEditar || onEliminar)
+  const totalCols = columnas.length + (tieneAcciones ? 1 : 0) + (onReordenar ? 1 : 0)
+
+  const cuerpo = cargando ? (
+    <TablaFila>
+      <TablaTd className="py-8 text-center text-texto-muted" colSpan={totalCols as never}>
+        Cargando...
+      </TablaTd>
+    </TablaFila>
+  ) : items.length === 0 ? (
+    <TablaFila>
+      <TablaTd className="py-8 text-center text-texto-muted" colSpan={totalCols as never}>
+        {textoVacio}
+      </TablaTd>
+    </TablaFila>
+  ) : onReordenar ? (
+    <>
+      {items.map((item) => (
+        <SortableRow key={getId(item)} id={getId(item)}>
+          {columnas.map((col, i) => (
+            <TablaTd key={i} className={col.className}>
+              {col.render(item)}
+            </TablaTd>
+          ))}
+          {tieneAcciones && (
+            <TablaTd>
+              <div className="flex items-center justify-end gap-1">
+                {accionesExtra?.(item)}
+                {onEditar && (
+                  <button
+                    onClick={() => onEditar(item)}
+                    className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
+                    title="Editar"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
+                {onEliminar && (
+                  <button
+                    onClick={() => onEliminar(item)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                    title="Desactivar"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            </TablaTd>
+          )}
+        </SortableRow>
+      ))}
+    </>
+  ) : (
+    <>
+      {items.map((item) => (
+        <TablaFila key={getId(item)}>
+          {columnas.map((col, i) => (
+            <TablaTd key={i} className={col.className}>
+              {col.render(item)}
+            </TablaTd>
+          ))}
+          {tieneAcciones && (
+            <TablaTd>
+              <div className="flex items-center justify-end gap-1">
+                {accionesExtra?.(item)}
+                {onEditar && (
+                  <button
+                    onClick={() => onEditar(item)}
+                    className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
+                    title="Editar"
+                  >
+                    <Pencil size={14} />
+                  </button>
+                )}
+                {onEliminar && (
+                  <button
+                    onClick={() => onEliminar(item)}
+                    className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                    title="Desactivar"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                )}
+              </div>
+            </TablaTd>
+          )}
+        </TablaFila>
+      ))}
+    </>
+  )
 
   return (
     <Tabla>
       <TablaCabecera>
         <tr>
+          {onReordenar && <TablaTh className="w-8" />}
           {columnas.map((col, i) => (
             <TablaTh key={i} className={col.className}>{col.titulo}</TablaTh>
           ))}
-          {(onEditar || onEliminar) && <TablaTh className="text-right">Acciones</TablaTh>}
+          {tieneAcciones && <TablaTh className="text-right">Acciones</TablaTh>}
         </tr>
       </TablaCabecera>
-      <TablaCuerpo>
-        {cargando ? (
-          <TablaFila>
-            <TablaTd className="py-8 text-center text-texto-muted" colSpan={totalCols as never}>
-              Cargando...
-            </TablaTd>
-          </TablaFila>
-        ) : items.length === 0 ? (
-          <TablaFila>
-            <TablaTd className="py-8 text-center text-texto-muted" colSpan={totalCols as never}>
-              {textoVacio}
-            </TablaTd>
-          </TablaFila>
-        ) : (
-          items.map((item) => (
-            <TablaFila key={getId(item)}>
-              {columnas.map((col, i) => (
-                <TablaTd key={i} className={col.className}>
-                  {col.render(item)}
-                </TablaTd>
-              ))}
-              {(onEditar || onEliminar) && (
-                <TablaTd>
-                  <div className="flex items-center justify-end gap-1">
-                    {accionesExtra?.(item)}
-                    {onEditar && (
-                      <button
-                        onClick={() => onEditar(item)}
-                        className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
-                        title="Editar"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                    )}
-                    {onEliminar && (
-                      <button
-                        onClick={() => onEliminar(item)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
-                        title="Desactivar"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                </TablaTd>
-              )}
-            </TablaFila>
-          ))
-        )}
-      </TablaCuerpo>
+      {onReordenar ? (
+        <SortableDndContext items={items} getId={getId} onReorder={onReordenar} disabled={sortDisabled}>
+          <TablaCuerpo>{cuerpo}</TablaCuerpo>
+        </SortableDndContext>
+      ) : (
+        <TablaCuerpo>{cuerpo}</TablaCuerpo>
+      )}
     </Tabla>
   )
 }

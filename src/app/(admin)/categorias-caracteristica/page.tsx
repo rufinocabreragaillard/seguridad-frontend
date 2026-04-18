@@ -2,7 +2,8 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Plus, Pencil, Trash2, Download, Search, ChevronUp, ChevronDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, Download, Search } from 'lucide-react'
+import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
@@ -264,38 +265,23 @@ export default function PaginaCategoriasCaracteristica() {
     cargarRolesCategoria()
   }
 
-  const moverRol = async (index: number, dir: 'arriba' | 'abajo') => {
-    if (!catSeleccionada) return
-    const lista = [...rolesCategoria]
-    const swap = dir === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const oA = lista[index].orden; const oB = lista[swap].orden
-    lista[index].orden = oB; lista[swap].orden = oA
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setRolesCategoria(lista)
+  const reordenarRolesCategoria = async (nuevos: typeof rolesCategoria) => {
+    setRolesCategoria(nuevos)
     try {
       await categoriasCaractPersApi.reordenarRoles(
-        catSeleccionada.codigo_cat_pers,
-        lista.map((r) => ({ id_rol: r.id_rol, orden: r.orden }))
+        catSeleccionada!.codigo_cat_pers,
+        nuevos.map((r) => ({ id_rol: r.id_rol, orden: r.orden ?? 0 }))
       )
     } catch {
-      cargarRolesCategoria()
+      if (catSeleccionada) cargarRolesCategoria()
     }
   }
 
-  // ── Mover categoría (orden) ────────────────────────────────────────────────
-  const moverCategoria = async (index: number, dir: 'arriba' | 'abajo') => {
-    const lista = [...categorias]
-    const swap = dir === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const oA = lista[index].orden ?? index
-    const oB = lista[swap].orden ?? swap
-    lista[index] = { ...lista[index], orden: oB }
-    lista[swap] = { ...lista[swap], orden: oA }
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setCategorias(lista)
+  // ── Reordenar categorías (drag-and-drop) ──────────────────────────────────
+  const reordenarCategorias = async (nuevas: typeof categorias) => {
+    setCategorias(nuevas)
     try {
-      await categoriasCaractPersApi.reordenar(lista.map((c, i) => ({ codigo: c.codigo_cat_pers, orden: c.orden ?? i })))
+      await categoriasCaractPersApi.reordenar(nuevas.map((c) => ({ codigo: c.codigo_cat_pers, orden: c.orden ?? 0 })))
     } catch {
       cargarCategorias()
     }
@@ -382,49 +368,42 @@ export default function PaginaCategoriasCaracteristica() {
             </div>
           </div>
 
-          <Tabla>
-            <TablaCabecera>
-              <tr>
-                <TablaTh>{t('colOrden')}</TablaTh>
-                <TablaTh>{t('colNombre')}</TablaTh>
-                <TablaTh>{t('colUnica')}</TablaTh>
-                <TablaTh>{t('colEditable')}</TablaTh>
-                <TablaTh>{tc('activo')}</TablaTh>
-                <TablaTh>{t('colCodigo')}</TablaTh>
-                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
-              </tr>
-            </TablaCabecera>
-            <TablaCuerpo>
-              {cargandoCat ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{tc('cargando')}</TablaTd></TablaFila>
-              ) : catsFiltradas.length === 0 ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{t('sinCategorias')}</TablaTd></TablaFila>
-              ) : catsFiltradas.map((c, idx) => (
-                <TablaFila key={c.codigo_cat_pers}>
-                  <TablaTd>
-                    <div className="flex items-center gap-1">
-                      <div className="flex flex-col">
-                        <button onClick={() => moverCategoria(idx, 'arriba')} disabled={idx === 0 || !!busquedaCat} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronUp size={14} /></button>
-                        <button onClick={() => moverCategoria(idx, 'abajo')} disabled={idx === catsFiltradas.length - 1 || !!busquedaCat} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"><ChevronDown size={14} /></button>
+          <SortableDndContext items={catsFiltradas as unknown as Record<string,unknown>[]} getId={(c) => (c as {codigo_cat_pers:string}).codigo_cat_pers} onReorder={(n) => reordenarCategorias(n as typeof categorias)} disabled={!!busquedaCat}>
+            <Tabla>
+              <TablaCabecera>
+                <tr>
+                  <TablaTh className="w-8" />
+                  <TablaTh>{t('colNombre')}</TablaTh>
+                  <TablaTh>{t('colUnica')}</TablaTh>
+                  <TablaTh>{t('colEditable')}</TablaTh>
+                  <TablaTh>{tc('activo')}</TablaTh>
+                  <TablaTh>{t('colCodigo')}</TablaTh>
+                  <TablaTh className="text-right">{tc('acciones')}</TablaTh>
+                </tr>
+              </TablaCabecera>
+              <TablaCuerpo>
+                {cargandoCat ? (
+                  <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                ) : catsFiltradas.length === 0 ? (
+                  <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{t('sinCategorias')}</TablaTd></TablaFila>
+                ) : catsFiltradas.map((c) => (
+                  <SortableRow key={c.codigo_cat_pers} id={c.codigo_cat_pers}>
+                    <TablaTd className="font-medium">{c.nombre_cat_pers}</TablaTd>
+                    <TablaTd><Insignia variante={c.es_unica_pers ? 'advertencia' : 'neutro'}>{c.es_unica_pers ? tc('si') : tc('no')}</Insignia></TablaTd>
+                    <TablaTd><Insignia variante={c.editable_en_detalle_pers ? 'exito' : 'neutro'}>{c.editable_en_detalle_pers ? tc('si') : tc('no')}</Insignia></TablaTd>
+                    <TablaTd><Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
+                    <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_pers}</code></TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                        <button onClick={() => setConfirmCat(c)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={t('desactivar')}><Trash2 size={14} /></button>
                       </div>
-                      <span className="text-xs text-texto-muted w-5 text-center">{c.orden ?? idx}</span>
-                    </div>
-                  </TablaTd>
-                  <TablaTd className="font-medium">{c.nombre_cat_pers}</TablaTd>
-                  <TablaTd><Insignia variante={c.es_unica_pers ? 'advertencia' : 'neutro'}>{c.es_unica_pers ? tc('si') : tc('no')}</Insignia></TablaTd>
-                  <TablaTd><Insignia variante={c.editable_en_detalle_pers ? 'exito' : 'neutro'}>{c.editable_en_detalle_pers ? tc('si') : tc('no')}</Insignia></TablaTd>
-                  <TablaTd><Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
-                  <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_pers}</code></TablaTd>
-                  <TablaTd>
-                    <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
-                      <button onClick={() => setConfirmCat(c)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={t('desactivar')}><Trash2 size={14} /></button>
-                    </div>
-                  </TablaTd>
-                </TablaFila>
-              ))}
-            </TablaCuerpo>
-          </Tabla>
+                    </TablaTd>
+                  </SortableRow>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          </SortableDndContext>
         </>
       )}
 
@@ -510,43 +489,36 @@ export default function PaginaCategoriasCaracteristica() {
               </div>
 
               {/* Tabla roles asignados */}
-              <Tabla>
-                <TablaCabecera>
-                  <tr>
-                    <TablaTh>{t('colOrden')}</TablaTh>
-                    <TablaTh>{t('colRol')}</TablaTh>
-                    <TablaTh className="text-right">{tc('acciones')}</TablaTh>
-                  </tr>
-                </TablaCabecera>
-                <TablaCuerpo>
-                  {cargandoRoles ? (
-                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={3 as never}>{tc('cargando')}</TablaTd></TablaFila>
-                  ) : rolesCategoria.length === 0 ? (
-                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={3 as never}>{t('sinRolesAsignados')}</TablaTd></TablaFila>
-                  ) : rolesCategoria.map((rc, idx) => (
-                    <TablaFila key={rc.id_rol}>
-                      <TablaTd>
-                        <div className="flex items-center gap-1">
-                          <button disabled={idx === 0} onClick={() => moverRol(idx, 'arriba')}
-                            className="p-1 rounded hover:bg-fondo disabled:opacity-30"><ChevronUp size={14} /></button>
-                          <button disabled={idx === rolesCategoria.length - 1} onClick={() => moverRol(idx, 'abajo')}
-                            className="p-1 rounded hover:bg-fondo disabled:opacity-30"><ChevronDown size={14} /></button>
-                          <span className="text-xs text-texto-muted ml-1">{rc.orden}</span>
-                        </div>
-                      </TablaTd>
-                      <TablaTd className="font-medium">
-                        {rc.roles?.nombre_rol || rc.codigo_rol || `id ${rc.id_rol}`}
-                      </TablaTd>
-                      <TablaTd>
-                        <div className="flex justify-end">
-                          <button onClick={() => quitarRol(rc.id_rol)}
-                            className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"><Trash2 size={14} /></button>
-                        </div>
-                      </TablaTd>
-                    </TablaFila>
-                  ))}
-                </TablaCuerpo>
-              </Tabla>
+              <SortableDndContext items={rolesCategoria as unknown as Record<string,unknown>[]} getId={(r) => String((r as {id_rol:number}).id_rol)} onReorder={(n) => reordenarRolesCategoria(n as typeof rolesCategoria)}>
+                <Tabla>
+                  <TablaCabecera>
+                    <tr>
+                      <TablaTh className="w-8" />
+                      <TablaTh>{t('colRol')}</TablaTh>
+                      <TablaTh className="text-right">{tc('acciones')}</TablaTh>
+                    </tr>
+                  </TablaCabecera>
+                  <TablaCuerpo>
+                    {cargandoRoles ? (
+                      <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={3 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                    ) : rolesCategoria.length === 0 ? (
+                      <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={3 as never}>{t('sinRolesAsignados')}</TablaTd></TablaFila>
+                    ) : rolesCategoria.map((rc) => (
+                      <SortableRow key={rc.id_rol} id={String(rc.id_rol)}>
+                        <TablaTd className="font-medium">
+                          {rc.roles?.nombre_rol || rc.codigo_rol || `id ${rc.id_rol}`}
+                        </TablaTd>
+                        <TablaTd>
+                          <div className="flex justify-end">
+                            <button onClick={() => quitarRol(rc.id_rol)}
+                              className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"><Trash2 size={14} /></button>
+                          </div>
+                        </TablaTd>
+                      </SortableRow>
+                    ))}
+                  </TablaCuerpo>
+                </Tabla>
+              </SortableDndContext>
             </>
           ) : (
             <p className="text-sm text-texto-muted">{t('seleccioneCategoriaRoles')}</p>

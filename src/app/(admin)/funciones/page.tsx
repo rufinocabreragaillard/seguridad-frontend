@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, X, Download, Search, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Download, Search, RefreshCw } from 'lucide-react'
+import { SortableDndContext, SortableRow, SortableListItem } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -119,18 +120,10 @@ export default function PaginaFunciones() {
     finally { setCargandoProcesos(false) }
   }, [])
 
-  const moverProceso = async (index: number, direccion: 'arriba' | 'abajo') => {
-    const lista = [...procesosDeFuncion]
-    const swap = direccion === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const a = lista[index].orden ?? 0
-    const b = lista[swap].orden ?? 0
-    lista[index] = { ...lista[index], orden: b }
-    lista[swap] = { ...lista[swap], orden: a }
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setProcesosDeFuncion(lista)
+  const reordenarProcesos = async (nuevos: Proceso[]) => {
+    setProcesosDeFuncion(nuevos)
     try {
-      await procesosApi.reordenar(lista.map((p) => ({ codigo_proceso: p.codigo_proceso, orden: p.orden ?? 0 })))
+      await procesosApi.reordenar(nuevos.map((p) => ({ codigo_proceso: p.codigo_proceso, orden: p.orden ?? 0 })))
     } catch { cargarProcesosDeFuncion(funcionEditando!.codigo_funcion) }
   }
 
@@ -227,20 +220,10 @@ export default function PaginaFunciones() {
   }
 
   // ── Mover función (reordenar) ──────────────────────────────────────────────
-  const moverFuncionGlobal = async (index: number, direccion: 'arriba' | 'abajo') => {
-    const lista = [...funciones]
-    const swap = direccion === 'arriba' ? index - 1 : index + 1
-    if (swap < 0 || swap >= lista.length) return
-    const a = lista[index].orden ?? 0
-    const b = lista[swap].orden ?? 0
-    lista[index] = { ...lista[index], orden: b }
-    lista[swap] = { ...lista[swap], orden: a }
-    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
-    setFunciones(lista)
+  const reordenarFunciones = async (nuevas: Funcion[]) => {
+    setFunciones(nuevas)
     try {
-      await funcionesApi.reordenar(
-        lista.map((f) => ({ codigo_funcion: f.codigo_funcion, orden: f.orden ?? 0 })),
-      )
+      await funcionesApi.reordenar(nuevas.map((f) => ({ codigo_funcion: f.codigo_funcion, orden: f.orden ?? 0 })))
     } catch { cargar() }
   }
 
@@ -281,34 +264,30 @@ export default function PaginaFunciones() {
         </div>
       </div>
 
-      <Tabla>
-        <TablaCabecera><tr><TablaTh className="w-14">{t('colOrden')}</TablaTh><TablaTh className="w-28">{t('colTipo')}</TablaTh><TablaTh className="w-32">{t('colAlias')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh className="w-40">{t('colUrl')}</TablaTh><TablaTh className="w-40">{t('colCodigo')}</TablaTh><TablaTh className="text-right w-20">{tc('acciones')}</TablaTh></tr></TablaCabecera>
-        <TablaCuerpo>
-          {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>Cargando...</TablaTd></TablaFila>
-          ) : funcionesFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron funciones</TablaTd></TablaFila>
-          ) : funcionesFiltradas.map((f, idx) => (
-            <TablaFila key={f.codigo_funcion}>
-              <TablaTd>
-                <div className="flex flex-col gap-0.5 items-center">
-                  <button type="button" onClick={() => moverFuncionGlobal(idx, 'arriba')} disabled={idx === 0 || !!busqueda} className="text-texto-muted hover:text-primario disabled:opacity-30"><ArrowUp size={12} /></button>
-                  <button type="button" onClick={() => moverFuncionGlobal(idx, 'abajo')} disabled={idx === funcionesFiltradas.length - 1 || !!busqueda} className="text-texto-muted hover:text-primario disabled:opacity-30"><ArrowDown size={12} /></button>
-                </div>
-              </TablaTd>
-              <TablaTd>{badgeTipo(f.tipo)}</TablaTd>
-              <TablaTd className="text-sm">{f.alias_de_funcion || '—'}</TablaTd>
-              <TablaTd className="font-medium">{f.nombre}</TablaTd>
-              <TablaTd className="text-xs">{f.url_funcion ? <a href={f.url_funcion} target="_blank" rel="noopener noreferrer" className="text-primario hover:underline">{f.url_funcion}</a> : <span className="text-texto-muted">—</span>}</TablaTd>
-              <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>
-              <TablaTd>
-                <div className="flex items-center justify-end gap-1">
-                  <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                  <button onClick={() => setConfirmacion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
-                </div>
-              </TablaTd>
-            </TablaFila>
-          ))}
-        </TablaCuerpo>
-      </Tabla>
+      <SortableDndContext items={funcionesFiltradas as unknown as Record<string, unknown>[]} getId={(f) => (f as Funcion).codigo_funcion} onReorder={(n) => reordenarFunciones(n as unknown as Funcion[])} disabled={!!busqueda}>
+        <Tabla>
+          <TablaCabecera><tr><TablaTh className="w-8" /><TablaTh className="w-28">{t('colTipo')}</TablaTh><TablaTh className="w-32">{t('colAlias')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh className="w-40">{t('colUrl')}</TablaTh><TablaTh className="w-40">{t('colCodigo')}</TablaTh><TablaTh className="text-right w-20">{tc('acciones')}</TablaTh></tr></TablaCabecera>
+          <TablaCuerpo>
+            {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>Cargando...</TablaTd></TablaFila>
+            ) : funcionesFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron funciones</TablaTd></TablaFila>
+            ) : funcionesFiltradas.map((f) => (
+              <SortableRow key={f.codigo_funcion} id={f.codigo_funcion}>
+                <TablaTd>{badgeTipo(f.tipo)}</TablaTd>
+                <TablaTd className="text-sm">{f.alias_de_funcion || '—'}</TablaTd>
+                <TablaTd className="font-medium">{f.nombre}</TablaTd>
+                <TablaTd className="text-xs">{f.url_funcion ? <a href={f.url_funcion} target="_blank" rel="noopener noreferrer" className="text-primario hover:underline">{f.url_funcion}</a> : <span className="text-texto-muted">—</span>}</TablaTd>
+                <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>
+                <TablaTd>
+                  <div className="flex items-center justify-end gap-1">
+                    <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                    <button onClick={() => setConfirmacion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                  </div>
+                </TablaTd>
+              </SortableRow>
+            ))}
+          </TablaCuerpo>
+        </Tabla>
+      </SortableDndContext>
 
       {/* ── MODAL FUNCION ── */}
       <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[700px] max-w-[95vw]">
@@ -453,26 +432,23 @@ export default function PaginaFunciones() {
                   <p className="text-xs">Asigna procesos desde el mantenedor de Procesos</p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-1">
-                  {procesosDeFuncion.map((p, idx) => (
-                    <div key={p.codigo_proceso} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-borde bg-surface">
-                      <div className="flex flex-col gap-0.5 items-center shrink-0">
-                        <button type="button" onClick={() => moverProceso(idx, 'arriba')} disabled={idx === 0} className="text-texto-muted hover:text-primario disabled:opacity-30"><ArrowUp size={12} /></button>
-                        <button type="button" onClick={() => moverProceso(idx, 'abajo')} disabled={idx === procesosDeFuncion.length - 1} className="text-texto-muted hover:text-primario disabled:opacity-30"><ArrowDown size={12} /></button>
-                      </div>
-                      <span className="text-xs text-texto-muted w-6 text-right shrink-0">{p.orden}</span>
-                      <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-texto">{p.nombre_proceso}</span>
-                        <span className="ml-2 text-xs text-texto-muted">{p.codigo_proceso}</span>
-                      </div>
-                      {p.pasos?.[0] && (
-                        <span className="text-xs text-texto-muted shrink-0">
-                          {p.pasos[0].estado_origen || '—'} → {p.pasos[0].estado_destino}
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
+                <SortableDndContext items={procesosDeFuncion as unknown as Record<string, unknown>[]} getId={(p) => (p as Proceso).codigo_proceso} onReorder={(n) => reordenarProcesos(n as unknown as Proceso[])}>
+                  <div className="flex flex-col gap-1">
+                    {procesosDeFuncion.map((p) => (
+                      <SortableListItem key={p.codigo_proceso} id={p.codigo_proceso} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-borde bg-surface">
+                        <div className="flex-1 min-w-0">
+                          <span className="text-sm font-medium text-texto">{p.nombre_proceso}</span>
+                          <span className="ml-2 text-xs text-texto-muted">{p.codigo_proceso}</span>
+                        </div>
+                        {p.pasos?.[0] && (
+                          <span className="text-xs text-texto-muted shrink-0">
+                            {p.pasos[0].estado_origen || '—'} → {p.pasos[0].estado_destino}
+                          </span>
+                        )}
+                      </SortableListItem>
+                    ))}
+                  </div>
+                </SortableDndContext>
               )}
               <div className="flex justify-end pt-2">
                 <Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton>
