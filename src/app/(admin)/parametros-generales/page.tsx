@@ -102,7 +102,7 @@ export default function PaginaParametrosGenerales() {
   const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50'
 
   return (
-    <div className="relative flex flex-col gap-6 max-w-3xl">
+    <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat />
       <div>
         <h2 className="text-2xl font-bold text-texto">{t('titulo')}</h2>
@@ -128,7 +128,7 @@ export default function PaginaParametrosGenerales() {
                 const key = `${p.categoria_parametro}/${p.tipo_parametro}`
                 return (
                   <div key={key} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
-                    <span className="text-xs font-semibold text-texto-muted shrink-0 w-44 truncate" title={`${p.categoria_parametro} / ${p.tipo_parametro}`}>{p.categoria_parametro}<span className="mx-0.5 text-texto-light">/</span>{p.tipo_parametro}</span>
+                    <span className="text-xs font-semibold text-texto-muted shrink-0 w-80 truncate" title={`${p.categoria_parametro} / ${p.tipo_parametro}`}>{p.categoria_parametro}<span className="mx-0.5 text-texto-light">/</span>{p.tipo_parametro}</span>
                     <input
                       type="text"
                       defaultValue={p.valor_parametro}
