@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { ChevronUp, ChevronDown } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
@@ -13,9 +14,10 @@ import {
   columnaNombre,
 } from '@/components/ui/tabla-crud'
 import { Insignia } from '@/components/ui/insignia'
-import { procesosApi } from '@/lib/api'
+import { procesosApi, funcionesApi } from '@/lib/api'
 import { invalidarCatalogo } from '@/lib/catalogos'
 import type { Proceso } from '@/lib/api'
+import type { Funcion } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TIPOS_ELEMENTO, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
@@ -29,11 +31,18 @@ type FormProceso = {
   tipo_entidad: string
   tipo: string
   n_parallel: number
+  codigo_funcion: string
 }
 
 export default function PaginaProcesos() {
   const t = useTranslations('procesos')
   const tc = useTranslations('common')
+
+  const [funciones, setFunciones] = useState<Funcion[]>([])
+
+  useEffect(() => {
+    funcionesApi.listar().then(setFunciones).catch(() => setFunciones([]))
+  }, [])
 
   const crud = useCrudPage<Proceso, FormProceso>({
     cargarFn: () => procesosApi.listar(),
@@ -43,21 +52,31 @@ export default function PaginaProcesos() {
         descripcion: f.descripcion?.trim() || undefined,
         n_parallel: f.n_parallel,
         tipo: f.tipo,
+        codigo_funcion: f.codigo_funcion ? f.codigo_funcion : null,
       })
       invalidarCatalogo('procesosDocs')
       return r
     },
     getId: (p) => p.codigo_proceso,
-    camposBusqueda: (p) => [p.codigo_proceso, p.nombre_proceso, p.tipo_entidad, p.tipo],
-    formInicial: { nombre_proceso: '', descripcion: '', tipo_entidad: '', tipo: 'USUARIO', n_parallel: 1 },
+    camposBusqueda: (p) => [p.codigo_proceso, p.nombre_proceso, p.tipo_entidad, p.tipo, p.codigo_funcion ?? ''],
+    formInicial: { nombre_proceso: '', descripcion: '', tipo_entidad: '', tipo: 'USUARIO', n_parallel: 1, codigo_funcion: '' },
     itemToForm: (p) => ({
       nombre_proceso: p.nombre_proceso,
       descripcion: p.descripcion ?? '',
       tipo_entidad: p.tipo_entidad,
       tipo: p.tipo ?? 'USUARIO',
       n_parallel: p.n_parallel,
+      codigo_funcion: p.codigo_funcion ?? '',
     }),
   })
+
+  const funcionesOrdenadas = [...funciones].sort((a, b) =>
+    a.nombre.localeCompare(b.nombre),
+  )
+  const nombreFuncion = (codigo?: string | null): string => {
+    if (!codigo) return ''
+    return funciones.find((f) => f.codigo_funcion === codigo)?.nombre ?? codigo
+  }
 
   const filtradosOrdenados = [...crud.filtrados].sort(
     (a, b) => (a.orden ?? 0) - (b.orden ?? 0) || a.nombre_proceso.localeCompare(b.nombre_proceso),
@@ -100,6 +119,7 @@ export default function PaginaProcesos() {
         excelColumnas={[
           { titulo: t('colCodigo'), campo: 'codigo_proceso' },
           { titulo: t('colNombre'), campo: 'nombre_proceso' },
+          { titulo: t('colFuncion'), campo: 'codigo_funcion' },
           { titulo: t('colTipoEntidad'), campo: 'tipo_entidad' },
           { titulo: t('colTipo'), campo: 'tipo' },
           { titulo: t('colOrden'), campo: 'orden' },
@@ -142,6 +162,15 @@ export default function PaginaProcesos() {
           },
           columnaCodigo<Proceso>(t('colCodigo'), (p) => p.codigo_proceso),
           columnaNombre<Proceso>(t('colNombre'), (p) => p.nombre_proceso),
+          {
+            titulo: t('colFuncion'),
+            render: (p: Proceso) =>
+              p.codigo_funcion ? (
+                <Insignia variante="primario">{nombreFuncion(p.codigo_funcion)}</Insignia>
+              ) : (
+                <span className="text-xs text-texto-muted">—</span>
+              ),
+          },
           {
             titulo: t('colTipo'),
             render: (p: Proceso) => (
@@ -213,6 +242,23 @@ export default function PaginaProcesos() {
             placeholder={t('placeholderDescripcion')}
             rows={3}
           />
+
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-texto">{t('etiquetaFuncion')}</label>
+            <select
+              className={selectClass}
+              value={crud.form.codigo_funcion}
+              onChange={(e) => crud.updateForm('codigo_funcion', e.target.value)}
+            >
+              <option value="">{t('sinFuncion')}</option>
+              {funcionesOrdenadas.map((f) => (
+                <option key={f.codigo_funcion} value={f.codigo_funcion}>
+                  {f.nombre}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-texto-muted">{t('descFuncion')}</p>
+          </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-texto">{t('etiquetaTipo')}</label>

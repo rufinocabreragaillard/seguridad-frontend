@@ -306,9 +306,10 @@ function PaginaProcesarDocumentosInterna() {
         const n = parseInt(nivelParam.valor, 10)
         if (!isNaN(n) && n >= 0 && n <= 5) setNivelesDirectorio(n)
       }
-      // Solo procesos con al menos un paso y que no sean CARGAR (CARGAR se
-      // dispara automáticamente desde el módulo Cargar Docs, no desde aquí).
-      const procs = (procsRaw || []).filter((p: ProcesoCatalogo) => p.pasos && p.pasos.length > 0 && p.codigo_proceso !== 'CARGAR')
+      // Procesos asignados a esta pantalla (función PROC_DOCUMENTOS), ordenados por `orden`.
+      const procs = (procsRaw || [])
+        .filter((p: ProcesoCatalogo) => p.pasos && p.pasos.length > 0 && p.codigo_funcion === 'PROC_DOCUMENTOS')
+        .sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0))
       setProcesos(procs)
 
       // Si venimos del dashboard con ?estado=XXX, seleccionar el proceso cuyo

@@ -582,14 +582,20 @@ export interface Proceso {
   prompt?: string | null
   system_prompt?: string | null
   n_parallel: number
+  codigo_funcion?: string | null
   pasos: PasoProceso[]
 }
 
 export const procesosApi = {
-  listar: (tipoEntidad?: string) =>
-    api.get<Proceso[]>('/procesos', { params: tipoEntidad ? { tipo_entidad: tipoEntidad } : undefined }).then((r) => r.data),
+  listar: (tipoEntidad?: string, codigoFuncion?: string) =>
+    api.get<Proceso[]>('/procesos', {
+      params: {
+        ...(tipoEntidad ? { tipo_entidad: tipoEntidad } : {}),
+        ...(codigoFuncion ? { codigo_funcion: codigoFuncion } : {}),
+      },
+    }).then((r) => r.data),
   obtener: (codigo: string) => api.get<Proceso>(`/procesos/${codigo}`).then((r) => r.data),
-  actualizar: (codigo: string, data: { n_parallel?: number; nombre_proceso?: string; descripcion?: string; tipo?: string; orden?: number }) =>
+  actualizar: (codigo: string, data: { n_parallel?: number; nombre_proceso?: string; descripcion?: string; tipo?: string; orden?: number; codigo_funcion?: string | null }) =>
     api.patch<Proceso>(`/procesos/${codigo}`, data).then((r) => r.data),
   reordenar: (orden: { codigo_proceso: string; orden: number }[]) =>
     api.put('/procesos/reordenar', orden).then((r) => r.data),
