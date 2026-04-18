@@ -488,11 +488,17 @@ export const documentosApi = {
       '/documentos/resetear-a-cargado',
       { codigos_documento },
     ).then((r) => r.data),
-  // Revertir al estado anterior (solo UPDATE, sin procesamiento). Ej: VECTORIZADO → CHUNKEADO
-  revertirEstado: (codigos_documento: number[], estado_origen = 'VECTORIZADO', estado_destino = 'CHUNKEADO') =>
-    api.post<{ revertidos: number; estado_origen: string; estado_destino: string }>(
+  // Revertir al estado anterior (solo UPDATE, sin procesamiento).
+  // estados_origen incluye éxito + inválido del mismo paso.
+  // Ej: ['VECTORIZADO','NO_VECTORIZADO'] → 'CHUNKEADO'  (NO toca NO_CHUNKEADO)
+  revertirEstado: (
+    codigos_documento: number[],
+    estados_origen: string[] = ['VECTORIZADO', 'NO_VECTORIZADO'],
+    estado_destino = 'CHUNKEADO',
+  ) =>
+    api.post<{ revertidos: number; estados_origen: string[]; estado_destino: string }>(
       '/documentos/revertir-estado',
-      { codigos_documento, estado_origen, estado_destino },
+      { codigos_documento, estados_origen, estado_destino },
     ).then((r) => r.data),
   // Características
   listarCaracteristicas: (id: number) =>

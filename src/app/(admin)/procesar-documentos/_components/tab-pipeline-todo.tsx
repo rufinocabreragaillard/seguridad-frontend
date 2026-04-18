@@ -280,6 +280,10 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     return true
   }
 
+  // Estados que corresponden al paso VECTORIZAR (éxito + inválido del mismo paso)
+  // NO incluye NO_CHUNKEADO (eso es del paso anterior)
+  const ESTADOS_VECTORIZAR = ['VECTORIZADO', 'NO_VECTORIZADO'] as const
+
   const ejecutarRevertir = async () => {
     setMensajeError('')
     setMensajeRevertir('')
@@ -289,22 +293,29 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     setTiempoTranscurrido(0)
     setProgresoRevertir({ total: 0, revertidos: 0, estado: 'activo' })
     try {
-      const params: Record<string, unknown> = { codigo_estado_doc: 'VECTORIZADO', activo: true }
-      if (ubicacionSel) params.codigo_ubicacion = ubicacionSel
-      if (filtroLibre.trim()) params.q = filtroLibre.trim()
+      const filtrosBase: Record<string, unknown> = { activo: true }
+      if (ubicacionSel) filtrosBase.codigo_ubicacion = ubicacionSel
+      if (filtroLibre.trim()) filtrosBase.q = filtroLibre.trim()
       const topeNum = tope ? parseInt(tope) : 0
-      const docsRaw = await documentosApi.listar(params as Parameters<typeof documentosApi.listar>[0])
+
+      // Buscar documentos en VECTORIZADO y NO_VECTORIZADO (ambos estados del paso VECTORIZAR)
+      const [docsVect, docsNoVect] = await Promise.all([
+        documentosApi.listar({ ...filtrosBase, codigo_estado_doc: 'VECTORIZADO' } as Parameters<typeof documentosApi.listar>[0]),
+        documentosApi.listar({ ...filtrosBase, codigo_estado_doc: 'NO_VECTORIZADO' } as Parameters<typeof documentosApi.listar>[0]),
+      ])
+      const docsRaw = [...docsVect, ...docsNoVect]
       const docs = topeNum > 0 ? docsRaw.slice(0, topeNum) : docsRaw
+
       if (docs.length === 0) {
         setProgresoRevertir({ total: 0, revertidos: 0, estado: 'listo' })
-        setMensajeRevertir('No hay documentos en estado VECTORIZADO con los filtros aplicados.')
+        setMensajeRevertir('No hay documentos en estado VECTORIZADO ni NO_VECTORIZADO con los filtros aplicados.')
         return
       }
       setProgresoRevertir({ total: docs.length, revertidos: 0, estado: 'activo' })
       const ids = docs.map((d) => d.codigo_documento)
-      const resultado = await documentosApi.revertirEstado(ids, 'VECTORIZADO', 'CHUNKEADO')
+      const resultado = await documentosApi.revertirEstado(ids, [...ESTADOS_VECTORIZAR], 'CHUNKEADO')
       setProgresoRevertir({ total: docs.length, revertidos: resultado.revertidos, estado: 'listo' })
-      setMensajeRevertir(`${resultado.revertidos} documento(s) revertidos de VECTORIZADO → CHUNKEADO.`)
+      setMensajeRevertir(`${resultado.revertidos} documento(s) revertidos a CHUNKEADO (VECTORIZADO: ${docsVect.length}, NO_VECTORIZADO: ${docsNoVect.length}).`)
     } catch (e) {
       setProgresoRevertir((prev) => ({ ...prev, estado: 'error' }))
       setMensajeError(e instanceof Error ? e.message : 'Error al revertir estado')
@@ -625,12 +636,17 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
               >
                 <span className="text-2xl font-bold" style={{ color: '#22C55E' }}>
                   {progresoRevertir.estado === 'esperando'
-                    ? (conteosPorEstado['VECTORIZADO'] ?? 0)
+                    ? ((conteosPorEstado['VECTORIZADO'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0))
                     : progresoRevertir.total}
                 </span>
                 <span className="text-[9px] font-semibold uppercase tracking-wide text-texto-muted">docs</span>
               </div>
               <span className="text-xs font-semibold uppercase" style={{ color: '#22C55E' }}>VECTORIZADO</span>
+              {(conteosPorEstado['NO_VECTORIZADO'] ?? 0) > 0 && progresoRevertir.estado === 'esperando' && (
+                <span className="text-[10px] text-texto-muted mt-0.5">
+                  ({conteosPorEstado['VECTORIZADO'] ?? 0} ok + {conteosPorEstado['NO_VECTORIZADO']} err)
+                </span>
+              )}
             </div>
 
             {/* Flecha reversa ← */}
