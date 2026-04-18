@@ -1012,7 +1012,7 @@ function PaginaProcesarDocumentosInterna() {
             <div className="flex flex-col gap-1.5 min-w-0">
               <label className="text-sm font-medium text-texto">{t('etiquetaProceso')}</label>
               <select value={procesoSel} onChange={(e) => setProcesoSel(e.target.value)} className={selectClass} disabled={ejecutando || cargandoInicial}>
-                <option value="">— Solo ver documentos —</option>
+                <option value="">— Sin valor —</option>
                 {procesos.map((p) => {
                   const paso = p.pasos?.[0]
                   const flecha = paso ? `${paso.estado_origen || '—'} → ${paso.estado_destino}` : ''
@@ -1022,8 +1022,6 @@ function PaginaProcesarDocumentosInterna() {
                     </option>
                   )
                 })}
-                <option value={PROCESO_RESTABLECER}>Restablecer (NO_ESCANEABLE / NO_ENCONTRADO → CARGADO/METADATA)</option>
-                <option value={PROCESO_RESETEAR_CARGADO}>Resetear a CARGADO (cualquier estado → CARGADO, limpia texto/chunks)</option>
               </select>
             </div>
 

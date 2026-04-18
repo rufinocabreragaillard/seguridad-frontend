@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, X, Download, Search, ArrowUp, ArrowDown } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Download, Search, ArrowUp, ArrowDown, RefreshCw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -9,7 +9,8 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { aplicacionesApi, funcionesApi, registroLLMApi } from '@/lib/api'
+import { aplicacionesApi, funcionesApi, procesosApi, registroLLMApi } from '@/lib/api'
+import type { Proceso } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Aplicacion, Funcion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -62,7 +63,7 @@ export default function PaginaFunciones() {
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'prompt' | 'system_prompt' | 'llm'>('datos')
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'prompt' | 'system_prompt' | 'llm'>('datos')
   const [guardandoFuncion, setGuardandoFuncion] = useState(false)
   const [errorFuncion, setErrorFuncion] = useState('')
 
@@ -71,6 +72,10 @@ export default function PaginaFunciones() {
   const [cargandoAppsFuncion, setCargandoAppsFuncion] = useState(false)
   const [appNuevaFuncion, setAppNuevaFuncion] = useState('')
   const [asignandoAppFuncion, setAsignandoAppFuncion] = useState(false)
+
+  // Procesos de la función
+  const [procesosDeFuncion, setProcesosDeFuncion] = useState<Proceso[]>([])
+  const [cargandoProcesos, setCargandoProcesos] = useState(false)
 
   // Confirmar eliminacion
   const [confirmacion, setConfirmacion] = useState<Funcion | null>(null)
@@ -108,6 +113,27 @@ export default function PaginaFunciones() {
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
+  const cargarProcesosDeFuncion = useCallback(async (c: string) => {
+    setCargandoProcesos(true)
+    try { setProcesosDeFuncion(await procesosApi.listar('DOCUMENTOS', c)) } catch { setProcesosDeFuncion([]) }
+    finally { setCargandoProcesos(false) }
+  }, [])
+
+  const moverProceso = async (index: number, direccion: 'arriba' | 'abajo') => {
+    const lista = [...procesosDeFuncion]
+    const swap = direccion === 'arriba' ? index - 1 : index + 1
+    if (swap < 0 || swap >= lista.length) return
+    const a = lista[index].orden ?? 0
+    const b = lista[swap].orden ?? 0
+    lista[index] = { ...lista[index], orden: b }
+    lista[swap] = { ...lista[swap], orden: a }
+    ;[lista[index], lista[swap]] = [lista[swap], lista[index]]
+    setProcesosDeFuncion(lista)
+    try {
+      await procesosApi.reordenar(lista.map((p) => ({ codigo_proceso: p.codigo_proceso, orden: p.orden ?? 0 })))
+    } catch { cargarProcesosDeFuncion(funcionEditando!.codigo_funcion) }
+  }
+
   const abrirEditarFuncion = (f: Funcion) => {
     setFuncionEditando(f)
     setFormFuncion({
@@ -129,7 +155,11 @@ export default function PaginaFunciones() {
       perm_delete: f.perm_delete ?? true,
       traducir: f.traducir ?? true,
     })
-    setErrorFuncion(''); setTabModalFuncion('datos'); cargarAppsDeFuncion(f.codigo_funcion); setModalFuncion(true)
+    setErrorFuncion('')
+    setTabModalFuncion('datos')
+    cargarAppsDeFuncion(f.codigo_funcion)
+    cargarProcesosDeFuncion(f.codigo_funcion)
+    setModalFuncion(true)
   }
   const guardarFuncion = async (cerrar: boolean) => {
     if (!formFuncion.nombre) { setErrorFuncion('El nombre es obligatorio'); return }
@@ -226,6 +256,7 @@ export default function PaginaFunciones() {
     { key: 'otros', label: 'Otros Datos' },
     ...(funcionEditando ? [
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
+      { key: 'procesos', label: `Procesos de Función (${procesosDeFuncion.length})` },
       { key: 'prompt', label: 'Prompt' },
       { key: 'system_prompt', label: 'System Prompt' },
       { key: 'llm', label: 'LLM' },
@@ -280,7 +311,7 @@ export default function PaginaFunciones() {
       </Tabla>
 
       {/* ── MODAL FUNCION ── */}
-      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[520px] max-w-[95vw]">
+      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[700px] max-w-[95vw]">
         <div className="flex flex-col gap-4">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -406,6 +437,46 @@ export default function PaginaFunciones() {
               : appsDeFuncion.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene aplicaciones asignadas</p>
               : <div className="flex flex-col gap-2">{appsDeFuncion.map((af) => (<div key={af.codigo_aplicacion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{af.aplicaciones?.nombre_aplicacion || af.codigo_aplicacion}</span><span className="ml-2 text-xs text-texto-muted">{af.codigo_aplicacion}</span></div><button onClick={() => quitarAppDeFuncion(af.codigo_aplicacion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
+            </div>
+          )}
+
+          {/* Tab Procesos de Función */}
+          {tabModalFuncion === 'procesos' && funcionEditando && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-texto-muted">Procesos asociados a esta función, en el orden en que se ejecutan.</p>
+              {cargandoProcesos ? (
+                <div className="flex flex-col gap-2">{[1,2,3].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+              ) : procesosDeFuncion.length === 0 ? (
+                <div className="flex flex-col items-center gap-2 py-8 text-texto-muted">
+                  <RefreshCw size={24} className="opacity-30" />
+                  <p className="text-sm">No hay procesos asignados a esta función</p>
+                  <p className="text-xs">Asigna procesos desde el mantenedor de Procesos</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-1">
+                  {procesosDeFuncion.map((p, idx) => (
+                    <div key={p.codigo_proceso} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-borde bg-surface">
+                      <div className="flex flex-col gap-0.5 items-center shrink-0">
+                        <button type="button" onClick={() => moverProceso(idx, 'arriba')} disabled={idx === 0} className="text-texto-muted hover:text-primario disabled:opacity-30"><ArrowUp size={12} /></button>
+                        <button type="button" onClick={() => moverProceso(idx, 'abajo')} disabled={idx === procesosDeFuncion.length - 1} className="text-texto-muted hover:text-primario disabled:opacity-30"><ArrowDown size={12} /></button>
+                      </div>
+                      <span className="text-xs text-texto-muted w-6 text-right shrink-0">{p.orden}</span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm font-medium text-texto">{p.nombre_proceso}</span>
+                        <span className="ml-2 text-xs text-texto-muted">{p.codigo_proceso}</span>
+                      </div>
+                      {p.pasos?.[0] && (
+                        <span className="text-xs text-texto-muted shrink-0">
+                          {p.pasos[0].estado_origen || '—'} → {p.pasos[0].estado_destino}
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton>
+              </div>
             </div>
           )}
 
