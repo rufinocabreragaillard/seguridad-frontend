@@ -284,7 +284,7 @@ export default function TraduccionesPage() {
           <Languages size={20} className="text-primario" />
         </div>
         <div>
-          <h1 className="text-xl font-semibold text-texto">Traducciones</h1>
+          <h1 className="page-heading">Traducciones</h1>
           <p className="text-sm text-texto-muted">Gestión de idiomas y generación automática de traducciones de catálogos</p>
         </div>
         <div className="ml-auto">

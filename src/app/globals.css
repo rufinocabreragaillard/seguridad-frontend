@@ -15,4 +15,7 @@ body {
   .modal-heading {
     @apply text-base font-bold text-texto;
   }
+  .app-name {
+    @apply text-2xl font-bold text-gray-500;
+  }
 }

@@ -103,7 +103,7 @@ export default function PaginaLLMUso() {
       <BotonChat className="top-0 right-0" />
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-gray-900">{t('titulo')}</h1>
+          <h1 className="page-heading">{t('titulo')}</h1>
           <p className="text-sm text-gray-600">
             {t('descripcion', { grupo: grupoActivo })}
           </p>
