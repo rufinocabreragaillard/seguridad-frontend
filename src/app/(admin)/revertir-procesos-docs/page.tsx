@@ -111,9 +111,6 @@ export default function PaginaRevertirProcesarDocs() {
     return p?.pasos?.[0] || null
   }, [procesos, procesoSel])
 
-  // En procesos de reversa nunca hay extracción client-side
-  const esExtraer = false
-
   // Sincronizar n_parallel con el proceso seleccionado
   useEffect(() => {
     const p = procesos.find((x) => x.codigo_proceso === procesoSel)
@@ -571,7 +568,7 @@ export default function PaginaRevertirProcesarDocs() {
   return (
     <div className="flex flex-col gap-6 w-full overflow-x-hidden">
       <div>
-        <h2 className="text-2xl font-bold text-texto">Revertir Procesos Docs.</h2>
+        <h2 className="text-xl font-semibold text-texto">Revertir Procesos Docs.</h2>
         <p className="text-sm text-texto-muted mt-1">Revierte documentos a estados anteriores del pipeline (ej. VECTORIZADO → CHUNKEADO, ESCANEADO → METADATA).</p>
       </div>
 
@@ -896,12 +893,10 @@ export default function PaginaRevertirProcesarDocs() {
                   {docsPaginados.map((doc) => {
                     const sel = seleccionados.has(doc.codigo_documento)
                     const itemCola = cola.find((c) => c.codigo_documento === doc.codigo_documento)
-                    const ext = (doc.nombre_documento.split('.').pop() || '').toLowerCase()
-                    const IcoArchivo = iconoTipoArchivo(ext)
                     return (
                       <TablaFila key={doc.codigo_documento} className={sel ? 'bg-primario-muy-claro/40' : ''}>
                         <TablaTd>
-                          <button onClick={() => toggleSeleccion(doc.codigo_documento)}>
+                          <button onClick={() => toggleSeleccion(doc.codigo_documento)} type="button">
                             {sel
                               ? <CheckSquare size={16} className="text-primario" />
                               : <SquareIcon size={16} className="text-texto-muted" />
@@ -910,7 +905,7 @@ export default function PaginaRevertirProcesarDocs() {
                         </TablaTd>
                         <TablaTd>
                           <div className="flex items-center gap-2">
-                            <IcoArchivo size={14} className="text-texto-muted shrink-0" />
+                            {iconoTipoArchivo(doc.nombre_documento)}
                             <span className="truncate max-w-xs text-sm">{doc.nombre_documento}</span>
                           </div>
                         </TablaTd>
@@ -1058,13 +1053,13 @@ export default function PaginaRevertirProcesarDocs() {
                   {!cargandoCaract && categoriasConCaract.length === 0 && (
                     <p className="text-sm text-texto-muted text-center py-4">Sin características</p>
                   )}
-                  {categoriasConCaract.map((cat) => (
-                    <div key={cat.codigo_cat_docs} className="flex flex-col gap-1">
-                      <p className="text-sm font-medium text-texto">{cat.nombre_cat_docs}</p>
-                      {cat.tipos_con_caracteristicas?.map((tipo) => (
-                        <div key={tipo.codigo_tipo_docs} className="flex justify-between text-sm">
-                          <span className="text-texto-muted">{tipo.nombre_tipo_docs}</span>
-                          <span className="font-medium">{tipo.caracteristicas?.[0]?.valor_caracteristica || '—'}</span>
+                  {categoriasConCaract.map((cat, i) => (
+                    <div key={cat.categoria?.codigo_cat_docs || i} className="flex flex-col gap-1">
+                      <p className="text-sm font-medium text-texto">{cat.categoria?.nombre_cat_docs}</p>
+                      {cat.caracteristicas?.map((c) => (
+                        <div key={c.id_caracteristica_docs} className="flex justify-between text-sm">
+                          <span className="text-texto-muted">{c.tipos_caract_docs?.nombre_tipo_docs || c.codigo_tipo_docs}</span>
+                          <span className="font-medium">{c.valor_texto_docs || c.valor_numerico_docs?.toString() || c.valor_fecha_docs || '—'}</span>
                         </div>
                       ))}
                     </div>
