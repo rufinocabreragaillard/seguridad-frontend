@@ -36,6 +36,6 @@ body {
   }
   /* Número mediano en cards de estadísticas y resultados de proceso */
   .stat-number {
-    @apply text-2xl font-bold;
+    @apply text-[22px] font-bold;
   }
 }
