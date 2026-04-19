@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search, Save } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search, Save, Languages, RefreshCw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -72,6 +72,10 @@ export default function PaginaRoles() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
+  // Traducción
+  const [traduciendoRol, setTraduciendoRol] = useState<number | null>(null)
+  const [traduciendoFuncion, setTraduciendoFuncion] = useState<string | null>(null)
+
   // Edición inline de booleans por fila
   const [inlineChanges, setInlineChanges] = useState<Map<number, { inicial: boolean; inicial_admin_grupo: boolean; inicial_admin_general: boolean }>>(new Map())
   const [guardandoInline, setGuardandoInline] = useState<Set<number>>(new Set())
@@ -102,6 +106,34 @@ export default function PaginaRoles() {
       setError(e instanceof Error ? e.message : 'Error al guardar')
     } finally {
       setGuardandoInline(prev => { const next = new Set(prev); next.delete(idRol); return next })
+    }
+  }
+
+  const traducirRol = async (r: Rol) => {
+    if (traduciendoRol) return
+    setTraduciendoRol(r.id_rol)
+    try {
+      const res = await rolesApi.traducir(r.id_rol)
+      const idiomas = res.idiomas?.join(', ') || '—'
+      alert(`Traducción generada para "${r.nombre}".\nIdiomas: ${idiomas}\nRegistros: ${res.generadas}`)
+    } catch (e) {
+      alert(`Error traduciendo: ${e instanceof Error ? e.message : 'desconocido'}`)
+    } finally {
+      setTraduciendoRol(null)
+    }
+  }
+
+  const traducirFuncionItem = async (f: Funcion) => {
+    if (traduciendoFuncion) return
+    setTraduciendoFuncion(f.codigo_funcion)
+    try {
+      const res = await funcionesApi.traducir(f.codigo_funcion)
+      const idiomas = res.idiomas?.join(', ') || '—'
+      alert(`Traducción generada para "${f.nombre}".\nIdiomas: ${idiomas}\nRegistros: ${res.generadas}`)
+    } catch (e) {
+      alert(`Error traduciendo: ${e instanceof Error ? e.message : 'desconocido'}`)
+    } finally {
+      setTraduciendoFuncion(null)
     }
   }
 
@@ -559,6 +591,14 @@ export default function PaginaRoles() {
                   </TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => traducirRol(r)}
+                        disabled={traduciendoRol === r.id_rol}
+                        className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Traducir rol a todos los idiomas"
+                      >
+                        {traduciendoRol === r.id_rol ? <RefreshCw size={14} className="animate-spin" /> : <Languages size={14} />}
+                      </button>
                       <button onClick={() => abrirEditarRol(r)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                       <button
                         onClick={() => guardarInline(r.id_rol)}
@@ -617,6 +657,7 @@ export default function PaginaRoles() {
                 <TablaTh>{t('colTipo')}</TablaTh>
                 <TablaTh>{t('colAlias')}</TablaTh>
                 <TablaTh>{t('colNombre')}</TablaTh>
+                <TablaTh className="max-w-[140px]">Descripción</TablaTh>
                 <TablaTh>{t('colIcono')}</TablaTh>
                 <TablaTh>{t('colUrl')}</TablaTh>
                 <TablaTh>{t('colCodigo')}</TablaTh>
@@ -625,20 +666,31 @@ export default function PaginaRoles() {
             </TablaCabecera>
             <TablaCuerpo>
               {cargando ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={9 as never}>{tc('cargando')}</TablaTd></TablaFila>
               ) : funcionesFiltradas.length === 0 ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>{tc('sinResultados')}</TablaTd></TablaFila>
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={9 as never}>{tc('sinResultados')}</TablaTd></TablaFila>
               ) : funcionesFiltradas.map((f) => (
                 <TablaFila key={f.codigo_funcion}>
                   <TablaTd className="text-xs text-texto-muted">{nombreApp(f.codigo_aplicacion_origen) || '—'}</TablaTd>
                   <TablaTd><Insignia variante={varianteTipo(f.tipo)}>{etiquetaTipo(f.tipo)}</Insignia></TablaTd>
                   <TablaTd className="text-sm">{f.alias_de_funcion || '—'}</TablaTd>
                   <TablaTd className="font-medium">{f.nombre}</TablaTd>
+                  <TablaTd className="max-w-[140px]">
+                    <span className="block text-xs text-texto-muted truncate" title={f.descripcion || ''}>{f.descripcion || '—'}</span>
+                  </TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{f.icono_de_funcion || '—'}</TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{f.url_funcion || '—'}</TablaTd>
                   <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => traducirFuncionItem(f)}
+                        disabled={traduciendoFuncion === f.codigo_funcion}
+                        className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Traducir función a todos los idiomas"
+                      >
+                        {traduciendoFuncion === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <Languages size={14} />}
+                      </button>
                       <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                       <button onClick={() => confirmarEliminarFuncion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                     </div>

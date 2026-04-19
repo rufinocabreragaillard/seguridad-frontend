@@ -295,6 +295,10 @@ export const rolesApi = {
     api.get<Rol[]>('/roles', { params: { codigo_grupo: codigoGrupo, incluir_globales: incluirGlobales } }).then((r) => r.data),
   copiar: (datos: { id_rol_origen: number; codigo_grupo_destino: string }) =>
     api.post<Rol>('/roles/copiar', datos).then((r) => r.data),
+  traducir: (idRol: number) =>
+    api.post<{ generadas: number; idiomas: string[]; campos_traducidos?: string[]; mensaje?: string }>(
+      '/traducciones/registro', { tabla: 'roles', pk: String(idRol) }
+    ).then((r) => r.data),
 }
 
 // ─── Funciones ────────────────────────────────────────────────────────────────
