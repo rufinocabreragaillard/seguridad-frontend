@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, KeyboardEvent } from 'react'
-import { Plus, Trash2, Send, MessageCircle } from 'lucide-react'
+import { Plus, Trash2, Send, MessageCircle, FolderOpen } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -11,13 +11,18 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { chatApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { ChatConversacion, ChatMensaje } from '@/lib/tipos'
+import EspaciosTrabajoPage from '../espacios-trabajo/page'
 
 const CODIGO_FUNCION = 'CHAT-USUARIO'
+
+type TabPrincipal = 'chat' | 'espacios'
 
 export default function PaginaChatUsuario() {
   const { grupoActivo } = useAuth()
   const t = useTranslations('chat')
   const tc = useTranslations('common')
+
+  const [tabActiva, setTabActiva] = useState<TabPrincipal>('chat')
 
   // Lista de conversaciones (sidebar)
   const [conversaciones, setConversaciones] = useState<ChatConversacion[]>([])
@@ -191,7 +196,43 @@ export default function PaginaChatUsuario() {
 
   // ── Render ──────────────────────────────────────────────────────────────
   return (
-    <div className="flex h-[calc(100vh-160px)] gap-4 max-w-full">
+    <div className="flex flex-col h-[calc(100vh-120px)]">
+      {/* Lenguetas principales */}
+      <div className="flex border-b border-borde mb-4 flex-shrink-0">
+        <button
+          onClick={() => setTabActiva('chat')}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors ${
+            tabActiva === 'chat'
+              ? 'border-b-2 border-primario text-primario'
+              : 'text-texto-muted hover:text-texto'
+          }`}
+        >
+          <MessageCircle size={15} />
+          Chat
+        </button>
+        <button
+          onClick={() => setTabActiva('espacios')}
+          className={`flex items-center gap-2 px-5 py-2.5 text-sm font-medium transition-colors ${
+            tabActiva === 'espacios'
+              ? 'border-b-2 border-primario text-primario'
+              : 'text-texto-muted hover:text-texto'
+          }`}
+        >
+          <FolderOpen size={15} />
+          Espacios de trabajo
+        </button>
+      </div>
+
+      {/* Contenido de lengueta Espacios */}
+      {tabActiva === 'espacios' && (
+        <div className="flex-1 overflow-y-auto">
+          <EspaciosTrabajoPage />
+        </div>
+      )}
+
+      {/* Contenido de lengueta Chat */}
+      {tabActiva === 'chat' && (
+    <div className="flex flex-1 gap-4 max-w-full overflow-hidden">
       {/* Sidebar de conversaciones */}
       <aside className="w-64 flex-shrink-0 flex flex-col gap-2 border border-borde rounded-lg bg-fondo-tarjeta overflow-hidden">
         <div className="px-3 py-2 border-b border-borde flex items-center justify-between">
@@ -329,6 +370,8 @@ export default function PaginaChatUsuario() {
         textoConfirmar={tc('eliminar')}
         cargando={eliminando}
       />
+    </div>
+      )}
     </div>
   )
 }
