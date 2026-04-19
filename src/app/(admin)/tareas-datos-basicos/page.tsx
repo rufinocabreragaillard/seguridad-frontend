@@ -586,6 +586,59 @@ export default function PaginaTareasDatosBasicos() {
         </>
       )}
 
+      {/* ── Tab: Tipos Canónicos ── */}
+      {tabActiva === 'tipos-canonicos' && (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-texto-muted">Tipos canónicos globales de tarea</p>
+            <div className="flex gap-2">
+              <Boton variante="contorno" tamano="sm"
+                onClick={() => exportarExcel(tiposCanonicos as unknown as Record<string, unknown>[], [
+                  { titulo: 'Código', campo: 'codigo_tipo_canonico' },
+                  { titulo: 'Nombre', campo: 'nombre_tipo_canonico' },
+                  { titulo: 'Descripción', campo: 'descripcion_tipo_canonico' },
+                  { titulo: 'Activo', campo: 'activo', formato: (v) => v ? 'Sí' : 'No' },
+                ], 'tipos_canonicos_tarea')}
+                disabled={tiposCanonicos.length === 0}>
+                <Download size={15} /> Excel
+              </Boton>
+              <Boton variante="primario" onClick={abrirNuevoTC}><Plus size={16} /> Nuevo tipo canónico</Boton>
+            </div>
+          </div>
+
+          {cargandoTC ? (
+            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : (
+            <Tabla>
+              <TablaCabecera><tr>
+                <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh><TablaTh>Estado</TablaTh>
+                <TablaTh className="text-right">Acciones</TablaTh>
+              </tr></TablaCabecera>
+              <TablaCuerpo>
+                {tiposCanonicos.length === 0 ? (
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>No hay tipos canónicos registrados</TablaTd></TablaFila>
+                ) : tiposCanonicos.map((tc) => (
+                  <TablaFila key={tc.codigo_tipo_canonico}>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tc.codigo_tipo_canonico}</code></TablaTd>
+                    <TablaTd className="font-medium">{tc.nombre_tipo_canonico}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm">{tc.descripcion_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
+                    <TablaTd>
+                      <Insignia variante={tc.activo ? 'exito' : 'error'}>{tc.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                    </TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => abrirEditarTC(tc)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                        <button onClick={() => setItemAEliminar({ tipo: 'tipocanonico', item: tc })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                      </div>
+                    </TablaTd>
+                  </TablaFila>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          )}
+        </>
+      )}
+
       {/* Modal Categoría */}
       <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de tarea'}>
         <div className="flex flex-col gap-4">
@@ -716,6 +769,32 @@ export default function PaginaTareasDatosBasicos() {
         </div>
       </Modal>
 
+      {/* Modal Tipo Canónico */}
+      <Modal abierto={modalTC} alCerrar={() => setModalTC(false)} titulo={tcEditando ? 'Editar tipo canónico' : 'Nuevo tipo canónico de tarea'}>
+        <div className="flex flex-col gap-4 min-w-[400px]">
+          {!tcEditando && (
+            <Input etiqueta="Código (dejar vacío para autogenerar)" value={formTC.codigo_tipo_canonico}
+              onChange={(e) => setFormTC({ ...formTC, codigo_tipo_canonico: e.target.value })}
+              placeholder="INCIDENCIA" />
+          )}
+          <Input etiqueta="Nombre *" value={formTC.nombre_tipo_canonico}
+            onChange={(e) => setFormTC({ ...formTC, nombre_tipo_canonico: e.target.value })}
+            placeholder="Incidencia" />
+          <Textarea etiqueta="Descripción" value={formTC.descripcion_tipo_canonico}
+            onChange={(e) => setFormTC({ ...formTC, descripcion_tipo_canonico: e.target.value })}
+            placeholder="Descripción opcional"
+            rows={3} />
+          {errorTC && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTC}</p></div>}
+          <PieBotonesModal
+            editando={!!tcEditando}
+            onGuardar={() => guardarTC(false)}
+            onGuardarYSalir={() => guardarTC(true)}
+            onCerrar={() => setModalTC(false)}
+            cargando={guardandoTC}
+          />
+        </div>
+      </Modal>
+
       {/* Modal Confirmar Eliminación */}
       <ModalConfirmar
         abierto={!!itemAEliminar}
@@ -723,13 +802,16 @@ export default function PaginaTareasDatosBasicos() {
         alConfirmar={ejecutarEliminacion}
         titulo={
           itemAEliminar?.tipo === 'categoria' ? 'Eliminar categoría' :
-          itemAEliminar?.tipo === 'tipotarea' ? 'Eliminar tipo de tarea' : 'Eliminar estado de tarea'
+          itemAEliminar?.tipo === 'tipotarea' ? 'Eliminar tipo de tarea' :
+          itemAEliminar?.tipo === 'tipocanonico' ? 'Eliminar tipo canónico' : 'Eliminar estado de tarea'
         }
         mensaje={
           itemAEliminar?.tipo === 'categoria'
             ? `¿Eliminar la categoría "${(itemAEliminar.item as CategoriaTarea).nombre_categoria_tarea}"? Solo posible si no tiene tipos asociados.`
             : itemAEliminar?.tipo === 'tipotarea'
             ? `¿Eliminar el tipo "${(itemAEliminar.item as TipoTarea).nombre_tipo_tarea}"? Solo posible si no tiene estados asociados.`
+            : itemAEliminar?.tipo === 'tipocanonico'
+            ? `¿Eliminar el tipo canónico "${(itemAEliminar.item as TipoCanonicoTarea).nombre_tipo_canonico}"?`
             : `¿Eliminar el estado "${(itemAEliminar?.item as EstadoTarea)?.nombre_estado_tarea}"?`
         }
         textoConfirmar="Eliminar"
