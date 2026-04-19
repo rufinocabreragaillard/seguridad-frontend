@@ -1,0 +1,678 @@
+'use client'
+
+import { useEffect, useState, useCallback } from 'react'
+import { Plus, Pencil, Trash2, Download } from 'lucide-react'
+import { Boton } from '@/components/ui/boton'
+import { Input } from '@/components/ui/input'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
+import { Insignia } from '@/components/ui/insignia'
+import { Modal } from '@/components/ui/modal'
+import { ModalConfirmar } from '@/components/ui/modal-confirmar'
+import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { tareasDatosBasicosApi } from '@/lib/api'
+import type { CategoriaTarea, TipoTarea, EstadoTarea, EstadoCanonicoTarea, TipoCanonicoTarea } from '@/lib/tipos'
+import { exportarExcel } from '@/lib/exportar-excel'
+import { BotonChat } from '@/components/ui/boton-chat'
+
+type TabId = 'categorias' | 'tipos' | 'estados'
+
+type ItemEliminar =
+  | { tipo: 'categoria'; item: CategoriaTarea }
+  | { tipo: 'tipotarea'; item: TipoTarea }
+  | { tipo: 'estado'; item: EstadoTarea }
+
+export default function PaginaTareasDatosBasicos() {
+  const [tabActiva, setTabActiva] = useState<TabId>('categorias')
+
+  // ── Categorías ─────────────────────────────────────────────────────────────
+  const [categorias, setCategorias] = useState<CategoriaTarea[]>([])
+  const [cargandoCat, setCargandoCat] = useState(true)
+  const [modalCat, setModalCat] = useState(false)
+  const [catEditando, setCatEditando] = useState<CategoriaTarea | null>(null)
+  const [formCat, setFormCat] = useState({
+    codigo_categoria_tarea: '', nombre_categoria_tarea: '', descripcion_categoria_tarea: '',
+  })
+  const [guardandoCat, setGuardandoCat] = useState(false)
+  const [errorCat, setErrorCat] = useState('')
+
+  // ── Tipos ──────────────────────────────────────────────────────────────────
+  const [tipos, setTipos] = useState<TipoTarea[]>([])
+  const [cargandoTipo, setCargandoTipo] = useState(true)
+  const [modalTipo, setModalTipo] = useState(false)
+  const [tipoEditando, setTipoEditando] = useState<TipoTarea | null>(null)
+  const [formTipo, setFormTipo] = useState({
+    codigo_categoria_tarea: '', codigo_tipo_tarea: '', codigo_tipo_canonico: '',
+    nombre_tipo_tarea: '', descripcion_tipo_tarea: '',
+  })
+  const [guardandoTipo, setGuardandoTipo] = useState(false)
+  const [errorTipo, setErrorTipo] = useState('')
+  const [filtroCatTipo, setFiltroCatTipo] = useState('')
+  const [tiposCanonicos, setTiposCanonicos] = useState<TipoCanonicoTarea[]>([])
+
+  // ── Estados ────────────────────────────────────────────────────────────────
+  const [estados, setEstados] = useState<EstadoTarea[]>([])
+  const [cargandoEst, setCargandoEst] = useState(true)
+  const [modalEst, setModalEst] = useState(false)
+  const [estEditando, setEstEditando] = useState<EstadoTarea | null>(null)
+  const [formEst, setFormEst] = useState({
+    codigo_categoria_tarea: '', codigo_tipo_tarea: '', codigo_estado_tarea: '',
+    nombre_estado_tarea: '', descripcion_estado_tarea: '', codigo_estado_canonico: '', orden: 0,
+  })
+  const [guardandoEst, setGuardandoEst] = useState(false)
+  const [errorEst, setErrorEst] = useState('')
+  const [filtroCatEst, setFiltroCatEst] = useState('')
+  const [filtroTipoEst, setFiltroTipoEst] = useState('')
+  const [canonicosEst, setCanonicoEst] = useState<EstadoCanonicoTarea[]>([])
+
+  // ── Eliminación ────────────────────────────────────────────────────────────
+  const [itemAEliminar, setItemAEliminar] = useState<ItemEliminar | null>(null)
+  const [eliminando, setEliminando] = useState(false)
+
+  // ── Carga ──────────────────────────────────────────────────────────────────
+  const cargarCategorias = useCallback(async () => {
+    setCargandoCat(true)
+    try { setCategorias(await tareasDatosBasicosApi.listarCategorias()) }
+    finally { setCargandoCat(false) }
+  }, [])
+
+  const cargarTipos = useCallback(async () => {
+    setCargandoTipo(true)
+    try { setTipos(await tareasDatosBasicosApi.listarTiposTar()) }
+    finally { setCargandoTipo(false) }
+  }, [])
+
+  const cargarEstados = useCallback(async () => {
+    setCargandoEst(true)
+    try { setEstados(await tareasDatosBasicosApi.listarEstadosTar()) }
+    finally { setCargandoEst(false) }
+  }, [])
+
+  useEffect(() => { cargarCategorias() }, [cargarCategorias])
+  useEffect(() => { cargarTipos() }, [cargarTipos])
+  useEffect(() => { cargarEstados() }, [cargarEstados])
+  useEffect(() => {
+    tareasDatosBasicosApi.listarTiposCanonicos().then(setTiposCanonicos).catch(() => {})
+    tareasDatosBasicosApi.listarCanonicosTar().then(setCanonicoEst).catch(() => {})
+  }, [])
+
+  // ── CRUD Categorías ────────────────────────────────────────────────────────
+  const abrirNuevaCat = () => {
+    setCatEditando(null)
+    setFormCat({ codigo_categoria_tarea: '', nombre_categoria_tarea: '', descripcion_categoria_tarea: '' })
+    setErrorCat('')
+    setModalCat(true)
+  }
+
+  const abrirEditarCat = (c: CategoriaTarea) => {
+    setCatEditando(c)
+    setFormCat({
+      codigo_categoria_tarea: c.codigo_categoria_tarea,
+      nombre_categoria_tarea: c.nombre_categoria_tarea,
+      descripcion_categoria_tarea: c.descripcion_categoria_tarea || '',
+    })
+    setErrorCat('')
+    setModalCat(true)
+  }
+
+  const guardarCategoria = async (cerrar = true) => {
+    if (!formCat.nombre_categoria_tarea) { setErrorCat('El nombre es obligatorio'); return }
+    setGuardandoCat(true); setErrorCat('')
+    try {
+      if (catEditando) {
+        await tareasDatosBasicosApi.actualizarCategoria(catEditando.codigo_categoria_tarea, {
+          nombre_categoria_tarea: formCat.nombre_categoria_tarea,
+          descripcion_categoria_tarea: formCat.descripcion_categoria_tarea || undefined,
+        })
+      } else {
+        await tareasDatosBasicosApi.crearCategoria({
+          codigo_categoria_tarea: formCat.codigo_categoria_tarea || undefined,
+          nombre_categoria_tarea: formCat.nombre_categoria_tarea,
+          descripcion_categoria_tarea: formCat.descripcion_categoria_tarea || undefined,
+        })
+      }
+      if (cerrar) setModalCat(false)
+      cargarCategorias()
+    } catch (e) {
+      setErrorCat(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setGuardandoCat(false) }
+  }
+
+  // ── CRUD Tipos ─────────────────────────────────────────────────────────────
+  const abrirNuevoTipo = () => {
+    setTipoEditando(null)
+    setFormTipo({ codigo_categoria_tarea: '', codigo_tipo_tarea: '', codigo_tipo_canonico: '', nombre_tipo_tarea: '', descripcion_tipo_tarea: '' })
+    setErrorTipo('')
+    setModalTipo(true)
+  }
+
+  const abrirEditarTipo = (t: TipoTarea) => {
+    setTipoEditando(t)
+    setFormTipo({
+      codigo_categoria_tarea: t.codigo_categoria_tarea,
+      codigo_tipo_tarea: t.codigo_tipo_tarea,
+      codigo_tipo_canonico: t.codigo_tipo_canonico || '',
+      nombre_tipo_tarea: t.nombre_tipo_tarea,
+      descripcion_tipo_tarea: t.descripcion_tipo_tarea || '',
+    })
+    setErrorTipo('')
+    setModalTipo(true)
+  }
+
+  const guardarTipo = async (cerrar = true) => {
+    if (!formTipo.codigo_categoria_tarea || !formTipo.nombre_tipo_tarea) {
+      setErrorTipo('La categoría y el nombre son obligatorios'); return
+    }
+    if (!tipoEditando && !formTipo.codigo_tipo_tarea) {
+      setErrorTipo('El código del tipo es obligatorio'); return
+    }
+    setGuardandoTipo(true); setErrorTipo('')
+    try {
+      if (tipoEditando) {
+        await tareasDatosBasicosApi.actualizarTipoTar(
+          tipoEditando.codigo_categoria_tarea, tipoEditando.codigo_tipo_tarea,
+          {
+            nombre_tipo_tarea: formTipo.nombre_tipo_tarea,
+            descripcion_tipo_tarea: formTipo.descripcion_tipo_tarea || undefined,
+            codigo_tipo_canonico: formTipo.codigo_tipo_canonico || undefined,
+          }
+        )
+      } else {
+        await tareasDatosBasicosApi.crearTipoTar({
+          codigo_categoria_tarea: formTipo.codigo_categoria_tarea,
+          codigo_tipo_tarea: formTipo.codigo_tipo_tarea,
+          codigo_tipo_canonico: formTipo.codigo_tipo_canonico || undefined,
+          nombre_tipo_tarea: formTipo.nombre_tipo_tarea,
+          descripcion_tipo_tarea: formTipo.descripcion_tipo_tarea || undefined,
+        })
+      }
+      if (cerrar) setModalTipo(false)
+      cargarTipos()
+    } catch (e) {
+      setErrorTipo(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setGuardandoTipo(false) }
+  }
+
+  // ── CRUD Estados ───────────────────────────────────────────────────────────
+  const abrirNuevoEst = () => {
+    setEstEditando(null)
+    setFormEst({ codigo_categoria_tarea: '', codigo_tipo_tarea: '', codigo_estado_tarea: '', nombre_estado_tarea: '', descripcion_estado_tarea: '', codigo_estado_canonico: '', orden: 0 })
+    setErrorEst('')
+    setModalEst(true)
+  }
+
+  const abrirEditarEst = (e: EstadoTarea) => {
+    setEstEditando(e)
+    setFormEst({
+      codigo_categoria_tarea: e.codigo_categoria_tarea,
+      codigo_tipo_tarea: e.codigo_tipo_tarea,
+      codigo_estado_tarea: e.codigo_estado_tarea,
+      nombre_estado_tarea: e.nombre_estado_tarea,
+      descripcion_estado_tarea: e.descripcion_estado_tarea || '',
+      codigo_estado_canonico: e.codigo_estado_canonico,
+      orden: e.orden,
+    })
+    setErrorEst('')
+    setModalEst(true)
+  }
+
+  const guardarEstado = async (cerrar = true) => {
+    if (!formEst.codigo_categoria_tarea || !formEst.codigo_tipo_tarea || !formEst.nombre_estado_tarea || !formEst.codigo_estado_canonico) {
+      setErrorEst('Categoría, tipo, nombre y estado canónico son obligatorios'); return
+    }
+    if (!estEditando && !formEst.codigo_estado_tarea) {
+      setErrorEst('El código del estado es obligatorio'); return
+    }
+    setGuardandoEst(true); setErrorEst('')
+    try {
+      if (estEditando) {
+        await tareasDatosBasicosApi.actualizarEstadoTar(
+          estEditando.codigo_categoria_tarea, estEditando.codigo_tipo_tarea, estEditando.codigo_estado_tarea,
+          {
+            nombre_estado_tarea: formEst.nombre_estado_tarea,
+            descripcion_estado_tarea: formEst.descripcion_estado_tarea || undefined,
+            codigo_estado_canonico: formEst.codigo_estado_canonico,
+            orden: formEst.orden,
+          }
+        )
+      } else {
+        await tareasDatosBasicosApi.crearEstadoTar({
+          codigo_categoria_tarea: formEst.codigo_categoria_tarea,
+          codigo_tipo_tarea: formEst.codigo_tipo_tarea,
+          codigo_estado_tarea: formEst.codigo_estado_tarea,
+          nombre_estado_tarea: formEst.nombre_estado_tarea,
+          descripcion_estado_tarea: formEst.descripcion_estado_tarea || undefined,
+          codigo_estado_canonico: formEst.codigo_estado_canonico,
+          orden: formEst.orden,
+        })
+      }
+      if (cerrar) setModalEst(false)
+      cargarEstados()
+    } catch (e) {
+      setErrorEst(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setGuardandoEst(false) }
+  }
+
+  const toggleActivoTipo = async (t: TipoTarea) => {
+    try {
+      await tareasDatosBasicosApi.actualizarTipoTar(
+        t.codigo_categoria_tarea, t.codigo_tipo_tarea, { activo: !t.activo }
+      )
+      cargarTipos()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al cambiar estado')
+    }
+  }
+
+  const toggleActivoEst = async (e: EstadoTarea) => {
+    try {
+      await tareasDatosBasicosApi.actualizarEstadoTar(
+        e.codigo_categoria_tarea, e.codigo_tipo_tarea, e.codigo_estado_tarea, { activo: !e.activo }
+      )
+      cargarEstados()
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Error al cambiar estado')
+    }
+  }
+
+  // ── Eliminar ───────────────────────────────────────────────────────────────
+  const ejecutarEliminacion = async () => {
+    if (!itemAEliminar) return
+    setEliminando(true)
+    try {
+      if (itemAEliminar.tipo === 'categoria') {
+        await tareasDatosBasicosApi.eliminarCategoria((itemAEliminar.item as CategoriaTarea).codigo_categoria_tarea)
+        cargarCategorias()
+      } else if (itemAEliminar.tipo === 'tipotarea') {
+        const t = itemAEliminar.item as TipoTarea
+        await tareasDatosBasicosApi.eliminarTipoTar(t.codigo_categoria_tarea, t.codigo_tipo_tarea)
+        cargarTipos()
+      } else {
+        const e = itemAEliminar.item as EstadoTarea
+        await tareasDatosBasicosApi.eliminarEstadoTar(e.codigo_categoria_tarea, e.codigo_tipo_tarea, e.codigo_estado_tarea)
+        cargarEstados()
+      }
+      setItemAEliminar(null)
+    } catch (e) {
+      alert(e instanceof Error ? e.message : 'Error al eliminar')
+      setItemAEliminar(null)
+    } finally { setEliminando(false) }
+  }
+
+  // ── Filtros ────────────────────────────────────────────────────────────────
+  const tiposFiltrados = filtroCatTipo
+    ? tipos.filter((t) => t.codigo_categoria_tarea === filtroCatTipo)
+    : tipos
+
+  const estadosFiltrados = estados.filter((e) => {
+    if (filtroCatEst && e.codigo_categoria_tarea !== filtroCatEst) return false
+    if (filtroTipoEst && e.codigo_tipo_tarea !== filtroTipoEst) return false
+    return true
+  })
+
+  const tiposParaEstados = tipos.filter((t) => !filtroCatEst || t.codigo_categoria_tarea === filtroCatEst)
+
+  const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-1.5 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
+  const tabCls = (id: TabId) =>
+    `px-5 py-2.5 text-sm font-medium transition-colors ${tabActiva === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
+
+  return (
+    <div className="relative flex flex-col gap-6 max-w-6xl">
+      <BotonChat className="top-0 right-0" />
+
+      <div className="pr-28">
+        <h2 className="page-heading">Datos Básicos de Tareas</h2>
+        <p className="text-sm text-texto-muted mt-1">Configuración de categorías, tipos y estados de tarea</p>
+      </div>
+
+      {/* Pestañas */}
+      <div className="flex border-b border-borde gap-1">
+        <button onClick={() => setTabActiva('categorias')} className={tabCls('categorias')}>Categorías de Tarea</button>
+        <button onClick={() => setTabActiva('tipos')} className={tabCls('tipos')}>Tipos de Tarea</button>
+        <button onClick={() => setTabActiva('estados')} className={tabCls('estados')}>Estados de Tarea</button>
+      </div>
+
+      {/* ── Tab: Categorías ── */}
+      {tabActiva === 'categorias' && (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-sm text-texto-muted">Categorías globales de tarea</p>
+            <div className="flex gap-2">
+              <Boton variante="contorno" tamano="sm"
+                onClick={() => exportarExcel(categorias as unknown as Record<string, unknown>[], [
+                  { titulo: 'Código', campo: 'codigo_categoria_tarea' },
+                  { titulo: 'Nombre', campo: 'nombre_categoria_tarea' },
+                  { titulo: 'Descripción', campo: 'descripcion_categoria_tarea' },
+                  { titulo: 'Activo', campo: 'activo', formato: (v) => v ? 'Sí' : 'No' },
+                ], 'categorias_tarea')}
+                disabled={categorias.length === 0}>
+                <Download size={15} /> Excel
+              </Boton>
+              <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> Nueva categoría</Boton>
+            </div>
+          </div>
+
+          {cargandoCat ? (
+            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : (
+            <Tabla>
+              <TablaCabecera><tr>
+                <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh><TablaTh>Estado</TablaTh>
+                <TablaTh className="text-right">Acciones</TablaTh>
+              </tr></TablaCabecera>
+              <TablaCuerpo>
+                {categorias.length === 0 ? (
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>No hay categorías registradas</TablaTd></TablaFila>
+                ) : categorias.map((c) => (
+                  <TablaFila key={c.codigo_categoria_tarea}>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_tarea}</code></TablaTd>
+                    <TablaTd className="font-medium">{c.nombre_categoria_tarea}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm">{c.descripcion_categoria_tarea || <span className="text-texto-light">—</span>}</TablaTd>
+                    <TablaTd>
+                      <Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                    </TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                        <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                      </div>
+                    </TablaTd>
+                  </TablaFila>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Tipos ── */}
+      {tabActiva === 'tipos' && (
+        <>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-texto-muted">Filtrar por categoría:</p>
+              <select value={filtroCatTipo} onChange={(e) => setFiltroCatTipo(e.target.value)} className={selectCls}>
+                <option value="">Todas</option>
+                {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <Boton variante="contorno" tamano="sm"
+                onClick={() => exportarExcel(tiposFiltrados as unknown as Record<string, unknown>[], [
+                  { titulo: 'Categoría', campo: 'codigo_categoria_tarea' },
+                  { titulo: 'Código tipo', campo: 'codigo_tipo_tarea' },
+                  { titulo: 'Nombre', campo: 'nombre_tipo_tarea' },
+                  { titulo: 'Tipo canónico', campo: 'codigo_tipo_canonico' },
+                  { titulo: 'Activo', campo: 'activo', formato: (v) => v ? 'Sí' : 'No' },
+                ], 'tipos_tarea')}
+                disabled={tiposFiltrados.length === 0}>
+                <Download size={15} /> Excel
+              </Boton>
+              <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> Nuevo tipo</Boton>
+            </div>
+          </div>
+
+          {cargandoTipo ? (
+            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : (
+            <Tabla>
+              <TablaCabecera><tr>
+                <TablaTh>Categoría</TablaTh><TablaTh>Código tipo</TablaTh><TablaTh>Nombre</TablaTh>
+                <TablaTh>Tipo canónico</TablaTh><TablaTh>Estado</TablaTh>
+                <TablaTh className="text-right">Acciones</TablaTh>
+              </tr></TablaCabecera>
+              <TablaCuerpo>
+                {tiposFiltrados.length === 0 ? (
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={6 as never}>No hay tipos registrados</TablaTd></TablaFila>
+                ) : tiposFiltrados.map((t) => (
+                  <TablaFila key={`${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`}>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_categoria_tarea}</code></TablaTd>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_tipo_tarea}</code></TablaTd>
+                    <TablaTd className="font-medium">{t.nombre_tipo_tarea}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm">{t.codigo_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
+                    <TablaTd>
+                      <button onClick={() => toggleActivoTipo(t)} title="Cambiar estado">
+                        <Insignia variante={t.activo ? 'exito' : 'error'}>{t.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                      </button>
+                    </TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                        <button onClick={() => setItemAEliminar({ tipo: 'tipotarea', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                      </div>
+                    </TablaTd>
+                  </TablaFila>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Estados ── */}
+      {tabActiva === 'estados' && (
+        <>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-wrap">
+              <p className="text-sm text-texto-muted">Filtrar:</p>
+              <select value={filtroCatEst} onChange={(e) => { setFiltroCatEst(e.target.value); setFiltroTipoEst('') }} className={selectCls}>
+                <option value="">Todas las categorías</option>
+                {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
+              </select>
+              <select value={filtroTipoEst} onChange={(e) => setFiltroTipoEst(e.target.value)} className={selectCls}>
+                <option value="">Todos los tipos</option>
+                {tiposParaEstados.map((t) => (
+                  <option key={`${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`} value={t.codigo_tipo_tarea}>
+                    {t.nombre_tipo_tarea}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-2">
+              <Boton variante="contorno" tamano="sm"
+                onClick={() => exportarExcel(estadosFiltrados as unknown as Record<string, unknown>[], [
+                  { titulo: 'Categoría', campo: 'codigo_categoria_tarea' },
+                  { titulo: 'Tipo', campo: 'codigo_tipo_tarea' },
+                  { titulo: 'Código estado', campo: 'codigo_estado_tarea' },
+                  { titulo: 'Nombre', campo: 'nombre_estado_tarea' },
+                  { titulo: 'Canónico', campo: 'codigo_estado_canonico' },
+                  { titulo: 'Orden', campo: 'orden' },
+                  { titulo: 'Activo', campo: 'activo', formato: (v) => v ? 'Sí' : 'No' },
+                ], 'estados_tarea')}
+                disabled={estadosFiltrados.length === 0}>
+                <Download size={15} /> Excel
+              </Boton>
+              <Boton variante="primario" onClick={abrirNuevoEst}><Plus size={16} /> Nuevo estado</Boton>
+            </div>
+          </div>
+
+          {cargandoEst ? (
+            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : (
+            <Tabla>
+              <TablaCabecera><tr>
+                <TablaTh>Categoría</TablaTh><TablaTh>Tipo</TablaTh><TablaTh>Código</TablaTh>
+                <TablaTh>Nombre</TablaTh><TablaTh>Canónico</TablaTh><TablaTh>Ord.</TablaTh><TablaTh>Estado</TablaTh>
+                <TablaTh className="text-right">Acciones</TablaTh>
+              </tr></TablaCabecera>
+              <TablaCuerpo>
+                {estadosFiltrados.length === 0 ? (
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={8 as never}>No hay estados registrados</TablaTd></TablaFila>
+                ) : estadosFiltrados.map((e) => (
+                  <TablaFila key={`${e.codigo_categoria_tarea}/${e.codigo_tipo_tarea}/${e.codigo_estado_tarea}`}>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_categoria_tarea}</code></TablaTd>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_tipo_tarea}</code></TablaTd>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_tarea}</code></TablaTd>
+                    <TablaTd className="font-medium">{e.nombre_estado_tarea}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm">{e.codigo_estado_canonico}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm text-center">{e.orden}</TablaTd>
+                    <TablaTd>
+                      <button onClick={() => toggleActivoEst(e)} title="Cambiar estado">
+                        <Insignia variante={e.activo ? 'exito' : 'error'}>{e.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                      </button>
+                    </TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => abrirEditarEst(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                        <button onClick={() => setItemAEliminar({ tipo: 'estado', item: e })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                      </div>
+                    </TablaTd>
+                  </TablaFila>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          )}
+        </>
+      )}
+
+      {/* Modal Categoría */}
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de tarea'}>
+        <div className="flex flex-col gap-4">
+          {!catEditando && (
+            <Input etiqueta="Código (dejar vacío para autogenerar)" value={formCat.codigo_categoria_tarea}
+              onChange={(e) => setFormCat({ ...formCat, codigo_categoria_tarea: e.target.value })}
+              placeholder="SOPORTE_TI" />
+          )}
+          <Input etiqueta="Nombre *" value={formCat.nombre_categoria_tarea}
+            onChange={(e) => setFormCat({ ...formCat, nombre_categoria_tarea: e.target.value })}
+            placeholder="Soporte TI" />
+          <Input etiqueta="Descripción" value={formCat.descripcion_categoria_tarea}
+            onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_tarea: e.target.value })}
+            placeholder="Descripción opcional" />
+          {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
+          <PieBotonesModal
+            editando={!!catEditando}
+            onGuardar={() => guardarCategoria(false)}
+            onGuardarYSalir={() => guardarCategoria(true)}
+            onCerrar={() => setModalCat(false)}
+            cargando={guardandoCat}
+          />
+        </div>
+      </Modal>
+
+      {/* Modal Tipo */}
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo de tarea' : 'Nuevo tipo de tarea'}>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">Categoría *</label>
+            <select value={formTipo.codigo_categoria_tarea}
+              onChange={(e) => setFormTipo({ ...formTipo, codigo_categoria_tarea: e.target.value })}
+              disabled={!!tipoEditando}
+              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
+              <option value="">Seleccionar categoría...</option>
+              {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
+            </select>
+          </div>
+          <Input etiqueta="Código tipo *" value={formTipo.codigo_tipo_tarea}
+            onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_tarea: e.target.value })}
+            placeholder="INCIDENCIA_RED"
+            disabled={!!tipoEditando} />
+          <Input etiqueta="Nombre *" value={formTipo.nombre_tipo_tarea}
+            onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_tarea: e.target.value })}
+            placeholder="Incidencia de Red" />
+          <Input etiqueta="Descripción" value={formTipo.descripcion_tipo_tarea}
+            onChange={(e) => setFormTipo({ ...formTipo, descripcion_tipo_tarea: e.target.value })}
+            placeholder="Descripción opcional" />
+          {tiposCanonicos.length > 0 && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Tipo canónico (opcional)</label>
+              <select value={formTipo.codigo_tipo_canonico}
+                onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_canonico: e.target.value })}
+                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
+                <option value="">Sin tipo canónico</option>
+                {tiposCanonicos.map((tc) => <option key={tc.codigo_tipo_canonico} value={tc.codigo_tipo_canonico}>{tc.nombre_tipo_canonico}</option>)}
+              </select>
+            </div>
+          )}
+          {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}
+          <PieBotonesModal
+            editando={!!tipoEditando}
+            onGuardar={() => guardarTipo(false)}
+            onGuardarYSalir={() => guardarTipo(true)}
+            onCerrar={() => setModalTipo(false)}
+            cargando={guardandoTipo}
+          />
+        </div>
+      </Modal>
+
+      {/* Modal Estado */}
+      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? 'Editar estado de tarea' : 'Nuevo estado de tarea'}>
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">Categoría *</label>
+            <select value={formEst.codigo_categoria_tarea}
+              onChange={(e) => setFormEst({ ...formEst, codigo_categoria_tarea: e.target.value, codigo_tipo_tarea: '' })}
+              disabled={!!estEditando}
+              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
+              <option value="">Seleccionar categoría...</option>
+              {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">Tipo *</label>
+            <select value={formEst.codigo_tipo_tarea}
+              onChange={(e) => setFormEst({ ...formEst, codigo_tipo_tarea: e.target.value })}
+              disabled={!!estEditando}
+              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
+              <option value="">Seleccionar tipo...</option>
+              {tipos.filter((t) => t.codigo_categoria_tarea === formEst.codigo_categoria_tarea)
+                .map((t) => <option key={t.codigo_tipo_tarea} value={t.codigo_tipo_tarea}>{t.nombre_tipo_tarea}</option>)}
+            </select>
+          </div>
+          <Input etiqueta="Código estado *" value={formEst.codigo_estado_tarea}
+            onChange={(e) => setFormEst({ ...formEst, codigo_estado_tarea: e.target.value })}
+            placeholder="PENDIENTE"
+            disabled={!!estEditando} />
+          <Input etiqueta="Nombre *" value={formEst.nombre_estado_tarea}
+            onChange={(e) => setFormEst({ ...formEst, nombre_estado_tarea: e.target.value })}
+            placeholder="Pendiente" />
+          <Input etiqueta="Descripción" value={formEst.descripcion_estado_tarea}
+            onChange={(e) => setFormEst({ ...formEst, descripcion_estado_tarea: e.target.value })}
+            placeholder="Descripción opcional" />
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">Estado canónico *</label>
+            <select value={formEst.codigo_estado_canonico}
+              onChange={(e) => setFormEst({ ...formEst, codigo_estado_canonico: e.target.value })}
+              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
+              <option value="">Seleccionar estado canónico...</option>
+              {canonicosEst.map((c) => <option key={c.codigo_estado_canonico} value={c.codigo_estado_canonico}>{c.nombre_estado_canonico}</option>)}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">Orden</label>
+            <input type="number" min={0} value={formEst.orden}
+              onChange={(e) => setFormEst({ ...formEst, orden: parseInt(e.target.value) || 0 })}
+              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+          </div>
+          {errorEst && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorEst}</p></div>}
+          <PieBotonesModal
+            editando={!!estEditando}
+            onGuardar={() => guardarEstado(false)}
+            onGuardarYSalir={() => guardarEstado(true)}
+            onCerrar={() => setModalEst(false)}
+            cargando={guardandoEst}
+          />
+        </div>
+      </Modal>
+
+      {/* Modal Confirmar Eliminación */}
+      <ModalConfirmar
+        abierto={!!itemAEliminar}
+        alCerrar={() => setItemAEliminar(null)}
+        alConfirmar={ejecutarEliminacion}
+        titulo={
+          itemAEliminar?.tipo === 'categoria' ? 'Eliminar categoría' :
+          itemAEliminar?.tipo === 'tipotarea' ? 'Eliminar tipo de tarea' : 'Eliminar estado de tarea'
+        }
+        mensaje={
+          itemAEliminar?.tipo === 'categoria'
+            ? `¿Eliminar la categoría "${(itemAEliminar.item as CategoriaTarea).nombre_categoria_tarea}"? Solo posible si no tiene tipos asociados.`
+            : itemAEliminar?.tipo === 'tipotarea'
+            ? `¿Eliminar el tipo "${(itemAEliminar.item as TipoTarea).nombre_tipo_tarea}"? Solo posible si no tiene estados asociados.`
+            : `¿Eliminar el estado "${(itemAEliminar?.item as EstadoTarea)?.nombre_estado_tarea}"?`
+        }
+        textoConfirmar="Eliminar"
+        cargando={eliminando}
+      />
+    </div>
+  )
+}
