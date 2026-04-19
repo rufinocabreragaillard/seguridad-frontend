@@ -16,6 +16,7 @@ import type { Aplicacion, Funcion, Grupo } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { TIPOS_ELEMENTO, ETIQUETA_TIPO, DESCRIPCION_TIPO, etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 
 type FuncionApp = { codigo_funcion: string; orden: number; inicial: boolean; funciones: { nombre_funcion: string } }
 type GrupoApp = { codigo_grupo: string; grupos_entidades: { nombre_grupo: string } }
@@ -266,7 +267,7 @@ export default function PaginaAplicaciones() {
               <label htmlFor="sidebar_ancho" className="text-sm text-texto cursor-pointer">Sidebar expandido al iniciar <span className="text-texto-muted">(desmarcar para apps de uso único como Chat)</span></label>
             </div>
             {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
-            <div className="flex gap-3 justify-end pt-2"><Boton variante="primario" onClick={() => guardarApp(false)} cargando={guardandoApp}>Guardar</Boton><Boton variante="secundario" onClick={() => guardarApp(true)} cargando={guardandoApp}>Guardar y Salir</Boton><Boton variante="contorno" onClick={() => setModalApp(false)}>Salir</Boton></div>
+            <PieBotonesModal editando={!!appEditando} onGuardar={() => guardarApp(false)} onGuardarYSalir={() => guardarApp(true)} onCerrar={() => setModalApp(false)} cargando={guardandoApp} />
           </>)}
           {tabModalApp === 'funciones' && appEditando && (
             <div className="flex flex-col gap-4">
