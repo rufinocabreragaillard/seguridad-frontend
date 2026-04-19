@@ -175,6 +175,8 @@ export interface Rol {
   prompt?: string | null
   system_prompt?: string | null
   inicial?: boolean
+  inicial_admin_grupo?: boolean
+  inicial_admin_general?: boolean
 }
 
 export interface Funcion {

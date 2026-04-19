@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search, Save } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -71,6 +71,39 @@ export default function PaginaRoles() {
 
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+
+  // Edición inline de booleans por fila
+  const [inlineChanges, setInlineChanges] = useState<Map<number, { inicial_admin_grupo: boolean; inicial_admin_general: boolean }>>(new Map())
+  const [guardandoInline, setGuardandoInline] = useState<Set<number>>(new Set())
+
+  const getInlineVal = (r: Rol, campo: 'inicial_admin_grupo' | 'inicial_admin_general') => {
+    const pending = inlineChanges.get(r.id_rol)
+    return pending !== undefined ? pending[campo] : (r[campo] ?? false)
+  }
+
+  const handleInlineCheck = (r: Rol, campo: 'inicial_admin_grupo' | 'inicial_admin_general', valor: boolean) => {
+    setInlineChanges(prev => {
+      const next = new Map(prev)
+      const current = next.get(r.id_rol) ?? { inicial_admin_grupo: r.inicial_admin_grupo ?? false, inicial_admin_general: r.inicial_admin_general ?? false }
+      next.set(r.id_rol, { ...current, [campo]: valor })
+      return next
+    })
+  }
+
+  const guardarInline = async (idRol: number) => {
+    const cambios = inlineChanges.get(idRol)
+    if (!cambios) return
+    setGuardandoInline(prev => new Set([...prev, idRol]))
+    try {
+      await rolesApi.actualizar(idRol, cambios)
+      setInlineChanges(prev => { const next = new Map(prev); next.delete(idRol); return next })
+      cargar()
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al guardar')
+    } finally {
+      setGuardandoInline(prev => { const next = new Set(prev); next.delete(idRol); return next })
+    }
+  }
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -458,12 +491,13 @@ export default function PaginaRoles() {
             <TablaCabecera>
               <tr>
                 <TablaTh className="w-16">{t('colOrden')}</TablaTh>
-                <TablaTh>{t('colAppOrigen')}</TablaTh>
                 <TablaTh>{t('colTipo')}</TablaTh>
                 <TablaTh>{t('colAlias')}</TablaTh>
                 <TablaTh>{t('colNombre')}</TablaTh>
                 <TablaTh>{t('colUrlInicio')}</TablaTh>
                 <TablaTh className="text-center">{t('colInicial')}</TablaTh>
+                <TablaTh className="text-center">Ini. Admin Grupo</TablaTh>
+                <TablaTh className="text-center">Ini. Admin General</TablaTh>
                 <TablaTh>{t('colCodigo')}</TablaTh>
                 <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr>
@@ -484,7 +518,6 @@ export default function PaginaRoles() {
                       <span className="text-xs text-texto-muted w-4 text-center">{r.orden}</span>
                     </div>
                   </TablaTd>
-                  <TablaTd className="text-xs text-texto-muted">{nombreApp(r.codigo_aplicacion_origen) || '—'}</TablaTd>
                   <TablaTd><Insignia variante={varianteTipo(r.tipo)}>{etiquetaTipo(r.tipo)}</Insignia></TablaTd>
                   <TablaTd className="text-sm">{r.alias_de_rol || '—'}</TablaTd>
                   <TablaTd className="font-medium">{r.nombre}</TablaTd>
@@ -496,6 +529,24 @@ export default function PaginaRoles() {
                       <span className="text-texto-muted text-xs">—</span>
                     )}
                   </TablaTd>
+                  <TablaTd className="text-center">
+                    <input
+                      type="checkbox"
+                      checked={getInlineVal(r, 'inicial_admin_grupo')}
+                      onChange={(e) => handleInlineCheck(r, 'inicial_admin_grupo', e.target.checked)}
+                      className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
+                      title="Inicial Admin Grupo"
+                    />
+                  </TablaTd>
+                  <TablaTd className="text-center">
+                    <input
+                      type="checkbox"
+                      checked={getInlineVal(r, 'inicial_admin_general')}
+                      onChange={(e) => handleInlineCheck(r, 'inicial_admin_general', e.target.checked)}
+                      className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
+                      title="Inicial Admin General"
+                    />
+                  </TablaTd>
                   <TablaTd>
                     <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_rol}</code>
                     {r.codigo_grupo == null && <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">Global</span>}
@@ -503,6 +554,14 @@ export default function PaginaRoles() {
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => abrirEditarRol(r)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                      <button
+                        onClick={() => guardarInline(r.id_rol)}
+                        disabled={guardandoInline.has(r.id_rol)}
+                        className={`p-1.5 rounded-lg transition-colors ${inlineChanges.has(r.id_rol) ? 'text-primario hover:bg-primario-muy-claro' : 'text-texto-muted hover:bg-primario-muy-claro hover:text-primario'} disabled:opacity-40 disabled:cursor-not-allowed`}
+                        title="Guardar cambios"
+                      >
+                        <Save size={14} />
+                      </button>
                       <button onClick={() => confirmarEliminarRol(r)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                     </div>
                   </TablaTd>
@@ -620,21 +679,6 @@ export default function PaginaRoles() {
                 ) : grupoActivo === 'ADMIN' ? (
                   <Input etiqueta={t('etiquetaCodigo')} value={formRol.codigo_rol} onChange={(e) => setFormRol({ ...formRol, codigo_rol: e.target.value.toUpperCase() })} placeholder={t('placeholderCodigoRol')} />
                 ) : null}
-                <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium text-texto">Aplicación origen</label>
-                  <select value={formRol.codigo_aplicacion_origen} onChange={(e) => setFormRol({ ...formRol, codigo_aplicacion_origen: e.target.value })} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
-                    <option value="">— sin asignar —</option>
-                    {[...todasApps].sort((a, b) => {
-                      const peso = (t?: string | null) => { const n = normalizarTipo(t); return n === 'USUARIO' ? 0 : n === 'TEST' ? 1 : n === 'ADMINISTRADOR' ? 2 : 3 }
-                      const ta = peso(a.tipo)
-                      const tb = peso(b.tipo)
-                      if (ta !== tb) return ta - tb
-                      return a.nombre.localeCompare(b.nombre, 'es')
-                    }).map((a) => (
-                      <option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre} ({a.codigo_aplicacion})</option>
-                    ))}
-                  </select>
-                </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-texto">Tipo</label>
                   <div className="flex items-center gap-2 py-1">
