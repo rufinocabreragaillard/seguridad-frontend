@@ -376,9 +376,10 @@ export function Header({ titulo }: { titulo?: string }) {
             <div className="flex gap-1 flex-wrap">
               {(localesDinamicos.length > 0 ? localesDinamicos : localesFallback.map((codigo) => ({ codigo, nombre_nativo: codigo, nombre_es: codigo, activo: true, es_base: codigo === 'es', orden: 0 }))).map((loc) => {
                 const codigo = typeof loc === 'string' ? loc : loc.codigo
-                const activo =
-                  (typeof document !== 'undefined' && document.cookie.includes(`NEXT_LOCALE=${codigo}`)) ||
-                  (typeof document !== 'undefined' && !document.cookie.includes('NEXT_LOCALE=') && codigo === 'es')
+                // Usar usuario.locale (BD) como fuente de verdad para el botón activo
+                // evita inversión cuando el cookie y la BD quedan desincronizados
+                const localeActivo = usuario?.locale ?? 'es'
+                const activo = codigo === localeActivo
                 return (
                   <button
                     key={codigo}

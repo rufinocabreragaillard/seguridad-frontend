@@ -71,6 +71,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Cargar traducciones de campos de BD del sistema
         const { setTraducciones } = await import('@/lib/traducir')
         setTraducciones(ctx.traducciones ?? {}, ctx.locale ?? 'es')
+        // Sincronizar cookie NEXT_LOCALE con el locale guardado en BD
+        // Evita inversión cuando cookie y BD quedan desincronizados
+        if (typeof document !== 'undefined' && ctx.locale) {
+          const cookieActual = document.cookie.match(/NEXT_LOCALE=([^;]+)/)?.[1]
+          if (cookieActual !== ctx.locale) {
+            document.cookie = `NEXT_LOCALE=${ctx.locale};path=/;max-age=31536000`
+          }
+        }
         return ctx
       } catch (e: unknown) {
         const esUltimoIntento = intento === MAX_INTENTOS
