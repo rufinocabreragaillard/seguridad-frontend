@@ -297,14 +297,14 @@ function TabRolesGlobales() {
                   <th className="py-2 pr-4 w-24 text-right">Acciones</th>
                 </tr>
               </thead>
-              <SortableDndContext items={roles as unknown as Record<string, unknown>[]} getId={(r) => String((r as Rol).id_rol)} onReorder={(newItems) => reordenarRoles(newItems as unknown as Rol[])}>
+              <SortableDndContext items={roles as unknown as Record<string, unknown>[]} getId={(r) => String(r.id_rol)} onReorder={(newItems) => reordenarRoles(newItems as unknown as Rol[])}>
               <tbody>
                 {roles.map((r) => {
                   const nombreAppOrigen = r.codigo_aplicacion_origen
                     ? (aplicaciones.find((a) => a.codigo_aplicacion === r.codigo_aplicacion_origen)?.nombre || r.codigo_aplicacion_origen)
                     : '—'
                   return (
-                  <SortableRow key={r.id_rol} id={String(r.id_rol)} className="border-b border-borde/50 hover:bg-surface-hover">
+                  <SortableRow key={r.id_rol} id={String(r.id_rol)}>
                     <td className="py-2 pr-4">
                       <Insignia variante={varianteTipo(r.tipo)}>{etiquetaTipo(r.tipo)}</Insignia>
                     </td>

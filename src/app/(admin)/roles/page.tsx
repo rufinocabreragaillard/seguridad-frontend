@@ -126,7 +126,7 @@ export default function PaginaRoles() {
 
   const abrirEditarRol = (r: Rol) => {
     setRolEditando(r)
-    setFormRol({ codigo_rol: r.codigo_rol, nombre: r.nombre, alias_de_rol: r.alias_de_rol || '', descripcion: r.descripcion || '', url_inicio: r.url_inicio || '', funcion_por_defecto: r.funcion_por_defecto || '', codigo_aplicacion_origen: r.codigo_aplicacion_origen || '', tipo: normalizarTipo(r.tipo), prompt: (r as Record<string, unknown>).prompt as string || '', system_prompt: (r as Record<string, unknown>).system_prompt as string || '', inicial: r.inicial ?? false })
+    setFormRol({ codigo_rol: r.codigo_rol, nombre: r.nombre, alias_de_rol: r.alias_de_rol || '', descripcion: r.descripcion || '', url_inicio: r.url_inicio || '', funcion_por_defecto: r.funcion_por_defecto || '', codigo_aplicacion_origen: r.codigo_aplicacion_origen || '', tipo: normalizarTipo(r.tipo), prompt: (r as unknown as Record<string, unknown>).prompt as string || '', system_prompt: (r as unknown as Record<string, unknown>).system_prompt as string || '', inicial: r.inicial ?? false })
     setError('')
     setTabModalRol('datos')
     setFuncionNueva('')
