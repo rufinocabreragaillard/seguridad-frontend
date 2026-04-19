@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Copy, Languages, Pencil, Plus, RefreshCw, Save, Search, Trash2, X } from 'lucide-react'
 import { SortableDndContext, SortableRow, SortableListItem } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Tarjeta, TarjetaCabecera, TarjetaTitulo, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -562,17 +563,13 @@ function TabRolesGlobales() {
                   Rol inicial (asignar automáticamente a nuevos usuarios)
                 </label>
               </div>
-              <div className="flex justify-end gap-2 pt-2">
-                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
-                  {editando ? tc('grabar') : t('crearRol')}
-                </Boton>
-                <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
-                  {tc('grabarYSalir')}
-                </Boton>
-                <Boton variante="contorno" onClick={() => setModalAbierto(false)}>
-                  {tc('salir')}
-                </Boton>
-              </div>
+              <PieBotonesModal
+                editando={!!editando}
+                onGuardar={() => guardar(false)}
+                onGuardarYSalir={() => guardar(true)}
+                onCerrar={() => setModalAbierto(false)}
+                cargando={guardando}
+              />
             </>
           )}
 

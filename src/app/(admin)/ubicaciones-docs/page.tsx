@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Pencil, Trash2, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle, XCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Insignia } from '@/components/ui/insignia'
@@ -635,17 +636,13 @@ export default function PaginaUbicacionesDocs() {
             </div>
           )}
 
-          <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
-              {tc('grabar')}
-            </Boton>
-            <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
-              {tc('grabarYSalir')}
-            </Boton>
-            <Boton variante="contorno" onClick={() => setModal(false)}>
-              {tc('salir')}
-            </Boton>
-          </div>
+          <PieBotonesModal
+            editando={!!editando}
+            onGuardar={() => guardar(false)}
+            onGuardarYSalir={() => guardar(true)}
+            onCerrar={() => setModal(false)}
+            cargando={guardando}
+          />
         </div>
       </Modal>
 

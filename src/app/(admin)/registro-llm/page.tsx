@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, Download, Search, CheckCircle, XCircle, Send, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Insignia } from '@/components/ui/insignia'
@@ -255,11 +256,13 @@ export default function PaginaRegistroLLM() {
               </label>
             )}
             {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-            <div className="flex gap-3 justify-end pt-2">
-              <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>{tc('grabar')}</Boton>
-              <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>{tc('grabarYSalir')}</Boton>
-              <Boton variante="contorno" onClick={() => setModal(false)}>{tc('salir')}</Boton>
-            </div>
+            <PieBotonesModal
+              editando={!!editando}
+              onGuardar={() => guardar(false)}
+              onGuardarYSalir={() => guardar(true)}
+              onCerrar={() => setModal(false)}
+              cargando={guardando}
+            />
           </>)}
 
           {tabModal === 'probar' && editando && (

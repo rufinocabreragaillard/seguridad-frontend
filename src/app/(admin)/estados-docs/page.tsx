@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
-import { Boton } from '@/components/ui/boton'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { TablaCrud, columnaCodigo, columnaNombre, columnaDescripcion, columnaEstado } from '@/components/ui/tabla-crud'
 import { estadosDocsApi } from '@/lib/api'
@@ -223,17 +223,13 @@ export default function PaginaEstadosDocs() {
                 value={crud.form.prompt}
                 onChange={(e) => crud.updateForm('prompt', e.target.value)}
               />
-              <div className="flex gap-3 justify-end">
-                <Boton variante="primario" tamano="sm" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
-                  {tc('grabar')}
-                </Boton>
-                <Boton variante="secundario" tamano="sm" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
-                  {tc('grabarYSalir')}
-                </Boton>
-                <Boton variante="contorno" tamano="sm" onClick={crud.cerrarModal}>
-                  {tc('salir')}
-                </Boton>
-              </div>
+              <PieBotonesModal
+                editando={!!crud.editando}
+                onGuardar={() => guardarEstado(false)}
+                onGuardarYSalir={() => guardarEstado(true)}
+                onCerrar={crud.cerrarModal}
+                cargando={guardandoEstado}
+              />
             </div>
           )}
 
@@ -249,17 +245,13 @@ export default function PaginaEstadosDocs() {
                 value={crud.form.system_prompt}
                 onChange={(e) => crud.updateForm('system_prompt', e.target.value)}
               />
-              <div className="flex gap-3 justify-end">
-                <Boton variante="primario" tamano="sm" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
-                  {tc('grabar')}
-                </Boton>
-                <Boton variante="secundario" tamano="sm" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
-                  {tc('grabarYSalir')}
-                </Boton>
-                <Boton variante="contorno" tamano="sm" onClick={crud.cerrarModal}>
-                  {tc('salir')}
-                </Boton>
-              </div>
+              <PieBotonesModal
+                editando={!!crud.editando}
+                onGuardar={() => guardarEstado(false)}
+                onGuardarYSalir={() => guardarEstado(true)}
+                onCerrar={crud.cerrarModal}
+                cargando={guardandoEstado}
+              />
             </div>
           )}
 
@@ -271,17 +263,13 @@ export default function PaginaEstadosDocs() {
 
           {/* Botones principales (solo en tab datos o al crear) */}
           {(!crud.editando || tabModal === 'datos') && (
-            <div className="flex gap-3 justify-end pt-2">
-              <Boton variante="primario" onClick={() => guardarEstado(false)} cargando={guardandoEstado}>
-                {tc('grabar')}
-              </Boton>
-              <Boton variante="secundario" onClick={() => guardarEstado(true)} cargando={guardandoEstado}>
-                {tc('grabarYSalir')}
-              </Boton>
-              <Boton variante="contorno" onClick={crud.cerrarModal}>
-                {tc('salir')}
-              </Boton>
-            </div>
+            <PieBotonesModal
+              editando={!!crud.editando}
+              onGuardar={() => guardarEstado(false)}
+              onGuardarYSalir={() => guardarEstado(true)}
+              onCerrar={crud.cerrarModal}
+              cargando={guardandoEstado}
+            />
           )}
         </div>
       </Modal>

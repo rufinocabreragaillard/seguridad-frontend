@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Plus, Trash2, Download, Search, Eye, ExternalLink, FileText, XCircle } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { Boton } from '@/components/ui/boton'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
@@ -606,17 +607,13 @@ export default function PaginaDocumentos() {
                 </div>
               )}
 
-              <div className="flex gap-3 justify-end pt-2">
-                <Boton variante="secundario" onClick={() => setModal(false)}>
-                  {tc('salir')}
-                </Boton>
-                <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
-                  {tc('grabarYSalir')}
-                </Boton>
-                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
-                  {tc('grabar')}
-                </Boton>
-              </div>
+              <PieBotonesModal
+                editando={!!editando}
+                onGuardar={() => guardar(false)}
+                onGuardarYSalir={() => guardar(true)}
+                onCerrar={() => setModal(false)}
+                cargando={guardando}
+              />
             </div>
           )}
 
@@ -656,17 +653,13 @@ export default function PaginaDocumentos() {
                   )
                 })
               )}
-              <div className="flex gap-3 justify-end pt-2">
-                <Boton variante="secundario" onClick={() => setModal(false)}>
-                  {tc('salir')}
-                </Boton>
-                <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
-                  {tc('grabarYSalir')}
-                </Boton>
-                <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
-                  {tc('grabar')}
-                </Boton>
-              </div>
+              <PieBotonesModal
+                editando={!!editando}
+                onGuardar={() => guardar(false)}
+                onGuardarYSalir={() => guardar(true)}
+                onCerrar={() => setModal(false)}
+                cargando={guardando}
+              />
             </div>
           )}
 

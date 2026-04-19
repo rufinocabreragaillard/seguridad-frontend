@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { Pencil, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
-import { Boton } from '@/components/ui/boton'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
@@ -162,17 +162,13 @@ export default function PaginaAreas() {
             </div>
           )}
 
-          <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="secundario" onClick={() => setModal(false)}>
-              {tc('salir')}
-            </Boton>
-            <Boton variante="secundario" onClick={() => guardar(true)} cargando={guardando}>
-              {tc('grabarYSalir')}
-            </Boton>
-            <Boton variante="primario" onClick={() => guardar(false)} cargando={guardando}>
-              {tc('grabar')}
-            </Boton>
-          </div>
+          <PieBotonesModal
+            editando={!!editando}
+            onGuardar={() => guardar(false)}
+            onGuardarYSalir={() => guardar(true)}
+            onCerrar={() => setModal(false)}
+            cargando={guardando}
+          />
         </div>
       </Modal>
     </div>

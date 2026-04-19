@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { CheckCircle, Loader2, Pencil, Plus, Trash2, XCircle, Zap } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
@@ -482,18 +483,13 @@ export default function PaginaLLMConfiguracion() {
 
             {error && <div className="text-sm text-red-600">{error}</div>}
 
-            <div className="flex justify-end gap-2 pt-2">
-              <Boton variante="secundario" onClick={() => setModal(false)}>
-                {tc('salir')}
-              </Boton>
-              <Boton variante="secundario" onClick={() => guardar(true)} disabled={guardando}>
-                {tc('grabarYSalir')}
-              </Boton>
-              <Boton onClick={() => guardar(false)} disabled={guardando}>
-                {guardando && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
-                {tc('grabar')}
-              </Boton>
-            </div>
+            <PieBotonesModal
+              editando={!!editando}
+              onGuardar={() => guardar(false)}
+              onGuardarYSalir={() => guardar(true)}
+              onCerrar={() => setModal(false)}
+              cargando={guardando}
+            />
           </div>
         </Modal>
       )}
@@ -521,13 +517,12 @@ export default function PaginaLLMConfiguracion() {
                 </div>
               ),
             )}
-            <div className="flex justify-end gap-2 pt-2">
-              <Boton variante="secundario" onClick={() => setEditandoPrecio(null)}>
-                {tc('salir')}
-              </Boton>
-              <Boton variante="secundario" onClick={() => guardarPrecio(true)}>{tc('grabarYSalir')}</Boton>
-              <Boton onClick={() => guardarPrecio(false)}>{tc('grabar')}</Boton>
-            </div>
+            <PieBotonesModal
+              editando={!!editandoPrecio}
+              onGuardar={() => guardarPrecio(false)}
+              onGuardarYSalir={() => guardarPrecio(true)}
+              onCerrar={() => setEditandoPrecio(null)}
+            />
           </div>
         </Modal>
       )}

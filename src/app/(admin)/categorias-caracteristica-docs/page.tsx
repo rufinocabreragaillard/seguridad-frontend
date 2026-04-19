@@ -5,6 +5,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, Download, Search } from 'lucide-react'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
@@ -522,11 +523,13 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           )}
 
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
-          <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="primario" onClick={() => guardarCat(false)} cargando={guardandoCat}>{tc('grabar')}</Boton>
-            <Boton variante="secundario" onClick={() => guardarCat(true)} cargando={guardandoCat}>{tc('grabarYSalir')}</Boton>
-            <Boton variante="contorno" onClick={() => setModalCat(false)}>{tc('salir')}</Boton>
-          </div>
+          <PieBotonesModal
+            editando={!!catEditando}
+            onGuardar={() => guardarCat(false)}
+            onGuardarYSalir={() => guardarCat(true)}
+            onCerrar={() => setModalCat(false)}
+            cargando={guardandoCat}
+          />
         </div>
       </Modal>
 
@@ -540,11 +543,13 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             <Input etiqueta={t('colCodigo')} value={formTipo.codigo_tipo_docs} disabled readOnly />
           )}
           {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}
-          <div className="flex gap-3 justify-end pt-2">
-            <Boton variante="primario" onClick={() => guardarTipo(false)} cargando={guardandoTipo}>{tipoEditando ? tc('grabar') : tc('crear')}</Boton>
-            <Boton variante="secundario" onClick={() => guardarTipo(true)} cargando={guardandoTipo}>{tc('grabarYSalir')}</Boton>
-            <Boton variante="contorno" onClick={() => setModalTipo(false)}>{tc('salir')}</Boton>
-          </div>
+          <PieBotonesModal
+            editando={!!tipoEditando}
+            onGuardar={() => guardarTipo(false)}
+            onGuardarYSalir={() => guardarTipo(true)}
+            onCerrar={() => setModalTipo(false)}
+            cargando={guardandoTipo}
+          />
         </div>
       </Modal>
 
