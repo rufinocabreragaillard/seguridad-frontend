@@ -180,7 +180,7 @@ export default function PaginaRoles() {
       if (rolEditando) {
         await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, prompt: formRol.prompt || undefined, system_prompt: formRol.system_prompt || undefined, inicial: formRol.inicial })
       } else {
-        const payload: Record<string, unknown> = { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, codigo_grupo: grupoActivo || 'ADMIN', inicial: formRol.inicial }
+        const payload: Record<string, unknown> = { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, codigo_grupo: grupoActivo || 'ADMIN', inicial: formRol.inicial, tipo: formRol.tipo }
         if (esGlobalCreate && formRol.codigo_rol) payload.codigo_rol = formRol.codigo_rol
         const nuevo = await rolesApi.crear(payload as Parameters<typeof rolesApi.crear>[0])
         if (!cerrar && nuevo) {
@@ -687,10 +687,22 @@ export default function PaginaRoles() {
                 ) : null}
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-texto">Tipo</label>
-                  <div className="flex items-center gap-2 py-1">
-                    <Insignia variante={varianteTipo(formRol.tipo)}>{etiquetaTipo(formRol.tipo)}</Insignia>
-                    <span className="text-xs text-texto-muted">Solo modificable desde la base de datos</span>
-                  </div>
+                  {rolEditando ? (
+                    <div className="flex items-center gap-2 py-1">
+                      <Insignia variante={varianteTipo(formRol.tipo)}>{etiquetaTipo(formRol.tipo)}</Insignia>
+                      <span className="text-xs text-texto-muted">Solo modificable desde la base de datos</span>
+                    </div>
+                  ) : (
+                    <select
+                      value={formRol.tipo}
+                      onChange={(e) => setFormRol({ ...formRol, tipo: e.target.value as TipoElemento })}
+                      className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                    >
+                      <option value="RESTRINGIDO">Restringido</option>
+                      <option value="USUARIO">Usuario</option>
+                      <option value="ADMINISTRACION">Administración</option>
+                    </select>
+                  )}
                 </div>
                 <Input etiqueta={t('etiquetaDescripcion')} value={formRol.descripcion} onChange={(e) => setFormRol({ ...formRol, descripcion: e.target.value })} placeholder={t('placeholderDescripcion')} />
                 <Input etiqueta={t('etiquetaUrlInicio')} value={formRol.url_inicio} onChange={(e) => setFormRol({ ...formRol, url_inicio: e.target.value })} placeholder={t('placeholderUrlInicio')} />
