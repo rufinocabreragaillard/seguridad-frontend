@@ -147,6 +147,15 @@ function _esErrorPostgres(msg: string): boolean {
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
+    // Sin respuesta del servidor (red caída, timeout, CORS, servidor dormido)
+    if (!error.response) {
+      const msg =
+        error.code === 'ECONNABORTED'
+          ? 'La solicitud tardó demasiado. Intente nuevamente en unos segundos.'
+          : 'No se pudo conectar con el servidor. Verifique su conexión o intente más tarde.'
+      return Promise.reject(new Error(msg))
+    }
+
     const detail = (error.response?.data as { detail?: unknown })?.detail
     let msg: string
     if (Array.isArray(detail)) {
@@ -154,6 +163,8 @@ api.interceptors.response.use(
       msg = detail.map((e: { msg?: string }) => e.msg || JSON.stringify(e)).join('; ')
     } else if (typeof detail === 'string') {
       msg = detail
+    } else if (error.response.status === 500) {
+      msg = 'Ocurrió un error interno en el servidor. Si el problema persiste, contacte al administrador.'
     } else {
       msg = error.message || 'Error desconocido'
     }
