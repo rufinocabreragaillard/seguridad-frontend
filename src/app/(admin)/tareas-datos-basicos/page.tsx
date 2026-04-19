@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, Download } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
@@ -14,12 +15,13 @@ import type { CategoriaTarea, TipoTarea, EstadoTarea, EstadoCanonicoTarea, TipoC
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
 
-type TabId = 'categorias' | 'tipos' | 'estados'
+type TabId = 'categorias' | 'tipos' | 'estados' | 'tipos-canonicos'
 
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaTarea }
   | { tipo: 'tipotarea'; item: TipoTarea }
   | { tipo: 'estado'; item: EstadoTarea }
+  | { tipo: 'tipocanonico'; item: TipoCanonicoTarea }
 
 export default function PaginaTareasDatosBasicos() {
   const [tabActiva, setTabActiva] = useState<TabId>('categorias')
@@ -64,6 +66,14 @@ export default function PaginaTareasDatosBasicos() {
   const [filtroTipoEst, setFiltroTipoEst] = useState('')
   const [canonicosEst, setCanonicoEst] = useState<EstadoCanonicoTarea[]>([])
 
+  // ── Tipos Canónicos ────────────────────────────────────────────────────────
+  const [cargandoTC, setCargandoTC] = useState(true)
+  const [modalTC, setModalTC] = useState(false)
+  const [tcEditando, setTcEditando] = useState<TipoCanonicoTarea | null>(null)
+  const [formTC, setFormTC] = useState({ codigo_tipo_canonico: '', nombre_tipo_canonico: '', descripcion_tipo_canonico: '' })
+  const [guardandoTC, setGuardandoTC] = useState(false)
+  const [errorTC, setErrorTC] = useState('')
+
   // ── Eliminación ────────────────────────────────────────────────────────────
   const [itemAEliminar, setItemAEliminar] = useState<ItemEliminar | null>(null)
   const [eliminando, setEliminando] = useState(false)
@@ -87,11 +97,17 @@ export default function PaginaTareasDatosBasicos() {
     finally { setCargandoEst(false) }
   }, [])
 
+  const cargarTiposCanonicos = useCallback(async () => {
+    setCargandoTC(true)
+    try { setTiposCanonicos(await tareasDatosBasicosApi.listarTiposCanonicos()) }
+    finally { setCargandoTC(false) }
+  }, [])
+
   useEffect(() => { cargarCategorias() }, [cargarCategorias])
   useEffect(() => { cargarTipos() }, [cargarTipos])
   useEffect(() => { cargarEstados() }, [cargarEstados])
+  useEffect(() => { cargarTiposCanonicos() }, [cargarTiposCanonicos])
   useEffect(() => {
-    tareasDatosBasicosApi.listarTiposCanonicos().then(setTiposCanonicos).catch(() => {})
     tareasDatosBasicosApi.listarCanonicosTar().then(setCanonicoEst).catch(() => {})
   }, [])
 
@@ -263,6 +279,48 @@ export default function PaginaTareasDatosBasicos() {
     }
   }
 
+  // ── CRUD Tipos Canónicos ───────────────────────────────────────────────────
+  const abrirNuevoTC = () => {
+    setTcEditando(null)
+    setFormTC({ codigo_tipo_canonico: '', nombre_tipo_canonico: '', descripcion_tipo_canonico: '' })
+    setErrorTC('')
+    setModalTC(true)
+  }
+
+  const abrirEditarTC = (tc: TipoCanonicoTarea) => {
+    setTcEditando(tc)
+    setFormTC({
+      codigo_tipo_canonico: tc.codigo_tipo_canonico,
+      nombre_tipo_canonico: tc.nombre_tipo_canonico,
+      descripcion_tipo_canonico: tc.descripcion_tipo_canonico || '',
+    })
+    setErrorTC('')
+    setModalTC(true)
+  }
+
+  const guardarTC = async (cerrar = true) => {
+    if (!formTC.nombre_tipo_canonico) { setErrorTC('El nombre es obligatorio'); return }
+    setGuardandoTC(true); setErrorTC('')
+    try {
+      if (tcEditando) {
+        await tareasDatosBasicosApi.actualizarTipoCanonico(tcEditando.codigo_tipo_canonico, {
+          nombre_tipo_canonico: formTC.nombre_tipo_canonico,
+          descripcion_tipo_canonico: formTC.descripcion_tipo_canonico || undefined,
+        })
+      } else {
+        await tareasDatosBasicosApi.crearTipoCanonico({
+          codigo_tipo_canonico: formTC.codigo_tipo_canonico || undefined,
+          nombre_tipo_canonico: formTC.nombre_tipo_canonico,
+          descripcion_tipo_canonico: formTC.descripcion_tipo_canonico || undefined,
+        })
+      }
+      if (cerrar) setModalTC(false)
+      cargarTiposCanonicos()
+    } catch (e) {
+      setErrorTC(e instanceof Error ? e.message : 'Error al guardar')
+    } finally { setGuardandoTC(false) }
+  }
+
   const toggleActivoEst = async (e: EstadoTarea) => {
     try {
       await tareasDatosBasicosApi.actualizarEstadoTar(
@@ -286,6 +344,9 @@ export default function PaginaTareasDatosBasicos() {
         const t = itemAEliminar.item as TipoTarea
         await tareasDatosBasicosApi.eliminarTipoTar(t.codigo_categoria_tarea, t.codigo_tipo_tarea)
         cargarTipos()
+      } else if (itemAEliminar.tipo === 'tipocanonico') {
+        await tareasDatosBasicosApi.eliminarTipoCanonico((itemAEliminar.item as TipoCanonicoTarea).codigo_tipo_canonico)
+        cargarTiposCanonicos()
       } else {
         const e = itemAEliminar.item as EstadoTarea
         await tareasDatosBasicosApi.eliminarEstadoTar(e.codigo_categoria_tarea, e.codigo_tipo_tarea, e.codigo_estado_tarea)
@@ -329,6 +390,7 @@ export default function PaginaTareasDatosBasicos() {
         <button onClick={() => setTabActiva('categorias')} className={tabCls('categorias')}>Categorías de Tarea</button>
         <button onClick={() => setTabActiva('tipos')} className={tabCls('tipos')}>Tipos de Tarea</button>
         <button onClick={() => setTabActiva('estados')} className={tabCls('estados')}>Estados de Tarea</button>
+        <button onClick={() => setTabActiva('tipos-canonicos')} className={tabCls('tipos-canonicos')}>Tipos Canónicos</button>
       </div>
 
       {/* ── Tab: Categorías ── */}
