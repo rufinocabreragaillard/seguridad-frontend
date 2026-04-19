@@ -842,26 +842,46 @@ function PaginaProcesarDocumentosInterna() {
     }
     const estadoDestino = pasoActual.estado_destino
 
-    // 1. Encolar solo los docs seleccionados en la tabla (con tope aplicado)
+    // 1. Encolar docs en la tabla:
+    //    - Con selección: encola solo los seleccionados (comportamiento original)
+    //    - Sin selección: encola TODOS los docs en estado origen via inicializarPorEstado
+    //      Esto corrige el caso en que el usuario hace click en Ejecutar sin seleccionar
+    //      docs (p.ej. para VECTORIZAR), donde antes el worker arrancaba pero la UI
+    //      no mostraba progreso alguno porque misItems quedaba vacío.
     try {
-      let ids = Array.from(seleccionados)
-      if (tope) ids = ids.slice(0, parseInt(tope))
-      const items = ids.map((id) => ({
-        codigo_documento: id,
-        codigo_estado_doc_destino: estadoDestino,
-      }))
-      await colaEstadosDocsApi.inicializar(items)
+      if (seleccionados.size === 0) {
+        await colaEstadosDocsApi.inicializarPorEstado(
+          pasoActual.estado_origen || '',
+          estadoDestino,
+          undefined,
+          tope ? parseInt(tope) : null,
+          ubicacionSel || null,
+        )
+      } else {
+        let ids = Array.from(seleccionados)
+        if (tope) ids = ids.slice(0, parseInt(tope))
+        const items = ids.map((id) => ({
+          codigo_documento: id,
+          codigo_estado_doc_destino: estadoDestino,
+        }))
+        await colaEstadosDocsApi.inicializar(items)
+      }
     } catch {
       setEjecutando(false)
       return
     }
 
-    // 2. Cargar cola inicial — solo los docs encolados en esta ejecución
-    const idsSeleccionados = new Set(Array.from(seleccionados).slice(0, tope ? parseInt(tope) : undefined))
-    const pendientes = await colaEstadosDocsApi.listar('PENDIENTE')
-    const misItems = pendientes.filter((p) =>
-      p.codigo_estado_doc_destino === estadoDestino && idsSeleccionados.has(p.codigo_documento),
-    )
+    // 2. Cargar cola inicial — filtrar por estado_destino para eficiencia y
+    //    para no superar el límite de 1000 filas si hay muchos items en cola.
+    const pendientesFiltrados = await colaEstadosDocsApi.listar('PENDIENTE', estadoDestino)
+    let misItems: typeof pendientesFiltrados
+    if (seleccionados.size === 0) {
+      // Sin selección: trackear todos los PENDIENTE para este destino
+      misItems = pendientesFiltrados
+    } else {
+      const idsSeleccionados = new Set(Array.from(seleccionados).slice(0, tope ? parseInt(tope) : undefined))
+      misItems = pendientesFiltrados.filter((p) => idsSeleccionados.has(p.codigo_documento))
+    }
     const colaInicial: ItemCola[] = misItems.map((p) => {
       const doc = documentos.find((d) => d.codigo_documento === p.codigo_documento)
       return {
