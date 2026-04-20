@@ -3,6 +3,16 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
+import { authApi } from '@/lib/api'
+
+async function irAInicio(router: ReturnType<typeof useRouter>) {
+  try {
+    const ctx = await authApi.yo()
+    router.push(ctx.url_inicio || '/dashboard')
+  } catch {
+    router.push('/dashboard')
+  }
+}
 
 export default function AuthCallback() {
   const router = useRouter()
@@ -17,7 +27,7 @@ export default function AuthCallback() {
         if (event === 'PASSWORD_RECOVERY' && session) {
           router.push('/auth/reset-password')
         } else if (event === 'SIGNED_IN' && session) {
-          router.push('/dashboard')
+          irAInicio(router)
         } else if (event === 'SIGNED_OUT') {
           router.push('/login')
         }
@@ -26,14 +36,14 @@ export default function AuthCallback() {
 
     // Verificar si ya hay sesión activa (el evento pudo haberse disparado antes del mount)
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) router.push('/dashboard')
+      if (data.session) irAInicio(router)
     })
 
     // Timeout de seguridad: si en 8s no hay sesión, redirigir al login
     const timeout = setTimeout(async () => {
       const { data } = await supabase.auth.getSession()
       if (!data.session) router.push('/login')
-      else router.push('/dashboard')
+      else irAInicio(router)
     }, 8000)
 
     return () => {

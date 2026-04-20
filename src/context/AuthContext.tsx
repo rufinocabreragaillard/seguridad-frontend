@@ -28,7 +28,7 @@ interface AuthContextType {
   logout: () => Promise<void>
   cambiarEntidad: (codigoEntidad: string) => Promise<void>
   cambiarGrupo: (codigoGrupo: string) => Promise<void>
-  cambiarAplicacion: (codigoAplicacion: string) => Promise<void>
+  cambiarAplicacion: (codigoAplicacion: string) => Promise<UsuarioContexto>
   tieneFuncion: (codigoFuncion: string) => boolean
   tieneAccesoRuta: (ruta: string) => boolean
   esAdmin: () => boolean
@@ -313,7 +313,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       actualizarMapaFunciones(ctx.menu)
       // Guardar la entidad que el backend seleccionó para el nuevo grupo
       if (ctx.entidad_activa) setOverrideSesion('entidad', ctx.entidad_activa)
-      router.push('/dashboard')
+      router.push(ctx.url_inicio || '/dashboard')
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cambiar grupo')
       throw e
@@ -326,6 +326,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const ctx = await authApi.cambiarAplicacion(codigoAplicacion)
       setUsuario(ctx)
       actualizarMapaFunciones(ctx.menu)
+      return ctx
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cambiar aplicación')
       throw e

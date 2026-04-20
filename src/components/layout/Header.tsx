@@ -44,14 +44,17 @@ export function Header({ titulo }: { titulo?: string }) {
 
   // Modal Mi Cuenta
   const [modalCuenta, setModalCuenta] = useState(false)
+  const [tabCuenta, setTabCuenta] = useState<'datos' | 'preferencias'>('datos')
   const [formCuenta, setFormCuenta] = useState({
     nombre: '', telefono: '', alias: '', descripcion: '',
     sidebar_colapsado: false,
+    id_rol_principal: null as number | null,
   })
   const [guardandoCuenta, setGuardandoCuenta] = useState(false)
   const [errorCuenta, setErrorCuenta] = useState('')
   const [exitoCuenta, setExitoCuenta] = useState('')
-  const [datosOriginales, setDatosOriginales] = useState<Record<string, string>>({})
+  const [datosOriginales, setDatosOriginales] = useState<Record<string, unknown>>({})
+  const [rolesUsuario, setRolesUsuario] = useState<{ id_rol: number; nombre: string; codigo_grupo: string }[]>([])
 
   // Modal Cambio Aplicacion
   const [modalAplicacion, setModalAplicacion] = useState(false)
@@ -91,7 +94,7 @@ export function Header({ titulo }: { titulo?: string }) {
     if (codigoApp === usuario?.aplicacion_activa) return
     setCambiandoApp(true)
     try {
-      await cambiarAplicacion(codigoApp)
+      const ctx = await cambiarAplicacion(codigoApp)
       setModalAplicacion(false)
       // Verificar si la app destino está en otro dominio (cross-app real)
       const urlBase = usuario?.aplicaciones_url?.[codigoApp]
@@ -107,8 +110,8 @@ export function Header({ titulo }: { titulo?: string }) {
         } catch { /* URL inválida, ignorar */ }
       }
       // Misma app/dominio o sin url_base: el estado ya se actualizó en AuthContext,
-      // React re-renderiza el sidebar. Navegar a dashboard.
-      router.push('/dashboard')
+      // React re-renderiza el sidebar. Navegar a la URL de inicio del nuevo contexto.
+      router.push(ctx.url_inicio || '/dashboard')
     } catch {
       // error manejado en AuthContext
     } finally {
@@ -124,11 +127,13 @@ export function Header({ titulo }: { titulo?: string }) {
       alias: '',
       descripcion: '',
       sidebar_colapsado: false,
+      id_rol_principal: usuario?.id_rol_principal ?? null,
     })
     setErrorCuenta('')
     setExitoCuenta('')
+    setTabCuenta('datos')
     if (usuario) {
-      usuariosApi.obtener(usuario.codigo_usuario).catch(() => null).then((u: any) => {
+      usuariosApi.obtener(usuario.codigo_usuario).catch(() => null).then((u) => {
         if (u) {
           const datos = {
             nombre: u.nombre,
@@ -136,10 +141,19 @@ export function Header({ titulo }: { titulo?: string }) {
             alias: u.alias || '',
             descripcion: u.descripcion || '',
             sidebar_colapsado: u.sidebar_colapsado ?? false,
+            id_rol_principal: u.id_rol_principal ?? null,
           }
           setFormCuenta(datos)
           setDatosOriginales(datos)
         }
+      })
+      usuariosApi.listarRoles(usuario.codigo_usuario).catch(() => []).then((rows) => {
+        const items = (rows || []).map((r) => ({
+          id_rol: r.id_rol,
+          nombre: r.roles?.nombre || r.codigo_rol || String(r.id_rol),
+          codigo_grupo: r.codigo_grupo,
+        }))
+        setRolesUsuario(items)
       })
     }
     setModalCuenta(true)
@@ -151,13 +165,16 @@ export function Header({ titulo }: { titulo?: string }) {
     setErrorCuenta('')
     setExitoCuenta('')
     try {
-      const cambios: Record<string, string | boolean | undefined> = {}
+      const cambios: Record<string, string | boolean | number | null | undefined> = {}
       cambios.nombre = formCuenta.nombre
       if (formCuenta.telefono !== datosOriginales.telefono) cambios.telefono = formCuenta.telefono || undefined
       if (formCuenta.alias !== datosOriginales.alias) cambios.alias = formCuenta.alias || undefined
       if (formCuenta.descripcion !== datosOriginales.descripcion) cambios.descripcion = formCuenta.descripcion || undefined
       if (String(formCuenta.sidebar_colapsado) !== String(datosOriginales.sidebar_colapsado)) {
         cambios.sidebar_colapsado = formCuenta.sidebar_colapsado
+      }
+      if (formCuenta.id_rol_principal !== datosOriginales.id_rol_principal) {
+        cambios.id_rol_principal = formCuenta.id_rol_principal
       }
       await usuariosApi.actualizar(usuario.codigo_usuario, cambios)
       setExitoCuenta(t('datosActualizados'))
@@ -332,72 +349,119 @@ export function Header({ titulo }: { titulo?: string }) {
       {/* Modal Mi Cuenta (con tabs) */}
       <Modal abierto={modalCuenta} alCerrar={() => setModalCuenta(false)} titulo={t('miCuentaTitulo', { email: usuario?.codigo_usuario || '' })} className="max-w-2xl">
         <div className="flex flex-col gap-4">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-            <Input
-              etiqueta={t('alias')}
-              value={formCuenta.alias}
-              onChange={(e) => setFormCuenta({ ...formCuenta, alias: e.target.value })}
-              placeholder={t('aliasPlaceholder')}
-            />
-            <Input
-              etiqueta={t('nombreCompleto')}
-              value={formCuenta.nombre}
-              onChange={(e) => setFormCuenta({ ...formCuenta, nombre: e.target.value })}
-            />
-            <Input
-              etiqueta={t('telefono')}
-              value={formCuenta.telefono}
-              onChange={(e) => setFormCuenta({ ...formCuenta, telefono: e.target.value })}
-              placeholder={t('telefonoPlaceholder')}
-            />
-            <div />
-            <div className="col-span-2">
-              <Textarea
-                etiqueta={t('descripcion')}
-                value={formCuenta.descripcion}
-                onChange={(e) => setFormCuenta({ ...formCuenta, descripcion: e.target.value })}
-                rows={2}
-              />
-            </div>
+          {/* Pestañas */}
+          <div className="flex border-b border-borde -mx-1 overflow-x-auto">
+            {(['datos', 'preferencias'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setTabCuenta(tab)}
+                className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                  tabCuenta === tab
+                    ? 'border-b-2 border-primario text-primario'
+                    : 'text-texto-muted hover:text-texto'
+                }`}
+              >
+                {tab === 'datos' ? t('tabDatos') : t('tabPreferencias')}
+              </button>
+            ))}
           </div>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={formCuenta.sidebar_colapsado}
-              onChange={(e) => setFormCuenta({ ...formCuenta, sidebar_colapsado: e.target.checked })}
-              className="rounded border-borde text-primario focus:ring-primario h-4 w-4"
-            />
-            <span className="text-sm text-texto">{t('sidebarColapsado')}</span>
-          </label>
+
+          {/* Tab Datos */}
+          {tabCuenta === 'datos' && (
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              <Input
+                etiqueta={t('alias')}
+                value={formCuenta.alias}
+                onChange={(e) => setFormCuenta({ ...formCuenta, alias: e.target.value })}
+                placeholder={t('aliasPlaceholder')}
+              />
+              <Input
+                etiqueta={t('nombreCompleto')}
+                value={formCuenta.nombre}
+                onChange={(e) => setFormCuenta({ ...formCuenta, nombre: e.target.value })}
+              />
+              <Input
+                etiqueta={t('telefono')}
+                value={formCuenta.telefono}
+                onChange={(e) => setFormCuenta({ ...formCuenta, telefono: e.target.value })}
+                placeholder={t('telefonoPlaceholder')}
+              />
+              <div />
+              <div className="col-span-2">
+                <Textarea
+                  etiqueta={t('descripcion')}
+                  value={formCuenta.descripcion}
+                  onChange={(e) => setFormCuenta({ ...formCuenta, descripcion: e.target.value })}
+                  rows={2}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Tab Preferencias */}
+          {tabCuenta === 'preferencias' && (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">{t('rolPrincipal')}</label>
+                <select
+                  value={formCuenta.id_rol_principal ?? ''}
+                  onChange={(e) => setFormCuenta({
+                    ...formCuenta,
+                    id_rol_principal: e.target.value ? Number(e.target.value) : null,
+                  })}
+                  className="w-full h-10 px-3 rounded-lg border border-borde bg-surface text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario/30 focus:border-primario"
+                >
+                  <option value="">{t('sinRolPrincipal')}</option>
+                  {rolesUsuario.map((r) => (
+                    <option key={`${r.codigo_grupo}-${r.id_rol}`} value={r.id_rol}>
+                      {r.nombre}{r.codigo_grupo ? ` — ${r.codigo_grupo}` : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-texto-muted">{t('rolPorDefectoAyuda')}</p>
+              </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formCuenta.sidebar_colapsado}
+                  onChange={(e) => setFormCuenta({ ...formCuenta, sidebar_colapsado: e.target.checked })}
+                  className="rounded border-borde text-primario focus:ring-primario h-4 w-4"
+                />
+                <span className="text-sm text-texto">{t('sidebarColapsado')}</span>
+              </label>
+
+              <div className="flex items-center gap-3 pt-1">
+                <span className="text-xs font-medium text-texto-muted uppercase tracking-wide">{t('idioma')}:</span>
+                <div className="flex gap-1 flex-wrap">
+                  {(localesDinamicos.length > 0 ? localesDinamicos : localesFallback.map((codigo) => ({ codigo, nombre_nativo: codigo, nombre_es: codigo, activo: true, es_base: codigo === 'es', orden: 0 }))).map((loc) => {
+                    const codigo = typeof loc === 'string' ? loc : loc.codigo
+                    const localeActivo = usuario?.locale ?? 'es'
+                    const activo = codigo === localeActivo
+                    return (
+                      <button
+                        key={codigo}
+                        type="button"
+                        onClick={() => handleCambiarLocale(codigo as Locale)}
+                        title={typeof loc === 'string' ? codigo : loc.nombre_es}
+                        className={`text-xs px-2.5 py-1 rounded border transition-colors ${
+                          activo
+                            ? 'bg-primario text-primario-texto border-primario font-medium'
+                            : 'text-texto-muted border-borde hover:text-texto hover:border-primario/50'
+                        }`}
+                      >
+                        {codigo.toUpperCase()}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          )}
+
           {errorCuenta && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCuenta}</p></div>}
           {exitoCuenta && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3"><p className="text-sm text-exito">{exitoCuenta}</p></div>}
-          <div className="flex items-center gap-3 pt-1">
-            <span className="text-xs font-medium text-texto-muted uppercase tracking-wide">{t('idioma')}:</span>
-            <div className="flex gap-1 flex-wrap">
-              {(localesDinamicos.length > 0 ? localesDinamicos : localesFallback.map((codigo) => ({ codigo, nombre_nativo: codigo, nombre_es: codigo, activo: true, es_base: codigo === 'es', orden: 0 }))).map((loc) => {
-                const codigo = typeof loc === 'string' ? loc : loc.codigo
-                // Usar usuario.locale (BD) como fuente de verdad para el botón activo
-                // evita inversión cuando el cookie y la BD quedan desincronizados
-                const localeActivo = usuario?.locale ?? 'es'
-                const activo = codigo === localeActivo
-                return (
-                  <button
-                    key={codigo}
-                    type="button"
-                    onClick={() => handleCambiarLocale(codigo as Locale)}
-                    title={typeof loc === 'string' ? codigo : loc.nombre_es}
-                    className={`text-xs px-2.5 py-1 rounded border transition-colors ${
-                      activo
-                        ? 'bg-primario text-primario-texto border-primario font-medium'
-                        : 'text-texto-muted border-borde hover:text-texto hover:border-primario/50'
-                    }`}
-                  >
-                    {codigo.toUpperCase()}
-                  </button>
-                )
-              })}
-            </div>
-          </div>
+
           <div className="flex gap-3 justify-end pt-2">
             <Boton variante="contorno" onClick={() => setModalCuenta(false)}>{tc('cerrar')}</Boton>
             <Boton variante="primario" onClick={guardarMiCuenta} cargando={guardandoCuenta}>

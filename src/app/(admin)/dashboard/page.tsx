@@ -5,7 +5,6 @@ import { useTranslations } from 'next-intl'
 import { Users, ShieldCheck, Building2, ClipboardList, TrendingUp, Activity } from 'lucide-react'
 import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Insignia } from '@/components/ui/insignia'
-import { useAuth } from '@/context/AuthContext'
 import { usuariosApi, rolesApi, entidadesApi, auditoriaApi } from '@/lib/api'
 import type { RegistroAuditoria } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -19,7 +18,6 @@ interface Estadisticas {
 
 export default function PaginaDashboard() {
   const t = useTranslations('dashboard')
-  const { usuario } = useAuth()
   const [stats, setStats] = useState<Estadisticas>({
     totalUsuarios: 0,
     totalRoles: 0,
@@ -87,23 +85,12 @@ export default function PaginaDashboard() {
     cargar()
   }, [])
 
-  const hora = new Date().getHours()
-  const saludo = hora < 12 ? t('saludoManana') : hora < 19 ? t('saludoTarde') : t('saludoNoche')
-  const nombre = usuario?.alias || usuario?.nombre?.split(' ')[0] || 'Usuario'
-
   return (
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
-      {/* Bienvenida */}
       <div className="pr-28">
-        <h2 className="page-heading">{saludo}, {nombre}</h2>
-        <p className="text-texto-muted text-sm mt-1">
-          {t('grupo')}: <span className="font-medium text-primario">{usuario?.grupo_activo}</span>
-          {' · '}{t('entidad')}: <span className="font-medium text-primario">{usuario?.entidad_activa}</span>
-          {usuario?.rol_principal && (
-            <> · {t('rol')}: <span className="font-medium">{usuario.rol_principal}</span></>
-          )}
-        </p>
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-texto-muted text-sm mt-1">{t('ayuda')}</p>
       </div>
 
       {/* Tarjetas de estadísticas */}
