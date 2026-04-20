@@ -661,37 +661,43 @@ export default function PaginaProcesosDatosBasicos() {
       )}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de proceso'}>
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de proceso'} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4">
-          {!catEditando && (
-            <Input etiqueta="Código (dejar vacío para autogenerar)" value={formCat.codigo_categoria_proceso}
-              onChange={(e) => setFormCat({ ...formCat, codigo_categoria_proceso: e.target.value })}
-              placeholder="GESTION_PREDIOS" />
-          )}
-          <Input etiqueta="Nombre *" value={formCat.nombre_categoria_proceso}
-            onChange={(e) => setFormCat({ ...formCat, nombre_categoria_proceso: e.target.value })}
-            placeholder="Gestión de Predios" />
-          <Input etiqueta="Descripción" value={formCat.descripcion_categoria_proceso}
-            onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_proceso: e.target.value })}
-            placeholder="Descripción opcional" />
-          <Input etiqueta="Alias" value={formCat.alias}
-            onChange={(e) => setFormCat({ ...formCat, alias: e.target.value })}
-            placeholder="Alias breve" />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Prompt</label>
-            <textarea value={formCat.prompt}
-              onChange={(e) => setFormCat({ ...formCat, prompt: e.target.value })}
-              rows={3}
-              placeholder="Prompt de la categoría"
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">System prompt</label>
-            <textarea value={formCat.system_prompt}
-              onChange={(e) => setFormCat({ ...formCat, system_prompt: e.target.value })}
-              rows={3}
-              placeholder="Instrucciones system para el LLM"
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-4">
+              {!catEditando && (
+                <Input etiqueta="Código (dejar vacío para autogenerar)" value={formCat.codigo_categoria_proceso}
+                  onChange={(e) => setFormCat({ ...formCat, codigo_categoria_proceso: e.target.value })}
+                  placeholder="GESTION_PREDIOS" />
+              )}
+              <Input etiqueta="Nombre *" value={formCat.nombre_categoria_proceso}
+                onChange={(e) => setFormCat({ ...formCat, nombre_categoria_proceso: e.target.value })}
+                placeholder="Gestión de Predios" />
+              <Input etiqueta="Descripción" value={formCat.descripcion_categoria_proceso}
+                onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_proceso: e.target.value })}
+                placeholder="Descripción opcional" />
+              <Input etiqueta="Alias" value={formCat.alias}
+                onChange={(e) => setFormCat({ ...formCat, alias: e.target.value })}
+                placeholder="Alias breve" />
+            </div>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Prompt</label>
+                <textarea value={formCat.prompt}
+                  onChange={(e) => setFormCat({ ...formCat, prompt: e.target.value })}
+                  rows={catEditando ? 7 : 8}
+                  placeholder="Prompt de la categoría"
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">System prompt</label>
+                <textarea value={formCat.system_prompt}
+                  onChange={(e) => setFormCat({ ...formCat, system_prompt: e.target.value })}
+                  rows={catEditando ? 7 : 8}
+                  placeholder="Instrucciones system para el LLM"
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+              </div>
+            </div>
           </div>
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
           <PieBotonesModal
