@@ -30,11 +30,24 @@ const EXTENSIONES_TEXTO = new Set([
 
 const EXTENSIONES_PPTX = new Set(['pptx', 'potx', 'ppsx'])
 
+/** Umbral de chars por página: menos que esto = página es imagen, no texto nativo. */
+const CHARS_MINIMOS_PAGINA = 150
+
+/** Página PDF renderizada como imagen JPEG (base64) para Vision LLM. */
+export type PaginaImagen = { pagina: number; base64: string }
+
+/**
+ * Resultado de extracción mixta: texto nativo + imágenes de páginas sin texto.
+ * Solo se retorna cuando hay páginas imagen; PDFs 100% texto siguen retornando string.
+ */
+export type ExtraccionMixta = { texto: string; paginasImagen: PaginaImagen[] }
+
 /**
  * Lee un archivo del filesystem y extrae su contenido como texto.
  * Retorna null si el formato no es soportado.
+ * Para PDFs mixtos (páginas nativas + páginas imagen), retorna ExtraccionMixta.
  */
-export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle): Promise<string | typeof NECESITA_OCR | null> {
+export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle): Promise<string | typeof NECESITA_OCR | ExtraccionMixta | null> {
   const file = await fileHandle.getFile()
   const nombre = file.name.toLowerCase()
   const ext = nombre.split('.').pop() || ''
@@ -111,7 +124,7 @@ export class ArchivoNoEscaneable extends Error {
 // El caller debe intentar OCR en el backend antes de marcar NO_ESCANEABLE.
 export const NECESITA_OCR: unique symbol = Symbol('NECESITA_OCR')
 
-async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR> {
+async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR | ExtraccionMixta> {
   const pdfjsLib = await getPdfjsLib()
 
   const arrayBuffer = await file.arrayBuffer()
@@ -131,6 +144,8 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
   }
 
   const paginas: string[] = []
+  const numsPaginaImagen: number[] = []  // páginas con < CHARS_MINIMOS_PAGINA de texto
+
   for (let i = 1; i <= pdf.numPages; i++) {
     const pagina = await pdf.getPage(i)
     const contenido = await pagina.getTextContent()
@@ -138,6 +153,9 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
       .map((item) => ('str' in item ? item.str : ''))
       .join(' ')
     paginas.push(texto)
+    if (texto.trim().length < CHARS_MINIMOS_PAGINA) {
+      numsPaginaImagen.push(i)
+    }
   }
 
   // \f (form feed) = separador de página. El backend chunking.py lo usa
@@ -148,6 +166,33 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
   // el texto queda vacío. Devolvemos el sentinel para que el caller intente OCR.
   if (!texto.replace(/\f/g, '').trim()) {
     return NECESITA_OCR
+  }
+
+  // PDF mixto: algunas páginas tienen poco texto (imagen embebida).
+  // Renderizar esas páginas a JPEG para enviar a Vision LLM en ANALIZAR.
+  // Solo paga Vision por estas páginas; el resto usa texto nativo (costo cero).
+  if (numsPaginaImagen.length > 0) {
+    const paginasImagen: PaginaImagen[] = []
+    for (const numPag of numsPaginaImagen) {
+      try {
+        const pagina = await pdf.getPage(numPag)
+        const viewport = pagina.getViewport({ scale: 1.5 })
+        const canvas = document.createElement('canvas')
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) continue
+        await pagina.render({ canvasContext: ctx, viewport }).promise
+        // JPEG 80% — buena legibilidad para texto, ~100-250 KB por página
+        const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]
+        paginasImagen.push({ pagina: numPag, base64 })
+      } catch {
+        // Si falla el render de una página, se omite; ANALIZAR usará el texto disponible
+      }
+    }
+    if (paginasImagen.length > 0) {
+      return { texto, paginasImagen }
+    }
   }
 
   return texto

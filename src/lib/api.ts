@@ -564,6 +564,8 @@ export const documentosApi = {
       archivo_no_encontrado?: boolean
       formato_no_soportado?: string
       contenido_vacio?: boolean
+      /** Páginas PDF renderizadas como JPEG (solo PDFs mixtos texto+imagen) */
+      paginas_imagen?: Array<{ pagina: number; base64: string }>
     },
   ) =>
     api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(

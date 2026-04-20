@@ -17,7 +17,7 @@ import { getEstadosDocs, getProcesosDocs } from '@/lib/catalogos'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Documento, ColaEstadoDoc, EstadoDoc, CategoriaConCaracteristicasDocs } from '@/lib/tipos'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR } from '@/lib/extraer-texto'
+import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, type ExtraccionMixta } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { abrirDocumento } from '@/lib/abrir-documento'
@@ -770,8 +770,17 @@ function PaginaProcesarDocumentosInterna() {
             } else {
               const ext = (item.ubicacion_documento.split('.').pop() || '').toLowerCase()
               const tExtraccion = Date.now()
-              const contenido = await extraerTextoDeArchivo(fileHandle)
+              const contenidoRaw = await extraerTextoDeArchivo(fileHandle)
               const subDuracionMs = Date.now() - tExtraccion
+              // Normalizar ExtraccionMixta (PDF con páginas imagen) al mismo flujo
+              let contenido: string | typeof NECESITA_OCR | null
+              let paginasImagen: ExtraccionMixta['paginasImagen'] | undefined
+              if (typeof contenidoRaw === 'object' && contenidoRaw !== null && 'paginasImagen' in contenidoRaw) {
+                contenido = (contenidoRaw as ExtraccionMixta).texto
+                paginasImagen = (contenidoRaw as ExtraccionMixta).paginasImagen
+              } else {
+                contenido = contenidoRaw as string | typeof NECESITA_OCR | null
+              }
               if (contenido === null) {
                 await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', formato_no_soportado: ext || 'desconocido' })
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `NO_ESCANEABLE (.${ext})`, tiempo_ms: Date.now() - t0 } : c))
@@ -808,6 +817,7 @@ function PaginaProcesarDocumentosInterna() {
                   caracteres: contenido.length,
                   fecha_inicio_extraccion: new Date(t0).toISOString(),
                   sub_duracion_ms: subDuracionMs,
+                  ...(paginasImagen ? { paginas_imagen: paginasImagen } : {}),
                 })
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `METADATA (${res.caracteres} chars)`, tiempo_ms: Date.now() - t0 } : c))
               }

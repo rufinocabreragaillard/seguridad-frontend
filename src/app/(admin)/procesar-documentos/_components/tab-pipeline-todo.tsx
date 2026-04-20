@@ -6,7 +6,7 @@ import { Boton } from '@/components/ui/boton'
 import { CirculoProgreso } from '@/components/ui/circulo-progreso'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR } from '@/lib/extraer-texto'
+import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { useAuth } from '@/context/AuthContext'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
@@ -204,14 +204,29 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           } else {
             const ext = (doc.ubicacion_documento.split('.').pop() || '').toLowerCase()
             const tExtraccion = Date.now()
-            const contenido = await extraerTextoDeArchivo(fileHandle)
+            const contenidoRaw = await extraerTextoDeArchivo(fileHandle)
             const subDuracionMs = Date.now() - tExtraccion
+            // Normalizar ExtraccionMixta (PDF con páginas imagen)
+            let contenido: string | typeof NECESITA_OCR | null
+            let paginasImagen: ExtraccionMixta['paginasImagen'] | undefined
+            if (typeof contenidoRaw === 'object' && contenidoRaw !== null && 'paginasImagen' in contenidoRaw) {
+              contenido = (contenidoRaw as ExtraccionMixta).texto
+              paginasImagen = (contenidoRaw as ExtraccionMixta).paginasImagen
+            } else {
+              contenido = contenidoRaw as string | typeof NECESITA_OCR | null
+            }
             if (contenido === null || contenido === NECESITA_OCR) {
               await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', formato_no_soportado: ext })
             } else if (!contenido.trim()) {
               await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
             } else {
-              await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: contenido, caracteres: contenido.length, fecha_inicio_extraccion: new Date(t0).toISOString(), sub_duracion_ms: subDuracionMs })
+              await documentosApi.subirTexto(doc.codigo_documento, {
+                texto_fuente: contenido,
+                caracteres: contenido.length,
+                fecha_inicio_extraccion: new Date(t0).toISOString(),
+                sub_duracion_ms: subDuracionMs,
+                ...(paginasImagen ? { paginas_imagen: paginasImagen } : {}),
+              })
             }
           }
         }
