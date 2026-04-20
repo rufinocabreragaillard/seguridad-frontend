@@ -577,6 +577,19 @@ export const documentosApi = {
       `/documentos/${id}/ocr`, form, { timeout: 120000 },
     ).then((r) => r.data)
   },
+  // TEXTO: ver texto_fuente extraído en EXTRAER (tabla documento_texto)
+  obtenerTexto: (id: number) =>
+    api.get<{
+      codigo_documento: number
+      nombre_documento: string | null
+      codigo_estado_doc: string | null
+      detalle_estado: string | null
+      tiene_texto: boolean
+      texto_fuente: string | null
+      caracteres: number
+      paginas: number | null
+      fecha_extraccion: string | null
+    }>(`/documentos/${id}/texto`).then((r) => r.data),
   // CHUNKS: ver chunks generados por el proceso CHUNKEAR
   listarChunks: (
     id: number,

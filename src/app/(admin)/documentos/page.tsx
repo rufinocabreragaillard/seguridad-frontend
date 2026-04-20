@@ -22,10 +22,11 @@ import { abrirArchivoPorRuta } from '@/lib/extraer-texto'
 import { getDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { BotonChat } from '@/components/ui/boton-chat'
 
-type TabModal = 'datos' | 'caracteristicas' | 'chunks'
+type TabModal = 'datos' | 'caracteristicas' | 'texto' | 'chunks'
 
 // Estados en los que ya hay chunks disponibles
 const ESTADOS_CON_CHUNKS = new Set(['CHUNKEADO', 'VECTORIZADO'])
+const ESTADOS_CON_TEXTO = new Set(['METADATA', 'ESCANEADO', 'CHUNKEADO', 'VECTORIZADO'])
 
 export default function PaginaDocumentos() {
   const t = useTranslations('documentos')
@@ -103,6 +104,21 @@ export default function PaginaDocumentos() {
       setChunksData(null)
     } finally {
       setCargandoChunks(false)
+    }
+  }, [])
+
+  // ── Texto fuente ──────────────────────────────────────────────────────────
+  const [textoData, setTextoData] = useState<Awaited<ReturnType<typeof documentosApi.obtenerTexto>> | null>(null)
+  const [cargandoTexto, setCargandoTexto] = useState(false)
+  const cargarTexto = useCallback(async (idDocumento: number) => {
+    setCargandoTexto(true)
+    try {
+      const data = await documentosApi.obtenerTexto(idDocumento)
+      setTextoData(data)
+    } catch {
+      setTextoData(null)
+    } finally {
+      setCargandoTexto(false)
     }
   }, [])
 
@@ -504,6 +520,21 @@ export default function PaginaDocumentos() {
                   {tab === 'datos' ? t('tabDatos') : t('tabCaracteristicas')}
                 </button>
               ))}
+              {editando && ESTADOS_CON_TEXTO.has(editando.codigo_estado_doc || '') && (
+                <button
+                  onClick={() => {
+                    setTabModal('texto')
+                    if (!textoData || textoData.codigo_documento !== editando.codigo_documento) {
+                      cargarTexto(editando.codigo_documento)
+                    }
+                  }}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                    tabModal === 'texto' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'
+                  }`}
+                >
+                  Texto {textoData && textoData.codigo_documento === editando.codigo_documento ? `(${(textoData.caracteres || 0).toLocaleString()})` : ''}
+                </button>
+              )}
               {editando && ESTADOS_CON_CHUNKS.has(editando.codigo_estado_doc || '') && (
                 <button
                   onClick={() => {
@@ -664,6 +695,35 @@ export default function PaginaDocumentos() {
           )}
 
           {/* Tab Chunks */}
+          {/* Tab Texto — muestra texto_fuente guardado en documento_texto */}
+          {tabModal === 'texto' && editando && (
+            <div className="flex flex-col gap-3">
+              {cargandoTexto ? (
+                <div className="text-sm text-texto-muted text-center py-8">Cargando texto…</div>
+              ) : !textoData ? (
+                <div className="text-sm text-texto-muted text-center py-8">No se pudo cargar el texto.</div>
+              ) : !textoData.tiene_texto ? (
+                <div className="text-sm text-texto-muted text-center py-8 border border-dashed border-borde rounded p-4">
+                  Este documento no tiene texto extraído. Estado actual: <b>{textoData.codigo_estado_doc}</b>
+                  {textoData.detalle_estado ? <><br /><span className="text-xs">Detalle: {textoData.detalle_estado}</span></> : null}
+                </div>
+              ) : (
+                <>
+                  <div className="flex gap-4 text-sm text-texto-muted pb-2 border-b border-borde">
+                    <span><b className="text-texto">{(textoData.caracteres || 0).toLocaleString()}</b> caracteres</span>
+                    {textoData.paginas ? <span><b className="text-texto">{textoData.paginas}</b> páginas</span> : null}
+                    {textoData.fecha_extraccion ? (
+                      <span>Extraído: <b className="text-texto">{new Date(textoData.fecha_extraccion).toLocaleString()}</b></span>
+                    ) : null}
+                  </div>
+                  <pre className="whitespace-pre-wrap text-sm font-mono bg-fondo border border-borde rounded p-3 max-h-[60vh] overflow-auto">
+                    {textoData.texto_fuente}
+                  </pre>
+                </>
+              )}
+            </div>
+          )}
+
           {tabModal === 'chunks' && editando && (
             <div className="flex flex-col gap-3">
               {/* Buscador */}
