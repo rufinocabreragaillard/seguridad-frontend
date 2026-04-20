@@ -95,8 +95,9 @@ const ESTADO_COLA_CONFIG: Record<string, { variante: 'exito' | 'error' | 'advert
 // Código especial fuera del catálogo: reset de docs en NO_ESCANEABLE/NO_ENCONTRADO.
 const PROCESO_RESTABLECER = '__RESTABLECER__'
 const PROCESO_RESETEAR_CARGADO = '__RESETEAR_CARGADO__'
-type TabDetalle = 'datos' | 'caracteristicas' | 'chunks'
+type TabDetalle = 'datos' | 'resumen' | 'caracteristicas' | 'texto' | 'chunks'
 const ESTADOS_CON_CHUNKS = new Set(['CHUNKEADO', 'VECTORIZADO'])
+const ESTADOS_CON_TEXTO = new Set(['METADATA', 'ESCANEADO', 'CHUNKEADO', 'VECTORIZADO'])
 
 interface UbicacionOption {
   codigo_ubicacion: string
@@ -577,11 +578,26 @@ function PaginaProcesarDocumentosInterna() {
     }
   }, [])
 
+  const [textoDataDetalle, setTextoDataDetalle] = useState<Awaited<ReturnType<typeof documentosApi.obtenerTexto>> | null>(null)
+  const [cargandoTextoDetalle, setCargandoTextoDetalle] = useState(false)
+  const cargarTextoDetalle = useCallback(async (idDocumento: number) => {
+    setCargandoTextoDetalle(true)
+    try {
+      const data = await documentosApi.obtenerTexto(idDocumento)
+      setTextoDataDetalle(data)
+    } catch {
+      setTextoDataDetalle(null)
+    } finally {
+      setCargandoTextoDetalle(false)
+    }
+  }, [])
+
   const abrirDetalle = useCallback(async (d: Documento) => {
     setDocDetalle(d)
     setTabDetalle('datos')
     setCategoriasConCaract([])
     setChunksData(null)
+    setTextoDataDetalle(null)
     setBusquedaChunk('')
     setBusquedaChunkInput('')
     setPaginaChunk(1)
@@ -1695,12 +1711,32 @@ function PaginaProcesarDocumentosInterna() {
           <div className="flex flex-col gap-4">
             {/* Tabs */}
             <div className="flex gap-1 border-b border-borde -mt-2">
-              {(['datos', 'caracteristicas'] as TabDetalle[]).map((tab) => (
-                <button key={tab} onClick={() => setTabDetalle(tab)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabDetalle === tab ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
-                  {tab === 'datos' ? 'Datos' : 'Características'}
+              <button onClick={() => setTabDetalle('datos')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabDetalle === 'datos' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+                Datos
+              </button>
+              {docDetalle.resumen_documento && (
+                <button onClick={() => setTabDetalle('resumen')}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabDetalle === 'resumen' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+                  Resumen
                 </button>
-              ))}
+              )}
+              <button onClick={() => setTabDetalle('caracteristicas')}
+                className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabDetalle === 'caracteristicas' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+                Características
+              </button>
+              {ESTADOS_CON_TEXTO.has(docDetalle.codigo_estado_doc || '') && (
+                <button
+                  onClick={() => {
+                    setTabDetalle('texto')
+                    if (!textoDataDetalle || textoDataDetalle.codigo_documento !== docDetalle.codigo_documento) {
+                      cargarTextoDetalle(docDetalle.codigo_documento)
+                    }
+                  }}
+                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabDetalle === 'texto' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+                  Texto {textoDataDetalle && textoDataDetalle.codigo_documento === docDetalle.codigo_documento ? `(${(textoDataDetalle.caracteres || 0).toLocaleString()})` : ''}
+                </button>
+              )}
               {ESTADOS_CON_CHUNKS.has(docDetalle.codigo_estado_doc || '') && (
                 <button
                   onClick={() => {
@@ -1776,12 +1812,6 @@ function PaginaProcesarDocumentosInterna() {
                       <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">Sin detalle registrado. Restablece el documento y reprocésalo para obtener el motivo.</div>
                     </div>
                   )}
-                  {docDetalle.resumen_documento && (
-                    <div className="col-span-12">
-                      <p className="text-xs text-texto-muted mb-1">Resumen</p>
-                      <div className="rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto whitespace-pre-wrap max-h-48 overflow-y-auto">{docDetalle.resumen_documento}</div>
-                    </div>
-                  )}
                 </div>
 
                 {/* Datos del último procesamiento en cola — siempre visible */}
@@ -1824,6 +1854,46 @@ function PaginaProcesarDocumentosInterna() {
                     </div>
                   )}
                 </div>
+              </div>
+            )}
+
+            {/* Tab Resumen */}
+            {tabDetalle === 'resumen' && (
+              <div className="flex flex-col gap-3">
+                {docDetalle.resumen_documento ? (
+                  <div className="rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto whitespace-pre-wrap max-h-[60vh] overflow-y-auto">{docDetalle.resumen_documento}</div>
+                ) : (
+                  <p className="text-sm text-texto-muted py-4 text-center">Sin resumen registrado.</p>
+                )}
+              </div>
+            )}
+
+            {/* Tab Texto — texto_fuente de documento_texto */}
+            {tabDetalle === 'texto' && (
+              <div className="flex flex-col gap-3">
+                {cargandoTextoDetalle ? (
+                  <div className="text-sm text-texto-muted text-center py-8">Cargando texto…</div>
+                ) : !textoDataDetalle ? (
+                  <div className="text-sm text-texto-muted text-center py-8">No se pudo cargar el texto.</div>
+                ) : !textoDataDetalle.tiene_texto ? (
+                  <div className="text-sm text-texto-muted text-center py-8 border border-dashed border-borde rounded p-4">
+                    Este documento no tiene texto extraído. Estado actual: <b>{textoDataDetalle.codigo_estado_doc}</b>
+                    {textoDataDetalle.detalle_estado ? <><br /><span className="text-xs">Detalle: {textoDataDetalle.detalle_estado}</span></> : null}
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-4 text-sm text-texto-muted pb-2 border-b border-borde">
+                      <span><b className="text-texto">{(textoDataDetalle.caracteres || 0).toLocaleString()}</b> caracteres</span>
+                      {textoDataDetalle.paginas ? <span><b className="text-texto">{textoDataDetalle.paginas}</b> páginas</span> : null}
+                      {textoDataDetalle.fecha_extraccion ? (
+                        <span>Extraído: <b className="text-texto">{new Date(textoDataDetalle.fecha_extraccion).toLocaleString('es-CL')}</b></span>
+                      ) : null}
+                    </div>
+                    <pre className="whitespace-pre-wrap text-sm font-mono bg-fondo border border-borde rounded p-3 max-h-[60vh] overflow-auto">
+                      {textoDataDetalle.texto_fuente}
+                    </pre>
+                  </>
+                )}
               </div>
             )}
 
