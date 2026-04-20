@@ -2,6 +2,9 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
+import { registrarTimeoutCarga } from '@/lib/avisos-pagina'
+
+const TIMEOUT_CARGA_MS = 30000
 
 interface UseCrudPageOptions<T, F> {
   /** Función para cargar los items desde la API */
@@ -39,9 +42,18 @@ export function useCrudPage<T, F extends Record<string, any>>(opts: UseCrudPageO
 
   const cargar = useCallback(async () => {
     setCargando(true)
+    // Safety net: si algo imprevisto hace que cargarFn nunca resuelva,
+    // forzamos cargando=false y registramos un aviso rojo al usuario.
+    const timeoutId = setTimeout(() => {
+      setCargando(false)
+      registrarTimeoutCarga(`La carga de datos superó ${TIMEOUT_CARGA_MS / 1000}s`)
+    }, TIMEOUT_CARGA_MS)
     try {
       setItems(await opts.cargarFn())
+    } catch (e) {
+      console.error('[useCrudPage] Error en cargarFn:', e)
     } finally {
+      clearTimeout(timeoutId)
       setCargando(false)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

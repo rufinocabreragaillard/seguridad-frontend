@@ -7,6 +7,8 @@ import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { useAuth } from '@/context/AuthContext'
 import { useTranslations } from 'next-intl'
+import { AvisoPagina } from '@/components/ui/aviso-pagina'
+import { limpiarAvisos } from '@/lib/avisos-pagina'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('layout')
@@ -19,6 +21,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       router.push('/login')
     }
   }, [usuario, cargando, router])
+
+  // Limpiar avisos acumulados al cambiar de pantalla: cada ruta empieza en blanco
+  // y solo muestra los problemas que surjan en ella.
+  useEffect(() => {
+    limpiarAvisos()
+  }, [pathname])
 
   if (cargando) {
     return (
@@ -41,6 +49,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto p-6">
+          <AvisoPagina />
           {accesoPermitido ? children : (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-texto-muted">
               <ShieldAlert className="h-16 w-16 text-red-400" />

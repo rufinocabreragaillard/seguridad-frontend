@@ -4,7 +4,7 @@ import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
 import { ThemeProvider } from '@/context/ThemeContext'
 import { tema } from '@/config/tema.config'
-import { NextIntlClientProvider } from 'next-intl'
+import { I18nProvider } from '@/components/i18n-provider'
 import { getLocale, getMessages } from 'next-intl/server'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -23,11 +23,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang={locale} className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="h-full font-sans">
-        <NextIntlClientProvider messages={messages}>
+        <I18nProvider messages={messages} locale={locale}>
           <AuthProvider>
             <ThemeProvider>{children}</ThemeProvider>
           </AuthProvider>
-        </NextIntlClientProvider>
+        </I18nProvider>
       </body>
     </html>
   )
