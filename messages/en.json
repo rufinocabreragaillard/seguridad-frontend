@@ -884,7 +884,8 @@
     "buscarEntidadPlaceholder": "Search by name or code...",
     "buscarUsuarioPlaceholder": "Search user by name or email...",
     "filtrarUsuariosPlaceholder": "Filter group users...",
-    "agregarUsuario": "Add"
+    "agregarUsuario": "Add",
+    "placeholderNombreEntidad": "Municipality of..."
   },
   "entidades": {
     "titulo": "Entities & Areas",

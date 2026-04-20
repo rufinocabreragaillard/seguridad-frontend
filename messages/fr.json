@@ -870,7 +870,8 @@
     "buscarEntidadPlaceholder": "Rechercher par nom ou code...",
     "buscarUsuarioPlaceholder": "Rechercher un utilisateur par nom ou email...",
     "filtrarUsuariosPlaceholder": "Filtrer les utilisateurs du groupe...",
-    "agregarUsuario": "Ajouter"
+    "agregarUsuario": "Ajouter",
+    "placeholderNombreEntidad": "Municipalité de..."
   },
   "entidades": {
     "titulo": "Entités et Zones",

@@ -870,7 +870,8 @@
     "buscarEntidadPlaceholder": "Pesquisar por nome ou código...",
     "buscarUsuarioPlaceholder": "Pesquisar usuário por nome ou e-mail...",
     "filtrarUsuariosPlaceholder": "Filtrar usuários do grupo...",
-    "agregarUsuario": "Adicionar"
+    "agregarUsuario": "Adicionar",
+    "placeholderNombreEntidad": "Municipalidade de..."
   },
   "entidades": {
     "titulo": "Entidades e Áreas",

@@ -870,7 +870,8 @@
     "buscarEntidadPlaceholder": "Nach Name oder Code suchen...",
     "buscarUsuarioPlaceholder": "Nach Benutzer nach Name oder E-Mail suchen...",
     "filtrarUsuariosPlaceholder": "Gruppenbenutzern filtern...",
-    "agregarUsuario": "Hinzufügen"
+    "agregarUsuario": "Hinzufügen",
+    "placeholderNombreEntidad": "Gemeinde..."
   },
   "entidades": {
     "titulo": "Entitäten und Bereiche",
