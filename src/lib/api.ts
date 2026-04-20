@@ -1032,6 +1032,8 @@ export const procesosDatosBasicosApi = {
     api.put(`/procesos-datos-basicos/tipos/${categoria}/${codigo}`, datos).then((r) => r.data),
   eliminarTipo: (categoria: string, codigo: string) =>
     api.delete(`/procesos-datos-basicos/tipos/${categoria}/${codigo}`),
+  reordenarTipos: (items: { codigo_categoria_proceso: string; codigo_tipo_proceso: string; orden: number }[]) =>
+    api.put('/procesos-datos-basicos/tipos/reordenar', items).then((r) => r.data),
 
   listarEstados: (params?: { categoria?: string; tipo?: string }) =>
     api.get<EstadoProceso[]>('/procesos-datos-basicos/estados', { params: params ?? {} }).then((r) => r.data),

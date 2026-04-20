@@ -1,19 +1,21 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Download, Search } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { procesosDatosBasicosApi, tareasDatosBasicosApi, funcionesApi } from '@/lib/api'
 import type { CategoriaProceso, TipoProceso, EstadoProceso, EstadoCanonicalProceso, Funcion } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
 
 type TabId = 'categorias' | 'tipos' | 'estados' | 'canonicos'
+type TabModalTipo = 'general' | 'config'
 
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaProceso }
@@ -40,14 +42,20 @@ export default function PaginaProcesosDatosBasicos() {
   const [tipos, setTipos] = useState<TipoProceso[]>([])
   const [cargandoTipo, setCargandoTipo] = useState(true)
   const [modalTipo, setModalTipo] = useState(false)
+  const [tabModalTipo, setTabModalTipo] = useState<TabModalTipo>('general')
   const [tipoEditando, setTipoEditando] = useState<TipoProceso | null>(null)
   const [formTipo, setFormTipo] = useState({
     codigo_categoria_proceso: '', codigo_tipo_proceso: '', nombre_tipo_proceso: '', descripcion_tipo_proceso: '', alias: '',
     prompt: '', system_prompt: '',
+    orden: '', codigo_funcion: '', ayuda: '', traducir: true, tipo: 'USUARIO',
+    n_parallel: '', n_parallel_inicial: '', batch_size: '', batch_timeout_seg: '',
+    created_at: '', updated_at: '',
   })
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
   const [filtroCatTipo, setFiltroCatTipo] = useState('')
+  const [busquedaCatTipo, setBusquedaCatTipo] = useState('')
+  const [mostrarListaCatTipo, setMostrarListaCatTipo] = useState(false)
 
   // ── Estados ────────────────────────────────────────────────────────────────
   const [estados, setEstados] = useState<EstadoProceso[]>([])
@@ -179,7 +187,14 @@ export default function PaginaProcesosDatosBasicos() {
   // ── CRUD Tipos ─────────────────────────────────────────────────────────────
   const abrirNuevoTipo = () => {
     setTipoEditando(null)
-    setFormTipo({ codigo_categoria_proceso: '', codigo_tipo_proceso: '', nombre_tipo_proceso: '', descripcion_tipo_proceso: '', alias: '', prompt: '', system_prompt: '' })
+    setFormTipo({
+      codigo_categoria_proceso: filtroCatTipo || '',
+      codigo_tipo_proceso: '', nombre_tipo_proceso: '', descripcion_tipo_proceso: '', alias: '',
+      prompt: '', system_prompt: '',
+      orden: '', codigo_funcion: '', ayuda: '', traducir: true, tipo: 'USUARIO',
+      n_parallel: '', n_parallel_inicial: '', batch_size: '', batch_timeout_seg: '',
+      created_at: '', updated_at: '',
+    })
     setErrorTipo('')
     setModalTipo(true)
   }
@@ -194,9 +209,35 @@ export default function PaginaProcesosDatosBasicos() {
       alias: t.alias || '',
       prompt: t.prompt || '',
       system_prompt: t.system_prompt || '',
+      orden: t.orden != null ? String(t.orden) : '',
+      codigo_funcion: t.codigo_funcion || '',
+      ayuda: t.ayuda || '',
+      traducir: t.traducir ?? true,
+      tipo: t.tipo || 'USUARIO',
+      n_parallel: t.n_parallel != null ? String(t.n_parallel) : '',
+      n_parallel_inicial: t.n_parallel_inicial != null ? String(t.n_parallel_inicial) : '',
+      batch_size: t.batch_size != null ? String(t.batch_size) : '',
+      batch_timeout_seg: t.batch_timeout_seg != null ? String(t.batch_timeout_seg) : '',
+      created_at: t.created_at || '',
+      updated_at: t.updated_at || '',
     })
     setErrorTipo('')
     setModalTipo(true)
+  }
+
+  const reordenarTipos = async (nuevos: TipoProceso[]) => {
+    const resto = tipos.filter((t) => t.codigo_categoria_proceso !== filtroCatTipo)
+    const nuevosConOrden = nuevos.map((t, idx) => ({ ...t, orden: idx + 1 }))
+    setTipos([...resto, ...nuevosConOrden])
+    try {
+      await procesosDatosBasicosApi.reordenarTipos(
+        nuevosConOrden.map((t) => ({
+          codigo_categoria_proceso: t.codigo_categoria_proceso,
+          codigo_tipo_proceso: t.codigo_tipo_proceso,
+          orden: t.orden ?? 0,
+        }))
+      )
+    } catch { cargarTipos() }
   }
 
   const guardarTipo = async (cerrar = true) => {
@@ -379,8 +420,23 @@ export default function PaginaProcesosDatosBasicos() {
 
   // ── Filtros ────────────────────────────────────────────────────────────────
   const tiposFiltrados = filtroCatTipo
-    ? tipos.filter((t) => t.codigo_categoria_proceso === filtroCatTipo)
-    : tipos
+    ? tipos
+        .filter((t) => t.codigo_categoria_proceso === filtroCatTipo)
+        .slice()
+        .sort((a, b) => {
+          const oa = a.orden ?? 99, ob = b.orden ?? 99
+          if (oa !== ob) return oa - ob
+          return a.nombre_tipo_proceso.localeCompare(b.nombre_tipo_proceso, 'es')
+        })
+    : []
+
+  const categoriaSelTipo = categorias.find((c) => c.codigo_categoria_proceso === filtroCatTipo) || null
+  const categoriasSugTipo = !busquedaCatTipo.trim()
+    ? categorias
+    : categorias.filter((c) =>
+        c.nombre_categoria_proceso.toLowerCase().includes(busquedaCatTipo.toLowerCase()) ||
+        (c.alias || '').toLowerCase().includes(busquedaCatTipo.toLowerCase())
+      )
 
   const estadosFiltrados = estados.filter((e) => {
     if (filtroCatEst && e.codigo_categoria_proceso !== filtroCatEst) return false
@@ -475,16 +531,49 @@ export default function PaginaProcesosDatosBasicos() {
       {tabActiva === 'tipos' && (
         <>
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-texto-muted">Filtrar por categoría:</p>
-              <select value={filtroCatTipo} onChange={(e) => setFiltroCatTipo(e.target.value)} className={selectCls}>
-                <option value="">Todas</option>
-                {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
-              </select>
+            <div className="flex items-center gap-3 flex-1">
+              <p className="text-sm text-texto-muted whitespace-nowrap">Categoría:</p>
+              <div className="relative max-w-md flex-1">
+                <Input
+                  placeholder="Buscar y seleccionar categoría..."
+                  value={mostrarListaCatTipo ? busquedaCatTipo : (categoriaSelTipo?.nombre_categoria_proceso || '')}
+                  onChange={(e) => { setBusquedaCatTipo(e.target.value); setMostrarListaCatTipo(true) }}
+                  onFocus={() => { setMostrarListaCatTipo(true); setBusquedaCatTipo('') }}
+                  onBlur={() => setTimeout(() => setMostrarListaCatTipo(false), 150)}
+                  icono={<Search size={15} />}
+                />
+                {mostrarListaCatTipo && categoriasSugTipo.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full max-h-64 overflow-y-auto bg-surface border border-borde rounded-lg shadow-lg">
+                    {filtroCatTipo && (
+                      <button
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { setFiltroCatTipo(''); setMostrarListaCatTipo(false); setBusquedaCatTipo('') }}
+                        className="block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm text-texto-muted border-b border-borde"
+                      >
+                        (limpiar selección)
+                      </button>
+                    )}
+                    {categoriasSugTipo.map((c) => (
+                      <button
+                        key={c.codigo_categoria_proceso}
+                        type="button"
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { setFiltroCatTipo(c.codigo_categoria_proceso); setMostrarListaCatTipo(false); setBusquedaCatTipo('') }}
+                        className={`block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm ${c.codigo_categoria_proceso === filtroCatTipo ? 'bg-primario-muy-claro text-primario font-medium' : ''}`}
+                      >
+                        {c.nombre_categoria_proceso}
+                        {c.alias && <span className="text-texto-muted text-xs ml-2">({c.alias})</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(tiposFiltrados as unknown as Record<string, unknown>[], [
+                  { titulo: 'Orden', campo: 'orden' },
                   { titulo: 'Categoría', campo: 'codigo_categoria_proceso' },
                   { titulo: 'Código tipo', campo: 'codigo_tipo_proceso' },
                   { titulo: 'Nombre', campo: 'nombre_tipo_proceso' },
@@ -497,33 +586,49 @@ export default function PaginaProcesosDatosBasicos() {
             </div>
           </div>
 
-          {cargandoTipo ? (
+          {!filtroCatTipo ? (
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
+              Selecciona una categoría para ver sus tipos de proceso
+            </div>
+          ) : cargandoTipo ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : tiposFiltrados.length === 0 ? (
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
+              No hay tipos registrados en esta categoría
+            </div>
           ) : (
-            <Tabla>
-              <TablaCabecera><tr>
-                <TablaTh>Categoría</TablaTh><TablaTh>Código tipo</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh>
-                <TablaTh className="text-right">Acciones</TablaTh>
-              </tr></TablaCabecera>
-              <TablaCuerpo>
-                {tiposFiltrados.length === 0 ? (
-                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>No hay tipos registrados</TablaTd></TablaFila>
-                ) : tiposFiltrados.map((t) => (
-                  <TablaFila key={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`}>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_categoria_proceso}</code></TablaTd>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_tipo_proceso}</code></TablaTd>
-                    <TablaTd className="font-medium">{t.nombre_tipo_proceso}</TablaTd>
-                    <TablaTd className="text-texto-muted text-sm">{t.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
-                    <TablaTd>
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                        <button onClick={() => setItemAEliminar({ tipo: 'tipo', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
-                      </div>
-                    </TablaTd>
-                  </TablaFila>
-                ))}
-              </TablaCuerpo>
-            </Tabla>
+            <SortableDndContext
+              items={tiposFiltrados as unknown as Record<string, unknown>[]}
+              getId={(t) => `${(t as unknown as TipoProceso).codigo_categoria_proceso}/${(t as unknown as TipoProceso).codigo_tipo_proceso}`}
+              onReorder={(n) => reordenarTipos(n as unknown as TipoProceso[])}
+            >
+              <Tabla>
+                <TablaCabecera><tr>
+                  <TablaTh className="w-8" />
+                  <TablaTh className="w-16 text-center">Orden</TablaTh>
+                  <TablaTh>Nombre</TablaTh>
+                  <TablaTh>Descripción</TablaTh>
+                  <TablaTh className="w-40">Código</TablaTh>
+                  <TablaTh className="text-right w-28">Acciones</TablaTh>
+                </tr></TablaCabecera>
+                <TablaCuerpo>
+                  {tiposFiltrados.map((t) => (
+                    <SortableRow key={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} id={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`}>
+                      <TablaTd className="text-center text-texto-muted text-sm">{t.orden ?? '—'}</TablaTd>
+                      <TablaTd className="font-medium">{t.nombre_tipo_proceso}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm">{t.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_tipo_proceso}</code></TablaTd>
+                      <TablaTd>
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'tipo', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                        </div>
+                      </TablaTd>
+                    </SortableRow>
+                  ))}
+                </TablaCuerpo>
+              </Tabla>
+            </SortableDndContext>
           )}
         </>
       )}

@@ -366,8 +366,19 @@ export interface TipoProceso {
   nombre_tipo_proceso: string
   descripcion_tipo_proceso?: string
   alias?: string
+  orden?: number
+  codigo_funcion?: string | null
+  ayuda?: string | null
+  traducir?: boolean
+  tipo?: string
+  n_parallel?: number | null
+  n_parallel_inicial?: number | null
+  batch_size?: number | null
+  batch_timeout_seg?: number | null
   prompt?: string
   system_prompt?: string
+  created_at?: string
+  updated_at?: string
 }
 
 export interface EstadoProceso {
