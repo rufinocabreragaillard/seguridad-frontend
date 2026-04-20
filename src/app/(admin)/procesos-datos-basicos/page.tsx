@@ -711,47 +711,53 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo */}
-      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo' : 'Nuevo tipo de proceso'}>
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo' : 'Nuevo tipo de proceso'} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Categoría *</label>
-            <select value={formTipo.codigo_categoria_proceso}
-              onChange={(e) => setFormTipo({ ...formTipo, codigo_categoria_proceso: e.target.value })}
-              disabled={!!tipoEditando}
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-              <option value="">Seleccionar categoría...</option>
-              {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
-            </select>
-          </div>
-          {!tipoEditando && (
-            <Input etiqueta="Código tipo (dejar vacío para autogenerar)" value={formTipo.codigo_tipo_proceso}
-              onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_proceso: e.target.value })}
-              placeholder="LICENCIA_OBRAS" />
-          )}
-          <Input etiqueta="Nombre *" value={formTipo.nombre_tipo_proceso}
-            onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_proceso: e.target.value })}
-            placeholder="Licencia de Obras" />
-          <Input etiqueta="Descripción" value={formTipo.descripcion_tipo_proceso}
-            onChange={(e) => setFormTipo({ ...formTipo, descripcion_tipo_proceso: e.target.value })}
-            placeholder="Descripción opcional" />
-          <Input etiqueta="Alias" value={formTipo.alias}
-            onChange={(e) => setFormTipo({ ...formTipo, alias: e.target.value })}
-            placeholder="Alias breve" />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Prompt</label>
-            <textarea value={formTipo.prompt}
-              onChange={(e) => setFormTipo({ ...formTipo, prompt: e.target.value })}
-              rows={3}
-              placeholder="Prompt del tipo de proceso"
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">System prompt</label>
-            <textarea value={formTipo.system_prompt}
-              onChange={(e) => setFormTipo({ ...formTipo, system_prompt: e.target.value })}
-              rows={3}
-              placeholder="Instrucciones system para el LLM"
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Categoría *</label>
+                <select value={formTipo.codigo_categoria_proceso}
+                  onChange={(e) => setFormTipo({ ...formTipo, codigo_categoria_proceso: e.target.value })}
+                  disabled={!!tipoEditando}
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
+                  <option value="">Seleccionar categoría...</option>
+                  {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
+                </select>
+              </div>
+              {!tipoEditando && (
+                <Input etiqueta="Código tipo (dejar vacío para autogenerar)" value={formTipo.codigo_tipo_proceso}
+                  onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_proceso: e.target.value })}
+                  placeholder="LICENCIA_OBRAS" />
+              )}
+              <Input etiqueta="Nombre *" value={formTipo.nombre_tipo_proceso}
+                onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_proceso: e.target.value })}
+                placeholder="Licencia de Obras" />
+              <Input etiqueta="Descripción" value={formTipo.descripcion_tipo_proceso}
+                onChange={(e) => setFormTipo({ ...formTipo, descripcion_tipo_proceso: e.target.value })}
+                placeholder="Descripción opcional" />
+              <Input etiqueta="Alias" value={formTipo.alias}
+                onChange={(e) => setFormTipo({ ...formTipo, alias: e.target.value })}
+                placeholder="Alias breve" />
+            </div>
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Prompt</label>
+                <textarea value={formTipo.prompt}
+                  onChange={(e) => setFormTipo({ ...formTipo, prompt: e.target.value })}
+                  rows={tipoEditando ? 7 : 8}
+                  placeholder="Prompt del tipo de proceso"
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">System prompt</label>
+                <textarea value={formTipo.system_prompt}
+                  onChange={(e) => setFormTipo({ ...formTipo, system_prompt: e.target.value })}
+                  rows={tipoEditando ? 7 : 8}
+                  placeholder="Instrucciones system para el LLM"
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+              </div>
+            </div>
           </div>
           {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}
           <PieBotonesModal
