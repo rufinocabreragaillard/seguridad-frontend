@@ -940,6 +940,8 @@ export const tareasDatosBasicosApi = {
     api.put(`/tareas-datos-basicos/canonicos-proceso/${codigo}`, datos).then((r) => r.data),
   eliminarCanonicosPro: (codigo: string) =>
     api.delete(`/tareas-datos-basicos/canonicos-proceso/${codigo}`),
+  reordenarCanonicosPro: (items: { codigo_estado_canonico: string; orden: number }[]) =>
+    api.put('/tareas-datos-basicos/canonicos-proceso/reordenar', items).then((r) => r.data),
 
   // Canónicos tarea
   listarCanonicosTar: () =>
@@ -1043,6 +1045,8 @@ export const procesosDatosBasicosApi = {
     api.put(`/procesos-datos-basicos/estados/${categoria}/${tipo}/${codigo}`, datos).then((r) => r.data),
   eliminarEstado: (categoria: string, tipo: string, codigo: string) =>
     api.delete(`/procesos-datos-basicos/estados/${categoria}/${tipo}/${codigo}`),
+  reordenarEstados: (items: { codigo_categoria_proceso: string; codigo_tipo_proceso: string; codigo_estado_proceso: string; orden: number }[]) =>
+    api.put('/procesos-datos-basicos/estados/reordenar', items).then((r) => r.data),
 }
 
 // ─── Tareas: Operación ───────────────────────────────────────────────────────

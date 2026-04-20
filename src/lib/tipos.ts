@@ -306,7 +306,8 @@ export interface EstadoCanonicoTarea {
 export interface EstadoCanonicalProceso {
   codigo_estado_canonico: string
   nombre: string
-  activo: boolean
+  descripcion?: string
+  orden?: number
 }
 
 export interface CategoriaTarea {
@@ -386,6 +387,7 @@ export interface EstadoProceso {
   codigo_tipo_proceso: string
   codigo_estado_proceso: string
   secuencia: number
+  orden?: number
   nombre_estado: string
   prompt?: string
   system_prompt?: string

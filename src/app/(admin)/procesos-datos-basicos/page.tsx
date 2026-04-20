@@ -86,6 +86,10 @@ export default function PaginaProcesosDatosBasicos() {
   const [errorEst, setErrorEst] = useState('')
   const [filtroCatEst, setFiltroCatEst] = useState('')
   const [filtroTipoEst, setFiltroTipoEst] = useState('')
+  const [busquedaCatEst, setBusquedaCatEst] = useState('')
+  const [mostrarListaCatEst, setMostrarListaCatEst] = useState(false)
+  const [busquedaTipoEst, setBusquedaTipoEst] = useState('')
+  const [mostrarListaTipoEst, setMostrarListaTipoEst] = useState(false)
   const [funciones, setFunciones] = useState<Funcion[]>([])
 
   // ── Canónicos ──────────────────────────────────────────────────────────────
@@ -240,6 +244,34 @@ export default function PaginaProcesosDatosBasicos() {
     } catch { cargarTipos() }
   }
 
+  const reordenarEstados = async (nuevos: EstadoProceso[]) => {
+    const resto = estados.filter(
+      (e) => e.codigo_categoria_proceso !== filtroCatEst || e.codigo_tipo_proceso !== filtroTipoEst
+    )
+    const nuevosConOrden = nuevos.map((e, idx) => ({ ...e, orden: idx + 1 }))
+    setEstados([...resto, ...nuevosConOrden])
+    try {
+      await procesosDatosBasicosApi.reordenarEstados(
+        nuevosConOrden.map((e) => ({
+          codigo_categoria_proceso: e.codigo_categoria_proceso,
+          codigo_tipo_proceso: e.codigo_tipo_proceso,
+          codigo_estado_proceso: e.codigo_estado_proceso,
+          orden: e.orden ?? 0,
+        }))
+      )
+    } catch { cargarEstados() }
+  }
+
+  const reordenarCanonicos = async (nuevos: EstadoCanonicalProceso[]) => {
+    const nuevosConOrden = nuevos.map((c, idx) => ({ ...c, orden: idx + 1 }))
+    setCanonicos(nuevosConOrden)
+    try {
+      await tareasDatosBasicosApi.reordenarCanonicosPro(
+        nuevosConOrden.map((c) => ({ codigo_estado_canonico: c.codigo_estado_canonico, orden: c.orden ?? 0 }))
+      )
+    } catch { cargarCanonicos() }
+  }
+
   const guardarTipo = async (cerrar = true) => {
     if (!formTipo.codigo_categoria_proceso || !formTipo.nombre_tipo_proceso) {
       setErrorTipo('La categoría y el nombre son obligatorios'); return
@@ -279,7 +311,9 @@ export default function PaginaProcesosDatosBasicos() {
   const abrirNuevoEst = () => {
     setEstEditando(null)
     setFormEst({
-      codigo_categoria_proceso: '', codigo_tipo_proceso: '', codigo_estado_proceso: '',
+      codigo_categoria_proceso: filtroCatEst || '',
+      codigo_tipo_proceso: filtroTipoEst || '',
+      codigo_estado_proceso: '',
       nombre_estado: '', secuencia: 0,
       prompt: '', system_prompt: '', codigo_funcion: '',
       n_parallel: '', ayuda: '', traducir: false, batch_size: '', batch_timeout_seg: '',
@@ -438,15 +472,33 @@ export default function PaginaProcesosDatosBasicos() {
         (c.alias || '').toLowerCase().includes(busquedaCatTipo.toLowerCase())
       )
 
-  const estadosFiltrados = estados.filter((e) => {
-    if (filtroCatEst && e.codigo_categoria_proceso !== filtroCatEst) return false
-    if (filtroTipoEst && e.codigo_tipo_proceso !== filtroTipoEst) return false
-    return true
-  })
+  const estadosFiltrados = (filtroCatEst && filtroTipoEst)
+    ? estados
+        .filter((e) => e.codigo_categoria_proceso === filtroCatEst && e.codigo_tipo_proceso === filtroTipoEst)
+        .slice()
+        .sort((a, b) => {
+          const oa = a.orden ?? 99, ob = b.orden ?? 99
+          if (oa !== ob) return oa - ob
+          return a.secuencia - b.secuencia
+        })
+    : []
 
-  const tiposParaEstados = filtroTipoEst || !filtroCatEst
-    ? tipos.filter((t) => !filtroCatEst || t.codigo_categoria_proceso === filtroCatEst)
-    : tipos
+  const categoriaSelEst = categorias.find((c) => c.codigo_categoria_proceso === filtroCatEst) || null
+  const categoriasSugEst = !busquedaCatEst.trim()
+    ? categorias
+    : categorias.filter((c) =>
+        c.nombre_categoria_proceso.toLowerCase().includes(busquedaCatEst.toLowerCase()) ||
+        (c.alias || '').toLowerCase().includes(busquedaCatEst.toLowerCase())
+      )
+
+  const tiposDeCategEst = tipos.filter((t) => t.codigo_categoria_proceso === filtroCatEst)
+  const tipoSelEst = tiposDeCategEst.find((t) => t.codigo_tipo_proceso === filtroTipoEst) || null
+  const tiposSugEst = !busquedaTipoEst.trim()
+    ? tiposDeCategEst
+    : tiposDeCategEst.filter((t) =>
+        t.nombre_tipo_proceso.toLowerCase().includes(busquedaTipoEst.toLowerCase()) ||
+        (t.alias || '').toLowerCase().includes(busquedaTipoEst.toLowerCase())
+      )
 
   const canonicosFiltrados = busquedaCan
     ? canonicos.filter((c) =>
@@ -637,24 +689,76 @@ export default function PaginaProcesosDatosBasicos() {
       {tabActiva === 'estados' && (
         <>
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3 flex-wrap">
-              <p className="text-sm text-texto-muted">Filtrar:</p>
-              <select value={filtroCatEst} onChange={(e) => { setFiltroCatEst(e.target.value); setFiltroTipoEst('') }} className={selectCls}>
-                <option value="">Todas las categorías</option>
-                {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
-              </select>
-              <select value={filtroTipoEst} onChange={(e) => setFiltroTipoEst(e.target.value)} className={selectCls}>
-                <option value="">Todos los tipos</option>
-                {tiposParaEstados.map((t) => (
-                  <option key={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} value={t.codigo_tipo_proceso}>
-                    {t.nombre_tipo_proceso}
-                  </option>
-                ))}
-              </select>
+            <div className="flex items-center gap-3 flex-1 flex-wrap">
+              <p className="text-sm text-texto-muted whitespace-nowrap">Categoría:</p>
+              <div className="relative max-w-xs flex-1">
+                <Input
+                  placeholder="Buscar categoría..."
+                  value={mostrarListaCatEst ? busquedaCatEst : (categoriaSelEst?.nombre_categoria_proceso || '')}
+                  onChange={(e) => { setBusquedaCatEst(e.target.value); setMostrarListaCatEst(true) }}
+                  onFocus={() => { setMostrarListaCatEst(true); setBusquedaCatEst('') }}
+                  onBlur={() => setTimeout(() => setMostrarListaCatEst(false), 150)}
+                  icono={<Search size={15} />}
+                />
+                {mostrarListaCatEst && categoriasSugEst.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto bg-surface border border-borde rounded-lg shadow-lg">
+                    {filtroCatEst && (
+                      <button type="button" onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { setFiltroCatEst(''); setFiltroTipoEst(''); setMostrarListaCatEst(false); setBusquedaCatEst('') }}
+                        className="block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm text-texto-muted border-b border-borde">
+                        (limpiar selección)
+                      </button>
+                    )}
+                    {categoriasSugEst.map((c) => (
+                      <button key={c.codigo_categoria_proceso} type="button" onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => { setFiltroCatEst(c.codigo_categoria_proceso); setFiltroTipoEst(''); setMostrarListaCatEst(false); setBusquedaCatEst('') }}
+                        className={`block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm ${c.codigo_categoria_proceso === filtroCatEst ? 'bg-primario-muy-claro text-primario font-medium' : ''}`}>
+                        {c.nombre_categoria_proceso}
+                        {c.alias && <span className="text-texto-muted text-xs ml-2">({c.alias})</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {filtroCatEst && (
+                <>
+                  <p className="text-sm text-texto-muted whitespace-nowrap">Tipo:</p>
+                  <div className="relative max-w-xs flex-1">
+                    <Input
+                      placeholder="Buscar tipo..."
+                      value={mostrarListaTipoEst ? busquedaTipoEst : (tipoSelEst?.nombre_tipo_proceso || '')}
+                      onChange={(e) => { setBusquedaTipoEst(e.target.value); setMostrarListaTipoEst(true) }}
+                      onFocus={() => { setMostrarListaTipoEst(true); setBusquedaTipoEst('') }}
+                      onBlur={() => setTimeout(() => setMostrarListaTipoEst(false), 150)}
+                      icono={<Search size={15} />}
+                    />
+                    {mostrarListaTipoEst && tiposSugEst.length > 0 && (
+                      <div className="absolute z-20 mt-1 w-full max-h-56 overflow-y-auto bg-surface border border-borde rounded-lg shadow-lg">
+                        {filtroTipoEst && (
+                          <button type="button" onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => { setFiltroTipoEst(''); setMostrarListaTipoEst(false); setBusquedaTipoEst('') }}
+                            className="block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm text-texto-muted border-b border-borde">
+                            (limpiar selección)
+                          </button>
+                        )}
+                        {tiposSugEst.map((t) => (
+                          <button key={t.codigo_tipo_proceso} type="button" onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => { setFiltroTipoEst(t.codigo_tipo_proceso); setMostrarListaTipoEst(false); setBusquedaTipoEst('') }}
+                            className={`block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm ${t.codigo_tipo_proceso === filtroTipoEst ? 'bg-primario-muy-claro text-primario font-medium' : ''}`}>
+                            {t.nombre_tipo_proceso}
+                            {t.alias && <span className="text-texto-muted text-xs ml-2">({t.alias})</span>}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
             </div>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(estadosFiltrados as unknown as Record<string, unknown>[], [
+                  { titulo: 'Orden', campo: 'orden' },
                   { titulo: 'Categoría', campo: 'codigo_categoria_proceso' },
                   { titulo: 'Tipo', campo: 'codigo_tipo_proceso' },
                   { titulo: 'Código estado', campo: 'codigo_estado_proceso' },
@@ -673,39 +777,53 @@ export default function PaginaProcesosDatosBasicos() {
             </div>
           </div>
 
-          {cargandoEst ? (
+          {!filtroCatEst || !filtroTipoEst ? (
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
+              {!filtroCatEst ? 'Selecciona una categoría y un tipo para ver sus estados' : 'Selecciona un tipo de proceso para ver sus estados'}
+            </div>
+          ) : cargandoEst ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : estadosFiltrados.length === 0 ? (
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
+              No hay estados registrados para este tipo de proceso
+            </div>
           ) : (
-            <Tabla>
-              <TablaCabecera><tr>
-                <TablaTh>Categoría</TablaTh><TablaTh>Tipo</TablaTh><TablaTh>Código</TablaTh>
-                <TablaTh>Nombre</TablaTh><TablaTh>Sec.</TablaTh>
-                <TablaTh>Función</TablaTh><TablaTh>N paral.</TablaTh><TablaTh>Batch</TablaTh>
-                <TablaTh className="text-right">Acciones</TablaTh>
-              </tr></TablaCabecera>
-              <TablaCuerpo>
-                {estadosFiltrados.length === 0 ? (
-                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={9 as never}>No hay estados registrados</TablaTd></TablaFila>
-                ) : estadosFiltrados.map((e) => (
-                  <TablaFila key={`${e.codigo_categoria_proceso}/${e.codigo_tipo_proceso}/${e.codigo_estado_proceso}`}>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_categoria_proceso}</code></TablaTd>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_tipo_proceso}</code></TablaTd>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_proceso}</code></TablaTd>
-                    <TablaTd className="font-medium">{e.nombre_estado}</TablaTd>
-                    <TablaTd className="text-texto-muted text-sm text-center">{e.secuencia}</TablaTd>
-                    <TablaTd className="text-texto-muted text-sm">{e.codigo_funcion || <span className="text-texto-light">—</span>}</TablaTd>
-                    <TablaTd className="text-texto-muted text-sm text-center">{e.n_parallel ?? <span className="text-texto-light">—</span>}</TablaTd>
-                    <TablaTd className="text-texto-muted text-sm text-center">{e.batch_size ?? <span className="text-texto-light">—</span>}</TablaTd>
-                    <TablaTd>
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => abrirEditarEst(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                        <button onClick={() => setItemAEliminar({ tipo: 'estado', item: e })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
-                      </div>
-                    </TablaTd>
-                  </TablaFila>
-                ))}
-              </TablaCuerpo>
-            </Tabla>
+            <SortableDndContext
+              items={estadosFiltrados as unknown as Record<string, unknown>[]}
+              getId={(e) => `${(e as unknown as EstadoProceso).codigo_categoria_proceso}/${(e as unknown as EstadoProceso).codigo_tipo_proceso}/${(e as unknown as EstadoProceso).codigo_estado_proceso}`}
+              onReorder={(n) => reordenarEstados(n as unknown as EstadoProceso[])}
+            >
+              <Tabla>
+                <TablaCabecera><tr>
+                  <TablaTh className="w-8" />
+                  <TablaTh className="w-16 text-center">Orden</TablaTh>
+                  <TablaTh>Nombre</TablaTh>
+                  <TablaTh>Función</TablaTh>
+                  <TablaTh className="text-center">N par.</TablaTh>
+                  <TablaTh className="text-center">Batch</TablaTh>
+                  <TablaTh className="w-36">Código</TablaTh>
+                  <TablaTh className="text-right w-24">Acciones</TablaTh>
+                </tr></TablaCabecera>
+                <TablaCuerpo>
+                  {estadosFiltrados.map((e) => (
+                    <SortableRow key={`${e.codigo_categoria_proceso}/${e.codigo_tipo_proceso}/${e.codigo_estado_proceso}`} id={`${e.codigo_categoria_proceso}/${e.codigo_tipo_proceso}/${e.codigo_estado_proceso}`}>
+                      <TablaTd className="text-center text-texto-muted text-sm">{e.orden ?? '—'}</TablaTd>
+                      <TablaTd className="font-medium">{e.nombre_estado}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm">{e.codigo_funcion || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm text-center">{e.n_parallel ?? <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm text-center">{e.batch_size ?? <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_proceso}</code></TablaTd>
+                      <TablaTd>
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => abrirEditarEst(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'estado', item: e })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                        </div>
+                      </TablaTd>
+                    </SortableRow>
+                  ))}
+                </TablaCuerpo>
+              </Tabla>
+            </SortableDndContext>
           )}
         </>
       )}
@@ -726,6 +844,7 @@ export default function PaginaProcesosDatosBasicos() {
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(canonicosFiltrados as unknown as Record<string, unknown>[], [
+                  { titulo: 'Orden', campo: 'orden' },
                   { titulo: 'Código', campo: 'codigo_estado_canonico' },
                   { titulo: 'Nombre', campo: 'nombre' },
                 ], 'canonicos_proceso')}
@@ -738,29 +857,41 @@ export default function PaginaProcesosDatosBasicos() {
 
           {cargandoCan ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : canonicos.length === 0 ? (
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">No hay estados canónicos registrados</div>
           ) : (
-            <Tabla>
-              <TablaCabecera><tr>
-                <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh>
-                <TablaTh className="text-right">Acciones</TablaTh>
-              </tr></TablaCabecera>
-              <TablaCuerpo>
-                {canonicosFiltrados.length === 0 ? (
-                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={3 as never}>No hay estados canónicos registrados</TablaTd></TablaFila>
-                ) : canonicosFiltrados.map((c) => (
-                  <TablaFila key={c.codigo_estado_canonico}>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_estado_canonico}</code></TablaTd>
-                    <TablaTd className="font-medium">{c.nombre}</TablaTd>
-                    <TablaTd>
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => abrirEditarCan(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                        <button onClick={() => setItemAEliminar({ tipo: 'canonico', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
-                      </div>
-                    </TablaTd>
-                  </TablaFila>
-                ))}
-              </TablaCuerpo>
-            </Tabla>
+            <SortableDndContext
+              items={canonicosFiltrados as unknown as Record<string, unknown>[]}
+              getId={(c) => (c as unknown as EstadoCanonicalProceso).codigo_estado_canonico}
+              onReorder={(n) => reordenarCanonicos(n as unknown as EstadoCanonicalProceso[])}
+            >
+              <Tabla>
+                <TablaCabecera><tr>
+                  <TablaTh className="w-8" />
+                  <TablaTh className="w-16 text-center">Orden</TablaTh>
+                  <TablaTh>Nombre</TablaTh>
+                  <TablaTh className="w-48">Código</TablaTh>
+                  <TablaTh className="text-right w-24">Acciones</TablaTh>
+                </tr></TablaCabecera>
+                <TablaCuerpo>
+                  {canonicosFiltrados.length === 0 ? (
+                    <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>Sin resultados para la búsqueda</TablaTd></TablaFila>
+                  ) : canonicosFiltrados.map((c) => (
+                    <SortableRow key={c.codigo_estado_canonico} id={c.codigo_estado_canonico}>
+                      <TablaTd className="text-center text-texto-muted text-sm">{c.orden ?? '—'}</TablaTd>
+                      <TablaTd className="font-medium">{c.nombre}</TablaTd>
+                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_estado_canonico}</code></TablaTd>
+                      <TablaTd>
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => abrirEditarCan(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'canonico', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                        </div>
+                      </TablaTd>
+                    </SortableRow>
+                  ))}
+                </TablaCuerpo>
+              </Tabla>
+            </SortableDndContext>
           )}
         </>
       )}
