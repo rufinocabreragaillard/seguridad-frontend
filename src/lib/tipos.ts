@@ -352,6 +352,7 @@ export interface CategoriaTarea {
   nombre_categoria_tarea: string
   descripcion_categoria_tarea?: string
   activo: boolean
+  orden?: number
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
@@ -385,6 +386,7 @@ export interface TipoTarea {
   nombre_tipo_tarea: string
   descripcion_tipo_tarea?: string
   activo: boolean
+  orden?: number
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null

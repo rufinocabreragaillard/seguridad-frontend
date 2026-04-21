@@ -972,6 +972,8 @@ export const tareasDatosBasicosApi = {
     api.put(`/tareas-datos-basicos/categorias/${codigo}`, datos).then((r) => r.data),
   eliminarCategoria: (codigo: string) =>
     api.delete(`/tareas-datos-basicos/categorias/${codigo}`),
+  reordenarCategorias: (items: { codigo_categoria_tarea: string; orden: number }[]) =>
+    api.put('/tareas-datos-basicos/categorias/reordenar', items).then((r) => r.data),
 
   // Tipos canónicos (globales)
   listarTiposCanonicos: () =>
@@ -1002,6 +1004,8 @@ export const tareasDatosBasicosApi = {
     api.put(`/tareas-datos-basicos/tipos-tarea/${categoria}/${codigo}`, datos).then((r) => r.data),
   eliminarTipoTar: (categoria: string, codigo: string) =>
     api.delete(`/tareas-datos-basicos/tipos-tarea/${categoria}/${codigo}`),
+  reordenarTiposTar: (items: { codigo_categoria_tarea: string; codigo_tipo_tarea: string; orden: number }[]) =>
+    api.put('/tareas-datos-basicos/tipos-tarea/reordenar', items).then((r) => r.data),
 
   // Estados conversación
   listarEstadosCnv: (tipo?: string) =>
@@ -1022,6 +1026,8 @@ export const tareasDatosBasicosApi = {
     api.put(`/tareas-datos-basicos/estados-tarea/${categoria}/${tipo}/${codigo}`, datos).then((r) => r.data),
   eliminarEstadoTar: (categoria: string, tipo: string, codigo: string) =>
     api.delete(`/tareas-datos-basicos/estados-tarea/${categoria}/${tipo}/${codigo}`),
+  reordenarEstadosTar: (items: { codigo_categoria_tarea: string; codigo_tipo_tarea: string; codigo_estado_tarea: string; orden: number }[]) =>
+    api.put('/tareas-datos-basicos/estados-tarea/reordenar', items).then((r) => r.data),
 }
 
 // ─── Procesos: Datos Básicos ──────────────────────────────────────────────────
