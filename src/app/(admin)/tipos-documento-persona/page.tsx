@@ -19,9 +19,11 @@ type FormTipoDocPers = {
   codigo_tipo_doc: string
   nombre: string
   descripcion: string
-  prompt: string
+  prompt_insert: string
+  prompt_update: string
   system_prompt: string
-  python: string
+  python_insert: string
+  python_update: string
   javascript: string
   python_editado_manual: boolean
   javascript_editado_manual: boolean
@@ -40,9 +42,11 @@ export default function PaginaTiposDocumentoPersona() {
       codigo_grupo: grupoActivo ?? undefined,
       nombre: f.nombre,
       descripcion: f.descripcion || undefined,
-      prompt: f.prompt || undefined,
+      prompt_insert: f.prompt_insert || undefined,
+      prompt_update: f.prompt_update || undefined,
       system_prompt: f.system_prompt || undefined,
-      python: f.python || undefined,
+      python_insert: f.python_insert || undefined,
+      python_update: f.python_update || undefined,
       javascript: f.javascript || undefined,
       python_editado_manual: f.python_editado_manual,
       javascript_editado_manual: f.javascript_editado_manual,
@@ -50,9 +54,11 @@ export default function PaginaTiposDocumentoPersona() {
     actualizarFn: (id, f) => tiposDocumentoPersonaApi.actualizar(id, {
       nombre: f.nombre,
       descripcion: f.descripcion || undefined,
-      prompt: f.prompt || undefined,
+      prompt_insert: f.prompt_insert || undefined,
+      prompt_update: f.prompt_update || undefined,
       system_prompt: f.system_prompt || undefined,
-      python: f.python || undefined,
+      python_insert: f.python_insert || undefined,
+      python_update: f.python_update || undefined,
       javascript: f.javascript || undefined,
       python_editado_manual: f.python_editado_manual,
       javascript_editado_manual: f.javascript_editado_manual,
@@ -60,16 +66,18 @@ export default function PaginaTiposDocumentoPersona() {
     eliminarFn: async (id: string) => { await tiposDocumentoPersonaApi.desactivar(id) },
     getId: (item) => item.codigo_tipo_doc,
     camposBusqueda: (item) => [item.codigo_tipo_doc, item.nombre],
-    formInicial: { codigo_tipo_doc: '', nombre: '', descripcion: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false },
+    formInicial: { codigo_tipo_doc: '', nombre: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false },
     itemToForm: (item) => {
       const i2 = item as unknown as Record<string, unknown>
       return {
         codigo_tipo_doc: item.codigo_tipo_doc,
         nombre: item.nombre,
         descripcion: item.descripcion || '',
-        prompt: i2.prompt as string || '',
+        prompt_insert: i2.prompt_insert as string || '',
+        prompt_update: i2.prompt_update as string || '',
         system_prompt: i2.system_prompt as string || '',
-        python: i2.python as string || '',
+        python_insert: i2.python_insert as string || '',
+        python_update: i2.python_update as string || '',
         javascript: i2.javascript as string || '',
         python_editado_manual: i2.python_editado_manual as boolean || false,
         javascript_editado_manual: i2.javascript_editado_manual as boolean || false,
@@ -165,9 +173,11 @@ export default function PaginaTiposDocumentoPersona() {
               pkValor={crud.editando?.codigo_tipo_doc ?? null}
               campos={crud.form}
               onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormTipoDocPers, valor as string | boolean)}
-              mostrarPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
               mostrarSystemPrompt={true}
-              mostrarPython={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
               mostrarJavaScript={false}
               mostrarBotones={false}
             />
@@ -180,9 +190,7 @@ export default function PaginaTiposDocumentoPersona() {
               pkValor={crud.editando?.codigo_tipo_doc ?? null}
               campos={crud.form}
               onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormTipoDocPers, valor as string | boolean)}
-              mostrarPrompt={true}
               mostrarSystemPrompt={false}
-              mostrarPython={true}
               mostrarJavaScript={false}
             />
           )}

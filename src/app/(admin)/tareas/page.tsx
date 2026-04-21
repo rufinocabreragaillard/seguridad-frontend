@@ -39,9 +39,11 @@ type FormTarea = {
   prioridad: 'urgente' | 'alto' | 'medio' | 'bajo'
   fecha_esperada: string
   json: string
-  prompt: string | null
+  prompt_insert: string | null
+  prompt_update: string | null
   system_prompt: string | null
-  python: string | null
+  python_insert: string | null
+  python_update: string | null
   javascript: string | null
   python_editado_manual: boolean
   javascript_editado_manual: boolean
@@ -81,9 +83,11 @@ export default function PaginaTareasMantenedor() {
         prioridad: f.prioridad,
         fecha_esperada: f.fecha_esperada || undefined,
         json: parsearJson(f.json),
-        prompt: f.prompt,
+        prompt_insert: f.prompt_insert,
+        prompt_update: f.prompt_update,
         system_prompt: f.system_prompt,
-        python: f.python,
+        python_insert: f.python_insert,
+        python_update: f.python_update,
         javascript: f.javascript,
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
@@ -91,16 +95,18 @@ export default function PaginaTareasMantenedor() {
     eliminarFn: async (id) => { await tareasApi.eliminarTarea(Number(id)) },
     getId: (t) => String(t.id_tarea),
     camposBusqueda: (t) => [t.nombre_tarea, t.descripcion_tarea ?? '', t.codigo_categoria_tarea],
-    formInicial: { nombre_tarea: '', descripcion_tarea: '', prioridad: 'medio', fecha_esperada: '', json: '', prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false },
+    formInicial: { nombre_tarea: '', descripcion_tarea: '', prioridad: 'medio', fecha_esperada: '', json: '', prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false },
     itemToForm: (t) => ({
       nombre_tarea: t.nombre_tarea,
       descripcion_tarea: t.descripcion_tarea ?? '',
       prioridad: t.prioridad,
       fecha_esperada: t.fecha_esperada ? t.fecha_esperada.substring(0, 10) : '',
       json: t.json == null ? '' : JSON.stringify(t.json, null, 2),
-      prompt: t.prompt ?? null,
+      prompt_insert: (t as unknown as Record<string, unknown>).prompt_insert as string ?? null,
+      prompt_update: (t as unknown as Record<string, unknown>).prompt_update as string ?? null,
       system_prompt: t.system_prompt ?? null,
-      python: t.python ?? null,
+      python_insert: (t as unknown as Record<string, unknown>).python_insert as string ?? null,
+      python_update: (t as unknown as Record<string, unknown>).python_update as string ?? null,
       javascript: t.javascript ?? null,
       python_editado_manual: t.python_editado_manual ?? false,
       javascript_editado_manual: t.javascript_editado_manual ?? false,
@@ -278,11 +284,13 @@ export default function PaginaTareasMantenedor() {
               tabla="tareas"
               pkColumna="id_tarea"
               pkValor={crud.editando.id_tarea}
-              campos={{ prompt: crud.form.prompt, system_prompt: crud.form.system_prompt, python: crud.form.python, javascript: crud.form.javascript, python_editado_manual: crud.form.python_editado_manual, javascript_editado_manual: crud.form.javascript_editado_manual }}
+              campos={{ prompt_insert: crud.form.prompt_insert, prompt_update: crud.form.prompt_update, system_prompt: crud.form.system_prompt, python_insert: crud.form.python_insert, python_update: crud.form.python_update, javascript: crud.form.javascript, python_editado_manual: crud.form.python_editado_manual, javascript_editado_manual: crud.form.javascript_editado_manual }}
               onCampoCambiado={(c, v) => crud.updateForm(c as keyof FormTarea, v)}
-              mostrarPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
               mostrarSystemPrompt={true}
-              mostrarPython={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
               mostrarJavaScript={false}
               mostrarBotones={false}
             />
@@ -293,11 +301,9 @@ export default function PaginaTareasMantenedor() {
               tabla="tareas"
               pkColumna="id_tarea"
               pkValor={crud.editando.id_tarea}
-              campos={{ prompt: crud.form.prompt, system_prompt: crud.form.system_prompt, python: crud.form.python, javascript: crud.form.javascript, python_editado_manual: crud.form.python_editado_manual, javascript_editado_manual: crud.form.javascript_editado_manual }}
+              campos={{ prompt_insert: crud.form.prompt_insert, prompt_update: crud.form.prompt_update, system_prompt: crud.form.system_prompt, python_insert: crud.form.python_insert, python_update: crud.form.python_update, javascript: crud.form.javascript, python_editado_manual: crud.form.python_editado_manual, javascript_editado_manual: crud.form.javascript_editado_manual }}
               onCampoCambiado={(c, v) => crud.updateForm(c as keyof FormTarea, v)}
-              mostrarPrompt={true}
               mostrarSystemPrompt={false}
-              mostrarPython={true}
               mostrarJavaScript={false}
             />
           )}

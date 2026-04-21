@@ -53,8 +53,10 @@ export default function PaginaFunciones() {
     tipo: TipoFuncion
     id_modelo: string
     system_prompt: string
-    prompt: string
-    python: string
+    prompt_insert: string
+    prompt_update: string
+    python_insert: string
+    python_update: string
     javascript: string
     python_editado_manual: boolean
     javascript_editado_manual: boolean
@@ -66,8 +68,8 @@ export default function PaginaFunciones() {
   }>({
     codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
     alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: '',
-    tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt: '',
-    python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
+    tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt_insert: '', prompt_update: '',
+    python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
@@ -118,8 +120,8 @@ export default function PaginaFunciones() {
       codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
       alias_de_funcion: '', icono_de_funcion: '',
       codigo_aplicacion_origen: aplicacionActiva || '',
-      tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt: '',
-      python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
+      tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt_insert: '', prompt_update: '',
+      python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
       perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
       traducir: true,
     })
@@ -152,8 +154,10 @@ export default function PaginaFunciones() {
       tipo: normalizarTipo(f.tipo),
       id_modelo: f.id_modelo ? String(f.id_modelo) : '',
       system_prompt: (f as Funcion & { system_prompt?: string }).system_prompt || '',
-      prompt: (f as Funcion & { prompt?: string }).prompt || '',
-      python: (f as Funcion & { python?: string }).python || '',
+      prompt_insert: (f as Funcion & { prompt_insert?: string }).prompt_insert || '',
+      prompt_update: (f as Funcion & { prompt_update?: string }).prompt_update || '',
+      python_insert: (f as Funcion & { python_insert?: string }).python_insert || '',
+      python_update: (f as Funcion & { python_update?: string }).python_update || '',
       javascript: (f as Funcion & { javascript?: string }).javascript || '',
       python_editado_manual: (f as Funcion & { python_editado_manual?: boolean }).python_editado_manual ?? false,
       javascript_editado_manual: (f as Funcion & { javascript_editado_manual?: boolean }).javascript_editado_manual ?? false,
@@ -183,8 +187,10 @@ export default function PaginaFunciones() {
         codigo_aplicacion_origen: formFuncion.codigo_aplicacion_origen || null,
         id_modelo: formFuncion.id_modelo ? parseInt(formFuncion.id_modelo) : null,
         system_prompt: formFuncion.system_prompt || null,
-        prompt: formFuncion.prompt || null,
-        python: formFuncion.python || null,
+        prompt_insert: formFuncion.prompt_insert || null,
+        prompt_update: formFuncion.prompt_update || null,
+        python_insert: formFuncion.python_insert || null,
+        python_update: formFuncion.python_update || null,
         javascript: formFuncion.javascript || null,
         python_editado_manual: formFuncion.python_editado_manual,
         javascript_editado_manual: formFuncion.javascript_editado_manual,
@@ -524,17 +530,21 @@ export default function PaginaFunciones() {
                 pkColumna="codigo_funcion"
                 pkValor={funcionEditando.codigo_funcion}
                 campos={{
-                  prompt: formFuncion.prompt,
+                  prompt_insert: formFuncion.prompt_insert,
+                  prompt_update: formFuncion.prompt_update,
                   system_prompt: formFuncion.system_prompt,
-                  python: formFuncion.python,
+                  python_insert: formFuncion.python_insert,
+                  python_update: formFuncion.python_update,
                   javascript: formFuncion.javascript,
                   python_editado_manual: formFuncion.python_editado_manual,
                   javascript_editado_manual: formFuncion.javascript_editado_manual,
                 }}
                 onCampoCambiado={(c, v) => setFormFuncion({ ...formFuncion, [c]: v })}
-                mostrarPrompt={false}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
                 mostrarSystemPrompt={true}
-                mostrarPython={false}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
                 mostrarBotones={false}
               />
@@ -557,17 +567,17 @@ export default function PaginaFunciones() {
                 pkColumna="codigo_funcion"
                 pkValor={funcionEditando.codigo_funcion}
                 campos={{
-                  prompt: formFuncion.prompt,
+                  prompt_insert: formFuncion.prompt_insert,
+                  prompt_update: formFuncion.prompt_update,
                   system_prompt: formFuncion.system_prompt,
-                  python: formFuncion.python,
+                  python_insert: formFuncion.python_insert,
+                  python_update: formFuncion.python_update,
                   javascript: formFuncion.javascript,
                   python_editado_manual: formFuncion.python_editado_manual,
                   javascript_editado_manual: formFuncion.javascript_editado_manual,
                 }}
                 onCampoCambiado={(c, v) => setFormFuncion({ ...formFuncion, [c]: v })}
-                mostrarPrompt={true}
                 mostrarSystemPrompt={false}
-                mostrarPython={true}
                 mostrarJavaScript={false}
               />
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}

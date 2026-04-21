@@ -37,9 +37,11 @@ const PLAN_VACIO: Partial<Plan> = {
   storage_propio: false,
   es_plan_de_prueba: false,
   orden: 0,
-  prompt: '',
+  prompt_insert: '',
+  prompt_update: '',
   system_prompt: '',
-  python: '',
+  python_insert: '',
+  python_update: '',
   javascript: '',
   python_editado_manual: false,
   javascript_editado_manual: false,
@@ -288,17 +290,21 @@ export default function PaginaPlanes() {
                   pkColumna="codigo_plan"
                   pkValor={editando.codigo_plan}
                   campos={{
-                    prompt: form.prompt ?? null,
+                    prompt_insert: form.prompt_insert ?? null,
+                    prompt_update: form.prompt_update ?? null,
                     system_prompt: form.system_prompt ?? null,
-                    python: form.python ?? null,
+                    python_insert: form.python_insert ?? null,
+                    python_update: form.python_update ?? null,
                     javascript: form.javascript ?? null,
                     python_editado_manual: form.python_editado_manual ?? false,
                     javascript_editado_manual: form.javascript_editado_manual ?? false,
                   }}
                   onCampoCambiado={(c, v) => setForm({ ...form, [c]: v })}
-                  mostrarPrompt={false}
+                  mostrarPromptInsert={false}
+                  mostrarPromptUpdate={false}
                   mostrarSystemPrompt={true}
-                  mostrarPython={false}
+                  mostrarPythonInsert={false}
+                  mostrarPythonUpdate={false}
                   mostrarJavaScript={false}
                   mostrarBotones={false}
                 />
@@ -314,17 +320,17 @@ export default function PaginaPlanes() {
                   pkColumna="codigo_plan"
                   pkValor={editando.codigo_plan}
                   campos={{
-                    prompt: form.prompt ?? null,
+                    prompt_insert: form.prompt_insert ?? null,
+                    prompt_update: form.prompt_update ?? null,
                     system_prompt: form.system_prompt ?? null,
-                    python: form.python ?? null,
+                    python_insert: form.python_insert ?? null,
+                    python_update: form.python_update ?? null,
                     javascript: form.javascript ?? null,
                     python_editado_manual: form.python_editado_manual ?? false,
                     javascript_editado_manual: form.javascript_editado_manual ?? false,
                   }}
                   onCampoCambiado={(c, v) => setForm({ ...form, [c]: v })}
-                  mostrarPrompt={true}
                   mostrarSystemPrompt={false}
-                  mostrarPython={true}
                   mostrarJavaScript={false}
                 />
                 {error && <div className="bg-red-50 border border-red-200 rounded px-3 py-2 text-sm text-error">{error}</div>}

@@ -39,9 +39,11 @@ type FormTipoTarea = {
   ayuda: string
   generacion: string
   programa: string
-  prompt: string
+  prompt_insert: string
+  prompt_update: string
   system_prompt: string
-  python: string
+  python_insert: string
+  python_update: string
   javascript: string
   python_editado_manual: boolean
   javascript_editado_manual: boolean
@@ -57,9 +59,11 @@ const FORM_INICIAL: FormTipoTarea = {
   ayuda: '',
   generacion: '',
   programa: '',
-  prompt: '',
+  prompt_insert: '',
+  prompt_update: '',
   system_prompt: '',
-  python: '',
+  python_insert: '',
+  python_update: '',
   javascript: '',
   python_editado_manual: false,
   javascript_editado_manual: false,
@@ -86,9 +90,11 @@ export default function PaginaTiposTarea() {
         ayuda: f.ayuda.trim() || undefined,
         generacion: f.generacion.trim() || undefined,
         programa: f.programa.trim() || undefined,
-        prompt: f.prompt.trim() || undefined,
+        prompt_insert: f.prompt_insert.trim() || undefined,
+        prompt_update: f.prompt_update.trim() || undefined,
         system_prompt: f.system_prompt.trim() || undefined,
-        python: f.python.trim() || undefined,
+        python_insert: f.python_insert.trim() || undefined,
+        python_update: f.python_update.trim() || undefined,
         javascript: f.javascript.trim() || undefined,
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
@@ -101,9 +107,11 @@ export default function PaginaTiposTarea() {
         ayuda: f.ayuda.trim() || undefined,
         generacion: f.generacion.trim() || undefined,
         programa: f.programa.trim() || undefined,
-        prompt: f.prompt.trim() || undefined,
+        prompt_insert: f.prompt_insert.trim() || undefined,
+        prompt_update: f.prompt_update.trim() || undefined,
         system_prompt: f.system_prompt.trim() || undefined,
-        python: f.python.trim() || undefined,
+        python_insert: f.python_insert.trim() || undefined,
+        python_update: f.python_update.trim() || undefined,
         javascript: f.javascript.trim() || undefined,
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
@@ -126,9 +134,11 @@ export default function PaginaTiposTarea() {
         ayuda: t.ayuda ?? '',
         generacion: t.generacion ?? '',
         programa: t.programa ?? '',
-        prompt: t.prompt ?? '',
+        prompt_insert: t2.prompt_insert as string ?? '',
+        prompt_update: t2.prompt_update as string ?? '',
         system_prompt: t.system_prompt ?? '',
-        python: t2.python as string || '',
+        python_insert: t2.python_insert as string || '',
+        python_update: t2.python_update as string || '',
         javascript: t2.javascript as string || '',
         python_editado_manual: t2.python_editado_manual as boolean || false,
         javascript_editado_manual: t2.javascript_editado_manual as boolean || false,
@@ -317,9 +327,11 @@ export default function PaginaTiposTarea() {
               pkValor={crud.editando?.codigo_tipo_tarea ?? null}
               campos={crud.form}
               onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormTipoTarea, valor as string | boolean)}
-              mostrarPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
               mostrarSystemPrompt={true}
-              mostrarPython={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
               mostrarJavaScript={false}
               mostrarBotones={false}
             />
@@ -332,9 +344,7 @@ export default function PaginaTiposTarea() {
               pkValor={crud.editando?.codigo_tipo_tarea ?? null}
               campos={crud.form}
               onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormTipoTarea, valor as string | boolean)}
-              mostrarPrompt={true}
               mostrarSystemPrompt={false}
-              mostrarPython={true}
               mostrarJavaScript={false}
             />
           )}

@@ -36,7 +36,7 @@ export default function PaginaRoles() {
   // Modal rol
   const [modalRol, setModalRol] = useState(false)
   const [rolEditando, setRolEditando] = useState<Rol | null>(null)
-  const [formRol, setFormRol] = useState({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: '', tipo: 'USUARIO' as TipoElemento, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, inicial: false })
+  const [formRol, setFormRol] = useState({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: '', tipo: 'USUARIO' as TipoElemento, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, inicial: false })
   const [tabModalRol, setTabModalRol] = useState<'datos' | 'funciones' | 'system_prompt' | 'programacion'>('datos')
 
   // Funciones del rol en edición
@@ -154,7 +154,7 @@ export default function PaginaRoles() {
 
   const abrirNuevoRol = () => {
     setRolEditando(null)
-    setFormRol({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: aplicacionActiva || '', tipo: 'USUARIO', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, inicial: false })
+    setFormRol({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: aplicacionActiva || '', tipo: 'USUARIO', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, inicial: false })
     setError('')
     setTabModalRol('datos')
     setModalRol(true)
@@ -162,7 +162,8 @@ export default function PaginaRoles() {
 
   const abrirEditarRol = (r: Rol, tabInicial: 'datos' | 'funciones' | 'system_prompt' | 'programacion' = 'datos') => {
     setRolEditando(r)
-    setFormRol({ codigo_rol: r.codigo_rol, nombre: r.nombre, alias_de_rol: r.alias_de_rol || '', descripcion: r.descripcion || '', url_inicio: r.url_inicio || '', funcion_por_defecto: r.funcion_por_defecto || '', codigo_aplicacion_origen: r.codigo_aplicacion_origen || '', tipo: normalizarTipo(r.tipo), prompt: (r as unknown as Record<string, unknown>).prompt as string || '', system_prompt: (r as unknown as Record<string, unknown>).system_prompt as string || '', python: (r as unknown as Record<string, unknown>).python as string || '', javascript: (r as unknown as Record<string, unknown>).javascript as string || '', python_editado_manual: ((r as unknown as Record<string, unknown>).python_editado_manual as boolean) ?? false, javascript_editado_manual: ((r as unknown as Record<string, unknown>).javascript_editado_manual as boolean) ?? false, inicial: r.inicial ?? false })
+    const r2 = r as unknown as Record<string, unknown>
+    setFormRol({ codigo_rol: r.codigo_rol, nombre: r.nombre, alias_de_rol: r.alias_de_rol || '', descripcion: r.descripcion || '', url_inicio: r.url_inicio || '', funcion_por_defecto: r.funcion_por_defecto || '', codigo_aplicacion_origen: r.codigo_aplicacion_origen || '', tipo: normalizarTipo(r.tipo), prompt_insert: r2.prompt_insert as string || '', prompt_update: r2.prompt_update as string || '', system_prompt: r2.system_prompt as string || '', python_insert: r2.python_insert as string || '', python_update: r2.python_update as string || '', javascript: r2.javascript as string || '', python_editado_manual: (r2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (r2.javascript_editado_manual as boolean) ?? false, inicial: r.inicial ?? false })
     setError('')
     setTabModalRol(tabInicial)
     setFuncionNueva('')
@@ -181,7 +182,7 @@ export default function PaginaRoles() {
     try {
       const origen = formRol.codigo_aplicacion_origen || null
       if (rolEditando) {
-        await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, prompt: formRol.prompt || undefined, system_prompt: formRol.system_prompt || undefined, python: formRol.python || undefined, javascript: formRol.javascript || undefined, python_editado_manual: formRol.python_editado_manual, javascript_editado_manual: formRol.javascript_editado_manual, inicial: formRol.inicial } as Record<string, unknown>)
+        await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, prompt_insert: formRol.prompt_insert || undefined, prompt_update: formRol.prompt_update || undefined, system_prompt: formRol.system_prompt || undefined, python_insert: formRol.python_insert || undefined, python_update: formRol.python_update || undefined, javascript: formRol.javascript || undefined, python_editado_manual: formRol.python_editado_manual, javascript_editado_manual: formRol.javascript_editado_manual, inicial: formRol.inicial } as Record<string, unknown>)
       } else {
         const payload: Record<string, unknown> = { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, codigo_grupo: grupoActivo || 'ADMIN', inicial: formRol.inicial, tipo: formRol.tipo }
         if (esGlobalCreate && formRol.codigo_rol) payload.codigo_rol = formRol.codigo_rol
@@ -189,7 +190,7 @@ export default function PaginaRoles() {
         if (!cerrar && nuevo) {
           setRolEditando(nuevo as Rol)
           const r2 = nuevo as unknown as Record<string, unknown>
-          setFormRol({ codigo_rol: (nuevo as Rol).codigo_rol, nombre: (nuevo as Rol).nombre, alias_de_rol: (nuevo as Rol).alias_de_rol || '', descripcion: (nuevo as Rol).descripcion || '', url_inicio: (nuevo as Rol).url_inicio || '', funcion_por_defecto: (nuevo as Rol).funcion_por_defecto || '', codigo_aplicacion_origen: (nuevo as Rol).codigo_aplicacion_origen || '', tipo: normalizarTipo((nuevo as Rol).tipo), prompt: r2.prompt as string || '', system_prompt: r2.system_prompt as string || '', python: r2.python as string || '', javascript: r2.javascript as string || '', python_editado_manual: (r2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (r2.javascript_editado_manual as boolean) ?? false, inicial: (nuevo as Rol).inicial ?? false })
+          setFormRol({ codigo_rol: (nuevo as Rol).codigo_rol, nombre: (nuevo as Rol).nombre, alias_de_rol: (nuevo as Rol).alias_de_rol || '', descripcion: (nuevo as Rol).descripcion || '', url_inicio: (nuevo as Rol).url_inicio || '', funcion_por_defecto: (nuevo as Rol).funcion_por_defecto || '', codigo_aplicacion_origen: (nuevo as Rol).codigo_aplicacion_origen || '', tipo: normalizarTipo((nuevo as Rol).tipo), prompt_insert: r2.prompt_insert as string || '', prompt_update: r2.prompt_update as string || '', system_prompt: r2.system_prompt as string || '', python_insert: r2.python_insert as string || '', python_update: r2.python_update as string || '', javascript: r2.javascript as string || '', python_editado_manual: (r2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (r2.javascript_editado_manual as boolean) ?? false, inicial: (nuevo as Rol).inicial ?? false })
           cargarFuncionesRol((nuevo as Rol).id_rol)
         }
       }
@@ -888,17 +889,21 @@ export default function PaginaRoles() {
                 pkColumna="id_rol"
                 pkValor={String(rolEditando.id_rol)}
                 campos={{
-                  prompt: formRol.prompt,
+                  prompt_insert: formRol.prompt_insert,
+                  prompt_update: formRol.prompt_update,
                   system_prompt: formRol.system_prompt,
-                  python: formRol.python,
+                  python_insert: formRol.python_insert,
+                  python_update: formRol.python_update,
                   javascript: formRol.javascript,
                   python_editado_manual: formRol.python_editado_manual,
                   javascript_editado_manual: formRol.javascript_editado_manual,
                 }}
                 onCampoCambiado={(c, v) => setFormRol({ ...formRol, [c]: v })}
-                mostrarPrompt={false}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
                 mostrarSystemPrompt={true}
-                mostrarPython={false}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
                 mostrarBotones={false}
               />
@@ -915,17 +920,17 @@ export default function PaginaRoles() {
                 pkColumna="id_rol"
                 pkValor={String(rolEditando.id_rol)}
                 campos={{
-                  prompt: formRol.prompt,
+                  prompt_insert: formRol.prompt_insert,
+                  prompt_update: formRol.prompt_update,
                   system_prompt: formRol.system_prompt,
-                  python: formRol.python,
+                  python_insert: formRol.python_insert,
+                  python_update: formRol.python_update,
                   javascript: formRol.javascript,
                   python_editado_manual: formRol.python_editado_manual,
                   javascript_editado_manual: formRol.javascript_editado_manual,
                 }}
                 onCampoCambiado={(c, v) => setFormRol({ ...formRol, [c]: v })}
-                mostrarPrompt={true}
                 mostrarSystemPrompt={false}
-                mostrarPython={true}
                 mostrarJavaScript={false}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}

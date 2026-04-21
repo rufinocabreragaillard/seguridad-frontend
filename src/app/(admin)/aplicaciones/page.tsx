@@ -34,7 +34,7 @@ export default function PaginaAplicaciones() {
   // ── Modal Aplicacion ──────────────────────────────────────────────────────
   const [modalApp, setModalApp] = useState(false)
   const [appEditando, setAppEditando] = useState<Aplicacion | null>(null)
-  const [formApp, setFormApp] = useState<{ codigo_aplicacion: string; nombre: string; alias: string; descripcion: string; tipo: TipoElemento; sidebar_ancho: boolean; prompt: string; system_prompt: string; python: string; javascript: string; python_editado_manual: boolean; javascript_editado_manual: boolean }>({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+  const [formApp, setFormApp] = useState<{ codigo_aplicacion: string; nombre: string; alias: string; descripcion: string; tipo: TipoElemento; sidebar_ancho: boolean; prompt_insert: string; prompt_update: string; system_prompt: string; python_insert: string; python_update: string; javascript: string; python_editado_manual: boolean; javascript_editado_manual: boolean }>({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
   const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'grupos' | 'system_prompt' | 'programacion'>('datos')
   const [guardandoApp, setGuardandoApp] = useState(false)
   const [errorApp, setErrorApp] = useState('')
@@ -100,16 +100,18 @@ export default function PaginaAplicaciones() {
 
   // ── Aplicacion: CRUD ──────────────────────────────────────────────────────
   const abrirNuevaApp = () => {
-    setAppEditando(null); setFormApp({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setAppEditando(null); setFormApp({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setErrorApp(''); setTabModalApp('datos'); setModalApp(true)
   }
   const abrirEditarApp = (a: Aplicacion, tabInicial: 'datos' | 'funciones' | 'grupos' | 'system_prompt' | 'programacion' = 'datos') => {
     setAppEditando(a); setFormApp({
       codigo_aplicacion: a.codigo_aplicacion, nombre: a.nombre, alias: a.alias || '', descripcion: a.descripcion || '',
       tipo: normalizarTipo(a.tipo), sidebar_ancho: a.sidebar_ancho !== false,
-      prompt: (a as Record<string, unknown>).prompt as string || '',
+      prompt_insert: (a as Record<string, unknown>).prompt_insert as string || '',
+      prompt_update: (a as Record<string, unknown>).prompt_update as string || '',
       system_prompt: (a as Record<string, unknown>).system_prompt as string || '',
-      python: (a as Record<string, unknown>).python as string || '',
+      python_insert: (a as Record<string, unknown>).python_insert as string || '',
+      python_update: (a as Record<string, unknown>).python_update as string || '',
       javascript: (a as Record<string, unknown>).javascript as string || '',
       python_editado_manual: ((a as Record<string, unknown>).python_editado_manual as boolean) ?? false,
       javascript_editado_manual: ((a as Record<string, unknown>).javascript_editado_manual as boolean) ?? false,
@@ -120,7 +122,7 @@ export default function PaginaAplicaciones() {
     if (!formApp.codigo_aplicacion || !formApp.nombre) { setErrorApp('Codigo y nombre son obligatorios'); return }
     setGuardandoApp(true)
     try {
-      if (appEditando) { await aplicacionesApi.actualizar(appEditando.codigo_aplicacion, { nombre: formApp.nombre, alias: formApp.alias || undefined, descripcion: formApp.descripcion || undefined, tipo: formApp.tipo, sidebar_ancho: formApp.sidebar_ancho, prompt: formApp.prompt || undefined, system_prompt: formApp.system_prompt || undefined, python: formApp.python || undefined, javascript: formApp.javascript || undefined, python_editado_manual: formApp.python_editado_manual, javascript_editado_manual: formApp.javascript_editado_manual } as Record<string, unknown>) }
+      if (appEditando) { await aplicacionesApi.actualizar(appEditando.codigo_aplicacion, { nombre: formApp.nombre, alias: formApp.alias || undefined, descripcion: formApp.descripcion || undefined, tipo: formApp.tipo, sidebar_ancho: formApp.sidebar_ancho, prompt_insert: formApp.prompt_insert || undefined, prompt_update: formApp.prompt_update || undefined, system_prompt: formApp.system_prompt || undefined, python_insert: formApp.python_insert || undefined, python_update: formApp.python_update || undefined, javascript: formApp.javascript || undefined, python_editado_manual: formApp.python_editado_manual, javascript_editado_manual: formApp.javascript_editado_manual } as Record<string, unknown>) }
       else {
         const nuevo = await aplicacionesApi.crear(formApp)
         if (!cerrar) {
@@ -366,17 +368,21 @@ export default function PaginaAplicaciones() {
                 pkColumna="codigo_aplicacion"
                 pkValor={appEditando.codigo_aplicacion}
                 campos={{
-                  prompt: formApp.prompt,
+                  prompt_insert: formApp.prompt_insert,
+                  prompt_update: formApp.prompt_update,
                   system_prompt: formApp.system_prompt,
-                  python: formApp.python,
+                  python_insert: formApp.python_insert,
+                  python_update: formApp.python_update,
                   javascript: formApp.javascript,
                   python_editado_manual: formApp.python_editado_manual,
                   javascript_editado_manual: formApp.javascript_editado_manual,
                 }}
                 onCampoCambiado={(c, v) => setFormApp({ ...formApp, [c]: v })}
-                mostrarPrompt={false}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
                 mostrarSystemPrompt={true}
-                mostrarPython={false}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
                 mostrarBotones={false}
               />
@@ -391,17 +397,17 @@ export default function PaginaAplicaciones() {
                 pkColumna="codigo_aplicacion"
                 pkValor={appEditando.codigo_aplicacion}
                 campos={{
-                  prompt: formApp.prompt,
+                  prompt_insert: formApp.prompt_insert,
+                  prompt_update: formApp.prompt_update,
                   system_prompt: formApp.system_prompt,
-                  python: formApp.python,
+                  python_insert: formApp.python_insert,
+                  python_update: formApp.python_update,
                   javascript: formApp.javascript,
                   python_editado_manual: formApp.python_editado_manual,
                   javascript_editado_manual: formApp.javascript_editado_manual,
                 }}
                 onCampoCambiado={(c, v) => setFormApp({ ...formApp, [c]: v })}
-                mostrarPrompt={true}
                 mostrarSystemPrompt={false}
-                mostrarPython={true}
                 mostrarJavaScript={false}
               />
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}

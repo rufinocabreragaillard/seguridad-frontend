@@ -28,7 +28,7 @@ export default function PaginaDatosBasicos() {
   const [modalCat, setModalCat] = useState(false)
   const [catEditando, setCatEditando] = useState<CategoriaParametro | null>(null)
   const [formCat, setFormCat] = useState({ categoria_parametro: '', nombre: '', descripcion: '' })
-  const [promptsCat, setPromptsCat] = useState<CamposPrompt>({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [promptsCat, setPromptsCat] = useState<CamposPrompt>({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
   const [tabModalCat, setTabModalCat] = useState<TabModalCat>('datos')
   const [guardandoCat, setGuardandoCat] = useState(false)
   const [errorCat, setErrorCat] = useState('')
@@ -39,7 +39,7 @@ export default function PaginaDatosBasicos() {
   const [modalTipo, setModalTipo] = useState(false)
   const [tipoEditando, setTipoEditando] = useState<TipoParametro | null>(null)
   const [formTipo, setFormTipo] = useState({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '' })
-  const [promptsTipo, setPromptsTipo] = useState<CamposPrompt>({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [promptsTipo, setPromptsTipo] = useState<CamposPrompt>({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
   const [tabModalTipo, setTabModalTipo] = useState<TabModalTipo>('datos')
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
@@ -71,7 +71,7 @@ export default function PaginaDatosBasicos() {
   const abrirNuevaCat = () => {
     setCatEditando(null)
     setFormCat({ categoria_parametro: '', nombre: '', descripcion: '' })
-    setPromptsCat({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+    setPromptsCat({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
     setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
@@ -80,7 +80,7 @@ export default function PaginaDatosBasicos() {
   const abrirEditarCat = (c: CategoriaParametro) => {
     setCatEditando(c)
     setFormCat({ categoria_parametro: c.categoria_parametro, nombre: c.nombre, descripcion: c.descripcion || '' })
-    setPromptsCat({ prompt: c.prompt ?? null, system_prompt: c.system_prompt ?? null, python: c.python ?? null, javascript: c.javascript ?? null, python_editado_manual: c.python_editado_manual ?? false, javascript_editado_manual: c.javascript_editado_manual ?? false })
+    setPromptsCat({ prompt_insert: c.prompt_insert ?? null, prompt_update: c.prompt_update ?? null, system_prompt: c.system_prompt ?? null, python_insert: c.python_insert ?? null, python_update: c.python_update ?? null, javascript: c.javascript ?? null, python_editado_manual: c.python_editado_manual ?? false, javascript_editado_manual: c.javascript_editado_manual ?? false })
     setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
@@ -98,9 +98,11 @@ export default function PaginaDatosBasicos() {
         await datosBasicosApi.actualizarCategoria(catEditando.categoria_parametro, {
           nombre: formCat.nombre,
           descripcion: formCat.descripcion || undefined,
-          prompt: promptsCat.prompt,
+          prompt_insert: promptsCat.prompt_insert,
+          prompt_update: promptsCat.prompt_update,
           system_prompt: promptsCat.system_prompt,
-          python: promptsCat.python,
+          python_insert: promptsCat.python_insert,
+          python_update: promptsCat.python_update,
           javascript: promptsCat.javascript,
           python_editado_manual: promptsCat.python_editado_manual,
           javascript_editado_manual: promptsCat.javascript_editado_manual,
@@ -158,7 +160,7 @@ export default function PaginaDatosBasicos() {
   const abrirNuevoTipo = () => {
     setTipoEditando(null)
     setFormTipo({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '' })
-    setPromptsTipo({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+    setPromptsTipo({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
     setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
@@ -167,7 +169,7 @@ export default function PaginaDatosBasicos() {
   const abrirEditarTipo = (t: TipoParametro) => {
     setTipoEditando(t)
     setFormTipo({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, nombre: t.nombre, descripcion: t.descripcion || '' })
-    setPromptsTipo({ prompt: t.prompt ?? null, system_prompt: t.system_prompt ?? null, python: t.python ?? null, javascript: t.javascript ?? null, python_editado_manual: t.python_editado_manual ?? false, javascript_editado_manual: t.javascript_editado_manual ?? false })
+    setPromptsTipo({ prompt_insert: t.prompt_insert ?? null, prompt_update: t.prompt_update ?? null, system_prompt: t.system_prompt ?? null, python_insert: t.python_insert ?? null, python_update: t.python_update ?? null, javascript: t.javascript ?? null, python_editado_manual: t.python_editado_manual ?? false, javascript_editado_manual: t.javascript_editado_manual ?? false })
     setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
@@ -188,9 +190,11 @@ export default function PaginaDatosBasicos() {
           {
             nombre: formTipo.nombre,
             descripcion: formTipo.descripcion || undefined,
-            prompt: promptsTipo.prompt,
+            prompt_insert: promptsTipo.prompt_insert,
+            prompt_update: promptsTipo.prompt_update,
             system_prompt: promptsTipo.system_prompt,
-            python: promptsTipo.python,
+            python_insert: promptsTipo.python_insert,
+            python_update: promptsTipo.python_update,
             javascript: promptsTipo.javascript,
             python_editado_manual: promptsTipo.python_editado_manual,
             javascript_editado_manual: promptsTipo.javascript_editado_manual,
@@ -521,13 +525,13 @@ export default function PaginaDatosBasicos() {
           {tabModalCat === 'system_prompt' && catEditando && (
             <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
               campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarPrompt={false} mostrarSystemPrompt={true} mostrarPython={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
           )}
 
           {tabModalCat === 'programacion' && catEditando && (
             <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
               campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarPrompt={true} mostrarSystemPrompt={false} mostrarPython={true} mostrarJavaScript={false} />
+              mostrarSystemPrompt={false} mostrarJavaScript={false} />
           )}
 
           {errorCat && (
@@ -604,13 +608,13 @@ export default function PaginaDatosBasicos() {
           {tabModalTipo === 'system_prompt' && tipoEditando && (
             <TabPrompts tabla="tipos_parametro" pkColumna="tipo_parametro" pkValor={tipoEditando.tipo_parametro}
               campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
-              mostrarPrompt={false} mostrarSystemPrompt={true} mostrarPython={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
           )}
 
           {tabModalTipo === 'programacion' && tipoEditando && (
             <TabPrompts tabla="tipos_parametro" pkColumna="tipo_parametro" pkValor={tipoEditando.tipo_parametro}
               campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
-              mostrarPrompt={true} mostrarSystemPrompt={false} mostrarPython={true} mostrarJavaScript={false} />
+              mostrarSystemPrompt={false} mostrarJavaScript={false} />
           )}
 
           {errorTipo && (

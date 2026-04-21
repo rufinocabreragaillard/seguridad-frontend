@@ -32,9 +32,11 @@ type FormCargo = {
   alias: string
   descripcion: string
   codigo_entidad: string
-  prompt: string
+  prompt_insert: string
+  prompt_update: string
   system_prompt: string
-  python: string
+  python_insert: string
+  python_update: string
   javascript: string
   python_editado_manual: boolean
   javascript_editado_manual: boolean
@@ -69,9 +71,11 @@ export default function PaginaCargos() {
         alias: f.alias.trim() || undefined,
         descripcion: f.descripcion.trim() || undefined,
         codigo_entidad: f.codigo_entidad || undefined,
-        prompt: f.prompt.trim() || undefined,
+        prompt_insert: f.prompt_insert.trim() || undefined,
+        prompt_update: f.prompt_update.trim() || undefined,
         system_prompt: f.system_prompt.trim() || undefined,
-        python: f.python.trim() || undefined,
+        python_insert: f.python_insert.trim() || undefined,
+        python_update: f.python_update.trim() || undefined,
         javascript: f.javascript.trim() || undefined,
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
@@ -82,9 +86,11 @@ export default function PaginaCargos() {
         alias: (f.alias ?? '').trim() || undefined,
         descripcion: (f.descripcion ?? '').trim() || undefined,
         codigo_entidad: f.codigo_entidad,
-        prompt: (f.prompt ?? '').trim() || undefined,
+        prompt_insert: (f.prompt_insert ?? '').trim() || undefined,
+        prompt_update: (f.prompt_update ?? '').trim() || undefined,
         system_prompt: (f.system_prompt ?? '').trim() || undefined,
-        python: (f.python ?? '').trim() || undefined,
+        python_insert: (f.python_insert ?? '').trim() || undefined,
+        python_update: (f.python_update ?? '').trim() || undefined,
         javascript: (f.javascript ?? '').trim() || undefined,
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
@@ -92,7 +98,7 @@ export default function PaginaCargos() {
     eliminarFn: async (id: string) => { await cargosApi.eliminar(id) },
     getId: (c) => c.codigo_cargo,
     camposBusqueda: (c) => [c.codigo_cargo, c.nombre_cargo, c.alias],
-    formInicial: { codigo_cargo: '', nombre_cargo: '', alias: '', descripcion: '', codigo_entidad: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false },
+    formInicial: { codigo_cargo: '', nombre_cargo: '', alias: '', descripcion: '', codigo_entidad: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false },
     itemToForm: (c) => {
       const c2 = c as unknown as Record<string, unknown>
       return {
@@ -101,9 +107,11 @@ export default function PaginaCargos() {
         alias: c.alias ?? '',
         descripcion: c.descripcion ?? '',
         codigo_entidad: c.codigo_entidad ?? '',
-        prompt: c.prompt ?? '',
+        prompt_insert: c2.prompt_insert as string ?? '',
+        prompt_update: c2.prompt_update as string ?? '',
         system_prompt: c.system_prompt ?? '',
-        python: c2.python as string || '',
+        python_insert: c2.python_insert as string || '',
+        python_update: c2.python_update as string || '',
         javascript: c2.javascript as string || '',
         python_editado_manual: c2.python_editado_manual as boolean || false,
         javascript_editado_manual: c2.javascript_editado_manual as boolean || false,
@@ -382,9 +390,11 @@ export default function PaginaCargos() {
                 pkValor={crud.editando?.codigo_cargo ?? null}
                 campos={crud.form}
                 onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
-                mostrarPrompt={false}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
                 mostrarSystemPrompt={true}
-                mostrarPython={false}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
                 mostrarBotones={false}
               />
@@ -409,9 +419,7 @@ export default function PaginaCargos() {
                 pkValor={crud.editando?.codigo_cargo ?? null}
                 campos={crud.form}
                 onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
-                mostrarPrompt={true}
                 mostrarSystemPrompt={false}
-                mostrarPython={true}
                 mostrarJavaScript={false}
               />
               <div className="mt-auto">

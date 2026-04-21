@@ -37,8 +37,8 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [formCat, setFormCat] = useState({
     codigo_cat_docs: '', nombre_cat_docs: '', descripcion_cat_docs: '',
     es_unica_docs: false, editable_en_detalle_docs: true,
-    prompt: '', system_prompt: '', id_modelo: null as number | null,
-    python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
+    prompt_insert: '', prompt_update: '', system_prompt: '', id_modelo: null as number | null,
+    python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
   const [modelosLLM, setModelosLLM] = useState<RegistroLLM[]>([])
   const [guardandoCat, setGuardandoCat] = useState(false)
@@ -57,8 +57,8 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [tipoEditando, setTipoEditando] = useState<TipoCaractDocs | null>(null)
   const [formTipo, setFormTipo] = useState({
     codigo_tipo_docs: '', nombre_tipo_docs: '',
-    prompt: '', system_prompt: '',
-    python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
+    prompt_insert: '', prompt_update: '', system_prompt: '',
+    python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
@@ -97,7 +97,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   // ── CRUD Categorias ───────────────────────────────────────────────────────
   const abrirNuevaCat = () => {
     setCatEditando(null)
-    setFormCat({ codigo_cat_docs: '', nombre_cat_docs: '', descripcion_cat_docs: '', es_unica_docs: false, editable_en_detalle_docs: true, prompt: '', system_prompt: '', id_modelo: null, python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormCat({ codigo_cat_docs: '', nombre_cat_docs: '', descripcion_cat_docs: '', es_unica_docs: false, editable_en_detalle_docs: true, prompt_insert: '', prompt_update: '', system_prompt: '', id_modelo: null, python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
@@ -112,10 +112,12 @@ export default function PaginaCategoriasCaracteristicaDocs() {
       descripcion_cat_docs: c.descripcion_cat_docs || '',
       es_unica_docs: c.es_unica_docs,
       editable_en_detalle_docs: c.editable_en_detalle_docs,
-      prompt: c.prompt || '',
+      prompt_insert: c2.prompt_insert as string || '',
+      prompt_update: c2.prompt_update as string || '',
       system_prompt: c.system_prompt || '',
       id_modelo: c.id_modelo ?? null,
-      python: c2.python as string || '',
+      python_insert: c2.python_insert as string || '',
+      python_update: c2.python_update as string || '',
       javascript: c2.javascript as string || '',
       python_editado_manual: c2.python_editado_manual as boolean || false,
       javascript_editado_manual: c2.javascript_editado_manual as boolean || false,
@@ -139,10 +141,12 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           descripcion_cat_docs: formCat.descripcion_cat_docs || undefined,
           es_unica_docs: formCat.es_unica_docs,
           editable_en_detalle_docs: formCat.editable_en_detalle_docs,
-          prompt: formCat.prompt || undefined,
+          prompt_insert: formCat.prompt_insert || undefined,
+          prompt_update: formCat.prompt_update || undefined,
           system_prompt: formCat.system_prompt || undefined,
           id_modelo: formCat.id_modelo ?? undefined,
-          python: formCat.python || undefined,
+          python_insert: formCat.python_insert || undefined,
+          python_update: formCat.python_update || undefined,
           javascript: formCat.javascript || undefined,
           python_editado_manual: formCat.python_editado_manual,
           javascript_editado_manual: formCat.javascript_editado_manual,
@@ -167,10 +171,12 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             descripcion_cat_docs: nueva.descripcion_cat_docs || '',
             es_unica_docs: nueva.es_unica_docs,
             editable_en_detalle_docs: nueva.editable_en_detalle_docs,
-            prompt: nueva.prompt || '',
+            prompt_insert: n2.prompt_insert as string || '',
+            prompt_update: n2.prompt_update as string || '',
             system_prompt: nueva.system_prompt || '',
             id_modelo: nueva.id_modelo ?? null,
-            python: n2.python as string || '',
+            python_insert: n2.python_insert as string || '',
+            python_update: n2.python_update as string || '',
             javascript: n2.javascript as string || '',
             python_editado_manual: n2.python_editado_manual as boolean || false,
             javascript_editado_manual: n2.javascript_editado_manual as boolean || false,
@@ -200,7 +206,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   // ── CRUD Tipos ────────────────────────────────────────────────────────────
   const abrirNuevoTipo = () => {
     setTipoEditando(null)
-    setFormTipo({ codigo_tipo_docs: '', nombre_tipo_docs: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormTipo({ codigo_tipo_docs: '', nombre_tipo_docs: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
@@ -212,9 +218,11 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     setFormTipo({
       codigo_tipo_docs: tipo.codigo_tipo_docs,
       nombre_tipo_docs: tipo.nombre_tipo_docs,
-      prompt: tipo.prompt || '',
+      prompt_insert: t2.prompt_insert as string || '',
+      prompt_update: t2.prompt_update as string || '',
       system_prompt: tipo.system_prompt || '',
-      python: t2.python as string || '',
+      python_insert: t2.python_insert as string || '',
+      python_update: t2.python_update as string || '',
       javascript: t2.javascript as string || '',
       python_editado_manual: t2.python_editado_manual as boolean || false,
       javascript_editado_manual: t2.javascript_editado_manual as boolean || false,
@@ -235,9 +243,11 @@ export default function PaginaCategoriasCaracteristicaDocs() {
       if (tipoEditando) {
         await categoriasCaractDocsApi.actualizarTipo(catSeleccionada.codigo_cat_docs, tipoEditando.codigo_tipo_docs, {
           nombre_tipo_docs: formTipo.nombre_tipo_docs,
-          prompt: formTipo.prompt || null,
+          prompt_insert: formTipo.prompt_insert || null,
+          prompt_update: formTipo.prompt_update || null,
           system_prompt: formTipo.system_prompt || null,
-          python: formTipo.python || null,
+          python_insert: formTipo.python_insert || null,
+          python_update: formTipo.python_update || null,
           javascript: formTipo.javascript || null,
           python_editado_manual: formTipo.python_editado_manual,
           javascript_editado_manual: formTipo.javascript_editado_manual,
@@ -247,7 +257,8 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           codigo_cat_docs: catSeleccionada.codigo_cat_docs,
           ...(formTipo.codigo_tipo_docs.trim() ? { codigo_tipo_docs: formTipo.codigo_tipo_docs.toUpperCase() } : { codigo_tipo_docs: '' }),
           nombre_tipo_docs: formTipo.nombre_tipo_docs,
-          ...(formTipo.prompt ? { prompt: formTipo.prompt } : {}),
+          ...(formTipo.prompt_insert ? { prompt_insert: formTipo.prompt_insert } : {}),
+          ...(formTipo.prompt_update ? { prompt_update: formTipo.prompt_update } : {}),
           ...(formTipo.system_prompt ? { system_prompt: formTipo.system_prompt } : {}),
         })
       }
@@ -517,9 +528,11 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               pkValor={catEditando?.codigo_cat_docs ?? null}
               campos={formCat}
               onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-              mostrarPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
               mostrarSystemPrompt={true}
-              mostrarPython={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
               mostrarJavaScript={false}
               mostrarBotones={false}
             />
@@ -533,9 +546,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               pkValor={catEditando?.codigo_cat_docs ?? null}
               campos={formCat}
               onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-              mostrarPrompt={true}
               mostrarSystemPrompt={false}
-              mostrarPython={true}
               mostrarJavaScript={false}
             />
           )}
@@ -613,9 +624,11 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               pkValor={tipoEditando?.codigo_tipo_docs ?? null}
               campos={formTipo}
               onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
-              mostrarPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
               mostrarSystemPrompt={true}
-              mostrarPython={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
               mostrarJavaScript={false}
               mostrarBotones={false}
             />
@@ -628,9 +641,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               pkValor={tipoEditando?.codigo_tipo_docs ?? null}
               campos={formTipo}
               onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
-              mostrarPrompt={true}
               mostrarSystemPrompt={false}
-              mostrarPython={true}
               mostrarJavaScript={false}
             />
           )}

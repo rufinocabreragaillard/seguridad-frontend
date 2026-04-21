@@ -41,9 +41,11 @@ export default function PaginaUbicacionesDocs() {
     descripcion: '',
     codigo_ubicacion_superior: '',
     ubicacion_habilitada: true,
-    prompt: '',
+    prompt_insert: '',
+    prompt_update: '',
     system_prompt: '',
-    python: '',
+    python_insert: '',
+    python_update: '',
     javascript: '',
     python_editado_manual: false,
     javascript_editado_manual: false,
@@ -138,9 +140,11 @@ export default function PaginaUbicacionesDocs() {
       descripcion: u.descripcion || '',
       codigo_ubicacion_superior: u.codigo_ubicacion_superior || '',
       ubicacion_habilitada: u.ubicacion_habilitada,
-      prompt: u.prompt || '',
+      prompt_insert: (u as unknown as Record<string, unknown>).prompt_insert as string || '',
+      prompt_update: (u as unknown as Record<string, unknown>).prompt_update as string || '',
       system_prompt: u.system_prompt || '',
-      python: (u as unknown as Record<string, unknown>).python as string || '',
+      python_insert: (u as unknown as Record<string, unknown>).python_insert as string || '',
+      python_update: (u as unknown as Record<string, unknown>).python_update as string || '',
       javascript: (u as unknown as Record<string, unknown>).javascript as string || '',
       python_editado_manual: ((u as unknown as Record<string, unknown>).python_editado_manual as boolean) ?? false,
       javascript_editado_manual: ((u as unknown as Record<string, unknown>).javascript_editado_manual as boolean) ?? false,
@@ -163,9 +167,11 @@ export default function PaginaUbicacionesDocs() {
         descripcion: form.descripcion || undefined,
         codigo_ubicacion_superior: form.codigo_ubicacion_superior || undefined,
         ubicacion_habilitada: form.ubicacion_habilitada,
-        prompt: form.prompt || undefined,
+        prompt_insert: form.prompt_insert || undefined,
+        prompt_update: form.prompt_update || undefined,
         system_prompt: form.system_prompt || undefined,
-        python: form.python || undefined,
+        python_insert: form.python_insert || undefined,
+        python_update: form.python_update || undefined,
         javascript: form.javascript || undefined,
         python_editado_manual: form.python_editado_manual,
         javascript_editado_manual: form.javascript_editado_manual,
@@ -767,17 +773,21 @@ export default function PaginaUbicacionesDocs() {
               pkColumna="codigo_ubicacion"
               pkValor={editando.codigo_ubicacion}
               campos={{
-                prompt: form.prompt,
+                prompt_insert: form.prompt_insert,
+                prompt_update: form.prompt_update,
                 system_prompt: form.system_prompt,
-                python: form.python,
+                python_insert: form.python_insert,
+                python_update: form.python_update,
                 javascript: form.javascript,
                 python_editado_manual: form.python_editado_manual,
                 javascript_editado_manual: form.javascript_editado_manual,
               }}
               onCampoCambiado={(c, v) => setForm({ ...form, [c]: v })}
-              mostrarPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
               mostrarSystemPrompt={true}
-              mostrarPython={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
               mostrarJavaScript={false}
               mostrarBotones={false}
             />
@@ -790,17 +800,17 @@ export default function PaginaUbicacionesDocs() {
               pkColumna="codigo_ubicacion"
               pkValor={editando.codigo_ubicacion}
               campos={{
-                prompt: form.prompt,
+                prompt_insert: form.prompt_insert,
+                prompt_update: form.prompt_update,
                 system_prompt: form.system_prompt,
-                python: form.python,
+                python_insert: form.python_insert,
+                python_update: form.python_update,
                 javascript: form.javascript,
                 python_editado_manual: form.python_editado_manual,
                 javascript_editado_manual: form.javascript_editado_manual,
               }}
               onCampoCambiado={(c, v) => setForm({ ...form, [c]: v })}
-              mostrarPrompt={true}
               mostrarSystemPrompt={false}
-              mostrarPython={true}
               mostrarJavaScript={false}
             />
           )}

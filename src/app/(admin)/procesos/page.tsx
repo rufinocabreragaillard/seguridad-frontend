@@ -31,9 +31,11 @@ type FormProceso = {
   tipo: string
   n_parallel: number
   codigo_funcion: string
-  prompt: string
+  prompt_insert: string
+  prompt_update: string
   system_prompt: string
-  python: string
+  python_insert: string
+  python_update: string
   javascript: string
   python_editado_manual: boolean
   javascript_editado_manual: boolean
@@ -70,9 +72,11 @@ export default function PaginaProcesos() {
         n_parallel: f.n_parallel,
         tipo: f.tipo,
         codigo_funcion: f.codigo_funcion ? f.codigo_funcion : null,
-        prompt: f.prompt || undefined,
+        prompt_insert: f.prompt_insert || undefined,
+        prompt_update: f.prompt_update || undefined,
         system_prompt: f.system_prompt || undefined,
-        python: f.python || undefined,
+        python_insert: f.python_insert || undefined,
+        python_update: f.python_update || undefined,
         javascript: f.javascript || undefined,
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
@@ -83,7 +87,7 @@ export default function PaginaProcesos() {
     },
     getId: (p) => p.codigo_proceso,
     camposBusqueda: (p) => [p.codigo_proceso, p.nombre_proceso, p.tipo, p.codigo_funcion ?? ''],
-    formInicial: { nombre_proceso: '', descripcion: '', tipo: 'USUARIO', n_parallel: 1, codigo_funcion: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, json: '' },
+    formInicial: { nombre_proceso: '', descripcion: '', tipo: 'USUARIO', n_parallel: 1, codigo_funcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, json: '' },
     itemToForm: (p) => {
       const jsonVal = (p as unknown as Record<string, unknown>).json
       const jsonStr = jsonVal == null ? '' : JSON.stringify(jsonVal, null, 2)
@@ -93,9 +97,11 @@ export default function PaginaProcesos() {
         tipo: p.tipo ?? 'USUARIO',
         n_parallel: p.n_parallel,
         codigo_funcion: p.codigo_funcion ?? '',
-        prompt: (p as unknown as Record<string, unknown>).prompt as string ?? '',
+        prompt_insert: (p as unknown as Record<string, unknown>).prompt_insert as string ?? '',
+        prompt_update: (p as unknown as Record<string, unknown>).prompt_update as string ?? '',
         system_prompt: (p as unknown as Record<string, unknown>).system_prompt as string ?? '',
-        python: (p as unknown as Record<string, unknown>).python as string ?? '',
+        python_insert: (p as unknown as Record<string, unknown>).python_insert as string ?? '',
+        python_update: (p as unknown as Record<string, unknown>).python_update as string ?? '',
         javascript: (p as unknown as Record<string, unknown>).javascript as string ?? '',
         python_editado_manual: ((p as unknown as Record<string, unknown>).python_editado_manual as boolean) ?? false,
         javascript_editado_manual: ((p as unknown as Record<string, unknown>).javascript_editado_manual as boolean) ?? false,
@@ -243,17 +249,21 @@ export default function PaginaProcesos() {
               pkColumna="codigo_proceso"
               pkValor={crud.editando.codigo_proceso}
               campos={{
-                prompt: crud.form.prompt,
+                prompt_insert: crud.form.prompt_insert,
+                prompt_update: crud.form.prompt_update,
                 system_prompt: crud.form.system_prompt,
-                python: crud.form.python,
+                python_insert: crud.form.python_insert,
+                python_update: crud.form.python_update,
                 javascript: crud.form.javascript,
                 python_editado_manual: crud.form.python_editado_manual,
                 javascript_editado_manual: crud.form.javascript_editado_manual,
               }}
               onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
-              mostrarPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
               mostrarSystemPrompt={true}
-              mostrarPython={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
               mostrarJavaScript={false}
               mostrarBotones={false}
             />
@@ -265,17 +275,17 @@ export default function PaginaProcesos() {
               pkColumna="codigo_proceso"
               pkValor={crud.editando.codigo_proceso}
               campos={{
-                prompt: crud.form.prompt,
+                prompt_insert: crud.form.prompt_insert,
+                prompt_update: crud.form.prompt_update,
                 system_prompt: crud.form.system_prompt,
-                python: crud.form.python,
+                python_insert: crud.form.python_insert,
+                python_update: crud.form.python_update,
                 javascript: crud.form.javascript,
                 python_editado_manual: crud.form.python_editado_manual,
                 javascript_editado_manual: crud.form.javascript_editado_manual,
               }}
               onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
-              mostrarPrompt={true}
               mostrarSystemPrompt={false}
-              mostrarPython={true}
               mostrarJavaScript={false}
             />
           )}

@@ -37,7 +37,7 @@ export default function PaginaCategoriasCaracteristica() {
   const [formCat, setFormCat] = useState({
     codigo_cat_pers: '', nombre_cat_pers: '', descripcion_cat_pers: '',
     es_unica_pers: false, editable_en_detalle_pers: true,
-    prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
+    prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
   const [guardandoCat, setGuardandoCat] = useState(false)
   const [errorCat, setErrorCat] = useState('')
@@ -122,7 +122,7 @@ export default function PaginaCategoriasCaracteristica() {
   // ── CRUD Categorías ───────────────────────────────────────────────────────
   const abrirNuevaCat = () => {
     setCatEditando(null)
-    setFormCat({ codigo_cat_pers: '', nombre_cat_pers: '', descripcion_cat_pers: '', es_unica_pers: false, editable_en_detalle_pers: true, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormCat({ codigo_cat_pers: '', nombre_cat_pers: '', descripcion_cat_pers: '', es_unica_pers: false, editable_en_detalle_pers: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
@@ -137,9 +137,11 @@ export default function PaginaCategoriasCaracteristica() {
       descripcion_cat_pers: c.descripcion_cat_pers || '',
       es_unica_pers: c.es_unica_pers,
       editable_en_detalle_pers: c.editable_en_detalle_pers,
-      prompt: c2.prompt as string || '',
+      prompt_insert: c2.prompt_insert as string || '',
+      prompt_update: c2.prompt_update as string || '',
       system_prompt: c2.system_prompt as string || '',
-      python: c2.python as string || '',
+      python_insert: c2.python_insert as string || '',
+      python_update: c2.python_update as string || '',
       javascript: c2.javascript as string || '',
       python_editado_manual: c2.python_editado_manual as boolean || false,
       javascript_editado_manual: c2.javascript_editado_manual as boolean || false,
@@ -162,9 +164,11 @@ export default function PaginaCategoriasCaracteristica() {
           descripcion_cat_pers: formCat.descripcion_cat_pers || undefined,
           es_unica_pers: formCat.es_unica_pers,
           editable_en_detalle_pers: formCat.editable_en_detalle_pers,
-          prompt: formCat.prompt || undefined,
+          prompt_insert: formCat.prompt_insert || undefined,
+          prompt_update: formCat.prompt_update || undefined,
           system_prompt: formCat.system_prompt || undefined,
-          python: formCat.python || undefined,
+          python_insert: formCat.python_insert || undefined,
+          python_update: formCat.python_update || undefined,
           javascript: formCat.javascript || undefined,
           python_editado_manual: formCat.python_editado_manual,
           javascript_editado_manual: formCat.javascript_editado_manual,
@@ -603,9 +607,11 @@ export default function PaginaCategoriasCaracteristica() {
               pkValor={catEditando?.codigo_cat_pers ?? null}
               campos={formCat}
               onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-              mostrarPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
               mostrarSystemPrompt={true}
-              mostrarPython={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
               mostrarJavaScript={false}
               mostrarBotones={false}
             />
@@ -618,9 +624,7 @@ export default function PaginaCategoriasCaracteristica() {
               pkValor={catEditando?.codigo_cat_pers ?? null}
               campos={formCat}
               onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-              mostrarPrompt={true}
               mostrarSystemPrompt={false}
-              mostrarPython={true}
               mostrarJavaScript={false}
             />
           )}

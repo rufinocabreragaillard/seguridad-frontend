@@ -57,7 +57,7 @@ export default function PaginaRegistroLLM() {
   const [tabModal, setTabModal] = useState<'datos' | 'probar' | 'system_prompt' | 'programacion'>('datos')
   const [formModelo, setFormModelo] = useState({
     proveedor: '', nombre_tecnico: '', nombre_visible: '', descripcion: '', estado_valido: false,
-    prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
+    prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
   const [guardandoModelo, setGuardandoModelo] = useState(false)
   const [errorModelo, setErrorModelo] = useState('')
@@ -81,7 +81,7 @@ export default function PaginaRegistroLLM() {
 
   const abrirNuevoModelo = () => {
     setEditandoModelo(null)
-    setFormModelo({ proveedor: '', nombre_tecnico: '', nombre_visible: '', descripcion: '', estado_valido: false, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormModelo({ proveedor: '', nombre_tecnico: '', nombre_visible: '', descripcion: '', estado_valido: false, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setErrorModelo('')
     setModalModelo(true)
   }
@@ -95,9 +95,11 @@ export default function PaginaRegistroLLM() {
       nombre_visible: m.nombre_visible,
       descripcion: m.descripcion || '',
       estado_valido: m.estado_valido,
-      prompt: m2.prompt as string || '',
+      prompt_insert: m2.prompt_insert as string || '',
+      prompt_update: m2.prompt_update as string || '',
       system_prompt: m2.system_prompt as string || '',
-      python: m2.python as string || '',
+      python_insert: m2.python_insert as string || '',
+      python_update: m2.python_update as string || '',
       javascript: m2.javascript as string || '',
       python_editado_manual: m2.python_editado_manual as boolean || false,
       javascript_editado_manual: m2.javascript_editado_manual as boolean || false,
@@ -139,9 +141,11 @@ export default function PaginaRegistroLLM() {
           nombre_visible: formModelo.nombre_visible,
           descripcion: formModelo.descripcion || undefined,
           estado_valido: formModelo.estado_valido,
-          prompt: formModelo.prompt || undefined,
+          prompt_insert: formModelo.prompt_insert || undefined,
+          prompt_update: formModelo.prompt_update || undefined,
           system_prompt: formModelo.system_prompt || undefined,
-          python: formModelo.python || undefined,
+          python_insert: formModelo.python_insert || undefined,
+          python_update: formModelo.python_update || undefined,
           javascript: formModelo.javascript || undefined,
           python_editado_manual: formModelo.python_editado_manual,
           javascript_editado_manual: formModelo.javascript_editado_manual,
@@ -519,9 +523,11 @@ export default function PaginaRegistroLLM() {
                   pkValor={editandoModelo.id_modelo}
                   campos={formModelo}
                   onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
-                  mostrarPrompt={false}
+                  mostrarPromptInsert={false}
+                  mostrarPromptUpdate={false}
                   mostrarSystemPrompt={true}
-                  mostrarPython={false}
+                  mostrarPythonInsert={false}
+                  mostrarPythonUpdate={false}
                   mostrarJavaScript={false}
                   mostrarBotones={false}
                 />
@@ -534,9 +540,7 @@ export default function PaginaRegistroLLM() {
                   pkValor={editandoModelo.id_modelo}
                   campos={formModelo}
                   onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
-                  mostrarPrompt={true}
                   mostrarSystemPrompt={false}
-                  mostrarPython={true}
                   mostrarJavaScript={false}
                 />
               )}

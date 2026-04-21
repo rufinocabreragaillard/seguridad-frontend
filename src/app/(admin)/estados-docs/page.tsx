@@ -27,9 +27,11 @@ export default function PaginaEstadosDocs() {
     codigo_estado_doc: string
     nombre_estado: string
     descripcion: string
-    prompt: string
+    prompt_insert: string
+    prompt_update: string
     system_prompt: string
-    python: string
+    python_insert: string
+    python_update: string
     javascript: string
     python_editado_manual: boolean
     javascript_editado_manual: boolean
@@ -48,9 +50,11 @@ export default function PaginaEstadosDocs() {
       const r = await estadosDocsApi.actualizar(id, {
         nombre_estado: f.nombre_estado,
         descripcion: f.descripcion || undefined,
-        prompt: f.prompt || undefined,
+        prompt_insert: f.prompt_insert || undefined,
+        prompt_update: f.prompt_update || undefined,
         system_prompt: f.system_prompt || undefined,
-        python: f.python || undefined,
+        python_insert: f.python_insert || undefined,
+        python_update: f.python_update || undefined,
         javascript: f.javascript || undefined,
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
@@ -64,14 +68,16 @@ export default function PaginaEstadosDocs() {
     },
     getId: (e) => e.codigo_estado_doc,
     camposBusqueda: (e) => [e.codigo_estado_doc, e.nombre_estado],
-    formInicial: { codigo_estado_doc: '', nombre_estado: '', descripcion: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false },
+    formInicial: { codigo_estado_doc: '', nombre_estado: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false },
     itemToForm: (e) => ({
       codigo_estado_doc: e.codigo_estado_doc,
       nombre_estado: e.nombre_estado,
       descripcion: e.descripcion || '',
-      prompt: e.prompt || '',
+      prompt_insert: (e as unknown as Record<string, unknown>).prompt_insert as string || '',
+      prompt_update: (e as unknown as Record<string, unknown>).prompt_update as string || '',
       system_prompt: e.system_prompt || '',
-      python: (e as unknown as Record<string, unknown>).python as string || '',
+      python_insert: (e as unknown as Record<string, unknown>).python_insert as string || '',
+      python_update: (e as unknown as Record<string, unknown>).python_update as string || '',
       javascript: (e as unknown as Record<string, unknown>).javascript as string || '',
       python_editado_manual: ((e as unknown as Record<string, unknown>).python_editado_manual as boolean) ?? false,
       javascript_editado_manual: ((e as unknown as Record<string, unknown>).javascript_editado_manual as boolean) ?? false,
@@ -232,17 +238,21 @@ export default function PaginaEstadosDocs() {
                 pkColumna="codigo_estado_doc"
                 pkValor={crud.editando.codigo_estado_doc}
                 campos={{
-                  prompt: crud.form.prompt,
+                  prompt_insert: crud.form.prompt_insert,
+                  prompt_update: crud.form.prompt_update,
                   system_prompt: crud.form.system_prompt,
-                  python: crud.form.python,
+                  python_insert: crud.form.python_insert,
+                  python_update: crud.form.python_update,
                   javascript: crud.form.javascript,
                   python_editado_manual: crud.form.python_editado_manual,
                   javascript_editado_manual: crud.form.javascript_editado_manual,
                 }}
                 onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
-                mostrarPrompt={false}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
                 mostrarSystemPrompt={true}
-                mostrarPython={false}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
                 mostrarBotones={false}
               />
@@ -264,17 +274,17 @@ export default function PaginaEstadosDocs() {
                 pkColumna="codigo_estado_doc"
                 pkValor={crud.editando.codigo_estado_doc}
                 campos={{
-                  prompt: crud.form.prompt,
+                  prompt_insert: crud.form.prompt_insert,
+                  prompt_update: crud.form.prompt_update,
                   system_prompt: crud.form.system_prompt,
-                  python: crud.form.python,
+                  python_insert: crud.form.python_insert,
+                  python_update: crud.form.python_update,
                   javascript: crud.form.javascript,
                   python_editado_manual: crud.form.python_editado_manual,
                   javascript_editado_manual: crud.form.javascript_editado_manual,
                 }}
                 onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
-                mostrarPrompt={true}
                 mostrarSystemPrompt={false}
-                mostrarPython={true}
                 mostrarJavaScript={false}
               />
               <PieBotonesModal

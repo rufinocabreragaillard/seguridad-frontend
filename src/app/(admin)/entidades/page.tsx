@@ -35,7 +35,7 @@ export default function PaginaEntidades() {
   const [modalEntidad, setModalEntidad] = useState(false)
   const [modalArea, setModalArea] = useState(false)
   const [entidadEditando, setEntidadEditando] = useState<Entidad | null>(null)
-  const [formEntidad, setFormEntidad] = useState({ codigo_entidad: '', nombre: '', descripcion: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+  const [formEntidad, setFormEntidad] = useState({ codigo_entidad: '', nombre: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
   const [tabModalEntidad, setTabModalEntidad] = useState<'datos' | 'system_prompt' | 'programacion'>('datos')
   const [formArea, setFormArea] = useState({ codigo_area: '', nombre: '', descripcion: '', codigo_area_superior: '' })
   const [guardando, setGuardando] = useState(false)
@@ -76,7 +76,7 @@ export default function PaginaEntidades() {
 
   const abrirNuevaEntidad = () => {
     setEntidadEditando(null)
-    setFormEntidad({ codigo_entidad: '', nombre: '', descripcion: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormEntidad({ codigo_entidad: '', nombre: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setTabModalEntidad('datos')
     setError('')
     setModalEntidad(true)
@@ -85,7 +85,7 @@ export default function PaginaEntidades() {
   const abrirEditarEntidad = (e: Entidad) => {
     setEntidadEditando(e)
     const e2 = e as unknown as Record<string, unknown>
-    setFormEntidad({ codigo_entidad: e.codigo_entidad, nombre: e.nombre, descripcion: e.descripcion || '', prompt: e.prompt || '', system_prompt: e.system_prompt || '', python: e2.python as string || '', javascript: e2.javascript as string || '', python_editado_manual: e2.python_editado_manual as boolean || false, javascript_editado_manual: e2.javascript_editado_manual as boolean || false })
+    setFormEntidad({ codigo_entidad: e.codigo_entidad, nombre: e.nombre, descripcion: e.descripcion || '', prompt_insert: e2.prompt_insert as string || '', prompt_update: e2.prompt_update as string || '', system_prompt: e2.system_prompt as string || '', python_insert: e2.python_insert as string || '', python_update: e2.python_update as string || '', javascript: e2.javascript as string || '', python_editado_manual: e2.python_editado_manual as boolean || false, javascript_editado_manual: e2.javascript_editado_manual as boolean || false })
     setTabModalEntidad('datos')
     setError('')
     setModalEntidad(true)
@@ -96,14 +96,14 @@ export default function PaginaEntidades() {
     setGuardando(true)
     try {
       if (entidadEditando) {
-        await entidadesApi.actualizar(entidadEditando.codigo_entidad, { nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, prompt: formEntidad.prompt || undefined, system_prompt: formEntidad.system_prompt || undefined, python: formEntidad.python || undefined, javascript: formEntidad.javascript || undefined, python_editado_manual: formEntidad.python_editado_manual, javascript_editado_manual: formEntidad.javascript_editado_manual } as Record<string, unknown>)
+        await entidadesApi.actualizar(entidadEditando.codigo_entidad, { nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, prompt_insert: formEntidad.prompt_insert || undefined, prompt_update: formEntidad.prompt_update || undefined, system_prompt: formEntidad.system_prompt || undefined, python_insert: formEntidad.python_insert || undefined, python_update: formEntidad.python_update || undefined, javascript: formEntidad.javascript || undefined, python_editado_manual: formEntidad.python_editado_manual, javascript_editado_manual: formEntidad.javascript_editado_manual } as Record<string, unknown>)
         if (cerrar) setModalEntidad(false)
       } else {
         const nueva = await entidadesApi.crear({ nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, codigo_grupo: grupoActivo || 'ADMIN' })
         if (!cerrar) {
           setEntidadEditando(nueva)
           const n2 = nueva as unknown as Record<string, unknown>
-          setFormEntidad({ codigo_entidad: nueva.codigo_entidad, nombre: nueva.nombre, descripcion: nueva.descripcion || '', prompt: nueva.prompt || '', system_prompt: nueva.system_prompt || '', python: n2.python as string || '', javascript: n2.javascript as string || '', python_editado_manual: n2.python_editado_manual as boolean || false, javascript_editado_manual: n2.javascript_editado_manual as boolean || false })
+          setFormEntidad({ codigo_entidad: nueva.codigo_entidad, nombre: nueva.nombre, descripcion: nueva.descripcion || '', prompt_insert: n2.prompt_insert as string || '', prompt_update: n2.prompt_update as string || '', system_prompt: n2.system_prompt as string || '', python_insert: n2.python_insert as string || '', python_update: n2.python_update as string || '', javascript: n2.javascript as string || '', python_editado_manual: n2.python_editado_manual as boolean || false, javascript_editado_manual: n2.javascript_editado_manual as boolean || false })
         } else {
           setModalEntidad(false)
         }
@@ -358,9 +358,11 @@ export default function PaginaEntidades() {
                 pkValor={entidadEditando?.codigo_entidad ?? null}
                 campos={formEntidad}
                 onCampoCambiado={(campo, valor) => setFormEntidad({ ...formEntidad, [campo]: valor })}
-                mostrarPrompt={false}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
                 mostrarSystemPrompt={true}
-                mostrarPython={false}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
                 mostrarBotones={false}
               />
@@ -384,9 +386,7 @@ export default function PaginaEntidades() {
                 pkValor={entidadEditando?.codigo_entidad ?? null}
                 campos={formEntidad}
                 onCampoCambiado={(campo, valor) => setFormEntidad({ ...formEntidad, [campo]: valor })}
-                mostrarPrompt={true}
                 mostrarSystemPrompt={false}
-                mostrarPython={true}
                 mostrarJavaScript={false}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
