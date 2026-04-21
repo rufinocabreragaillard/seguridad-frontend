@@ -291,6 +291,8 @@
     "nuevoTitulo": "Nouveau poste",
     "tabDatos": "Données",
     "tabRoles": "Rôles",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgramacion": "Programmation",
     "etiquetaCodigo": "Code",
     "etiquetaNombre": "Nom *",
     "placeholderNombre": "Ex : Maire, Directeur des Finances",
@@ -1011,6 +1013,9 @@
     "etiquetaTipoEntidad": "Type d'entité",
     "descTipoEntidad": "Le type d'entité ne peut pas être modifié depuis le frontend.",
     "etiquetaParalelo": "Exécution parallèle (n_parallel)",
+    "etiquetaJson": "JSON",
+    "descJson": "Champ JSONB libre pour la configuration ou les données arbitraires du processus. Doit être un JSON valide (objet, tableau ou primitif).",
+    "errorJsonInvalido": "JSON invalide. Vérifiez la syntaxe.",
     "errorNombreObligatorio": "Le nom est obligatoire"
   },
   "procesosGrupo": {
@@ -1080,6 +1085,9 @@
     "placeholderDescripcion": "Description détaillée de la tâche",
     "etiquetaPrioridad": "Priorité",
     "etiquetaFechaEsperada": "Date prévue",
+    "etiquetaJson": "JSON",
+    "descJson": "Champ JSONB libre pour la configuration ou les données arbitraires de la tâche. Doit être un JSON valide (objet, tableau ou primitif).",
+    "errorJsonInvalido": "JSON invalide. Vérifiez la syntaxe.",
     "errorNombreObligatorio": "Le nom de la tâche est obligatoire",
     "eliminarTitulo": "Supprimer la tâche",
     "eliminarConfirm": "Supprimer la tâche \"{nombre}\" ? Cette action ne peut pas être annulée."

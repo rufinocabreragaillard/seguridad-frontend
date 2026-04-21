@@ -301,6 +301,8 @@
     "nuevoTitulo": "Nuevo cargo",
     "tabDatos": "Datos",
     "tabRoles": "Roles",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgramacion": "Programación",
     "etiquetaCodigo": "Código",
     "etiquetaNombre": "Nombre *",
     "placeholderNombre": "Ej: Alcalde, Director de Finanzas",
@@ -1024,6 +1026,9 @@
     "etiquetaTipoEntidad": "Tipo de entidad",
     "descTipoEntidad": "El tipo de entidad no puede modificarse desde el frontend.",
     "etiquetaParalelo": "Ejecución en paralelo (n_parallel)",
+    "etiquetaJson": "JSON",
+    "descJson": "Campo libre JSONB para configuración o datos arbitrarios del proceso. Debe ser JSON válido (objeto, lista o primitivo).",
+    "errorJsonInvalido": "El JSON es inválido. Revisa la sintaxis.",
     "errorNombreObligatorio": "El nombre es obligatorio"
   },
   "procesosGrupo": {
@@ -1093,6 +1098,9 @@
     "placeholderDescripcion": "Descripción detallada de la tarea",
     "etiquetaPrioridad": "Prioridad",
     "etiquetaFechaEsperada": "Fecha esperada",
+    "etiquetaJson": "JSON",
+    "descJson": "Campo libre JSONB para configuración o datos arbitrarios de la tarea. Debe ser JSON válido (objeto, lista o primitivo).",
+    "errorJsonInvalido": "El JSON es inválido. Revisa la sintaxis.",
     "errorNombreObligatorio": "El nombre de la tarea es obligatorio",
     "eliminarTitulo": "Eliminar tarea",
     "eliminarConfirm": "¿Eliminar la tarea \"{nombre}\"? Esta acción no se puede deshacer."

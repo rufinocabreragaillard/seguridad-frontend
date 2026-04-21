@@ -291,6 +291,8 @@
     "nuevoTitulo": "Novo cargo",
     "tabDatos": "Dados",
     "tabRoles": "Funções",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgramacion": "Programação",
     "etiquetaCodigo": "Código",
     "etiquetaNombre": "Nome *",
     "placeholderNombre": "Ex: Prefeito, Diretor de Finanças",
@@ -1011,6 +1013,9 @@
     "etiquetaTipoEntidad": "Tipo de entidade",
     "descTipoEntidad": "O tipo de entidade não pode ser modificado pelo frontend.",
     "etiquetaParalelo": "Execução paralela (n_parallel)",
+    "etiquetaJson": "JSON",
+    "descJson": "Campo JSONB livre para configuração ou dados arbitrários do processo. Deve ser JSON válido (objeto, lista ou primitivo).",
+    "errorJsonInvalido": "JSON inválido. Verifique a sintaxe.",
     "errorNombreObligatorio": "O nome é obrigatório"
   },
   "procesosGrupo": {
@@ -1080,6 +1085,9 @@
     "placeholderDescripcion": "Descrição detalhada da tarefa",
     "etiquetaPrioridad": "Prioridade",
     "etiquetaFechaEsperada": "Data esperada",
+    "etiquetaJson": "JSON",
+    "descJson": "Campo JSONB livre para configuração ou dados arbitrários da tarefa. Deve ser JSON válido (objeto, lista ou primitivo).",
+    "errorJsonInvalido": "JSON inválido. Verifique a sintaxe.",
     "errorNombreObligatorio": "O nome da tarefa é obrigatório",
     "eliminarTitulo": "Excluir tarefa",
     "eliminarConfirm": "Excluir tarefa \"{nombre}\"? Esta ação não pode ser desfeita."

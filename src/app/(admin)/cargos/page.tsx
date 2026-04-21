@@ -112,7 +112,7 @@ export default function PaginaCargos() {
   })
 
   // ── Tab activa en el modal ──────────────────────────────────────────────────
-  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'prompts'>('datos')
+  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'system_prompt' | 'programacion'>('datos')
 
   const abrirNuevo = () => { setTabActiva('datos'); crud.abrirNuevo() }
   const abrirEditar = (c: Cargo) => {
@@ -266,8 +266,8 @@ export default function PaginaCargos() {
           {/* Tabs */}
           <div className="flex border-b border-borde mb-4">
             {(crud.editando
-              ? (['datos', 'roles', 'prompts'] as const)
-              : (['datos', 'prompts'] as const)
+              ? (['datos', 'roles', 'system_prompt', 'programacion'] as const)
+              : (['datos', 'system_prompt', 'programacion'] as const)
             ).map((tab) => (
               <button
                 key={tab}
@@ -278,58 +278,70 @@ export default function PaginaCargos() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? t('tabDatos') : tab === 'roles' ? t('tabRoles') : 'Prompts'}
+                {tab === 'datos'
+                  ? t('tabDatos')
+                  : tab === 'roles'
+                  ? t('tabRoles')
+                  : tab === 'system_prompt'
+                  ? t('tabSystemPrompt')
+                  : t('tabProgramacion')}
               </button>
             ))}
           </div>
 
           {/* ── Tab Datos ─────────────────────────────────────────────────── */}
           {tabActiva === 'datos' && (
-            <div className="flex flex-col gap-4">
-              {crud.editando && (
-                <Input etiqueta={t('etiquetaCodigo')} value={crud.form.codigo_cargo} onChange={() => {}} disabled />
-              )}
+            <div className="flex flex-col gap-4 min-h-[500px]">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {crud.editando && (
+                  <div className="sm:col-span-2">
+                    <Input etiqueta={t('etiquetaCodigo')} value={crud.form.codigo_cargo} onChange={() => {}} disabled />
+                  </div>
+                )}
 
-              <Input
-                etiqueta={t('etiquetaNombre')}
-                value={crud.form.nombre_cargo}
-                onChange={(e) => crud.updateForm('nombre_cargo', e.target.value)}
-                placeholder={t('placeholderNombre')}
-                autoFocus
-              />
+                <Input
+                  etiqueta={t('etiquetaNombre')}
+                  value={crud.form.nombre_cargo}
+                  onChange={(e) => crud.updateForm('nombre_cargo', e.target.value)}
+                  placeholder={t('placeholderNombre')}
+                  autoFocus
+                />
 
-              <Input
-                etiqueta={t('etiquetaAlias')}
-                value={crud.form.alias}
-                onChange={(e) => crud.updateForm('alias', e.target.value)}
-                placeholder={t('placeholderAlias')}
-              />
+                <Input
+                  etiqueta={t('etiquetaAlias')}
+                  value={crud.form.alias}
+                  onChange={(e) => crud.updateForm('alias', e.target.value)}
+                  placeholder={t('placeholderAlias')}
+                />
 
-              {/* Selector de entidad */}
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-texto">{t('etiquetaEntidad')}</label>
-                <select
-                  className={selectClass}
-                  value={crud.form.codigo_entidad}
-                  onChange={(e) => crud.updateForm('codigo_entidad', e.target.value)}
-                >
-                  <option value="">{t('todoElGrupoOpcion')}</option>
-                  {entidades.map((e) => (
-                    <option key={e.codigo_entidad} value={e.codigo_entidad}>
-                      {e.nombre}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-texto-muted">{t('descEntidad')}</p>
+                {/* Selector de entidad */}
+                <div className="flex flex-col gap-1 sm:col-span-2">
+                  <label className="text-sm font-medium text-texto">{t('etiquetaEntidad')}</label>
+                  <select
+                    className={selectClass}
+                    value={crud.form.codigo_entidad}
+                    onChange={(e) => crud.updateForm('codigo_entidad', e.target.value)}
+                  >
+                    <option value="">{t('todoElGrupoOpcion')}</option>
+                    {entidades.map((e) => (
+                      <option key={e.codigo_entidad} value={e.codigo_entidad}>
+                        {e.nombre}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-texto-muted">{t('descEntidad')}</p>
+                </div>
+
+                <div className="sm:col-span-2">
+                  <Textarea
+                    etiqueta={t('etiquetaDescripcion')}
+                    value={crud.form.descripcion}
+                    onChange={(e) => crud.updateForm('descripcion', e.target.value)}
+                    placeholder={t('placeholderDescripcion')}
+                    rows={3}
+                  />
+                </div>
               </div>
-
-              <Textarea
-                etiqueta={t('etiquetaDescripcion')}
-                value={crud.form.descripcion}
-                onChange={(e) => crud.updateForm('descripcion', e.target.value)}
-                placeholder={t('placeholderDescripcion')}
-                rows={3}
-              />
 
               {crud.error && (
                 <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
@@ -337,51 +349,86 @@ export default function PaginaCargos() {
                 </div>
               )}
 
-              <PieBotonesModal
-                editando={!!crud.editando}
-                onGuardar={() => {
-                  if (!crud.form.nombre_cargo.trim()) {
-                    crud.setError(t('errorNombreObligatorio'))
-                    return
-                  }
-                  crud.guardar(undefined, undefined, { cerrar: false })
-                }}
-                onGuardarYSalir={() => {
-                  if (!crud.form.nombre_cargo.trim()) {
-                    crud.setError(t('errorNombreObligatorio'))
-                    return
-                  }
-                  crud.guardar(undefined, undefined, { cerrar: true })
-                }}
-                onCerrar={crud.cerrarModal}
-                cargando={crud.guardando}
-              />
+              <div className="mt-auto">
+                <PieBotonesModal
+                  editando={!!crud.editando}
+                  onGuardar={() => {
+                    if (!crud.form.nombre_cargo.trim()) {
+                      crud.setError(t('errorNombreObligatorio'))
+                      return
+                    }
+                    crud.guardar(undefined, undefined, { cerrar: false })
+                  }}
+                  onGuardarYSalir={() => {
+                    if (!crud.form.nombre_cargo.trim()) {
+                      crud.setError(t('errorNombreObligatorio'))
+                      return
+                    }
+                    crud.guardar(undefined, undefined, { cerrar: true })
+                  }}
+                  onCerrar={crud.cerrarModal}
+                  cargando={crud.guardando}
+                />
+              </div>
             </div>
           )}
 
-          {/* ── Tab Prompts ───────────────────────────────────────────────── */}
-          {tabActiva === 'prompts' && (
-            <div className="flex flex-col gap-4">
+          {/* ── Tab System Prompt ─────────────────────────────────────────── */}
+          {tabActiva === 'system_prompt' && (
+            <div className="flex flex-col gap-4 min-h-[500px]">
               <TabPrompts
                 tabla="cargos"
                 pkColumna="codigo_cargo"
                 pkValor={crud.editando?.codigo_cargo ?? null}
                 campos={crud.form}
                 onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
+                mostrarPrompt={false}
+                mostrarSystemPrompt={true}
+                mostrarPython={false}
+                mostrarJavaScript={false}
+                mostrarBotones={false}
               />
-              <PieBotonesModal
-                editando={!!crud.editando}
-                onGuardar={() => crud.guardar(undefined, undefined, { cerrar: false })}
-                onGuardarYSalir={() => crud.guardar(undefined, undefined, { cerrar: true })}
-                onCerrar={crud.cerrarModal}
-                cargando={crud.guardando}
+              <div className="mt-auto">
+                <PieBotonesModal
+                  editando={!!crud.editando}
+                  onGuardar={() => crud.guardar(undefined, undefined, { cerrar: false })}
+                  onGuardarYSalir={() => crud.guardar(undefined, undefined, { cerrar: true })}
+                  onCerrar={crud.cerrarModal}
+                  cargando={crud.guardando}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ── Tab Programación ──────────────────────────────────────────── */}
+          {tabActiva === 'programacion' && (
+            <div className="flex flex-col gap-4 min-h-[500px]">
+              <TabPrompts
+                tabla="cargos"
+                pkColumna="codigo_cargo"
+                pkValor={crud.editando?.codigo_cargo ?? null}
+                campos={crud.form}
+                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
+                mostrarPrompt={true}
+                mostrarSystemPrompt={false}
+                mostrarPython={true}
+                mostrarJavaScript={false}
               />
+              <div className="mt-auto">
+                <PieBotonesModal
+                  editando={!!crud.editando}
+                  onGuardar={() => crud.guardar(undefined, undefined, { cerrar: false })}
+                  onGuardarYSalir={() => crud.guardar(undefined, undefined, { cerrar: true })}
+                  onCerrar={crud.cerrarModal}
+                  cargando={crud.guardando}
+                />
+              </div>
             </div>
           )}
 
           {/* ── Tab Roles ─────────────────────────────────────────────────── */}
           {tabActiva === 'roles' && crud.editando && (
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 min-h-[500px]">
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-texto">{t('agregarRol')}</label>
                 <div className="relative" ref={dropdownRolRef}>

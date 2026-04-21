@@ -720,6 +720,8 @@
     "nuevoTitulo": "New position",
     "tabDatos": "Data",
     "tabRoles": "Roles",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgramacion": "Programming",
     "etiquetaCodigo": "Code",
     "etiquetaNombre": "Name *",
     "placeholderNombre": "E.g.: Mayor, Finance Director",
@@ -1024,6 +1026,9 @@
     "etiquetaTipoEntidad": "Entity type",
     "descTipoEntidad": "The entity type cannot be modified from the frontend.",
     "etiquetaParalelo": "Parallel execution (n_parallel)",
+    "etiquetaJson": "JSON",
+    "descJson": "Free JSONB field for arbitrary configuration or data of the process. Must be valid JSON (object, array or primitive).",
+    "errorJsonInvalido": "Invalid JSON. Check the syntax.",
     "errorNombreObligatorio": "Name is required"
   },
   "procesosGrupo": {
@@ -1093,6 +1098,9 @@
     "placeholderDescripcion": "Detailed task description",
     "etiquetaPrioridad": "Priority",
     "etiquetaFechaEsperada": "Expected date",
+    "etiquetaJson": "JSON",
+    "descJson": "Free JSONB field for arbitrary configuration or data of the task. Must be valid JSON (object, array or primitive).",
+    "errorJsonInvalido": "Invalid JSON. Check the syntax.",
     "errorNombreObligatorio": "Task name is required",
     "eliminarTitulo": "Delete task",
     "eliminarConfirm": "Delete task \"{nombre}\"? This action cannot be undone."

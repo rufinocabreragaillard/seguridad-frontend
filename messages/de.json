@@ -291,6 +291,8 @@
     "nuevoTitulo": "Neue Position",
     "tabDatos": "Daten",
     "tabRoles": "Rollen",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgramacion": "Programmierung",
     "etiquetaCodigo": "Code",
     "etiquetaNombre": "Name *",
     "placeholderNombre": "Z.B: Bürgermeister, Finanzleiter",
@@ -1011,6 +1013,9 @@
     "etiquetaTipoEntidad": "Entitätstyp",
     "descTipoEntidad": "Der Entitätstyp kann nicht über das Frontend geändert werden.",
     "etiquetaParalelo": "Parallele Ausführung (n_parallel)",
+    "etiquetaJson": "JSON",
+    "descJson": "Freies JSONB-Feld für Konfiguration oder beliebige Prozessdaten. Muss gültiges JSON sein (Objekt, Liste oder Primitiv).",
+    "errorJsonInvalido": "Ungültiges JSON. Bitte Syntax prüfen.",
     "errorNombreObligatorio": "Name ist erforderlich"
   },
   "procesosGrupo": {
@@ -1080,6 +1085,9 @@
     "placeholderDescripcion": "Detaillierte Aufgabenbeschreibung",
     "etiquetaPrioridad": "Priorität",
     "etiquetaFechaEsperada": "Erwartetes Datum",
+    "etiquetaJson": "JSON",
+    "descJson": "Freies JSONB-Feld für Konfiguration oder beliebige Aufgabendaten. Muss gültiges JSON sein (Objekt, Liste oder Primitiv).",
+    "errorJsonInvalido": "Ungültiges JSON. Bitte Syntax prüfen.",
     "errorNombreObligatorio": "Aufgabenname ist erforderlich",
     "eliminarTitulo": "Aufgabe löschen",
     "eliminarConfirm": "Aufgabe \"{nombre}\" löschen? Diese Aktion kann nicht rückgängig gemacht werden."
