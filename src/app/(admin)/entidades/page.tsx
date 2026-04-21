@@ -1,17 +1,18 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Building2, MapPin, Download, Search, Eye } from 'lucide-react'
+import { Plus, Pencil, MapPin, Download, Search, Eye, Trash2 } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { Modal } from '@/components/ui/modal'
+import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Insignia } from '@/components/ui/insignia'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
-import { entidadesApi } from '@/lib/api'
+import { entidadesApi, ubicacionesDocsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Entidad, Area } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -35,10 +36,13 @@ export default function PaginaEntidades() {
 
   const [modalEntidad, setModalEntidad] = useState(false)
   const [modalArea, setModalArea] = useState(false)
+  const [modalEliminarArea, setModalEliminarArea] = useState(false)
+  const [areaEliminando, setAreaEliminando] = useState<Area | null>(null)
+  const [areaEditando, setAreaEditando] = useState<Area | null>(null)
   const [entidadEditando, setEntidadEditando] = useState<Entidad | null>(null)
   const [formEntidad, setFormEntidad] = useState({ codigo_entidad: '', nombre: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
   const [tabModalEntidad, setTabModalEntidad] = useState<'datos' | 'system_prompt' | 'programacion'>('datos')
-  const [formArea, setFormArea] = useState({ codigo_area: '', nombre: '', descripcion: '', codigo_area_superior: '' })
+  const [formArea, setFormArea] = useState({ codigo_area: '', nombre: '', descripcion: '', codigo_area_superior: '', tipo_ubicacion: 'AREA' as 'AREA' | 'CONTENIDO' })
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
@@ -127,23 +131,67 @@ export default function PaginaEntidades() {
     }
   }
 
+  const abrirNuevaArea = () => {
+    setAreaEditando(null)
+    setFormArea({ codigo_area: '', nombre: '', descripcion: '', codigo_area_superior: '', tipo_ubicacion: 'AREA' })
+    setError('')
+    setModalArea(true)
+  }
+
+  const abrirEditarArea = (a: Area) => {
+    setAreaEditando(a)
+    setFormArea({
+      codigo_area: a.codigo_area,
+      nombre: a.nombre,
+      descripcion: a.descripcion || '',
+      codigo_area_superior: a.codigo_area_superior || '',
+      tipo_ubicacion: a.tipo_ubicacion || 'AREA',
+    })
+    setError('')
+    setModalArea(true)
+  }
+
   const guardarArea = async () => {
-    if (!entidadSeleccionada || !formArea.codigo_area || !formArea.nombre) { setError('Código y nombre son obligatorios'); return }
+    if (!entidadSeleccionada || !formArea.nombre) { setError('El nombre es obligatorio'); return }
     setGuardando(true)
     try {
-      const datos: Record<string, string> = {
-        codigo_area: formArea.codigo_area,
-        nombre: formArea.nombre,
+      if (areaEditando) {
+        // Editar via ubicacionesDocsApi (código_area = código_ubicacion)
+        await ubicacionesDocsApi.actualizar(areaEditando.codigo_area, {
+          nombre_ubicacion: formArea.nombre,
+          descripcion: formArea.descripcion || undefined,
+          codigo_ubicacion_superior: formArea.codigo_area_superior || null,
+          tipo_ubicacion: formArea.tipo_ubicacion,
+        } as Record<string, unknown>)
+      } else {
+        if (!formArea.codigo_area) { setError('El código es obligatorio'); setGuardando(false); return }
+        const datos: Record<string, string> = {
+          codigo_area: formArea.codigo_area,
+          nombre: formArea.nombre,
+          tipo_ubicacion: formArea.tipo_ubicacion,
+        }
+        if (formArea.descripcion) datos.descripcion = formArea.descripcion
+        if (formArea.codigo_area_superior) datos.codigo_area_superior = formArea.codigo_area_superior
+        await entidadesApi.crearArea(entidadSeleccionada.codigo_entidad, datos)
       }
-      if (formArea.descripcion) datos.descripcion = formArea.descripcion
-      if (formArea.codigo_area_superior) datos.codigo_area_superior = formArea.codigo_area_superior
-      await entidadesApi.crearArea(entidadSeleccionada.codigo_entidad, datos)
       setModalArea(false)
       cargarAreas(entidadSeleccionada.codigo_entidad)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error')
     } finally {
       setGuardando(false)
+    }
+  }
+
+  const eliminarArea = async () => {
+    if (!areaEliminando || !entidadSeleccionada) return
+    try {
+      await ubicacionesDocsApi.eliminar(areaEliminando.codigo_area)
+      setModalEliminarArea(false)
+      setAreaEliminando(null)
+      cargarAreas(entidadSeleccionada.codigo_entidad)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al eliminar')
     }
   }
 
@@ -271,10 +319,8 @@ export default function PaginaEntidades() {
                   >
                     <Download size={15} /> Excel
                   </Boton>
-                  <Boton variante="contorno" tamano="sm"
-                    onClick={() => { setFormArea({ codigo_area: '', nombre: '', descripcion: '', codigo_area_superior: '' }); setError(''); setModalArea(true) }}
-                  >
-                    <Plus size={14} /> Nueva área
+                  <Boton variante="primario" tamano="sm" onClick={abrirNuevaArea}>
+                    <Plus size={14} /> Nueva ubicación
                   </Boton>
                 </>
               )}
@@ -292,8 +338,11 @@ export default function PaginaEntidades() {
               </div>
               <Tabla>
                 <TablaCabecera><tr>
-                  <TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh>
-                  <TablaTh>{t('colAreaSuperior')}</TablaTh><TablaTh>Tipo</TablaTh><TablaTh>{t('colResponsable')}</TablaTh>
+                  <TablaTh className="w-28">Código</TablaTh>
+                  <TablaTh>Nombre</TablaTh>
+                  <TablaTh className="w-32">Ubic. Superior</TablaTh>
+                  <TablaTh className="w-24">Tipo</TablaTh>
+                  <TablaTh className="w-24 text-right">Acciones</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {cargandoAreas ? (
@@ -303,7 +352,7 @@ export default function PaginaEntidades() {
                       <TablaTd className="py-8 text-center" colSpan={5 as never}>
                         <div className="flex flex-col items-center gap-2 text-texto-muted">
                           <MapPin size={24} />
-                          <p className="text-sm">{busquedaAreas ? 'No se encontraron áreas' : 'No hay áreas configuradas'}</p>
+                          <p className="text-sm">{busquedaAreas ? 'No se encontraron ubicaciones' : 'No hay ubicaciones configuradas'}</p>
                         </div>
                       </TablaTd>
                     </TablaFila>
@@ -322,7 +371,16 @@ export default function PaginaEntidades() {
                           {a.tipo_ubicacion || 'CONTENIDO'}
                         </Insignia>
                       </TablaTd>
-                      <TablaTd className="text-texto-muted text-xs">{a.usuario_responsable || '—'}</TablaTd>
+                      <TablaTd>
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => abrirEditarArea(a)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar ubicación">
+                            <Pencil size={14} />
+                          </button>
+                          <button onClick={() => { setAreaEliminando(a); setModalEliminarArea(true) }} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar ubicación">
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </TablaTd>
                     </TablaFila>
                   ))}
                 </TablaCuerpo>
@@ -424,35 +482,67 @@ export default function PaginaEntidades() {
         </div>
       </Modal>
 
-      {/* Modal área */}
-      <Modal abierto={modalArea} alCerrar={() => setModalArea(false)} titulo={t('crearArea')} descripcion={`Para entidad: ${entidadSeleccionada?.nombre}`}>
-        <div className="flex flex-col gap-4">
-          <Input etiqueta={t('etiquetaCodigoArea')} value={formArea.codigo_area} onChange={(e) => setFormArea({ ...formArea, codigo_area: e.target.value.toUpperCase() })} placeholder={t('placeholderCodigoArea')} />
-          <Input etiqueta={t('etiquetaNombreArea')} value={formArea.nombre} onChange={(e) => setFormArea({ ...formArea, nombre: e.target.value })} placeholder={t('placeholderNombreArea')} />
-          <Input etiqueta={t('etiquetaDescripcion')} value={formArea.descripcion} onChange={(e) => setFormArea({ ...formArea, descripcion: e.target.value })} />
+      {/* Modal área / ubicación */}
+      <Modal abierto={modalArea} alCerrar={() => setModalArea(false)}
+        titulo={areaEditando ? 'Editar ubicación' : 'Nueva ubicación'}
+        descripcion={`Entidad: ${entidadSeleccionada?.nombre}`}
+      >
+        <div className="flex flex-col gap-4 min-w-[420px]">
+          {/* Código: solo al crear */}
+          {!areaEditando && (
+            <Input etiqueta="Código" value={formArea.codigo_area} onChange={(e) => setFormArea({ ...formArea, codigo_area: e.target.value.toUpperCase() })} placeholder="Ej: SEC-01" />
+          )}
+          {areaEditando && (
+            <Input etiqueta="Código" value={formArea.codigo_area} disabled readOnly />
+          )}
+          <Input etiqueta="Nombre" value={formArea.nombre} onChange={(e) => setFormArea({ ...formArea, nombre: e.target.value })} placeholder="Nombre de la ubicación" />
+          <Input etiqueta="Descripción" value={formArea.descripcion} onChange={(e) => setFormArea({ ...formArea, descripcion: e.target.value })} placeholder="Descripción opcional" />
+          {/* Tipo */}
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">{t('etiquetaAreaSuperior')}</label>
+            <label className="text-sm font-medium text-texto">Tipo</label>
+            <select value={formArea.tipo_ubicacion} onChange={(e) => setFormArea({ ...formArea, tipo_ubicacion: e.target.value as 'AREA' | 'CONTENIDO' })} className={selectClass}>
+              <option value="AREA">ÁREA — nivel organizacional</option>
+              <option value="CONTENIDO">CONTENIDO — carpeta de documentos</option>
+            </select>
+            <p className="text-xs text-texto-muted">Las ubicaciones de tipo ÁREA agrupan áreas y contenido subordinado</p>
+          </div>
+          {/* Ubicación superior */}
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">Ubicación superior</label>
             <select
               value={formArea.codigo_area_superior}
               onChange={(e) => setFormArea({ ...formArea, codigo_area_superior: e.target.value })}
               className={selectClass}
             >
-              <option value="">Sin área superior</option>
+              <option value="">Sin ubicación superior (raíz)</option>
               {areas.filter((a) => a.codigo_area !== formArea.codigo_area).map((a) => (
                 <option key={a.codigo_area} value={a.codigo_area}>
-                  {'—'.repeat(a.nivel || 0)} {a.nombre} ({a.codigo_area})
+                  {'  '.repeat(a.nivel || 0)}{(a.nivel || 0) > 0 ? '└ ' : ''}{a.nombre} ({a.codigo_area})
                 </option>
               ))}
             </select>
-            <p className="text-xs text-texto-muted">Selecciona el área jerárquicamente superior</p>
+            <p className="text-xs text-texto-muted">Selecciona la ubicación jerárquicamente superior</p>
           </div>
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
           <div className="flex gap-3 justify-end pt-2">
             <Boton variante="contorno" onClick={() => setModalArea(false)}>{tc('cancelar')}</Boton>
-            <Boton variante="primario" onClick={guardarArea} cargando={guardando}>{t('crearArea')}</Boton>
+            <Boton variante="primario" onClick={guardarArea} cargando={guardando}>
+              {areaEditando ? 'Guardar cambios' : 'Crear ubicación'}
+            </Boton>
           </div>
         </div>
       </Modal>
+
+      {/* Modal confirmar eliminar área */}
+      <ModalConfirmar
+        abierto={modalEliminarArea}
+        titulo="Eliminar ubicación"
+        mensaje={`¿Confirmas eliminar la ubicación "${areaEliminando?.nombre}"? Esta acción eliminará también todas las sububicaciones dependientes.`}
+        textoConfirmar="Eliminar"
+        variante="peligro"
+        alConfirmar={eliminarArea}
+        alCerrar={() => { setModalEliminarArea(false); setAreaEliminando(null) }}
+      />
     </div>
   )
 }
