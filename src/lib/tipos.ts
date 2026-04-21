@@ -10,6 +10,7 @@ export interface Grupo {
   nombre: string
   descripcion?: string
   tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
+  orden?: number
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
@@ -98,6 +99,7 @@ export interface Entidad {
   codigo_grupo?: string
   descripcion?: string
   activo: boolean
+  orden?: number
   fecha_creacion?: string
   prompt_insert?: string | null
   prompt_update?: string | null
@@ -287,6 +289,7 @@ export interface CategoriaParametro {
   nombre: string
   descripcion?: string
   activo: boolean
+  orden?: number
   fecha_creacion?: string
   prompt_insert?: string | null
   prompt_update?: string | null
