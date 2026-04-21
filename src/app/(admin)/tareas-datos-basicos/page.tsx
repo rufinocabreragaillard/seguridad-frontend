@@ -10,12 +10,16 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
 import { tareasDatosBasicosApi } from '@/lib/api'
 import type { CategoriaTarea, TipoTarea, EstadoTarea, EstadoCanonicoTarea, TipoCanonicoTarea } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
 
 type TabId = 'categorias' | 'tipos' | 'estados' | 'tipos-canonicos'
+type TabModalCat = 'datos' | 'system_prompt' | 'programacion'
+type TabModalTipo = 'datos' | 'system_prompt' | 'programacion'
+type TabModalEst = 'datos' | 'system_prompt' | 'programacion'
 
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaTarea }
@@ -34,6 +38,8 @@ export default function PaginaTareasDatosBasicos() {
   const [formCat, setFormCat] = useState({
     codigo_categoria_tarea: '', nombre_categoria_tarea: '', descripcion_categoria_tarea: '',
   })
+  const [promptsCat, setPromptsCat] = useState<CamposPrompt>({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [tabModalCat, setTabModalCat] = useState<TabModalCat>('datos')
   const [guardandoCat, setGuardandoCat] = useState(false)
   const [errorCat, setErrorCat] = useState('')
 
@@ -46,6 +52,8 @@ export default function PaginaTareasDatosBasicos() {
     codigo_categoria_tarea: '', codigo_tipo_tarea: '', codigo_tipo_canonico: '',
     nombre_tipo_tarea: '', descripcion_tipo_tarea: '',
   })
+  const [promptsTipo, setPromptsTipo] = useState<CamposPrompt>({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [tabModalTipo, setTabModalTipo] = useState<TabModalTipo>('datos')
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
   const [filtroCatTipo, setFiltroCatTipo] = useState('')
@@ -60,6 +68,8 @@ export default function PaginaTareasDatosBasicos() {
     codigo_categoria_tarea: '', codigo_tipo_tarea: '', codigo_estado_tarea: '',
     nombre_estado_tarea: '', descripcion_estado_tarea: '', codigo_estado_canonico: '', orden: 0,
   })
+  const [promptsEst, setPromptsEst] = useState<CamposPrompt>({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [tabModalEst, setTabModalEst] = useState<TabModalEst>('datos')
   const [guardandoEst, setGuardandoEst] = useState(false)
   const [errorEst, setErrorEst] = useState('')
   const [filtroCatEst, setFiltroCatEst] = useState('')
@@ -115,6 +125,8 @@ export default function PaginaTareasDatosBasicos() {
   const abrirNuevaCat = () => {
     setCatEditando(null)
     setFormCat({ codigo_categoria_tarea: '', nombre_categoria_tarea: '', descripcion_categoria_tarea: '' })
+    setPromptsCat({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+    setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
   }
@@ -126,6 +138,8 @@ export default function PaginaTareasDatosBasicos() {
       nombre_categoria_tarea: c.nombre_categoria_tarea,
       descripcion_categoria_tarea: c.descripcion_categoria_tarea || '',
     })
+    setPromptsCat({ prompt: c.prompt ?? null, system_prompt: c.system_prompt ?? null, python: c.python ?? null, javascript: c.javascript ?? null, python_editado_manual: c.python_editado_manual ?? false, javascript_editado_manual: c.javascript_editado_manual ?? false })
+    setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
   }
@@ -138,6 +152,12 @@ export default function PaginaTareasDatosBasicos() {
         await tareasDatosBasicosApi.actualizarCategoria(catEditando.codigo_categoria_tarea, {
           nombre_categoria_tarea: formCat.nombre_categoria_tarea,
           descripcion_categoria_tarea: formCat.descripcion_categoria_tarea || undefined,
+          prompt: promptsCat.prompt,
+          system_prompt: promptsCat.system_prompt,
+          python: promptsCat.python,
+          javascript: promptsCat.javascript,
+          python_editado_manual: promptsCat.python_editado_manual,
+          javascript_editado_manual: promptsCat.javascript_editado_manual,
         })
       } else {
         await tareasDatosBasicosApi.crearCategoria({
@@ -157,6 +177,8 @@ export default function PaginaTareasDatosBasicos() {
   const abrirNuevoTipo = () => {
     setTipoEditando(null)
     setFormTipo({ codigo_categoria_tarea: '', codigo_tipo_tarea: '', codigo_tipo_canonico: '', nombre_tipo_tarea: '', descripcion_tipo_tarea: '' })
+    setPromptsTipo({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+    setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
   }
@@ -170,6 +192,8 @@ export default function PaginaTareasDatosBasicos() {
       nombre_tipo_tarea: t.nombre_tipo_tarea,
       descripcion_tipo_tarea: t.descripcion_tipo_tarea || '',
     })
+    setPromptsTipo({ prompt: t.prompt ?? null, system_prompt: t.system_prompt ?? null, python: t.python ?? null, javascript: t.javascript ?? null, python_editado_manual: t.python_editado_manual ?? false, javascript_editado_manual: t.javascript_editado_manual ?? false })
+    setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
   }
@@ -190,6 +214,12 @@ export default function PaginaTareasDatosBasicos() {
             nombre_tipo_tarea: formTipo.nombre_tipo_tarea,
             descripcion_tipo_tarea: formTipo.descripcion_tipo_tarea || undefined,
             codigo_tipo_canonico: formTipo.codigo_tipo_canonico || undefined,
+            prompt: promptsTipo.prompt,
+            system_prompt: promptsTipo.system_prompt,
+            python: promptsTipo.python,
+            javascript: promptsTipo.javascript,
+            python_editado_manual: promptsTipo.python_editado_manual,
+            javascript_editado_manual: promptsTipo.javascript_editado_manual,
           }
         )
       } else {
@@ -212,6 +242,8 @@ export default function PaginaTareasDatosBasicos() {
   const abrirNuevoEst = () => {
     setEstEditando(null)
     setFormEst({ codigo_categoria_tarea: '', codigo_tipo_tarea: '', codigo_estado_tarea: '', nombre_estado_tarea: '', descripcion_estado_tarea: '', codigo_estado_canonico: '', orden: 0 })
+    setPromptsEst({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+    setTabModalEst('datos')
     setErrorEst('')
     setModalEst(true)
   }
@@ -227,6 +259,8 @@ export default function PaginaTareasDatosBasicos() {
       codigo_estado_canonico: e.codigo_estado_canonico,
       orden: e.orden,
     })
+    setPromptsEst({ prompt: e.prompt ?? null, system_prompt: e.system_prompt ?? null, python: e.python ?? null, javascript: e.javascript ?? null, python_editado_manual: e.python_editado_manual ?? false, javascript_editado_manual: e.javascript_editado_manual ?? false })
+    setTabModalEst('datos')
     setErrorEst('')
     setModalEst(true)
   }
@@ -248,6 +282,12 @@ export default function PaginaTareasDatosBasicos() {
             descripcion_estado_tarea: formEst.descripcion_estado_tarea || undefined,
             codigo_estado_canonico: formEst.codigo_estado_canonico,
             orden: formEst.orden,
+            prompt: promptsEst.prompt,
+            system_prompt: promptsEst.system_prompt,
+            python: promptsEst.python,
+            javascript: promptsEst.javascript,
+            python_editado_manual: promptsEst.python_editado_manual,
+            javascript_editado_manual: promptsEst.javascript_editado_manual,
           }
         )
       } else {
@@ -648,17 +688,37 @@ export default function PaginaTareasDatosBasicos() {
       {/* Modal Categoría */}
       <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de tarea'}>
         <div className="flex flex-col gap-4">
-          {!catEditando && (
-            <Input etiqueta="Código (dejar vacío para autogenerar)" value={formCat.codigo_categoria_tarea}
-              onChange={(e) => setFormCat({ ...formCat, codigo_categoria_tarea: e.target.value })}
-              placeholder="SOPORTE_TI" />
+          <div className="flex gap-1 border-b border-borde -mt-2">
+            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalCat(tab)}
+                className={`px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+              </button>
+            ))}
+          </div>
+          {tabModalCat === 'datos' && <>
+            {!catEditando && (
+              <Input etiqueta="Código (dejar vacío para autogenerar)" value={formCat.codigo_categoria_tarea}
+                onChange={(e) => setFormCat({ ...formCat, codigo_categoria_tarea: e.target.value })}
+                placeholder="SOPORTE_TI" />
+            )}
+            <Input etiqueta="Nombre *" value={formCat.nombre_categoria_tarea}
+              onChange={(e) => setFormCat({ ...formCat, nombre_categoria_tarea: e.target.value })}
+              placeholder="Soporte TI" />
+            <Input etiqueta="Descripción" value={formCat.descripcion_categoria_tarea}
+              onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_tarea: e.target.value })}
+              placeholder="Descripción opcional" />
+          </>}
+          {tabModalCat === 'system_prompt' && catEditando && (
+            <TabPrompts tabla="categorias_tarea" pkColumna="codigo_categoria_tarea" pkValor={catEditando.codigo_categoria_tarea}
+              campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
+              mostrarPrompt={false} mostrarSystemPrompt={true} mostrarPython={false} mostrarJavaScript={false} mostrarBotones={false} />
           )}
-          <Input etiqueta="Nombre *" value={formCat.nombre_categoria_tarea}
-            onChange={(e) => setFormCat({ ...formCat, nombre_categoria_tarea: e.target.value })}
-            placeholder="Soporte TI" />
-          <Input etiqueta="Descripción" value={formCat.descripcion_categoria_tarea}
-            onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_tarea: e.target.value })}
-            placeholder="Descripción opcional" />
+          {tabModalCat === 'programacion' && catEditando && (
+            <TabPrompts tabla="categorias_tarea" pkColumna="codigo_categoria_tarea" pkValor={catEditando.codigo_categoria_tarea}
+              campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
+              mostrarPrompt={true} mostrarSystemPrompt={false} mostrarPython={true} mostrarJavaScript={false} />
+          )}
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
           <PieBotonesModal
             editando={!!catEditando}
@@ -673,36 +733,56 @@ export default function PaginaTareasDatosBasicos() {
       {/* Modal Tipo */}
       <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo de tarea' : 'Nuevo tipo de tarea'}>
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Categoría *</label>
-            <select value={formTipo.codigo_categoria_tarea}
-              onChange={(e) => setFormTipo({ ...formTipo, codigo_categoria_tarea: e.target.value })}
-              disabled={!!tipoEditando}
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-              <option value="">Seleccionar categoría...</option>
-              {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
-            </select>
+          <div className="flex gap-1 border-b border-borde -mt-2">
+            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalTipo(tab)}
+                className={`px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+              </button>
+            ))}
           </div>
-          <Input etiqueta="Código tipo *" value={formTipo.codigo_tipo_tarea}
-            onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_tarea: e.target.value })}
-            placeholder="INCIDENCIA_RED"
-            disabled={!!tipoEditando} />
-          <Input etiqueta="Nombre *" value={formTipo.nombre_tipo_tarea}
-            onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_tarea: e.target.value })}
-            placeholder="Incidencia de Red" />
-          <Input etiqueta="Descripción" value={formTipo.descripcion_tipo_tarea}
-            onChange={(e) => setFormTipo({ ...formTipo, descripcion_tipo_tarea: e.target.value })}
-            placeholder="Descripción opcional" />
-          {tiposCanonicos.length > 0 && (
+          {tabModalTipo === 'datos' && <>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Tipo canónico (opcional)</label>
-              <select value={formTipo.codigo_tipo_canonico}
-                onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_canonico: e.target.value })}
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
-                <option value="">Sin tipo canónico</option>
-                {tiposCanonicos.map((tc) => <option key={tc.codigo_tipo_canonico} value={tc.codigo_tipo_canonico}>{tc.nombre_tipo_canonico}</option>)}
+              <label className="text-sm font-medium text-texto">Categoría *</label>
+              <select value={formTipo.codigo_categoria_tarea}
+                onChange={(e) => setFormTipo({ ...formTipo, codigo_categoria_tarea: e.target.value })}
+                disabled={!!tipoEditando}
+                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
+                <option value="">Seleccionar categoría...</option>
+                {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
               </select>
             </div>
+            <Input etiqueta="Código tipo *" value={formTipo.codigo_tipo_tarea}
+              onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_tarea: e.target.value })}
+              placeholder="INCIDENCIA_RED"
+              disabled={!!tipoEditando} />
+            <Input etiqueta="Nombre *" value={formTipo.nombre_tipo_tarea}
+              onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_tarea: e.target.value })}
+              placeholder="Incidencia de Red" />
+            <Input etiqueta="Descripción" value={formTipo.descripcion_tipo_tarea}
+              onChange={(e) => setFormTipo({ ...formTipo, descripcion_tipo_tarea: e.target.value })}
+              placeholder="Descripción opcional" />
+            {tiposCanonicos.length > 0 && (
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Tipo canónico (opcional)</label>
+                <select value={formTipo.codigo_tipo_canonico}
+                  onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_canonico: e.target.value })}
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
+                  <option value="">Sin tipo canónico</option>
+                  {tiposCanonicos.map((tc) => <option key={tc.codigo_tipo_canonico} value={tc.codigo_tipo_canonico}>{tc.nombre_tipo_canonico}</option>)}
+                </select>
+              </div>
+            )}
+          </>}
+          {tabModalTipo === 'system_prompt' && tipoEditando && (
+            <TabPrompts tabla="tipos_tarea" pkColumna="codigo_tipo_tarea" pkValor={tipoEditando.codigo_tipo_tarea}
+              campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
+              mostrarPrompt={false} mostrarSystemPrompt={true} mostrarPython={false} mostrarJavaScript={false} mostrarBotones={false} />
+          )}
+          {tabModalTipo === 'programacion' && tipoEditando && (
+            <TabPrompts tabla="tipos_tarea" pkColumna="codigo_tipo_tarea" pkValor={tipoEditando.codigo_tipo_tarea}
+              campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
+              mostrarPrompt={true} mostrarSystemPrompt={false} mostrarPython={true} mostrarJavaScript={false} />
           )}
           {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}
           <PieBotonesModal
@@ -718,52 +798,72 @@ export default function PaginaTareasDatosBasicos() {
       {/* Modal Estado */}
       <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? 'Editar estado de tarea' : 'Nuevo estado de tarea'}>
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Categoría *</label>
-            <select value={formEst.codigo_categoria_tarea}
-              onChange={(e) => setFormEst({ ...formEst, codigo_categoria_tarea: e.target.value, codigo_tipo_tarea: '' })}
-              disabled={!!estEditando}
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-              <option value="">Seleccionar categoría...</option>
-              {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
-            </select>
+          <div className="flex gap-1 border-b border-borde -mt-2">
+            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalEst(tab)}
+                className={`px-3 py-2 text-sm border-b-2 ${tabModalEst === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+              </button>
+            ))}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Tipo *</label>
-            <select value={formEst.codigo_tipo_tarea}
-              onChange={(e) => setFormEst({ ...formEst, codigo_tipo_tarea: e.target.value })}
-              disabled={!!estEditando}
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-              <option value="">Seleccionar tipo...</option>
-              {tipos.filter((t) => t.codigo_categoria_tarea === formEst.codigo_categoria_tarea)
-                .map((t) => <option key={t.codigo_tipo_tarea} value={t.codigo_tipo_tarea}>{t.nombre_tipo_tarea}</option>)}
-            </select>
-          </div>
-          <Input etiqueta="Código estado *" value={formEst.codigo_estado_tarea}
-            onChange={(e) => setFormEst({ ...formEst, codigo_estado_tarea: e.target.value })}
-            placeholder="PENDIENTE"
-            disabled={!!estEditando} />
-          <Input etiqueta="Nombre *" value={formEst.nombre_estado_tarea}
-            onChange={(e) => setFormEst({ ...formEst, nombre_estado_tarea: e.target.value })}
-            placeholder="Pendiente" />
-          <Input etiqueta="Descripción" value={formEst.descripcion_estado_tarea}
-            onChange={(e) => setFormEst({ ...formEst, descripcion_estado_tarea: e.target.value })}
-            placeholder="Descripción opcional" />
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Estado canónico *</label>
-            <select value={formEst.codigo_estado_canonico}
-              onChange={(e) => setFormEst({ ...formEst, codigo_estado_canonico: e.target.value })}
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
-              <option value="">Seleccionar estado canónico...</option>
-              {canonicosEst.map((c) => <option key={c.codigo_estado_canonico} value={c.codigo_estado_canonico}>{c.nombre_estado_canonico}</option>)}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Orden</label>
-            <input type="number" min={0} value={formEst.orden}
-              onChange={(e) => setFormEst({ ...formEst, orden: parseInt(e.target.value) || 0 })}
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
-          </div>
+          {tabModalEst === 'datos' && <>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Categoría *</label>
+              <select value={formEst.codigo_categoria_tarea}
+                onChange={(e) => setFormEst({ ...formEst, codigo_categoria_tarea: e.target.value, codigo_tipo_tarea: '' })}
+                disabled={!!estEditando}
+                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
+                <option value="">Seleccionar categoría...</option>
+                {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Tipo *</label>
+              <select value={formEst.codigo_tipo_tarea}
+                onChange={(e) => setFormEst({ ...formEst, codigo_tipo_tarea: e.target.value })}
+                disabled={!!estEditando}
+                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
+                <option value="">Seleccionar tipo...</option>
+                {tipos.filter((t) => t.codigo_categoria_tarea === formEst.codigo_categoria_tarea)
+                  .map((t) => <option key={t.codigo_tipo_tarea} value={t.codigo_tipo_tarea}>{t.nombre_tipo_tarea}</option>)}
+              </select>
+            </div>
+            <Input etiqueta="Código estado *" value={formEst.codigo_estado_tarea}
+              onChange={(e) => setFormEst({ ...formEst, codigo_estado_tarea: e.target.value })}
+              placeholder="PENDIENTE"
+              disabled={!!estEditando} />
+            <Input etiqueta="Nombre *" value={formEst.nombre_estado_tarea}
+              onChange={(e) => setFormEst({ ...formEst, nombre_estado_tarea: e.target.value })}
+              placeholder="Pendiente" />
+            <Input etiqueta="Descripción" value={formEst.descripcion_estado_tarea}
+              onChange={(e) => setFormEst({ ...formEst, descripcion_estado_tarea: e.target.value })}
+              placeholder="Descripción opcional" />
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Estado canónico *</label>
+              <select value={formEst.codigo_estado_canonico}
+                onChange={(e) => setFormEst({ ...formEst, codigo_estado_canonico: e.target.value })}
+                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
+                <option value="">Seleccionar estado canónico...</option>
+                {canonicosEst.map((c) => <option key={c.codigo_estado_canonico} value={c.codigo_estado_canonico}>{c.nombre_estado_canonico}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Orden</label>
+              <input type="number" min={0} value={formEst.orden}
+                onChange={(e) => setFormEst({ ...formEst, orden: parseInt(e.target.value) || 0 })}
+                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+            </div>
+          </>}
+          {tabModalEst === 'system_prompt' && estEditando && (
+            <TabPrompts tabla="estados_tarea" pkColumna="codigo_estado_tarea" pkValor={estEditando.codigo_estado_tarea}
+              campos={promptsEst} onCampoCambiado={(c, v) => setPromptsEst({ ...promptsEst, [c]: v })}
+              mostrarPrompt={false} mostrarSystemPrompt={true} mostrarPython={false} mostrarJavaScript={false} mostrarBotones={false} />
+          )}
+          {tabModalEst === 'programacion' && estEditando && (
+            <TabPrompts tabla="estados_tarea" pkColumna="codigo_estado_tarea" pkValor={estEditando.codigo_estado_tarea}
+              campos={promptsEst} onCampoCambiado={(c, v) => setPromptsEst({ ...promptsEst, [c]: v })}
+              mostrarPrompt={true} mostrarSystemPrompt={false} mostrarPython={true} mostrarJavaScript={false} />
+          )}
           {errorEst && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorEst}</p></div>}
           <PieBotonesModal
             editando={!!estEditando}

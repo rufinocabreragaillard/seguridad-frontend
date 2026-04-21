@@ -14,6 +14,7 @@ import { tareasApi } from '@/lib/api'
 import type { Tarea } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
 
 const selectClass =
   'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50'
@@ -38,9 +39,15 @@ type FormTarea = {
   prioridad: 'urgente' | 'alto' | 'medio' | 'bajo'
   fecha_esperada: string
   json: string
+  prompt: string | null
+  system_prompt: string | null
+  python: string | null
+  javascript: string | null
+  python_editado_manual: boolean
+  javascript_editado_manual: boolean
 }
 
-type TabTarea = 'datos' | 'json'
+type TabTarea = 'datos' | 'json' | 'system_prompt' | 'programacion'
 
 export default function PaginaTareasMantenedor() {
   const t = useTranslations('tareas')
@@ -74,17 +81,29 @@ export default function PaginaTareasMantenedor() {
         prioridad: f.prioridad,
         fecha_esperada: f.fecha_esperada || undefined,
         json: parsearJson(f.json),
+        prompt: f.prompt,
+        system_prompt: f.system_prompt,
+        python: f.python,
+        javascript: f.javascript,
+        python_editado_manual: f.python_editado_manual,
+        javascript_editado_manual: f.javascript_editado_manual,
       }) as Promise<Tarea>,
     eliminarFn: async (id) => { await tareasApi.eliminarTarea(Number(id)) },
     getId: (t) => String(t.id_tarea),
     camposBusqueda: (t) => [t.nombre_tarea, t.descripcion_tarea ?? '', t.codigo_categoria_tarea],
-    formInicial: { nombre_tarea: '', descripcion_tarea: '', prioridad: 'medio', fecha_esperada: '', json: '' },
+    formInicial: { nombre_tarea: '', descripcion_tarea: '', prioridad: 'medio', fecha_esperada: '', json: '', prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false },
     itemToForm: (t) => ({
       nombre_tarea: t.nombre_tarea,
       descripcion_tarea: t.descripcion_tarea ?? '',
       prioridad: t.prioridad,
       fecha_esperada: t.fecha_esperada ? t.fecha_esperada.substring(0, 10) : '',
       json: t.json == null ? '' : JSON.stringify(t.json, null, 2),
+      prompt: t.prompt ?? null,
+      system_prompt: t.system_prompt ?? null,
+      python: t.python ?? null,
+      javascript: t.javascript ?? null,
+      python_editado_manual: t.python_editado_manual ?? false,
+      javascript_editado_manual: t.javascript_editado_manual ?? false,
     }),
   })
 
@@ -178,10 +197,14 @@ export default function PaginaTareasMantenedor() {
         className="max-w-lg"
       >
         <div className="flex flex-col gap-4 min-w-[400px]">
-          <div className="flex gap-2 border-b border-borde -mt-2">
+          <div className="flex gap-1 border-b border-borde -mt-2">
             {([
               { key: 'datos' as TabTarea, label: 'Datos' },
               { key: 'json' as TabTarea, label: 'JSON' },
+              ...(crud.editando ? [
+                { key: 'system_prompt' as TabTarea, label: 'System Prompt' },
+                { key: 'programacion' as TabTarea, label: 'Programación' },
+              ] : []),
             ]).map((tb) => (
               <button
                 key={tb.key}
@@ -248,6 +271,35 @@ export default function PaginaTareasMantenedor() {
               />
               <p className="text-xs text-texto-muted">{t('descJson')}</p>
             </div>
+          )}
+
+          {tabModal === 'system_prompt' && crud.editando && (
+            <TabPrompts
+              tabla="tareas"
+              pkColumna="id_tarea"
+              pkValor={crud.editando.id_tarea}
+              campos={{ prompt: crud.form.prompt, system_prompt: crud.form.system_prompt, python: crud.form.python, javascript: crud.form.javascript, python_editado_manual: crud.form.python_editado_manual, javascript_editado_manual: crud.form.javascript_editado_manual }}
+              onCampoCambiado={(c, v) => crud.updateForm(c as keyof FormTarea, v)}
+              mostrarPrompt={false}
+              mostrarSystemPrompt={true}
+              mostrarPython={false}
+              mostrarJavaScript={false}
+              mostrarBotones={false}
+            />
+          )}
+
+          {tabModal === 'programacion' && crud.editando && (
+            <TabPrompts
+              tabla="tareas"
+              pkColumna="id_tarea"
+              pkValor={crud.editando.id_tarea}
+              campos={{ prompt: crud.form.prompt, system_prompt: crud.form.system_prompt, python: crud.form.python, javascript: crud.form.javascript, python_editado_manual: crud.form.python_editado_manual, javascript_editado_manual: crud.form.javascript_editado_manual }}
+              onCampoCambiado={(c, v) => crud.updateForm(c as keyof FormTarea, v)}
+              mostrarPrompt={true}
+              mostrarSystemPrompt={false}
+              mostrarPython={true}
+              mostrarJavaScript={false}
+            />
           )}
 
           {crud.error && (

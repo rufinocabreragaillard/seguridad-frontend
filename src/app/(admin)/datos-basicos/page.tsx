@@ -9,12 +9,15 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
 import { datosBasicosApi } from '@/lib/api'
 import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
 
 type TabId = 'categorias' | 'tipos'
+type TabModalCat = 'datos' | 'system_prompt' | 'programacion'
+type TabModalTipo = 'datos' | 'system_prompt' | 'programacion'
 
 export default function PaginaDatosBasicos() {
   const [tabActiva, setTabActiva] = useState<TabId>('categorias')
@@ -25,6 +28,8 @@ export default function PaginaDatosBasicos() {
   const [modalCat, setModalCat] = useState(false)
   const [catEditando, setCatEditando] = useState<CategoriaParametro | null>(null)
   const [formCat, setFormCat] = useState({ categoria_parametro: '', nombre: '', descripcion: '' })
+  const [promptsCat, setPromptsCat] = useState<CamposPrompt>({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [tabModalCat, setTabModalCat] = useState<TabModalCat>('datos')
   const [guardandoCat, setGuardandoCat] = useState(false)
   const [errorCat, setErrorCat] = useState('')
 
@@ -34,6 +39,8 @@ export default function PaginaDatosBasicos() {
   const [modalTipo, setModalTipo] = useState(false)
   const [tipoEditando, setTipoEditando] = useState<TipoParametro | null>(null)
   const [formTipo, setFormTipo] = useState({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '' })
+  const [promptsTipo, setPromptsTipo] = useState<CamposPrompt>({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [tabModalTipo, setTabModalTipo] = useState<TabModalTipo>('datos')
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
   const [filtroCat, setFiltroCat] = useState('')
@@ -64,6 +71,8 @@ export default function PaginaDatosBasicos() {
   const abrirNuevaCat = () => {
     setCatEditando(null)
     setFormCat({ categoria_parametro: '', nombre: '', descripcion: '' })
+    setPromptsCat({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+    setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
   }
@@ -71,6 +80,8 @@ export default function PaginaDatosBasicos() {
   const abrirEditarCat = (c: CategoriaParametro) => {
     setCatEditando(c)
     setFormCat({ categoria_parametro: c.categoria_parametro, nombre: c.nombre, descripcion: c.descripcion || '' })
+    setPromptsCat({ prompt: c.prompt ?? null, system_prompt: c.system_prompt ?? null, python: c.python ?? null, javascript: c.javascript ?? null, python_editado_manual: c.python_editado_manual ?? false, javascript_editado_manual: c.javascript_editado_manual ?? false })
+    setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
   }
@@ -87,6 +98,12 @@ export default function PaginaDatosBasicos() {
         await datosBasicosApi.actualizarCategoria(catEditando.categoria_parametro, {
           nombre: formCat.nombre,
           descripcion: formCat.descripcion || undefined,
+          prompt: promptsCat.prompt,
+          system_prompt: promptsCat.system_prompt,
+          python: promptsCat.python,
+          javascript: promptsCat.javascript,
+          python_editado_manual: promptsCat.python_editado_manual,
+          javascript_editado_manual: promptsCat.javascript_editado_manual,
         })
       } else {
         await datosBasicosApi.crearCategoria({
@@ -141,6 +158,8 @@ export default function PaginaDatosBasicos() {
   const abrirNuevoTipo = () => {
     setTipoEditando(null)
     setFormTipo({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '' })
+    setPromptsTipo({ prompt: null, system_prompt: null, python: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+    setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
   }
@@ -148,6 +167,8 @@ export default function PaginaDatosBasicos() {
   const abrirEditarTipo = (t: TipoParametro) => {
     setTipoEditando(t)
     setFormTipo({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, nombre: t.nombre, descripcion: t.descripcion || '' })
+    setPromptsTipo({ prompt: t.prompt ?? null, system_prompt: t.system_prompt ?? null, python: t.python ?? null, javascript: t.javascript ?? null, python_editado_manual: t.python_editado_manual ?? false, javascript_editado_manual: t.javascript_editado_manual ?? false })
+    setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
   }
@@ -164,7 +185,16 @@ export default function PaginaDatosBasicos() {
         await datosBasicosApi.actualizarTipo(
           tipoEditando.categoria_parametro,
           tipoEditando.tipo_parametro,
-          { nombre: formTipo.nombre, descripcion: formTipo.descripcion || undefined }
+          {
+            nombre: formTipo.nombre,
+            descripcion: formTipo.descripcion || undefined,
+            prompt: promptsTipo.prompt,
+            system_prompt: promptsTipo.system_prompt,
+            python: promptsTipo.python,
+            javascript: promptsTipo.javascript,
+            python_editado_manual: promptsTipo.python_editado_manual,
+            javascript_editado_manual: promptsTipo.javascript_editado_manual,
+          }
         )
       } else {
         await datosBasicosApi.crearTipo({
@@ -456,25 +486,49 @@ export default function PaginaDatosBasicos() {
         titulo={catEditando ? 'Editar categoría' : 'Nueva categoría'}
       >
         <div className="flex flex-col gap-4">
-          <Input
-            etiqueta="Código *"
-            value={formCat.categoria_parametro}
-            onChange={(e) => setFormCat({ ...formCat, categoria_parametro: e.target.value })}
-            disabled={!!catEditando}
-            placeholder="MENSAJERIA_EMAIL"
-          />
-          <Input
-            etiqueta="Nombre *"
-            value={formCat.nombre}
-            onChange={(e) => setFormCat({ ...formCat, nombre: e.target.value })}
-            placeholder="Mensajería por Email"
-          />
-          <Input
-            etiqueta="Descripción"
-            value={formCat.descripcion}
-            onChange={(e) => setFormCat({ ...formCat, descripcion: e.target.value })}
-            placeholder="Descripción opcional"
-          />
+          {/* Tabs */}
+          <div className="flex gap-1 border-b border-borde -mt-2">
+            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalCat(tab)}
+                className={`px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+              </button>
+            ))}
+          </div>
+
+          {tabModalCat === 'datos' && <>
+            <Input
+              etiqueta="Código *"
+              value={formCat.categoria_parametro}
+              onChange={(e) => setFormCat({ ...formCat, categoria_parametro: e.target.value })}
+              disabled={!!catEditando}
+              placeholder="MENSAJERIA_EMAIL"
+            />
+            <Input
+              etiqueta="Nombre *"
+              value={formCat.nombre}
+              onChange={(e) => setFormCat({ ...formCat, nombre: e.target.value })}
+              placeholder="Mensajería por Email"
+            />
+            <Input
+              etiqueta="Descripción"
+              value={formCat.descripcion}
+              onChange={(e) => setFormCat({ ...formCat, descripcion: e.target.value })}
+              placeholder="Descripción opcional"
+            />
+          </>}
+
+          {tabModalCat === 'system_prompt' && catEditando && (
+            <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
+              campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
+              mostrarPrompt={false} mostrarSystemPrompt={true} mostrarPython={false} mostrarJavaScript={false} mostrarBotones={false} />
+          )}
+
+          {tabModalCat === 'programacion' && catEditando && (
+            <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
+              campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
+              mostrarPrompt={true} mostrarSystemPrompt={false} mostrarPython={true} mostrarJavaScript={false} />
+          )}
 
           {errorCat && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
@@ -499,41 +553,65 @@ export default function PaginaDatosBasicos() {
         titulo={tipoEditando ? 'Editar tipo' : 'Nuevo tipo de parámetro'}
       >
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-texto">Categoría *</label>
-            <select
-              value={formTipo.categoria_parametro}
-              onChange={(e) => setFormTipo({ ...formTipo, categoria_parametro: e.target.value })}
-              disabled={!!tipoEditando}
-              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60"
-            >
-              <option value="">Seleccionar categoría...</option>
-              {categorias.filter((c) => c.activo).map((c) => (
-                <option key={c.categoria_parametro} value={c.categoria_parametro}>
-                  {c.nombre}
-                </option>
-              ))}
-            </select>
+          {/* Tabs */}
+          <div className="flex gap-1 border-b border-borde -mt-2">
+            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalTipo(tab)}
+                className={`px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+              </button>
+            ))}
           </div>
-          <Input
-            etiqueta="Código tipo *"
-            value={formTipo.tipo_parametro}
-            onChange={(e) => setFormTipo({ ...formTipo, tipo_parametro: e.target.value })}
-            disabled={!!tipoEditando}
-            placeholder="SMTP_HOST"
-          />
-          <Input
-            etiqueta="Nombre *"
-            value={formTipo.nombre}
-            onChange={(e) => setFormTipo({ ...formTipo, nombre: e.target.value })}
-            placeholder="Servidor SMTP"
-          />
-          <Input
-            etiqueta="Descripción"
-            value={formTipo.descripcion}
-            onChange={(e) => setFormTipo({ ...formTipo, descripcion: e.target.value })}
-            placeholder="Descripción opcional"
-          />
+
+          {tabModalTipo === 'datos' && <>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Categoría *</label>
+              <select
+                value={formTipo.categoria_parametro}
+                onChange={(e) => setFormTipo({ ...formTipo, categoria_parametro: e.target.value })}
+                disabled={!!tipoEditando}
+                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60"
+              >
+                <option value="">Seleccionar categoría...</option>
+                {categorias.filter((c) => c.activo).map((c) => (
+                  <option key={c.categoria_parametro} value={c.categoria_parametro}>
+                    {c.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <Input
+              etiqueta="Código tipo *"
+              value={formTipo.tipo_parametro}
+              onChange={(e) => setFormTipo({ ...formTipo, tipo_parametro: e.target.value })}
+              disabled={!!tipoEditando}
+              placeholder="SMTP_HOST"
+            />
+            <Input
+              etiqueta="Nombre *"
+              value={formTipo.nombre}
+              onChange={(e) => setFormTipo({ ...formTipo, nombre: e.target.value })}
+              placeholder="Servidor SMTP"
+            />
+            <Input
+              etiqueta="Descripción"
+              value={formTipo.descripcion}
+              onChange={(e) => setFormTipo({ ...formTipo, descripcion: e.target.value })}
+              placeholder="Descripción opcional"
+            />
+          </>}
+
+          {tabModalTipo === 'system_prompt' && tipoEditando && (
+            <TabPrompts tabla="tipos_parametro" pkColumna="tipo_parametro" pkValor={tipoEditando.tipo_parametro}
+              campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
+              mostrarPrompt={false} mostrarSystemPrompt={true} mostrarPython={false} mostrarJavaScript={false} mostrarBotones={false} />
+          )}
+
+          {tabModalTipo === 'programacion' && tipoEditando && (
+            <TabPrompts tabla="tipos_parametro" pkColumna="tipo_parametro" pkValor={tipoEditando.tipo_parametro}
+              campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
+              mostrarPrompt={true} mostrarSystemPrompt={false} mostrarPython={true} mostrarJavaScript={false} />
+          )}
 
           {errorTipo && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
