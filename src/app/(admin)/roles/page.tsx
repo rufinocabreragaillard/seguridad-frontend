@@ -304,7 +304,7 @@ export default function PaginaRoles() {
   // Listas filtradas: por orden cuando no hay búsqueda, por app+nombre cuando hay búsqueda
   const rolesFiltrados = roles
     .filter((r) => {
-      if (esUsuarioTest && normalizarTipo(r.tipo) === 'RESTRINGIDO') return false
+      if (esUsuarioTest && normalizarTipo(r.tipo) === 'SISTEMA') return false
       return r.nombre.toLowerCase().includes(busquedaRoles.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRoles.toLowerCase()) || (r.alias_de_rol || '').toLowerCase().includes(busquedaRoles.toLowerCase())
     })
     .sort(busquedaRoles ? compararPorAppYNombre : (a, b) => (a.orden ?? 0) - (b.orden ?? 0))
@@ -318,8 +318,8 @@ export default function PaginaRoles() {
     const sinAsignar = funciones.filter((f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
     if (!rolEditando) return sinAsignar
     const tipoRol = normalizarTipo(rolEditando.tipo)
-    if (tipoRol === 'RESTRINGIDO') return sinAsignar.filter((f) => normalizarTipo(f.tipo) === 'RESTRINGIDO')
-    if (tipoRol === 'ADMINISTRADOR') return sinAsignar.filter((f) => normalizarTipo(f.tipo) !== 'RESTRINGIDO')
+    if (tipoRol === 'SISTEMA') return sinAsignar.filter((f) => normalizarTipo(f.tipo) === 'SISTEMA')
+    if (tipoRol === 'ADMINISTRADOR') return sinAsignar.filter((f) => normalizarTipo(f.tipo) !== 'SISTEMA')
     if (tipoRol === 'USUARIO') return sinAsignar.filter((f) => normalizarTipo(f.tipo) === 'USUARIO')
     return sinAsignar
   })()
@@ -712,7 +712,7 @@ export default function PaginaRoles() {
                       onChange={(e) => setFormRol({ ...formRol, tipo: e.target.value as TipoElemento })}
                       className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
                     >
-                      <option value="RESTRINGIDO">Restringido</option>
+                      <option value="SISTEMA">Sistema</option>
                       <option value="USUARIO">Usuario</option>
                       <option value="ADMINISTRACION">Administración</option>
                     </select>
@@ -762,8 +762,8 @@ export default function PaginaRoles() {
               {/* Aviso filtro por tipo de rol */}
               {(() => {
                 const tipoRol = normalizarTipo(rolEditando.tipo)
-                if (tipoRol === 'RESTRINGIDO') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo funciones de tipo <strong>Restringido</strong> pueden asignarse a este rol.</div>
-                if (tipoRol === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Funciones de tipo <strong>Restringido</strong> no pueden asignarse a roles de Administración.</div>
+                if (tipoRol === 'SISTEMA') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo funciones de tipo <strong>Sistema</strong> pueden asignarse a este rol.</div>
+                if (tipoRol === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Funciones de tipo <strong>Sistema</strong> no pueden asignarse a roles de Administración.</div>
                 if (tipoRol === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo funciones de tipo <strong>Usuario</strong> pueden asignarse a este rol.</div>
                 return null
               })()}

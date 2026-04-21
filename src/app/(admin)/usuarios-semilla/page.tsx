@@ -476,7 +476,7 @@ export default function PaginaUsuariosSemilla() {
   }, [form.aplicacion_por_defecto, appsGrupo, aplicaciones, dropdownAppFormAbierto])
 
   // Roles disponibles para asignar (en el grupo del formulario)
-  // Grupo RESTRINGIDO → solo roles RESTRINGIDO; Grupo NORMAL → solo roles NORMAL
+  // Grupo SISTEMA → solo roles SISTEMA; Grupo NORMAL → solo roles NORMAL
   const grupoForm = form.grupo_por_defecto
   const mapaAppNombre = Object.fromEntries(aplicaciones.map((a) => [a.codigo_aplicacion, a.nombre]))
   const tipoGrupoForm = normalizarTipo(grupos.find((g) => g.codigo_grupo === grupoForm)?.tipo)
@@ -486,8 +486,8 @@ export default function PaginaUsuariosSemilla() {
       if (!(r.codigo_grupo === grupoForm || r.codigo_grupo == null)) return false
       if (rolesUsuario.some((ra) => ra.codigo_grupo === grupoForm && ra.id_rol === r.id_rol)) return false
       const tipoRol = normalizarTipo(r.tipo)
-      if (tipoUsuarioSemilla === 'RESTRINGIDO') return tipoRol === 'RESTRINGIDO'
-      if (tipoUsuarioSemilla === 'ADMINISTRADOR') return tipoRol !== 'RESTRINGIDO'
+      if (tipoUsuarioSemilla === 'SISTEMA') return tipoRol === 'SISTEMA'
+      if (tipoUsuarioSemilla === 'ADMINISTRADOR') return tipoRol !== 'SISTEMA'
       if (tipoUsuarioSemilla === 'USUARIO') return tipoRol === 'USUARIO'
       return true
     })
@@ -843,7 +843,7 @@ export default function PaginaUsuariosSemilla() {
                             ...(appsGrupo.length > 0 ? appsGrupo : aplicaciones).filter((a) => {
                               const at = normalizarTipo(a.tipo)
                               if (at === tipoGrupoForm) return true
-                              if ((tipoGrupoForm === 'RESTRINGIDO' || tipoGrupoForm === 'ADMINISTRADOR') && at === 'USUARIO') return true
+                              if ((tipoGrupoForm === 'SISTEMA' || tipoGrupoForm === 'ADMINISTRADOR') && at === 'USUARIO') return true
                               return false
                             })]
                             .filter((a) => !a.codigo_aplicacion || !busquedaAppForm || a.nombre.toLowerCase().includes(busquedaAppForm.toLowerCase()))
@@ -911,8 +911,8 @@ export default function PaginaUsuariosSemilla() {
               ) : (
                 <>
                   {(() => {
-                    if (tipoUsuarioSemilla === 'RESTRINGIDO') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo roles de tipo <strong>Restringido</strong> pueden asignarse a este usuario.</div>
-                    if (tipoUsuarioSemilla === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Roles de tipo <strong>Restringido</strong> no pueden asignarse a usuarios de Administración.</div>
+                    if (tipoUsuarioSemilla === 'SISTEMA') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo roles de tipo <strong>Sistema</strong> pueden asignarse a este usuario.</div>
+                    if (tipoUsuarioSemilla === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Roles de tipo <strong>Sistema</strong> no pueden asignarse a usuarios de Administración.</div>
                     if (tipoUsuarioSemilla === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo roles de tipo <strong>Usuario</strong> pueden asignarse a este usuario.</div>
                     return null
                   })()}

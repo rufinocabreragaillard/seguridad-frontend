@@ -9,7 +9,7 @@ export interface Grupo {
   codigo_grupo: string
   nombre: string
   descripcion?: string
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'RESTRINGIDO'
+  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
   prompt?: string | null
   system_prompt?: string | null
 }
@@ -51,7 +51,7 @@ export interface UsuarioContexto {
   alias?: string | null
   locale?: string          // Locale preferido (es, en, fr-CA, etc.)
   activo: boolean
-  tipo?: 'ADMINISTRADOR' | 'USUARIO' | 'TEST' | 'RESTRINGIDO' | null
+  tipo?: 'ADMINISTRADOR' | 'USUARIO' | 'TEST' | 'SISTEMA' | null
   grupo_activo: string
   nombre_grupo?: string
   grupos: GrupoResumen[]
@@ -119,7 +119,7 @@ export interface Usuario {
   nombre: string
   alias?: string
   locale?: string          // Locale preferido (es, en, fr-CA, etc.)
-  tipo?: 'ADMINISTRADOR' | 'USUARIO' | 'TEST' | 'RESTRINGIDO' | null
+  tipo?: 'ADMINISTRADOR' | 'USUARIO' | 'TEST' | 'SISTEMA' | null
   telefono?: string
   fono_verificado?: boolean
   descripcion?: string
@@ -171,9 +171,13 @@ export interface Rol {
   funcion_por_defecto?: string
   codigo_aplicacion_origen?: string | null  // FK a aplicaciones, agrupa para ordenar/filtrar
   orden?: number
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'RESTRINGIDO'
+  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
   prompt?: string | null
   system_prompt?: string | null
+  python?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
   inicial?: boolean
   inicial_admin_grupo?: boolean
   inicial_admin_general?: boolean
@@ -188,7 +192,7 @@ export interface Funcion {
   alias_de_funcion?: string
   icono_de_funcion?: string
   codigo_aplicacion_origen?: string | null  // FK a aplicaciones, agrupa para ordenar/filtrar
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'RESTRINGIDO'
+  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
   id_modelo?: number | null  // FK a registro_llm. NULL = sin LLM
   prompt?: string | null
   system_prompt?: string | null  // instrucciones extra al LLM
@@ -234,7 +238,7 @@ export interface Aplicacion {
   nombre: string
   alias?: string | null
   descripcion?: string
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'RESTRINGIDO'
+  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
   sidebar_ancho?: boolean
   orden?: number
   prompt?: string | null
@@ -267,6 +271,12 @@ export interface CategoriaParametro {
   descripcion?: string
   activo: boolean
   fecha_creacion?: string
+  prompt?: string | null
+  system_prompt?: string | null
+  python?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
 }
 
 export interface TipoParametro {
@@ -277,6 +287,12 @@ export interface TipoParametro {
   activo: boolean
   fecha_creacion?: string
   categorias_parametro?: { nombre: string }
+  prompt?: string | null
+  system_prompt?: string | null
+  python?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
 }
 
 // ─── Auditoría ───────────────────────────────────────────────────────────────
@@ -315,6 +331,12 @@ export interface CategoriaTarea {
   nombre_categoria_tarea: string
   descripcion_categoria_tarea?: string
   activo: boolean
+  prompt?: string | null
+  system_prompt?: string | null
+  python?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
 }
 
 export interface TipoCanonicoTarea {
@@ -340,6 +362,12 @@ export interface TipoTarea {
   nombre_tipo_tarea: string
   descripcion_tipo_tarea?: string
   activo: boolean
+  prompt?: string | null
+  system_prompt?: string | null
+  python?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
 }
 
 export interface EstadoConversacion {
@@ -410,6 +438,12 @@ export interface EstadoTarea {
   codigo_estado_canonico: string
   orden: number
   activo: boolean
+  prompt?: string | null
+  system_prompt?: string | null
+  python?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
 }
 
 // ─── Tareas: Operación ──────────────────────────────────────────────────────
@@ -477,6 +511,12 @@ export interface Tarea {
   fecha_esperada?: string
   fecha_cierre?: string
   json?: unknown | null
+  prompt?: string | null
+  system_prompt?: string | null
+  python?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
 }
 
 // ─── Documentos ─────────────────────────────────────────────────────────────

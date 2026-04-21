@@ -368,7 +368,7 @@ export default function PaginaGrupos() {
 
   // ── Funciones Tab Borrar Grupo ──
   const gruposBorrarFiltrados = grupos
-    .filter((g) => g.tipo !== 'RESTRINGIDO' && g.codigo_grupo !== 'ADMIN')
+    .filter((g) => g.tipo !== 'SISTEMA' && g.codigo_grupo !== 'ADMIN')
     .filter((g) =>
       busquedaBorrar.length === 0 ||
       g.nombre.toLowerCase().includes(busquedaBorrar.toLowerCase()) ||
@@ -534,7 +534,7 @@ export default function PaginaGrupos() {
                         <p className="text-xs text-texto-muted mt-0.5">Codigo: {grupoSeleccionado.codigo_grupo}</p>
                       </div>
                       <div className="flex items-center gap-2">
-                        {esSuperAdmin && grupoSeleccionado.tipo !== 'RESTRINGIDO' && grupoSeleccionado.codigo_grupo !== 'ADMIN' && (
+                        {esSuperAdmin && grupoSeleccionado.tipo !== 'SISTEMA' && grupoSeleccionado.codigo_grupo !== 'ADMIN' && (
                           <Boton
                             variante="peligro"
                             tamano="sm"
@@ -899,7 +899,7 @@ export default function PaginaGrupos() {
                 <p className="font-semibold">Zona de peligro</p>
                 <p className="mt-1">
                   Al borrar un grupo se eliminan en cascada todas sus entidades, documentos vectorizados,
-                  parámetros de configuración, roles y usuarios asociados. Los grupos de tipo RESTRINGIDO
+                  parámetros de configuración, roles y usuarios asociados. Los grupos de tipo SISTEMA
                   y el grupo ADMIN no pueden ser eliminados.
                 </p>
               </div>

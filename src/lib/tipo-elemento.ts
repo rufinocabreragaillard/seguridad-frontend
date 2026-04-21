@@ -1,35 +1,35 @@
 // ─── Tipo de elemento (aplicaciones, funciones, roles, grupos, procesos, tareas) ──
-// BD enum: USUARIO | ADMINISTRADOR | TEST | RESTRINGIDO
+// BD enum: USUARIO | ADMINISTRADOR | TEST | SISTEMA
 // (Constraint CHECK real en tablas `aplicaciones`, `funciones`, `roles`, `grupos_entidades`,
-//  `usuarios`, `procesos`, `procesos_grupo`, `tareas_grupo` — las tablas _grupo no permiten RESTRINGIDO).
+//  `usuarios`, `procesos`, `procesos_grupo`, `tareas_grupo` — las tablas _grupo no permiten SISTEMA).
 
-export type TipoElemento = 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'RESTRINGIDO'
+export type TipoElemento = 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
 
 export type VarianteInsigniaTipo = 'primario' | 'exito' | 'error' | 'advertencia' | 'neutro' | 'secundario'
 
-export const TIPOS_ELEMENTO: TipoElemento[] = ['USUARIO', 'ADMINISTRADOR', 'TEST', 'RESTRINGIDO']
+export const TIPOS_ELEMENTO: TipoElemento[] = ['USUARIO', 'ADMINISTRADOR', 'TEST', 'SISTEMA']
 
-export const TIPOS_ELEMENTO_SIN_RESTRINGIDO: TipoElemento[] = ['USUARIO', 'ADMINISTRADOR', 'TEST']
+export const TIPOS_ELEMENTO_SIN_SISTEMA: TipoElemento[] = ['USUARIO', 'ADMINISTRADOR', 'TEST']
 
 export const ETIQUETA_TIPO: Record<TipoElemento, string> = {
   USUARIO: 'Usuario',
   ADMINISTRADOR: 'Administración',
   TEST: 'Test',
-  RESTRINGIDO: 'Restringido',
+  SISTEMA: 'Sistema',
 }
 
 export const DESCRIPCION_TIPO: Record<TipoElemento, string> = {
   USUARIO: 'Usuario — disponible para cualquier rol de usuario final',
   ADMINISTRADOR: 'Administración — solo administradores de grupo',
   TEST: 'Test — entornos de prueba',
-  RESTRINGIDO: 'Restringido — solo super-admin puede asignar',
+  SISTEMA: 'Sistema — solo super-admin puede asignar',
 }
 
 export const VARIANTE_TIPO: Record<TipoElemento, VarianteInsigniaTipo> = {
   USUARIO: 'exito',
   ADMINISTRADOR: 'advertencia',
   TEST: 'neutro',
-  RESTRINGIDO: 'error',
+  SISTEMA: 'error',
 }
 
 export function normalizarTipo(tipo?: string | null): TipoElemento {
@@ -49,5 +49,5 @@ export function varianteTipo(tipo?: string | null): VarianteInsigniaTipo {
 
 export function esTipoSensible(tipo?: string | null): boolean {
   const t = normalizarTipo(tipo)
-  return t === 'RESTRINGIDO' || t === 'ADMINISTRADOR'
+  return t === 'SISTEMA' || t === 'ADMINISTRADOR'
 }

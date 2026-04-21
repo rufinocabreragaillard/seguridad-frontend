@@ -18,9 +18,9 @@ export default function CambiarGrupoPage() {
   const [error, setError] = useState<string | null>(null)
   const [abierto, setAbierto] = useState(false)
 
-  // Solo accesible para usuarios tipo RESTRINGIDO
+  // Solo accesible para usuarios tipo SISTEMA
   useEffect(() => {
-    if (usuario && usuario.tipo !== 'RESTRINGIDO') {
+    if (usuario && usuario.tipo !== 'SISTEMA') {
       router.replace('/dashboard')
     }
   }, [usuario, router])

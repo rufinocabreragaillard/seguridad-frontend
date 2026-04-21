@@ -129,7 +129,7 @@ export default function PaginaUsuarios() {
 
   // Apps disponibles para el grupo del usuario editado
   const [appsGrupoUsuario, setAppsGrupoUsuario] = useState<Aplicacion[]>([])
-  // Catálogo de apps del grupo activo del admin (para detectar RESTRINGIDA al asignar roles)
+  // Catálogo de apps del grupo activo del admin (para detectar tipo SISTEMA al asignar roles)
   const [catalogoApps, setCatalogoApps] = useState<Aplicacion[]>([])
   // Catálogo de grupos (para detectar tipo del grupo activo al filtrar roles)
   const [catalogoGrupos, setCatalogoGrupos] = useState<Grupo[]>([])
@@ -441,7 +441,7 @@ export default function PaginaUsuarios() {
   // Roles disponibles para asignar al usuario en el grupo activo:
   // - Roles del grupo activo + roles globales (codigo_grupo NULL)
   // - Excluyendo los que ya tiene asignados en el grupo activo
-  // - Grupo RESTRINGIDO → solo roles RESTRINGIDO; Grupo NORMAL → solo roles NORMAL
+  // - Grupo SISTEMA → solo roles SISTEMA; Grupo NORMAL → solo roles NORMAL
   const ROLES_PROTEGIDOS = new Set(['SEG_ADMIN_GRUPO', 'ADMIN'])
   const esSuperAdmin = (usuarioActual?.grupos || []).some((g) => g.codigo_grupo === 'ADMIN')
   const mapaAppNombre = Object.fromEntries(catalogoApps.map((a) => [a.codigo_aplicacion, a.nombre]))
@@ -452,8 +452,8 @@ export default function PaginaUsuarios() {
       if (!(r.codigo_grupo === grupoActivo || r.codigo_grupo == null)) return false
       if (rolesUsuario.some((ra) => ra.codigo_grupo === grupoActivo && ra.id_rol === r.id_rol)) return false
       const tipoRol = normalizarTipo(r.tipo)
-      if (tipoUsuarioEditando === 'RESTRINGIDO') return tipoRol === 'RESTRINGIDO'
-      if (tipoUsuarioEditando === 'ADMINISTRADOR') return tipoRol !== 'RESTRINGIDO'
+      if (tipoUsuarioEditando === 'SISTEMA') return tipoRol === 'SISTEMA'
+      if (tipoUsuarioEditando === 'ADMINISTRADOR') return tipoRol !== 'SISTEMA'
       if (tipoUsuarioEditando === 'USUARIO') return tipoRol === 'USUARIO'
       return true
     })
@@ -1030,8 +1030,8 @@ export default function PaginaUsuarios() {
               ) : (
                 <>
                 {(() => {
-                  if (tipoUsuarioEditando === 'RESTRINGIDO') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo roles de tipo <strong>Restringido</strong> pueden asignarse a este usuario.</div>
-                  if (tipoUsuarioEditando === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Roles de tipo <strong>Restringido</strong> no pueden asignarse a usuarios de Administración.</div>
+                  if (tipoUsuarioEditando === 'SISTEMA') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo roles de tipo <strong>Sistema</strong> pueden asignarse a este usuario.</div>
+                  if (tipoUsuarioEditando === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Roles de tipo <strong>Sistema</strong> no pueden asignarse a usuarios de Administración.</div>
                   if (tipoUsuarioEditando === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo roles de tipo <strong>Usuario</strong> pueden asignarse a este usuario.</div>
                   return null
                 })()}

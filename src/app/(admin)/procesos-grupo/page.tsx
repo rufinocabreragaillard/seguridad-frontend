@@ -16,7 +16,7 @@ import type { ProcesoGrupo } from '@/lib/api'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import {
-  TIPOS_ELEMENTO_SIN_RESTRINGIDO,
+  TIPOS_ELEMENTO_SIN_SISTEMA,
   etiquetaTipo,
   varianteTipo,
 } from '@/lib/tipo-elemento'
@@ -186,7 +186,7 @@ export default function PaginaProcesosGrupo() {
               value={crud.form.tipo}
               onChange={(e) => crud.updateForm('tipo', e.target.value)}
             >
-              {TIPOS_ELEMENTO_SIN_RESTRINGIDO.map((tp) => (
+              {TIPOS_ELEMENTO_SIN_SISTEMA.map((tp) => (
                 <option key={tp} value={tp}>{etiquetaTipo(tp)}</option>
               ))}
             </select>
