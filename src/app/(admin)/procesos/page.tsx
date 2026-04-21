@@ -20,6 +20,7 @@ import type { Funcion } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TIPOS_ELEMENTO, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
+import { TabPrompts } from '@/components/ui/tab-prompts'
 
 const selectClass =
   'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50'
@@ -30,12 +31,21 @@ type FormProceso = {
   tipo: string
   n_parallel: number
   codigo_funcion: string
+  prompt: string
+  system_prompt: string
+  python: string
+  javascript: string
+  python_editado_manual: boolean
+  javascript_editado_manual: boolean
 }
+
+type TabProceso = 'datos' | 'prompts'
 
 export default function PaginaProcesos() {
   const t = useTranslations('procesos')
 
   const [funciones, setFunciones] = useState<Funcion[]>([])
+  const [tabModal, setTabModal] = useState<TabProceso>('datos')
 
   useEffect(() => {
     funcionesApi.listar().then(setFunciones).catch(() => setFunciones([]))
@@ -50,19 +60,31 @@ export default function PaginaProcesos() {
         n_parallel: f.n_parallel,
         tipo: f.tipo,
         codigo_funcion: f.codigo_funcion ? f.codigo_funcion : null,
-      })
+        prompt: f.prompt || undefined,
+        system_prompt: f.system_prompt || undefined,
+        python: f.python || undefined,
+        javascript: f.javascript || undefined,
+        python_editado_manual: f.python_editado_manual,
+        javascript_editado_manual: f.javascript_editado_manual,
+      } as Record<string, unknown>)
       invalidarCatalogo('procesosDocs')
       return r
     },
     getId: (p) => p.codigo_proceso,
     camposBusqueda: (p) => [p.codigo_proceso, p.nombre_proceso, p.tipo, p.codigo_funcion ?? ''],
-    formInicial: { nombre_proceso: '', descripcion: '', tipo: 'USUARIO', n_parallel: 1, codigo_funcion: '' },
+    formInicial: { nombre_proceso: '', descripcion: '', tipo: 'USUARIO', n_parallel: 1, codigo_funcion: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false },
     itemToForm: (p) => ({
       nombre_proceso: p.nombre_proceso,
       descripcion: p.descripcion ?? '',
       tipo: p.tipo ?? 'USUARIO',
       n_parallel: p.n_parallel,
       codigo_funcion: p.codigo_funcion ?? '',
+      prompt: (p as unknown as Record<string, unknown>).prompt as string ?? '',
+      system_prompt: (p as unknown as Record<string, unknown>).system_prompt as string ?? '',
+      python: (p as unknown as Record<string, unknown>).python as string ?? '',
+      javascript: (p as unknown as Record<string, unknown>).javascript as string ?? '',
+      python_editado_manual: ((p as unknown as Record<string, unknown>).python_editado_manual as boolean) ?? false,
+      javascript_editado_manual: ((p as unknown as Record<string, unknown>).javascript_editado_manual as boolean) ?? false,
     }),
   })
 
@@ -157,6 +179,22 @@ export default function PaginaProcesos() {
       >
         <div className="flex flex-col gap-4 min-w-[400px]">
           {crud.editando && (
+            <div className="flex gap-2 border-b border-borde -mt-2">
+              {([
+                { key: 'datos' as TabProceso, label: 'Datos' },
+                { key: 'prompts' as TabProceso, label: 'Prompts' },
+              ]).map((tb) => (
+                <button
+                  key={tb.key}
+                  onClick={() => setTabModal(tb.key)}
+                  className={`px-3 py-2 text-sm border-b-2 ${tabModal === tb.key ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}
+                >
+                  {tb.label}
+                </button>
+              ))}
+            </div>
+          )}
+          {(tabModal === 'datos' || !crud.editando) && crud.editando && (
             <Input
               etiqueta={t('etiquetaCodigo')}
               value={crud.editando.codigo_proceso}
@@ -165,23 +203,40 @@ export default function PaginaProcesos() {
             />
           )}
 
-          <Input
+          {tabModal === 'datos' && <Input
             etiqueta={t('etiquetaNombre')}
             value={crud.form.nombre_proceso}
             onChange={(e) => crud.updateForm('nombre_proceso', e.target.value)}
             placeholder={t('placeholderNombre')}
             autoFocus
-          />
+          />}
 
-          <Textarea
+          {tabModal === 'datos' && <Textarea
             etiqueta={t('etiquetaDescripcion')}
             value={crud.form.descripcion}
             onChange={(e) => crud.updateForm('descripcion', e.target.value)}
             placeholder={t('placeholderDescripcion')}
             rows={3}
-          />
+          />}
 
-          <div className="flex flex-col gap-1">
+          {tabModal === 'prompts' && crud.editando && (
+            <TabPrompts
+              tabla="procesos"
+              pkColumna="codigo_proceso"
+              pkValor={crud.editando.codigo_proceso}
+              campos={{
+                prompt: crud.form.prompt,
+                system_prompt: crud.form.system_prompt,
+                python: crud.form.python,
+                javascript: crud.form.javascript,
+                python_editado_manual: crud.form.python_editado_manual,
+                javascript_editado_manual: crud.form.javascript_editado_manual,
+              }}
+              onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
+            />
+          )}
+
+          {tabModal === 'datos' && <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-texto">{t('etiquetaFuncion')}</label>
             <select
               className={selectClass}
@@ -196,9 +251,9 @@ export default function PaginaProcesos() {
               ))}
             </select>
             <p className="text-xs text-texto-muted">{t('descFuncion')}</p>
-          </div>
+          </div>}
 
-          <div className="flex flex-col gap-1">
+          {tabModal === 'datos' && <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-texto">{t('etiquetaTipo')}</label>
             <select
               className={selectClass}
@@ -211,15 +266,15 @@ export default function PaginaProcesos() {
                 </option>
               ))}
             </select>
-          </div>
+          </div>}
 
-          <Input
+          {tabModal === 'datos' && <Input
             etiqueta={t('etiquetaParalelo')}
             type="number"
             value={String(crud.form.n_parallel)}
             onChange={(e) => crud.updateForm('n_parallel', Number(e.target.value))}
             placeholder="1"
-          />
+          />}
 
           {crud.error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">

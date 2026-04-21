@@ -653,7 +653,7 @@ export default function PaginaProcesosDatosBasicos() {
             </div>
           </div>
 
-          {!filtroCatTipo ? (
+          {!filtroCategoria ? (
             <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
               Selecciona una categoría para ver sus tipos de proceso
             </div>

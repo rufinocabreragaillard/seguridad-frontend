@@ -23,6 +23,7 @@ import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle,
 import { abrirDocumento } from '@/lib/abrir-documento'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
+import { TabRevertir } from './_components/tab-revertir'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import { BotonChat } from '@/components/ui/boton-chat'
 
@@ -128,6 +129,7 @@ function PaginaProcesarDocumentosInterna() {
   const estadoDesdeUrl = searchParams.get('estado')
 
   // Tabs
+  const [tabPrincipal, setTabPrincipal] = useState<'procesar' | 'revertir'>('procesar')
   const [modoPipeline, setModoPipeline] = useState<'paso-a-paso' | 'todo'>('paso-a-paso')
 
   // Config
@@ -611,6 +613,31 @@ function PaginaProcesarDocumentosInterna() {
 
   const abrirDocumentoLocal = (d: Documento) => abrirDocumento(d.ubicacion_documento)
 
+  // Resuelve un Documento completo a partir de un ItemCola — busca en la lista
+  // cargada; si no está, construye el mínimo viable para abrir el modal de
+  // detalle (la carga de características/cola se hace vía API por código).
+  const docDesdeCola = useCallback((c: ItemCola): Documento => {
+    const existente = documentos.find((x) => x.codigo_documento === c.codigo_documento)
+    if (existente) return existente
+    return {
+      codigo_documento: c.codigo_documento,
+      codigo_grupo: grupoActivo || '',
+      nombre_documento: c.nombre_documento,
+      ubicacion_documento: c.ubicacion_documento ?? null,
+      activo: true,
+    } as Documento
+  }, [documentos, grupoActivo])
+
+  const abrirDetalleDesdeCola = useCallback((c: ItemCola) => {
+    abrirDetalle(docDesdeCola(c))
+  }, [abrirDetalle, docDesdeCola])
+
+  const abrirArchivoDesdeCola = (c: ItemCola) => {
+    const doc = documentos.find((x) => x.codigo_documento === c.codigo_documento)
+    const ubic = doc?.ubicacion_documento ?? c.ubicacion_documento
+    if (ubic) abrirDocumento(ubic)
+  }
+
   const ejecutarEliminarDoc = async () => {
     if (!confirmEliminarDoc) return
     setEliminandoDoc(true)
@@ -866,7 +893,7 @@ function PaginaProcesarDocumentosInterna() {
       setEjecutando(false)
       return
     }
-    const estadoDestino = pasoActual.estado_destino
+    const estadoDestino = pasoActual.estado_destino ?? ''
 
     // 1. Encolar docs en la tabla:
     //    - Con selección: encola solo los seleccionados (comportamiento original)
@@ -1015,12 +1042,33 @@ function PaginaProcesarDocumentosInterna() {
 
   return (
     <div className="relative flex flex-col gap-6 w-full overflow-x-hidden">
-      <BotonChat className="top-0 right-0" />
       <div className="pr-28">
         <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        {tabPrincipal === 'procesar' && (
+          <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        )}
       </div>
 
+      {/* Lengüetas Procesar / Revertir */}
+      <div className="flex gap-1 border-b border-borde -mt-2">
+        <button
+          onClick={() => setTabPrincipal('procesar')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'procesar' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+        >
+          Procesar
+        </button>
+        <button
+          onClick={() => setTabPrincipal('revertir')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'revertir' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+        >
+          Revertir
+        </button>
+      </div>
+
+      {tabPrincipal === 'revertir' && <TabRevertir />}
+
+      {tabPrincipal === 'procesar' && (<>
+      <BotonChat className="top-0 right-0" />
       {/* Selector de modo: Paso a Paso / Pipeline Completo */}
       <div className="flex gap-2">
         <Boton variante={modoPipeline === 'paso-a-paso' ? 'primario' : 'contorno'} onClick={() => setModoPipeline('paso-a-paso')}>
@@ -1373,10 +1421,14 @@ function PaginaProcesarDocumentosInterna() {
                     <span title="Modelo de lenguaje (LLM) usado para procesar el documento">LLM</span>
                   </TablaTh>
                   <TablaTh className="w-24">{t('colTiempo')}</TablaTh>
+                  <TablaTh className="w-24 text-right">{tc('acciones')}</TablaTh>
                 </tr>
               </TablaCabecera>
               <TablaCuerpo>
-                {visibles.map((c) => (
+                {visibles.map((c) => {
+                  const ubic = documentos.find((x) => x.codigo_documento === c.codigo_documento)?.ubicacion_documento ?? c.ubicacion_documento
+                  const esUrl = !!ubic && /^https?:\/\//i.test(ubic)
+                  return (
                   <TablaFila key={c.id_cola} className={c.estado_cola === 'COMPLETADO' ? 'bg-green-50/50' : c.estado_cola === 'ERROR' ? 'bg-red-50/50' : ''}>
                     <TablaTd>{iconoEstado(c.estado_cola)}</TablaTd>
                     <TablaTd>
@@ -1392,8 +1444,35 @@ function PaginaProcesarDocumentosInterna() {
                     </TablaTd>
                     <TablaTd className="text-xs text-texto-muted font-mono truncate">{c.modelo_usado || '—'}</TablaTd>
                     <TablaTd className="text-xs text-texto-muted tabular-nums">{c.tiempo_ms ? `${(c.tiempo_ms / 1000).toFixed(1)}s` : '—'}</TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        {ubic && esUrl && (
+                          <LinkAccion
+                            tooltip="Abrir URL"
+                            href={ubic}
+                            className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                            <ExternalLink size={15} />
+                          </LinkAccion>
+                        )}
+                        {ubic && !esUrl && (
+                          <BotonAccion
+                            tooltip="Abrir archivo"
+                            onClick={() => abrirArchivoDesdeCola(c)}
+                            className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                            <FileText size={15} />
+                          </BotonAccion>
+                        )}
+                        <BotonAccion
+                          tooltip="Ver detalle"
+                          onClick={() => abrirDetalleDesdeCola(c)}
+                          className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                          <Eye size={15} />
+                        </BotonAccion>
+                      </div>
+                    </TablaTd>
                   </TablaFila>
-                ))}
+                  )
+                })}
               </TablaCuerpo>
             </Tabla>
           </>
@@ -2028,6 +2107,7 @@ function PaginaProcesarDocumentosInterna() {
           </div>
         )}
       </Modal>
+    </>)}
     </>)}
     </div>
   )
