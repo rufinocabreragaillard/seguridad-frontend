@@ -11,7 +11,6 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { TabPrompts } from '@/components/ui/tab-prompts'
 import { categoriasCaractPersApi, rolesApi } from '@/lib/api'
 import type { CategoriaCaractPers, TipoCaractPers, RolCaractPers, Rol } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -32,12 +31,10 @@ export default function PaginaCategoriasCaracteristica() {
   const [cargandoCat, setCargandoCat] = useState(true)
   const [busquedaCat, setBusquedaCat] = useState('')
   const [modalCat, setModalCat] = useState(false)
-  const [tabModalCat, setTabModalCat] = useState<'datos' | 'prompts'>('datos')
   const [catEditando, setCatEditando] = useState<CategoriaCaractPers | null>(null)
   const [formCat, setFormCat] = useState({
     codigo_cat_pers: '', nombre_cat_pers: '', descripcion_cat_pers: '',
     es_unica_pers: false, editable_en_detalle_pers: true,
-    prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
   const [guardandoCat, setGuardandoCat] = useState(false)
   const [errorCat, setErrorCat] = useState('')
@@ -122,29 +119,20 @@ export default function PaginaCategoriasCaracteristica() {
   // ── CRUD Categorías ───────────────────────────────────────────────────────
   const abrirNuevaCat = () => {
     setCatEditando(null)
-    setFormCat({ codigo_cat_pers: '', nombre_cat_pers: '', descripcion_cat_pers: '', es_unica_pers: false, editable_en_detalle_pers: true, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
-    setTabModalCat('datos')
+    setFormCat({ codigo_cat_pers: '', nombre_cat_pers: '', descripcion_cat_pers: '', es_unica_pers: false, editable_en_detalle_pers: true })
     setErrorCat('')
     setModalCat(true)
   }
 
   const abrirEditarCat = (c: CategoriaCaractPers) => {
     setCatEditando(c)
-    const c2 = c as unknown as Record<string, unknown>
     setFormCat({
       codigo_cat_pers: c.codigo_cat_pers,
       nombre_cat_pers: c.nombre_cat_pers,
       descripcion_cat_pers: c.descripcion_cat_pers || '',
       es_unica_pers: c.es_unica_pers,
       editable_en_detalle_pers: c.editable_en_detalle_pers,
-      prompt: c2.prompt as string || '',
-      system_prompt: c2.system_prompt as string || '',
-      python: c2.python as string || '',
-      javascript: c2.javascript as string || '',
-      python_editado_manual: c2.python_editado_manual as boolean || false,
-      javascript_editado_manual: c2.javascript_editado_manual as boolean || false,
     })
-    setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
   }
@@ -162,13 +150,7 @@ export default function PaginaCategoriasCaracteristica() {
           descripcion_cat_pers: formCat.descripcion_cat_pers || undefined,
           es_unica_pers: formCat.es_unica_pers,
           editable_en_detalle_pers: formCat.editable_en_detalle_pers,
-          prompt: formCat.prompt || undefined,
-          system_prompt: formCat.system_prompt || undefined,
-          python: formCat.python || undefined,
-          javascript: formCat.javascript || undefined,
-          python_editado_manual: formCat.python_editado_manual,
-          javascript_editado_manual: formCat.javascript_editado_manual,
-        } as Record<string, unknown>)
+        })
       } else {
         await categoriasCaractPersApi.crear({
           ...(formCat.codigo_cat_pers.trim() ? { codigo_cat_pers: formCat.codigo_cat_pers.toUpperCase() } : {}),
@@ -548,64 +530,34 @@ export default function PaginaCategoriasCaracteristica() {
       {/* ═══ MODALES ═══ */}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('editarCategoriaTitulo', { nombre: catEditando.nombre_cat_pers }) : t('nuevaCategoriaTitulo')} className="max-w-3xl">
-        <div className="flex flex-col gap-4 min-w-[520px]">
-          {/* Tabs */}
-          <div className="flex border-b border-borde">
-            {(['datos', 'prompts'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setTabModalCat(tab)}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  tabModalCat === tab
-                    ? 'border-b-2 border-primario text-primario'
-                    : 'text-texto-muted hover:text-texto'
-                }`}
-              >
-                {tab === 'datos' ? 'Datos' : 'Prompts'}
-              </button>
-            ))}
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('editarCategoriaTitulo', { nombre: catEditando.nombre_cat_pers }) : t('nuevaCategoriaTitulo')}>
+        <div className="flex flex-col gap-4">
+          <Input etiqueta={t('etiquetaNombre')} value={formCat.nombre_cat_pers}
+            onChange={(e) => setFormCat({ ...formCat, nombre_cat_pers: e.target.value })}
+            placeholder={t('placeholderNombre')} />
+          <div>
+            <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaDescripcion')}</label>
+            <textarea className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none resize-y min-h-[60px]"
+              value={formCat.descripcion_cat_pers}
+              onChange={(e) => setFormCat({ ...formCat, descripcion_cat_pers: e.target.value })} />
           </div>
-
-          {tabModalCat === 'datos' && (<>
-            <Input etiqueta={t('etiquetaNombre')} value={formCat.nombre_cat_pers}
-              onChange={(e) => setFormCat({ ...formCat, nombre_cat_pers: e.target.value })}
-              placeholder={t('placeholderNombre')} />
-            <div>
-              <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaDescripcion')}</label>
-              <textarea className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none resize-y min-h-[60px]"
-                value={formCat.descripcion_cat_pers}
-                onChange={(e) => setFormCat({ ...formCat, descripcion_cat_pers: e.target.value })} />
-            </div>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={formCat.es_unica_pers}
-                  onChange={(e) => setFormCat({ ...formCat, es_unica_pers: e.target.checked })}
-                  className="rounded border-borde" />
-                {t('unicaPorPersona')}
-              </label>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={formCat.editable_en_detalle_pers}
-                  onChange={(e) => setFormCat({ ...formCat, editable_en_detalle_pers: e.target.checked })}
-                  className="rounded border-borde" />
-                {t('editableEnDetalle')}
-              </label>
-            </div>
-            {catEditando && (
-              <Input etiqueta={t('colCodigo')} value={formCat.codigo_cat_pers} disabled readOnly />
-            )}
-          </>)}
-
-          {tabModalCat === 'prompts' && (
-            <TabPrompts
-              tabla="categorias_caract_pers"
-              pkColumna="codigo_cat_pers"
-              pkValor={catEditando?.codigo_cat_pers ?? null}
-              campos={formCat}
-              onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-            />
+          <div className="flex gap-6">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={formCat.es_unica_pers}
+                onChange={(e) => setFormCat({ ...formCat, es_unica_pers: e.target.checked })}
+                className="rounded border-borde" />
+              {t('unicaPorPersona')}
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={formCat.editable_en_detalle_pers}
+                onChange={(e) => setFormCat({ ...formCat, editable_en_detalle_pers: e.target.checked })}
+                className="rounded border-borde" />
+              {t('editableEnDetalle')}
+            </label>
+          </div>
+          {catEditando && (
+            <Input etiqueta={t('colCodigo')} value={formCat.codigo_cat_pers} disabled readOnly />
           )}
-
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
           <PieBotonesModal
             editando={!!catEditando}

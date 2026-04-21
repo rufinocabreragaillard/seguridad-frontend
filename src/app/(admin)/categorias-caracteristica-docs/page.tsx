@@ -11,7 +11,6 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { TabPrompts } from '@/components/ui/tab-prompts'
 import { categoriasCaractDocsApi, registroLLMApi } from '@/lib/api'
 import type { CategoriaCaractDocs, TipoCaractDocs, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -32,13 +31,12 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [cargandoCat, setCargandoCat] = useState(true)
   const [busquedaCat, setBusquedaCat] = useState('')
   const [modalCat, setModalCat] = useState(false)
-  const [tabModalCat, setTabModalCat] = useState<'datos' | 'prompts' | 'llm'>('datos')
+  const [tabModalCat, setTabModalCat] = useState<'datos' | 'prompt' | 'system_prompt' | 'llm'>('datos')
   const [catEditando, setCatEditando] = useState<CategoriaCaractDocs | null>(null)
   const [formCat, setFormCat] = useState({
     codigo_cat_docs: '', nombre_cat_docs: '', descripcion_cat_docs: '',
     es_unica_docs: false, editable_en_detalle_docs: true,
     prompt: '', system_prompt: '', id_modelo: null as number | null,
-    python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
   const [modelosLLM, setModelosLLM] = useState<RegistroLLM[]>([])
   const [guardandoCat, setGuardandoCat] = useState(false)
@@ -53,12 +51,11 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [tipos, setTipos] = useState<TipoCaractDocs[]>([])
   const [cargandoTipos, setCargandoTipos] = useState(false)
   const [modalTipo, setModalTipo] = useState(false)
-  const [tabModalTipo, setTabModalTipo] = useState<'datos' | 'prompts'>('datos')
+  const [tabModalTipo, setTabModalTipo] = useState<'datos' | 'prompt' | 'system_prompt'>('datos')
   const [tipoEditando, setTipoEditando] = useState<TipoCaractDocs | null>(null)
   const [formTipo, setFormTipo] = useState({
     codigo_tipo_docs: '', nombre_tipo_docs: '',
     prompt: '', system_prompt: '',
-    python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
@@ -97,7 +94,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   // ── CRUD Categorias ───────────────────────────────────────────────────────
   const abrirNuevaCat = () => {
     setCatEditando(null)
-    setFormCat({ codigo_cat_docs: '', nombre_cat_docs: '', descripcion_cat_docs: '', es_unica_docs: false, editable_en_detalle_docs: true, prompt: '', system_prompt: '', id_modelo: null, python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormCat({ codigo_cat_docs: '', nombre_cat_docs: '', descripcion_cat_docs: '', es_unica_docs: false, editable_en_detalle_docs: true, prompt: '', system_prompt: '', id_modelo: null })
     setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
@@ -105,7 +102,6 @@ export default function PaginaCategoriasCaracteristicaDocs() {
 
   const abrirEditarCat = (c: CategoriaCaractDocs) => {
     setCatEditando(c)
-    const c2 = c as unknown as Record<string, unknown>
     setFormCat({
       codigo_cat_docs: c.codigo_cat_docs,
       nombre_cat_docs: c.nombre_cat_docs,
@@ -115,10 +111,6 @@ export default function PaginaCategoriasCaracteristicaDocs() {
       prompt: c.prompt || '',
       system_prompt: c.system_prompt || '',
       id_modelo: c.id_modelo ?? null,
-      python: c2.python as string || '',
-      javascript: c2.javascript as string || '',
-      python_editado_manual: c2.python_editado_manual as boolean || false,
-      javascript_editado_manual: c2.javascript_editado_manual as boolean || false,
     })
     setTabModalCat('datos')
     setErrorCat('')
@@ -142,11 +134,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           prompt: formCat.prompt || undefined,
           system_prompt: formCat.system_prompt || undefined,
           id_modelo: formCat.id_modelo ?? undefined,
-          python: formCat.python || undefined,
-          javascript: formCat.javascript || undefined,
-          python_editado_manual: formCat.python_editado_manual,
-          javascript_editado_manual: formCat.javascript_editado_manual,
-        } as Record<string, unknown>)
+        })
         if (cerrar) setModalCat(false)
       } else {
         const nueva = await categoriasCaractDocsApi.crear({
@@ -160,7 +148,6 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           setModalCat(false)
         } else {
           setCatEditando(nueva)
-          const n2 = nueva as unknown as Record<string, unknown>
           setFormCat({
             codigo_cat_docs: nueva.codigo_cat_docs,
             nombre_cat_docs: nueva.nombre_cat_docs,
@@ -170,10 +157,6 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             prompt: nueva.prompt || '',
             system_prompt: nueva.system_prompt || '',
             id_modelo: nueva.id_modelo ?? null,
-            python: n2.python as string || '',
-            javascript: n2.javascript as string || '',
-            python_editado_manual: n2.python_editado_manual as boolean || false,
-            javascript_editado_manual: n2.javascript_editado_manual as boolean || false,
           })
         }
       }
@@ -200,7 +183,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   // ── CRUD Tipos ────────────────────────────────────────────────────────────
   const abrirNuevoTipo = () => {
     setTipoEditando(null)
-    setFormTipo({ codigo_tipo_docs: '', nombre_tipo_docs: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormTipo({ codigo_tipo_docs: '', nombre_tipo_docs: '', prompt: '', system_prompt: '' })
     setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
@@ -208,16 +191,11 @@ export default function PaginaCategoriasCaracteristicaDocs() {
 
   const abrirEditarTipo = (tipo: TipoCaractDocs) => {
     setTipoEditando(tipo)
-    const t2 = tipo as unknown as Record<string, unknown>
     setFormTipo({
       codigo_tipo_docs: tipo.codigo_tipo_docs,
       nombre_tipo_docs: tipo.nombre_tipo_docs,
       prompt: tipo.prompt || '',
       system_prompt: tipo.system_prompt || '',
-      python: t2.python as string || '',
-      javascript: t2.javascript as string || '',
-      python_editado_manual: t2.python_editado_manual as boolean || false,
-      javascript_editado_manual: t2.javascript_editado_manual as boolean || false,
     })
     setTabModalTipo('datos')
     setErrorTipo('')
@@ -237,11 +215,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           nombre_tipo_docs: formTipo.nombre_tipo_docs,
           prompt: formTipo.prompt || null,
           system_prompt: formTipo.system_prompt || null,
-          python: formTipo.python || null,
-          javascript: formTipo.javascript || null,
-          python_editado_manual: formTipo.python_editado_manual,
-          javascript_editado_manual: formTipo.javascript_editado_manual,
-        } as Record<string, unknown>)
+        })
       } else {
         await categoriasCaractDocsApi.crearTipo(catSeleccionada.codigo_cat_docs, {
           codigo_cat_docs: catSeleccionada.codigo_cat_docs,
@@ -456,7 +430,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         <div className="flex flex-col gap-4 min-w-[520px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'prompts', 'llm'] as const).map((tab) => (
+            {(['datos', 'prompt', 'system_prompt', 'llm'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModalCat(tab)}
@@ -466,7 +440,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'prompts' ? 'Prompts' : 'LLM'}
+                {tab === 'datos' ? 'Datos' : tab === 'prompt' ? 'Prompt' : tab === 'system_prompt' ? 'System Prompt' : 'LLM'}
               </button>
             ))}
           </div>
@@ -509,15 +483,34 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             </>
           )}
 
-          {/* Tab Prompts */}
-          {tabModalCat === 'prompts' && (
-            <TabPrompts
-              tabla="categorias_caract_docs"
-              pkColumna="codigo_cat_docs"
-              pkValor={catEditando?.codigo_cat_docs ?? null}
-              campos={formCat}
-              onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-            />
+          {/* Tab Prompt */}
+          {tabModalCat === 'prompt' && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-texto-muted">
+                Texto que se inyecta en el prompt del LLM al clasificar documentos con esta categoría. Da contexto para mejorar la precisión del análisis.
+              </p>
+              <textarea
+                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
+                placeholder="Ej: Esta categoría clasifica documentos según su tipo legal..."
+                value={formCat.prompt}
+                onChange={(e) => setFormCat({ ...formCat, prompt: e.target.value })}
+              />
+            </div>
+          )}
+
+          {/* Tab System Prompt */}
+          {tabModalCat === 'system_prompt' && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-texto-muted">
+                Instrucciones de sistema para el LLM al procesar documentos con esta categoría. Define el rol y restricciones del asistente para esta clasificación.
+              </p>
+              <textarea
+                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
+                placeholder="Ej: Eres un experto en clasificación y análisis de documentos para esta categoría..."
+                value={formCat.system_prompt}
+                onChange={(e) => setFormCat({ ...formCat, system_prompt: e.target.value })}
+              />
+            </div>
           )}
 
           {/* Tab LLM */}
@@ -560,7 +553,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         <div className="flex flex-col gap-4 min-w-[520px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'prompts'] as const).map((tab) => (
+            {(['datos', 'prompt', 'system_prompt'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModalTipo(tab)}
@@ -570,7 +563,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : 'Prompts'}
+                {tab === 'datos' ? 'Datos' : tab === 'prompt' ? 'Prompt' : 'System Prompt'}
               </button>
             ))}
           </div>
@@ -586,14 +579,32 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             </>
           )}
 
-          {tabModalTipo === 'prompts' && (
-            <TabPrompts
-              tabla="tipos_caract_docs"
-              pkColumna="codigo_tipo_docs"
-              pkValor={tipoEditando?.codigo_tipo_docs ?? null}
-              campos={formTipo}
-              onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
-            />
+          {tabModalTipo === 'prompt' && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-texto-muted">
+                Pista específica para que el LLM identifique este tipo dentro de su categoría. Se concatena al prompt de la categoría al clasificar documentos.
+              </p>
+              <textarea
+                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
+                placeholder="Ej: Factura electrónica o física de venta/compra con RUT emisor, folio y monto."
+                value={formTipo.prompt}
+                onChange={(e) => setFormTipo({ ...formTipo, prompt: e.target.value })}
+              />
+            </div>
+          )}
+
+          {tabModalTipo === 'system_prompt' && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-texto-muted">
+                System prompt opcional específico de este tipo. Se suma al system prompt de la categoría en el paso ANALIZAR. Déjalo vacío si basta con el de la categoría.
+              </p>
+              <textarea
+                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
+                placeholder="Ej: Al detectar este tipo, presta especial atención a..."
+                value={formTipo.system_prompt}
+                onChange={(e) => setFormTipo({ ...formTipo, system_prompt: e.target.value })}
+              />
+            </div>
           )}
 
           {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}

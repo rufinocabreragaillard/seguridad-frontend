@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, X, Download, Search, RefreshCw, Languages, Brain } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Download, Search, RefreshCw, Languages } from 'lucide-react'
 import { SortableDndContext, SortableRow, SortableListItem } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -11,8 +11,6 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { TabPrompts } from '@/components/ui/tab-prompts'
-import { ModalEditorPrompts } from '@/components/ui/modal-editor-prompts'
 import { aplicacionesApi, funcionesApi, procesosApi, registroLLMApi } from '@/lib/api'
 import type { Proceso } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -55,10 +53,6 @@ export default function PaginaFunciones() {
     id_modelo: string
     system_prompt: string
     prompt: string
-    python: string
-    javascript: string
-    python_editado_manual: boolean
-    javascript_editado_manual: boolean
     perm_select: boolean
     perm_insert: boolean
     perm_update: boolean
@@ -68,12 +62,10 @@ export default function PaginaFunciones() {
     codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
     alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: '',
     tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt: '',
-    python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'prompts' | 'llm'>('datos')
-  const [funcionContexto, setFuncionContexto] = useState<Funcion | null>(null)
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'prompt' | 'system_prompt' | 'llm'>('datos')
   const [guardandoFuncion, setGuardandoFuncion] = useState(false)
   const [errorFuncion, setErrorFuncion] = useState('')
 
@@ -121,7 +113,6 @@ export default function PaginaFunciones() {
       alias_de_funcion: '', icono_de_funcion: '',
       codigo_aplicacion_origen: aplicacionActiva || '',
       tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt: '',
-      python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
       perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
       traducir: true,
     })
@@ -155,10 +146,6 @@ export default function PaginaFunciones() {
       id_modelo: f.id_modelo ? String(f.id_modelo) : '',
       system_prompt: (f as Funcion & { system_prompt?: string }).system_prompt || '',
       prompt: (f as Funcion & { prompt?: string }).prompt || '',
-      python: (f as Funcion & { python?: string }).python || '',
-      javascript: (f as Funcion & { javascript?: string }).javascript || '',
-      python_editado_manual: (f as Funcion & { python_editado_manual?: boolean }).python_editado_manual ?? false,
-      javascript_editado_manual: (f as Funcion & { javascript_editado_manual?: boolean }).javascript_editado_manual ?? false,
       perm_select: f.perm_select ?? true,
       perm_insert: f.perm_insert ?? true,
       perm_update: f.perm_update ?? true,
@@ -186,10 +173,6 @@ export default function PaginaFunciones() {
         id_modelo: formFuncion.id_modelo ? parseInt(formFuncion.id_modelo) : null,
         system_prompt: formFuncion.system_prompt || null,
         prompt: formFuncion.prompt || null,
-        python: formFuncion.python || null,
-        javascript: formFuncion.javascript || null,
-        python_editado_manual: formFuncion.python_editado_manual,
-        javascript_editado_manual: formFuncion.javascript_editado_manual,
         perm_select: formFuncion.perm_select,
         perm_insert: formFuncion.perm_insert,
         perm_update: formFuncion.perm_update,
@@ -281,7 +264,8 @@ export default function PaginaFunciones() {
     ...(funcionEditando ? [
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
       { key: 'procesos', label: `Procesos de Función (${procesosDeFuncion.length})` },
-      { key: 'prompts', label: 'Prompts' },
+      { key: 'prompt', label: 'Prompt' },
+      { key: 'system_prompt', label: 'System Prompt' },
       { key: 'llm', label: 'LLM' },
     ] : []),
   ] as { key: typeof tabModalFuncion; label: string }[]
@@ -327,7 +311,6 @@ export default function PaginaFunciones() {
                     >
                       {traduciendo === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <Languages size={14} />}
                     </button>
-                    <button onClick={() => setFuncionContexto(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
                     <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                     <button onClick={() => setConfirmacion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                   </div>
@@ -517,22 +500,36 @@ export default function PaginaFunciones() {
             </div>
           )}
 
-          {/* Tab Prompts — sistema "Todo por Prompts" */}
-          {tabModalFuncion === 'prompts' && funcionEditando && (
+          {/* Tab Prompt */}
+          {tabModalFuncion === 'prompt' && funcionEditando && (
             <div className="flex flex-col gap-3">
-              <TabPrompts
-                tabla="funciones"
-                pkColumna="codigo_funcion"
-                pkValor={funcionEditando.codigo_funcion}
-                campos={{
-                  prompt: formFuncion.prompt,
-                  system_prompt: formFuncion.system_prompt,
-                  python: formFuncion.python,
-                  javascript: formFuncion.javascript,
-                  python_editado_manual: formFuncion.python_editado_manual,
-                  javascript_editado_manual: formFuncion.javascript_editado_manual,
-                }}
-                onCampoCambiado={(c, v) => setFormFuncion({ ...formFuncion, [c]: v })}
+              <p className="text-sm text-texto-muted">Texto que se inyecta como contexto del usuario al invocar esta función con un LLM.</p>
+              <textarea
+                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
+                placeholder="Ej: Contexto específico para esta función..."
+                value={formFuncion.prompt}
+                onChange={(e) => setFormFuncion({ ...formFuncion, prompt: e.target.value })}
+              />
+              {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
+              <PieBotonesModal
+                editando={!!funcionEditando}
+                onGuardar={() => guardarFuncion(false)}
+                onGuardarYSalir={() => guardarFuncion(true)}
+                onCerrar={() => setModalFuncion(false)}
+                cargando={guardandoFuncion}
+              />
+            </div>
+          )}
+
+          {/* Tab System Prompt */}
+          {tabModalFuncion === 'system_prompt' && funcionEditando && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-texto-muted">Instrucciones de sistema para el LLM cuando se invoca esta función. Define el tono, restricciones y rol del asistente.</p>
+              <textarea
+                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
+                placeholder="Ej: Eres un asistente especializado en..."
+                value={formFuncion.system_prompt}
+                onChange={(e) => setFormFuncion({ ...formFuncion, system_prompt: e.target.value })}
               />
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
               <PieBotonesModal
@@ -579,18 +576,6 @@ export default function PaginaFunciones() {
           )}
         </div>
       </Modal>
-
-      {/* ── MODAL EDITOR CONTEXTO ── */}
-      {funcionContexto && (
-        <ModalEditorPrompts
-          abierto={!!funcionContexto}
-          onCerrar={() => setFuncionContexto(null)}
-          tabla="funciones"
-          pkColumna="codigo_funcion"
-          pkValor={funcionContexto.codigo_funcion}
-          titulo={funcionContexto.nombre}
-        />
-      )}
 
       {/* ── MODAL CONFIRMAR ── */}
       <ModalConfirmar

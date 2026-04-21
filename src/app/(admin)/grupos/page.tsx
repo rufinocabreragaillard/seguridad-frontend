@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Layers, Users, Building2, X, Search, Download, Trash2, AlertTriangle, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
+import { Plus, Pencil, Layers, Users, Building2, X, Search, Download, Trash2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -19,7 +19,6 @@ import { etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
-import { TabPrompts } from '@/components/ui/tab-prompts'
 
 type UsuarioGrupo = { codigo_usuario: string; fecha_alta?: string; usuarios?: { nombre: string; activo: boolean } }
 
@@ -32,7 +31,7 @@ export default function PaginaGrupos() {
   const router = useRouter()
 
   // ── Tab principal ──
-  const [tabPrincipal, setTabPrincipal] = useState<'grupos' | 'entidades' | 'cambiar' | 'borrar'>('grupos')
+  const [tabPrincipal, setTabPrincipal] = useState<'grupos' | 'cambiar' | 'borrar'>('grupos')
 
   // ── Estado compartido ──
   const [grupos, setGrupos] = useState<Grupo[]>([])
@@ -51,8 +50,8 @@ export default function PaginaGrupos() {
 
   const [modalGrupo, setModalGrupo] = useState(false)
   const [grupoEditando, setGrupoEditando] = useState<Grupo | null>(null)
-  const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO' as TipoElemento, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
-  const [tabModalGrupo, setTabModalGrupo] = useState<'datos' | 'prompts'>('datos')
+  const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO' as TipoElemento, prompt: '', system_prompt: '' })
+  const [tabModalGrupo, setTabModalGrupo] = useState<'datos' | 'prompt' | 'system_prompt'>('datos')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
@@ -133,7 +132,7 @@ export default function PaginaGrupos() {
   // ── Funciones Tab Grupos ──
   const abrirNuevoGrupo = () => {
     setGrupoEditando(null)
-    setFormGrupo({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormGrupo({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO', prompt: '', system_prompt: '' })
     setTabModalGrupo('datos')
     setError('')
     setModalGrupo(true)
@@ -141,7 +140,7 @@ export default function PaginaGrupos() {
 
   const abrirEditarGrupo = (g: Grupo) => {
     setGrupoEditando(g)
-    setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, descripcion: g.descripcion || '', tipo: normalizarTipo(g.tipo), prompt: g.prompt || '', system_prompt: g.system_prompt || '', python: (g as unknown as Record<string, unknown>).python as string || '', javascript: (g as unknown as Record<string, unknown>).javascript as string || '', python_editado_manual: ((g as unknown as Record<string, unknown>).python_editado_manual as boolean) ?? false, javascript_editado_manual: ((g as unknown as Record<string, unknown>).javascript_editado_manual as boolean) ?? false })
+    setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, descripcion: g.descripcion || '', tipo: normalizarTipo(g.tipo), prompt: g.prompt || '', system_prompt: g.system_prompt || '' })
     setTabModalGrupo('datos')
     setError('')
     setModalGrupo(true)
@@ -152,7 +151,7 @@ export default function PaginaGrupos() {
     setGuardando(true)
     try {
       if (grupoEditando) {
-        await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined, prompt: formGrupo.prompt || undefined, system_prompt: formGrupo.system_prompt || undefined, python: formGrupo.python || undefined, javascript: formGrupo.javascript || undefined, python_editado_manual: formGrupo.python_editado_manual, javascript_editado_manual: formGrupo.javascript_editado_manual } as Record<string, unknown>)
+        await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined, prompt: formGrupo.prompt || undefined, system_prompt: formGrupo.system_prompt || undefined })
         if (cerrar) setModalGrupo(false)
       } else {
         const nuevo = await gruposApi.crear({ nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined })
@@ -160,8 +159,7 @@ export default function PaginaGrupos() {
           setModalGrupo(false)
         } else {
           setGrupoEditando(nuevo)
-          const n2 = nuevo as unknown as Record<string, unknown>
-          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, descripcion: nuevo.descripcion || '', tipo: normalizarTipo(nuevo.tipo), prompt: nuevo.prompt || '', system_prompt: nuevo.system_prompt || '', python: n2.python as string || '', javascript: n2.javascript as string || '', python_editado_manual: (n2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (n2.javascript_editado_manual as boolean) ?? false })
+          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, descripcion: nuevo.descripcion || '', tipo: normalizarTipo(nuevo.tipo), prompt: nuevo.prompt || '', system_prompt: nuevo.system_prompt || '' })
         }
       }
       cargar()
@@ -421,16 +419,6 @@ export default function PaginaGrupos() {
             Grupos
           </button>
         )}
-        {esSuperAdmin() && (
-          <button
-            onClick={() => setTabPrincipal('entidades')}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-              tabPrincipal === 'entidades' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-            }`}
-          >
-            Entidades
-          </button>
-        )}
         <button
           onClick={() => setTabPrincipal('cambiar')}
           className={`px-5 py-2.5 text-sm font-medium transition-colors ${
@@ -490,7 +478,6 @@ export default function PaginaGrupos() {
                 <button
                   key={g.codigo_grupo}
                   onClick={() => setGrupoSeleccionado(g)}
-                  onDoubleClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
                     grupoSeleccionado?.codigo_grupo === g.codigo_grupo
                       ? 'border-primario bg-primario-muy-claro'
@@ -511,14 +498,12 @@ export default function PaginaGrupos() {
                       <Insignia variante={varianteTipo(g.tipo)}>{etiquetaTipo(g.tipo)}</Insignia>
                     </div>
                   </div>
-                  <div className="ml-auto flex gap-1">
-                    <button onClick={(ev) => { ev.stopPropagation(); setGrupoSeleccionado(g); setTabPrincipal('entidades') }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors" title="Ver entidades">
-                      <Eye size={13} />
-                    </button>
-                    <button onClick={(ev) => { ev.stopPropagation(); abrirEditarGrupo(g) }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors">
-                      <Pencil size={13} />
-                    </button>
-                  </div>
+                  <button
+                    onClick={(ev) => { ev.stopPropagation(); abrirEditarGrupo(g) }}
+                    className="ml-auto p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors"
+                  >
+                    <Pencil size={13} />
+                  </button>
                 </button>
               ))}
             </div>
@@ -730,70 +715,7 @@ export default function PaginaGrupos() {
         )
       )}
 
-      {/* ═══════════════════ TAB 2: ENTIDADES ═══════════════════ */}
-      {tabPrincipal === 'entidades' && (
-        !esSuperAdmin() ? (
-          <div className="flex items-center justify-center h-48 text-texto-muted text-sm">No tienes permisos para acceder a esta sección.</div>
-        ) : (
-          <>
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-texto-muted">Grupo:</p>
-              <select
-                value={grupoSeleccionado?.codigo_grupo || ''}
-                onChange={(e) => {
-                  const g = grupos.find((x) => x.codigo_grupo === e.target.value) || null
-                  setGrupoSeleccionado(g)
-                }}
-                className="rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario"
-              >
-                <option value="">Selecciona un grupo</option>
-                {grupos.map((g) => <option key={g.codigo_grupo} value={g.codigo_grupo}>{g.nombre}</option>)}
-              </select>
-              {grupoSeleccionado && (
-                <Boton variante="primario" tamano="sm" onClick={abrirNuevaEntidad}><Plus size={14} /> Nueva entidad</Boton>
-              )}
-            </div>
-
-            {!grupoSeleccionado ? (
-              <div className="bg-primario-muy-claro/50 border border-primario/20 rounded-lg px-4 py-3">
-                <p className="text-sm text-primario-oscuro">Selecciona un grupo para ver sus entidades, o haz doble clic en un grupo de la lengüeta anterior.</p>
-              </div>
-            ) : cargandoDetalle ? (
-              <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-            ) : (
-              <Tabla>
-                <TablaCabecera><tr>
-                  <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Estado</TablaTh>
-                  <TablaTh className="text-right">Acciones</TablaTh>
-                </tr></TablaCabecera>
-                <TablaCuerpo>
-                  {entidadesFiltradas.length === 0 ? (
-                    <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={4 as never}>No hay entidades en este grupo</TablaTd></TablaFila>
-                  ) : entidadesFiltradas.map((e) => (
-                    <TablaFila key={e.codigo_entidad}>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_entidad}</code></TablaTd>
-                      <TablaTd className="font-medium">{e.nombre}</TablaTd>
-                      <TablaTd>
-                        <Insignia variante={(e as unknown as Record<string, unknown>).activo !== false ? 'exito' : 'error'}>
-                          {(e as unknown as Record<string, unknown>).activo !== false ? 'Activo' : 'Inactivo'}
-                        </Insignia>
-                      </TablaTd>
-                      <TablaTd>
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => abrirEditarEntidad(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                          <button onClick={() => setConfirmarDesactivar(e)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Desactivar"><Building2 size={14} /></button>
-                        </div>
-                      </TablaTd>
-                    </TablaFila>
-                  ))}
-                </TablaCuerpo>
-              </Tabla>
-            )}
-          </>
-        )
-      )}
-
-      {/* ═══════════════════ TAB 3: CAMBIAR GRUPO ═══════════════════ */}
+      {/* ═══════════════════ TAB 2: CAMBIAR GRUPO ═══════════════════ */}
       {tabPrincipal === 'cambiar' && (
         <div className="max-w-md p-6 bg-surface rounded-xl border border-borde shadow-sm">
           <h3 className="text-base font-semibold text-texto mb-1">Cambiar de Grupo</h3>
@@ -1020,7 +942,7 @@ export default function PaginaGrupos() {
       <Modal abierto={modalGrupo} alCerrar={() => setModalGrupo(false)} titulo={grupoEditando ? 'Editar grupo' : 'Nuevo grupo'} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px]">
           <div className="flex border-b border-borde">
-            {(['datos', 'prompts'] as const).map((tab) => (
+            {(['datos', 'prompt', 'system_prompt'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModalGrupo(tab)}
@@ -1028,7 +950,7 @@ export default function PaginaGrupos() {
                   tabModalGrupo === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : 'Prompts'}
+                {tab === 'datos' ? 'Datos' : tab === 'prompt' ? 'Prompt' : 'System Prompt'}
               </button>
             ))}
           </div>
@@ -1048,21 +970,32 @@ export default function PaginaGrupos() {
             </>
           )}
 
-          {tabModalGrupo === 'prompts' && grupoEditando && (
-            <TabPrompts
-              tabla="grupos_entidades"
-              pkColumna="codigo_grupo"
-              pkValor={grupoEditando.codigo_grupo}
-              campos={{
-                prompt: formGrupo.prompt,
-                system_prompt: formGrupo.system_prompt,
-                python: formGrupo.python,
-                javascript: formGrupo.javascript,
-                python_editado_manual: formGrupo.python_editado_manual,
-                javascript_editado_manual: formGrupo.javascript_editado_manual,
-              }}
-              onCampoCambiado={(c, v) => setFormGrupo({ ...formGrupo, [c]: v })}
-            />
+          {tabModalGrupo === 'prompt' && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-texto-muted">
+                Texto que se inyecta en el prompt del LLM para dar contexto específico a este grupo.
+              </p>
+              <textarea
+                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
+                placeholder={t('placeholderDescripcion')}
+                value={formGrupo.prompt}
+                onChange={(e) => setFormGrupo({ ...formGrupo, prompt: e.target.value })}
+              />
+            </div>
+          )}
+
+          {tabModalGrupo === 'system_prompt' && (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-texto-muted">
+                Instrucciones de sistema que se prependen a todas las conversaciones y análisis LLM en este grupo.
+              </p>
+              <textarea
+                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
+                placeholder={t('placeholderSystemPrompt')}
+                value={formGrupo.system_prompt}
+                onChange={(e) => setFormGrupo({ ...formGrupo, system_prompt: e.target.value })}
+              />
+            </div>
           )}
 
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}

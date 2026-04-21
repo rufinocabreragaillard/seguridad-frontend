@@ -68,11 +68,9 @@ export function SortableDndContext<T extends Record<string, unknown>>({
 export function SortableRow({
   id,
   children,
-  onDoubleClick,
 }: {
   id: string | number
   children: ReactNode
-  onDoubleClick?: () => void
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: String(id),
@@ -87,7 +85,7 @@ export function SortableRow({
   }
 
   return (
-    <tr ref={setNodeRef} style={style} className="hover:bg-primario-muy-claro/40 transition-colors" onDoubleClick={onDoubleClick}>
+    <tr ref={setNodeRef} style={style} className="hover:bg-primario-muy-claro/40 transition-colors">
       <td className="px-2 py-3 w-8">
         <button
           type="button"

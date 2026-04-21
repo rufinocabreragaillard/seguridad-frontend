@@ -17,17 +17,15 @@ export function TablaCuerpo({ children }: { children: ReactNode }) {
   return <tbody className="divide-y divide-borde bg-surface">{children}</tbody>
 }
 
-export function TablaFila({ className, children, onClick, onDoubleClick }: {
+export function TablaFila({ className, children, onClick }: {
   className?: string
   children: ReactNode
   onClick?: () => void
-  onDoubleClick?: () => void
 }) {
   return (
     <tr
-      className={cn('hover:bg-primario-muy-claro/40 transition-colors', (onClick || onDoubleClick) && 'cursor-pointer', className)}
+      className={cn('hover:bg-primario-muy-claro/40 transition-colors', onClick && 'cursor-pointer', className)}
       onClick={onClick}
-      onDoubleClick={onDoubleClick}
     >
       {children}
     </tr>

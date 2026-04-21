@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Download, Search, Eye } from 'lucide-react'
+import { Plus, Pencil, Trash2, Download, Search } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -574,6 +574,7 @@ export default function PaginaProcesosDatosBasicos() {
                 ) : categorias.map((c) => (
                   <TablaFila key={c.codigo_categoria_proceso}
                     onDoubleClick={() => { setFiltroCategoria(c.codigo_categoria_proceso); setTabActiva('tipos') }}
+                    className="cursor-pointer"
                   >
                     <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_proceso}</code></TablaTd>
                     <TablaTd className="font-medium">{c.nombre_categoria_proceso}</TablaTd>
@@ -581,7 +582,6 @@ export default function PaginaProcesosDatosBasicos() {
                     <TablaTd className="text-texto-muted text-sm">{c.alias || <span className="text-texto-light">—</span>}</TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setFiltroCategoria(c.codigo_categoria_proceso); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver tipos"><Eye size={14} /></button>
                         <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                         <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                       </div>
@@ -653,7 +653,7 @@ export default function PaginaProcesosDatosBasicos() {
             </div>
           </div>
 
-          {!filtroCategoria ? (
+          {!filtroCatTipo ? (
             <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
               Selecciona una categoría para ver sus tipos de proceso
             </div>
@@ -680,14 +680,15 @@ export default function PaginaProcesosDatosBasicos() {
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {tiposFiltrados.map((t) => (
-                    <SortableRow key={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} id={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} onDoubleClick={() => { setFiltroTipo(t.codigo_tipo_proceso); setTabActiva('estados') }}>
+                    <SortableRow key={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} id={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`}>
                       <TablaTd className="text-center text-texto-muted text-sm">{t.orden ?? '—'}</TablaTd>
-                      <TablaTd className="font-medium">{t.nombre_tipo_proceso}</TablaTd>
+                      <TablaTd className="font-medium cursor-pointer select-none"
+                        onDoubleClick={() => { setFiltroTipo(t.codigo_tipo_proceso); setTabActiva('estados') }}
+                        title="Doble clic para ver estados">{t.nombre_tipo_proceso}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm">{t.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_tipo_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => { setFiltroTipo(t.codigo_tipo_proceso); setTabActiva('estados') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver estados"><Eye size={14} /></button>
                           <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                           <button onClick={() => setItemAEliminar({ tipo: 'tipo', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                         </div>

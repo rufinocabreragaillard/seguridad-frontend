@@ -47,7 +47,14 @@ export default function PaginaDocumentosDashboard() {
     }
   }
   const estadosOrdenados = [...estados].filter((e) => e.activo).sort((a, b) => a.orden - b.orden)
-  const maxConteo = Math.max(1, ...Object.values(conteoPorEstado))
+
+  // Estados del pipeline válido (orden termina en 0: 10, 20, 40, 50, 60…)
+  const estadosValidos = estadosOrdenados.filter((e) => e.orden % 10 === 0)
+  // Estados terminales / no válidos (NO_*, REVISAR, NO_ESTAN…)
+  const estadosInvalidos = estadosOrdenados.filter((e) => e.orden % 10 !== 0)
+  // Escala independiente por columna para que las barras sean comparables dentro de su grupo
+  const maxConteoValidos = Math.max(1, ...estadosValidos.map((e) => conteoPorEstado[e.codigo_estado_doc] || 0))
+  const maxConteoInvalidos = Math.max(1, ...estadosInvalidos.map((e) => conteoPorEstado[e.codigo_estado_doc] || 0))
 
   // Tarjetas resumen
   const tarjetas = [
@@ -120,7 +127,7 @@ export default function PaginaDocumentosDashboard() {
 
       {/* Distribución por estado + Accesos rápidos */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Gráfico de barras por estado */}
+        {/* Gráfico de barras por estado — dos columnas: válidos e inválidos */}
         <Tarjeta className="lg:col-span-2">
           <TarjetaContenido>
             <h3 className="text-sm font-semibold text-texto mb-4 flex items-center gap-2">
@@ -128,43 +135,98 @@ export default function PaginaDocumentosDashboard() {
               {t('documentosPorEstado')}
             </h3>
             {cargando ? (
-              <div className="flex flex-col gap-2">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="h-8 bg-fondo rounded animate-pulse" />
+              <div className="grid grid-cols-2 gap-6">
+                {Array.from({ length: 2 }).map((_, col) => (
+                  <div key={col} className="flex flex-col gap-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-7 bg-fondo rounded animate-pulse" />
+                    ))}
+                  </div>
                 ))}
               </div>
             ) : estadosOrdenados.length === 0 ? (
               <p className="text-sm text-texto-muted text-center py-6">{t('sinEstadosConfigurados')}</p>
             ) : (
-              <div className="flex flex-col gap-3">
-                {estadosOrdenados.map((e) => {
-                  const conteo = conteoPorEstado[e.codigo_estado_doc] || 0
-                  const pct = (conteo / maxConteo) * 100
-                  const url = `/procesar-documentos?estado=${encodeURIComponent(e.codigo_estado_doc)}`
-                  return (
-                    <div
-                      key={e.codigo_estado_doc}
-                      className="flex items-center gap-3 group cursor-pointer rounded-lg px-1 -mx-1 hover:bg-primario-muy-claro transition-colors"
-                      title={`Ir a Procesar — ${e.nombre_estado}`}
-                      onClick={() => conteo > 0 && router.push(url)}
-                    >
-                      <span className="text-sm text-texto min-w-[110px] group-hover:text-primario transition-colors">{e.nombre_estado}</span>
-                      <div className="flex-1 h-7 bg-fondo rounded-md overflow-hidden relative">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-0">
+
+                {/* ── Columna: Válidos (pipeline) ── */}
+                <div>
+                  <p className="text-xs font-semibold text-exito uppercase tracking-wide mb-3">
+                    Válidos
+                  </p>
+                  <div className="flex flex-col gap-2.5">
+                    {estadosValidos.map((e) => {
+                      const conteo = conteoPorEstado[e.codigo_estado_doc] || 0
+                      const pct = (conteo / maxConteoValidos) * 100
+                      const url = `/procesar-documentos?estado=${encodeURIComponent(e.codigo_estado_doc)}`
+                      return (
                         <div
-                          className="h-full bg-primario transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                        <span className="absolute inset-0 flex items-center px-2 text-xs font-medium text-texto">
-                          {conteo}
-                        </span>
-                      </div>
-                      <ArrowRight
-                        size={14}
-                        className={`shrink-0 transition-opacity ${conteo > 0 ? 'opacity-0 group-hover:opacity-100 text-primario' : 'opacity-0'}`}
-                      />
-                    </div>
-                  )
-                })}
+                          key={e.codigo_estado_doc}
+                          className="flex items-center gap-2 group cursor-pointer rounded-lg px-1 -mx-1 hover:bg-primario-muy-claro transition-colors"
+                          title={`Ir a Procesar — ${e.nombre_estado}`}
+                          onClick={() => conteo > 0 && router.push(url)}
+                        >
+                          <span className="text-xs text-texto min-w-[82px] group-hover:text-primario transition-colors">
+                            {e.nombre_estado}
+                          </span>
+                          <div className="flex-1 h-6 bg-fondo rounded-md overflow-hidden relative">
+                            <div
+                              className="h-full bg-primario transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                            <span className="absolute inset-0 flex items-center px-2 text-xs font-medium text-texto">
+                              {conteo}
+                            </span>
+                          </div>
+                          <ArrowRight
+                            size={12}
+                            className={`shrink-0 transition-opacity ${conteo > 0 ? 'opacity-0 group-hover:opacity-100 text-primario' : 'opacity-0'}`}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                {/* ── Columna: No válidos (terminales / error) ── */}
+                <div>
+                  <p className="text-xs font-semibold text-error uppercase tracking-wide mb-3">
+                    No válidos
+                  </p>
+                  <div className="flex flex-col gap-2.5">
+                    {estadosInvalidos.map((e) => {
+                      const conteo = conteoPorEstado[e.codigo_estado_doc] || 0
+                      const pct = (conteo / maxConteoInvalidos) * 100
+                      const url = `/procesar-documentos?estado=${encodeURIComponent(e.codigo_estado_doc)}`
+                      return (
+                        <div
+                          key={e.codigo_estado_doc}
+                          className="flex items-center gap-2 group cursor-pointer rounded-lg px-1 -mx-1 hover:bg-red-50 transition-colors"
+                          title={`Ir a Procesar — ${e.nombre_estado}`}
+                          onClick={() => conteo > 0 && router.push(url)}
+                        >
+                          <span className="text-xs text-texto min-w-[82px] group-hover:text-error transition-colors">
+                            {e.nombre_estado}
+                          </span>
+                          <div className="flex-1 h-6 bg-fondo rounded-md overflow-hidden relative">
+                            <div
+                              className="h-full bg-error/60 transition-all"
+                              style={{ width: `${pct}%` }}
+                            />
+                            <span className="absolute inset-0 flex items-center px-2 text-xs font-medium text-texto">
+                              {conteo}
+                            </span>
+                          </div>
+                          <ArrowRight
+                            size={12}
+                            className={`shrink-0 transition-opacity ${conteo > 0 ? 'opacity-0 group-hover:opacity-100 text-error' : 'opacity-0'}`}
+                          />
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+
               </div>
             )}
           </TarjetaContenido>
