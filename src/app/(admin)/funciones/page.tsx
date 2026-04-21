@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, X, Download, Search, RefreshCw, Languages } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Download, Search, RefreshCw, Languages, Brain } from 'lucide-react'
 import { SortableDndContext, SortableRow, SortableListItem } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { ModalEditorPrompts } from '@/components/ui/modal-editor-prompts'
 import { aplicacionesApi, funcionesApi, procesosApi, registroLLMApi } from '@/lib/api'
 import type { Proceso } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -72,6 +73,7 @@ export default function PaginaFunciones() {
     traducir: true,
   })
   const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'prompts' | 'llm'>('datos')
+  const [funcionContexto, setFuncionContexto] = useState<Funcion | null>(null)
   const [guardandoFuncion, setGuardandoFuncion] = useState(false)
   const [errorFuncion, setErrorFuncion] = useState('')
 
@@ -325,6 +327,7 @@ export default function PaginaFunciones() {
                     >
                       {traduciendo === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <Languages size={14} />}
                     </button>
+                    <button onClick={() => setFuncionContexto(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
                     <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                     <button onClick={() => setConfirmacion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                   </div>
@@ -576,6 +579,18 @@ export default function PaginaFunciones() {
           )}
         </div>
       </Modal>
+
+      {/* ── MODAL EDITOR CONTEXTO ── */}
+      {funcionContexto && (
+        <ModalEditorPrompts
+          abierto={!!funcionContexto}
+          onCerrar={() => setFuncionContexto(null)}
+          tabla="funciones"
+          pkColumna="codigo_funcion"
+          pkValor={funcionContexto.codigo_funcion}
+          titulo={funcionContexto.nombre}
+        />
+      )}
 
       {/* ── MODAL CONFIRMAR ── */}
       <ModalConfirmar

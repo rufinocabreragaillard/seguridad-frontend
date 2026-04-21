@@ -167,7 +167,7 @@ export default function PaginaUbicacionesDocs() {
         javascript: form.javascript || undefined,
         python_editado_manual: form.python_editado_manual,
         javascript_editado_manual: form.javascript_editado_manual,
-      })
+      } as Record<string, unknown>)
       if (cerrar) setModal(false)
       cargar()
     } catch (e) {

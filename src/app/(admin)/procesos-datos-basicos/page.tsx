@@ -680,9 +680,9 @@ export default function PaginaProcesosDatosBasicos() {
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {tiposFiltrados.map((t) => (
-                    <SortableRow key={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} id={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`}>
+                    <SortableRow key={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} id={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} onDoubleClick={() => { setFiltroTipo(t.codigo_tipo_proceso); setTabActiva('estados') }}>
                       <TablaTd className="text-center text-texto-muted text-sm">{t.orden ?? '—'}</TablaTd>
-                      <TablaTd className="font-medium cursor-pointer select-none" onDoubleClick={() => { setFiltroTipo(t.codigo_tipo_proceso); setTabActiva('estados') }} title="Doble clic para ver estados">{t.nombre_tipo_proceso}</TablaTd>
+                      <TablaTd className="font-medium">{t.nombre_tipo_proceso}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm">{t.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_tipo_proceso}</code></TablaTd>
                       <TablaTd>

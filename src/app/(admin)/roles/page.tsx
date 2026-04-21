@@ -2,13 +2,14 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search, Save } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search, Save, Brain } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
+import { ModalEditorPrompts } from '@/components/ui/modal-editor-prompts'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Tarjeta, TarjetaCabecera, TarjetaTitulo, TarjetaContenido } from '@/components/ui/tarjeta'
 import { rolesApi, funcionesApi, aplicacionesApi, registroLLMApi } from '@/lib/api'
@@ -17,7 +18,6 @@ import type { Rol, Funcion, Aplicacion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
-import { TabPrompts } from '@/components/ui/tab-prompts'
 
 type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }
 
@@ -36,6 +36,7 @@ export default function PaginaRoles() {
   // Modal rol
   const [modalRol, setModalRol] = useState(false)
   const [rolEditando, setRolEditando] = useState<Rol | null>(null)
+  const [rolContexto, setRolContexto] = useState<Rol | null>(null)
   const [formRol, setFormRol] = useState({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: '', tipo: 'USUARIO' as TipoElemento, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, inicial: false })
   const [tabModalRol, setTabModalRol] = useState<'datos' | 'funciones' | 'prompts'>('datos')
 
@@ -572,6 +573,7 @@ export default function PaginaRoles() {
                   </TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => setRolContexto(r)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
                       <button onClick={() => abrirEditarRol(r)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                       <button
                         onClick={() => guardarInline(r.id_rol)}
@@ -1025,6 +1027,18 @@ export default function PaginaRoles() {
           )}
         </div>
       </Modal>
+
+      {/* ── MODAL EDITOR CONTEXTO ROL ── */}
+      {rolContexto && (
+        <ModalEditorPrompts
+          abierto={!!rolContexto}
+          onCerrar={() => setRolContexto(null)}
+          tabla="roles"
+          pkColumna="id_rol"
+          pkValor={rolContexto.id_rol}
+          titulo={rolContexto.nombre}
+        />
+      )}
 
       {/* Modal Confirmar Eliminación */}
       <ModalConfirmar

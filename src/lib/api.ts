@@ -1501,6 +1501,12 @@ export const promptsApi = {
 
   regenerarApis: () =>
     api.post<{ total_vista: number; upserted: number }>('/prompts/apis/regenerar').then((r) => r.data),
+
+  getFila: (tabla: string, pk_columna: string, pk_valor: string) =>
+    api.get<Record<string, unknown>>('/prompts/fila', { params: { tabla, pk_columna, pk_valor } }).then((r) => r.data),
+
+  patchFila: (tabla: string, pk_columna: string, pk_valor: string, campos: Record<string, unknown>) =>
+    api.patch<{ ok: boolean; actualizado: number }>('/prompts/fila', { tabla, pk_columna, pk_valor, campos }).then((r) => r.data),
 }
 
 export default api

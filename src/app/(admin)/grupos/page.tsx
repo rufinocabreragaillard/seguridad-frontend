@@ -19,6 +19,7 @@ import { etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
+import { TabPrompts } from '@/components/ui/tab-prompts'
 
 type UsuarioGrupo = { codigo_usuario: string; fecha_alta?: string; usuarios?: { nombre: string; activo: boolean } }
 
@@ -50,8 +51,8 @@ export default function PaginaGrupos() {
 
   const [modalGrupo, setModalGrupo] = useState(false)
   const [grupoEditando, setGrupoEditando] = useState<Grupo | null>(null)
-  const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO' as TipoElemento, prompt: '', system_prompt: '' })
-  const [tabModalGrupo, setTabModalGrupo] = useState<'datos' | 'prompt' | 'system_prompt'>('datos')
+  const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO' as TipoElemento, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+  const [tabModalGrupo, setTabModalGrupo] = useState<'datos' | 'prompts'>('datos')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
@@ -132,7 +133,7 @@ export default function PaginaGrupos() {
   // ── Funciones Tab Grupos ──
   const abrirNuevoGrupo = () => {
     setGrupoEditando(null)
-    setFormGrupo({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO', prompt: '', system_prompt: '' })
+    setFormGrupo({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setTabModalGrupo('datos')
     setError('')
     setModalGrupo(true)
@@ -140,7 +141,7 @@ export default function PaginaGrupos() {
 
   const abrirEditarGrupo = (g: Grupo) => {
     setGrupoEditando(g)
-    setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, descripcion: g.descripcion || '', tipo: normalizarTipo(g.tipo), prompt: g.prompt || '', system_prompt: g.system_prompt || '' })
+    setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, descripcion: g.descripcion || '', tipo: normalizarTipo(g.tipo), prompt: g.prompt || '', system_prompt: g.system_prompt || '', python: (g as unknown as Record<string, unknown>).python as string || '', javascript: (g as unknown as Record<string, unknown>).javascript as string || '', python_editado_manual: ((g as unknown as Record<string, unknown>).python_editado_manual as boolean) ?? false, javascript_editado_manual: ((g as unknown as Record<string, unknown>).javascript_editado_manual as boolean) ?? false })
     setTabModalGrupo('datos')
     setError('')
     setModalGrupo(true)
@@ -151,7 +152,7 @@ export default function PaginaGrupos() {
     setGuardando(true)
     try {
       if (grupoEditando) {
-        await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined, prompt: formGrupo.prompt || undefined, system_prompt: formGrupo.system_prompt || undefined })
+        await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined, prompt: formGrupo.prompt || undefined, system_prompt: formGrupo.system_prompt || undefined, python: formGrupo.python || undefined, javascript: formGrupo.javascript || undefined, python_editado_manual: formGrupo.python_editado_manual, javascript_editado_manual: formGrupo.javascript_editado_manual } as Record<string, unknown>)
         if (cerrar) setModalGrupo(false)
       } else {
         const nuevo = await gruposApi.crear({ nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined })
@@ -159,7 +160,8 @@ export default function PaginaGrupos() {
           setModalGrupo(false)
         } else {
           setGrupoEditando(nuevo)
-          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, descripcion: nuevo.descripcion || '', tipo: normalizarTipo(nuevo.tipo), prompt: nuevo.prompt || '', system_prompt: nuevo.system_prompt || '' })
+          const n2 = nuevo as unknown as Record<string, unknown>
+          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, descripcion: nuevo.descripcion || '', tipo: normalizarTipo(nuevo.tipo), prompt: nuevo.prompt || '', system_prompt: nuevo.system_prompt || '', python: n2.python as string || '', javascript: n2.javascript as string || '', python_editado_manual: (n2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (n2.javascript_editado_manual as boolean) ?? false })
         }
       }
       cargar()
@@ -942,7 +944,7 @@ export default function PaginaGrupos() {
       <Modal abierto={modalGrupo} alCerrar={() => setModalGrupo(false)} titulo={grupoEditando ? 'Editar grupo' : 'Nuevo grupo'} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px]">
           <div className="flex border-b border-borde">
-            {(['datos', 'prompt', 'system_prompt'] as const).map((tab) => (
+            {(['datos', 'prompts'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModalGrupo(tab)}
@@ -950,7 +952,7 @@ export default function PaginaGrupos() {
                   tabModalGrupo === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'prompt' ? 'Prompt' : 'System Prompt'}
+                {tab === 'datos' ? 'Datos' : 'Prompts'}
               </button>
             ))}
           </div>
@@ -970,32 +972,21 @@ export default function PaginaGrupos() {
             </>
           )}
 
-          {tabModalGrupo === 'prompt' && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-texto-muted">
-                Texto que se inyecta en el prompt del LLM para dar contexto específico a este grupo.
-              </p>
-              <textarea
-                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder={t('placeholderDescripcion')}
-                value={formGrupo.prompt}
-                onChange={(e) => setFormGrupo({ ...formGrupo, prompt: e.target.value })}
-              />
-            </div>
-          )}
-
-          {tabModalGrupo === 'system_prompt' && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-texto-muted">
-                Instrucciones de sistema que se prependen a todas las conversaciones y análisis LLM en este grupo.
-              </p>
-              <textarea
-                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder={t('placeholderSystemPrompt')}
-                value={formGrupo.system_prompt}
-                onChange={(e) => setFormGrupo({ ...formGrupo, system_prompt: e.target.value })}
-              />
-            </div>
+          {tabModalGrupo === 'prompts' && grupoEditando && (
+            <TabPrompts
+              tabla="grupos_entidades"
+              pkColumna="codigo_grupo"
+              pkValor={grupoEditando.codigo_grupo}
+              campos={{
+                prompt: formGrupo.prompt,
+                system_prompt: formGrupo.system_prompt,
+                python: formGrupo.python,
+                javascript: formGrupo.javascript,
+                python_editado_manual: formGrupo.python_editado_manual,
+                javascript_editado_manual: formGrupo.javascript_editado_manual,
+              }}
+              onCampoCambiado={(c, v) => setFormGrupo({ ...formGrupo, [c]: v })}
+            />
           )}
 
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
