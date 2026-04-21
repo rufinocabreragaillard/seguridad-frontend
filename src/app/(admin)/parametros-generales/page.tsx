@@ -1,187 +1,336 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { useTranslations } from 'next-intl'
-import { Save, Trash2 } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
-import { BotonChat } from '@/components/ui/boton-chat'
+import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
-import { Tarjeta, TarjetaCabecera, TarjetaTitulo, TarjetaDescripcion, TarjetaContenido } from '@/components/ui/tarjeta'
-import { useAuth } from '@/context/AuthContext'
-import { parametrosApi, datosBasicosApi } from '@/lib/api'
-import type { CategoriaParametro, TipoParametro, ParametroGeneral, ParametroUsuario } from '@/lib/tipos'
+import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { Insignia } from '@/components/ui/insignia'
+import { datosBasicosApi } from '@/lib/api'
+import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
+import { BotonChat } from '@/components/ui/boton-chat'
 
-interface ParametroRow {
-  categoria_parametro: string
-  tipo_parametro: string
-  valor_parametro: string
-  descripcion?: string
-  replica?: boolean
-  visible?: boolean
-  editable?: boolean
-}
+type TabId = 'categorias' | 'tipos'
+
+type ItemEliminar =
+  | { tipo: 'categoria'; item: CategoriaParametro }
+  | { tipo: 'tipoparam'; item: TipoParametro }
+
+const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
+const inputCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
 export default function PaginaParametrosGenerales() {
-  const t = useTranslations('parametrosGenerales')
-  const tc = useTranslations('common')
-  const { esAdmin } = useAuth()
-  const [params, setParams] = useState<ParametroRow[]>([])
-  const [cargando, setCargando] = useState(true)
-  const [guardando, setGuardando] = useState<string | null>(null)
-  const [mensajeExito, setMensajeExito] = useState('')
-  const [error, setError] = useState('')
+  const [tabActiva, setTabActiva] = useState<TabId>('categorias')
 
-  // Categorías y tipos para agregar
+  // ── Categorías ─────────────────────────────────────────────────────────────
   const [categorias, setCategorias] = useState<CategoriaParametro[]>([])
-  const [tiposPorCat, setTiposPorCat] = useState<TipoParametro[]>([])
-  const [nuevoParam, setNuevoParam] = useState({ categoria_parametro: '', tipo_parametro: '', valor_parametro: '' })
+  const [cargandoCat, setCargandoCat] = useState(true)
+  const [modalCat, setModalCat] = useState(false)
+  const [catEditando, setCatEditando] = useState<CategoriaParametro | null>(null)
+  const [formCat, setFormCat] = useState({ categoria_parametro: '', nombre: '', descripcion: '', activo: true })
+  const [guardandoCat, setGuardandoCat] = useState(false)
+  const [errorCat, setErrorCat] = useState('')
 
-  const [paramAEliminar, setParamAEliminar] = useState<{ cat: string; tipo: string } | null>(null)
+  // ── Tipos ──────────────────────────────────────────────────────────────────
+  const [tipos, setTipos] = useState<TipoParametro[]>([])
+  const [cargandoTipo, setCargandoTipo] = useState(true)
+  const [modalTipo, setModalTipo] = useState(false)
+  const [tipoEditando, setTipoEditando] = useState<TipoParametro | null>(null)
+  const [formTipo, setFormTipo] = useState({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '', activo: true })
+  const [guardandoTipo, setGuardandoTipo] = useState(false)
+  const [errorTipo, setErrorTipo] = useState('')
+  const [filtroCategoria, setFiltroCategoria] = useState('')
 
-  const mostrarExito = (msg: string) => { setMensajeExito(msg); setError(''); setTimeout(() => setMensajeExito(''), 3000) }
+  // ── Eliminación ────────────────────────────────────────────────────────────
+  const [itemAEliminar, setItemAEliminar] = useState<ItemEliminar | null>(null)
+  const [eliminando, setEliminando] = useState(false)
 
-  const cargar = useCallback(async () => {
-    setCargando(true)
-    try {
-      const data = await parametrosApi.listarGenerales()
-      setParams(data.map((p: ParametroGeneral) => ({
-        categoria_parametro: p.categoria_parametro,
-        tipo_parametro: p.tipo_parametro,
-        valor_parametro: p.valor_parametro,
-        descripcion: p.descripcion,
-        replica: p.replica ?? false,
-        visible: p.visible ?? true,
-        editable: p.editable ?? true,
-      })))
-    } catch { setParams([]) }
-    finally { setCargando(false) }
+  // ── Carga ──────────────────────────────────────────────────────────────────
+  const cargarCategorias = useCallback(async () => {
+    setCargandoCat(true)
+    try { setCategorias(await datosBasicosApi.listarCategorias()) }
+    finally { setCargandoCat(false) }
   }, [])
 
-  useEffect(() => { cargar() }, [cargar])
-  useEffect(() => { datosBasicosApi.listarCategorias().then(setCategorias).catch(() => {}) }, [])
-  useEffect(() => {
-    if (!nuevoParam.categoria_parametro) { setTiposPorCat([]); return }
-    datosBasicosApi.listarTipos(nuevoParam.categoria_parametro).then(setTiposPorCat).catch(() => {})
-  }, [nuevoParam.categoria_parametro])
+  const cargarTipos = useCallback(async () => {
+    setCargandoTipo(true)
+    try { setTipos(await datosBasicosApi.listarTipos()) }
+    finally { setCargandoTipo(false) }
+  }, [])
 
-  const guardarInline = async (cat: string, tipo: string, valor: string, extras?: { replica?: boolean; visible?: boolean }) => {
-    setGuardando(`${cat}/${tipo}`); setError('')
+  useEffect(() => { cargarCategorias(); cargarTipos() }, [cargarCategorias, cargarTipos])
+
+  // ── Categorías: guardar ────────────────────────────────────────────────────
+  const abrirNuevaCat = () => { setCatEditando(null); setFormCat({ categoria_parametro: '', nombre: '', descripcion: '', activo: true }); setErrorCat(''); setModalCat(true) }
+  const abrirEditarCat = (c: CategoriaParametro) => { setCatEditando(c); setFormCat({ categoria_parametro: c.categoria_parametro, nombre: c.nombre, descripcion: c.descripcion || '', activo: c.activo }); setErrorCat(''); setModalCat(true) }
+
+  const guardarCat = async () => {
+    if (!formCat.categoria_parametro.trim() || !formCat.nombre.trim()) { setErrorCat('Código y nombre son obligatorios'); return }
+    setGuardandoCat(true); setErrorCat('')
     try {
-      await parametrosApi.upsertGenerales({ categoria_parametro: cat, tipo_parametro: tipo, valor_parametro: valor, ...extras })
-      mostrarExito(t('parametroGuardado'))
-    } catch (e) { setError(e instanceof Error ? e.message : tc('error')) }
-    finally { setGuardando(null) }
+      if (catEditando) {
+        await datosBasicosApi.actualizarCategoria(catEditando.categoria_parametro, { nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo })
+      } else {
+        await datosBasicosApi.crearCategoria({ categoria_parametro: formCat.categoria_parametro.toUpperCase(), nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo })
+      }
+      setModalCat(false); cargarCategorias()
+    } catch (e) { setErrorCat(e instanceof Error ? e.message : 'Error al guardar') }
+    finally { setGuardandoCat(false) }
   }
 
-  const toggleFlag = async (p: ParametroRow, campo: 'replica' | 'visible' | 'editable') => {
-    const nuevoValor = !p[campo]
-    setParams((prev) => prev.map((x) => x.categoria_parametro === p.categoria_parametro && x.tipo_parametro === p.tipo_parametro ? { ...x, [campo]: nuevoValor } : x))
+  // ── Tipos: guardar ─────────────────────────────────────────────────────────
+  const abrirNuevoTipo = () => { setTipoEditando(null); setFormTipo({ categoria_parametro: filtroCategoria, tipo_parametro: '', nombre: '', descripcion: '', activo: true }); setErrorTipo(''); setModalTipo(true) }
+  const abrirEditarTipo = (t: TipoParametro) => { setTipoEditando(t); setFormTipo({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, nombre: t.nombre, descripcion: t.descripcion || '', activo: t.activo }); setErrorTipo(''); setModalTipo(true) }
+
+  const guardarTipo = async () => {
+    if (!formTipo.categoria_parametro || !formTipo.tipo_parametro.trim() || !formTipo.nombre.trim()) { setErrorTipo('Categoría, código y nombre son obligatorios'); return }
+    setGuardandoTipo(true); setErrorTipo('')
     try {
-      await parametrosApi.upsertGenerales({ categoria_parametro: p.categoria_parametro, tipo_parametro: p.tipo_parametro, valor_parametro: p.valor_parametro, [campo]: nuevoValor })
-    } catch (e) {
-      setParams((prev) => prev.map((x) => x.categoria_parametro === p.categoria_parametro && x.tipo_parametro === p.tipo_parametro ? { ...x, [campo]: !nuevoValor } : x))
-      setError(e instanceof Error ? e.message : tc('error'))
-    }
+      if (tipoEditando) {
+        await datosBasicosApi.actualizarTipo(tipoEditando.categoria_parametro, tipoEditando.tipo_parametro, { nombre: formTipo.nombre, descripcion: formTipo.descripcion, activo: formTipo.activo })
+      } else {
+        await datosBasicosApi.crearTipo({ categoria_parametro: formTipo.categoria_parametro, tipo_parametro: formTipo.tipo_parametro.toUpperCase(), nombre: formTipo.nombre, descripcion: formTipo.descripcion, activo: formTipo.activo })
+      }
+      setModalTipo(false); cargarTipos()
+    } catch (e) { setErrorTipo(e instanceof Error ? e.message : 'Error al guardar') }
+    finally { setGuardandoTipo(false) }
   }
 
-  const eliminarParam = async () => {
-    if (!paramAEliminar) return
+  // ── Eliminación ────────────────────────────────────────────────────────────
+  const confirmarEliminar = async () => {
+    if (!itemAEliminar) return
+    setEliminando(true)
     try {
-      await parametrosApi.eliminarGeneral(paramAEliminar.cat, paramAEliminar.tipo)
-      mostrarExito(t('parametroEliminado')); setParamAEliminar(null); cargar()
-    } catch (e) { setError(e instanceof Error ? e.message : tc('error')) }
+      if (itemAEliminar.tipo === 'categoria') {
+        await datosBasicosApi.eliminarCategoria(itemAEliminar.item.categoria_parametro)
+        cargarCategorias(); cargarTipos()
+      } else {
+        const t = itemAEliminar.item as TipoParametro
+        await datosBasicosApi.eliminarTipo(t.categoria_parametro, t.tipo_parametro)
+        cargarTipos()
+      }
+      setItemAEliminar(null)
+    } catch (e) { console.error(e) }
+    finally { setEliminando(false) }
   }
 
-  const agregarNuevo = async () => {
-    if (!nuevoParam.categoria_parametro || !nuevoParam.tipo_parametro || !nuevoParam.valor_parametro) { setError(t('camposObligatorios')); return }
-    await guardarInline(nuevoParam.categoria_parametro, nuevoParam.tipo_parametro, nuevoParam.valor_parametro)
-    setNuevoParam({ categoria_parametro: '', tipo_parametro: '', valor_parametro: '' }); cargar()
-  }
+  const tiposFiltrados = filtroCategoria ? tipos.filter((t) => t.categoria_parametro === filtroCategoria) : tipos
 
-  const tiposDisponibles = tiposPorCat.filter((t) => !params.some((p) => p.categoria_parametro === t.categoria_parametro && p.tipo_parametro === t.tipo_parametro))
-  const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50'
+  const tabs: { id: TabId; label: string }[] = [
+    { id: 'categorias', label: 'Categorías de Parámetro' },
+    { id: 'tipos', label: 'Tipos de Parámetro' },
+  ]
 
   return (
-    <div className="relative flex flex-col gap-6 max-w-5xl">
+    <div className="relative flex flex-col gap-6">
       <BotonChat />
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <h2 className="page-heading">Parámetros — Datos Básicos</h2>
+        <p className="text-sm text-texto-muted mt-1">Administra las categorías y tipos de parámetros del sistema</p>
       </div>
 
-      {mensajeExito && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3"><p className="text-sm text-exito">{mensajeExito}</p></div>}
-      {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
+      {/* Tabs */}
+      <div className="flex gap-1 p-1 bg-fondo rounded-lg border border-borde w-fit">
+        {tabs.map((tab) => (
+          <button key={tab.id} onClick={() => setTabActiva(tab.id)}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tabActiva === tab.id ? 'bg-surface text-primario-oscuro shadow-sm border border-borde' : 'text-texto-muted hover:text-texto'}`}
+          >{tab.label}</button>
+        ))}
+      </div>
 
-      <Tarjeta>
-        <TarjetaCabecera>
-          <TarjetaTitulo>{t('seccionTitulo')}</TarjetaTitulo>
-          <TarjetaDescripcion>{t('seccionDescripcion')}</TarjetaDescripcion>
-        </TarjetaCabecera>
-        <TarjetaContenido>
-          {cargando ? (
-            <div className="flex flex-col gap-4">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-16 bg-fondo rounded-lg animate-pulse" />)}</div>
-          ) : params.length === 0 ? (
-            <p className="text-sm text-texto-muted text-center py-4">{t('sinParametros')}</p>
+      {/* ── Tab: Categorías ── */}
+      {tabActiva === 'categorias' && (
+        <>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-texto-muted">{categorias.length} categorías registradas</p>
+            <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> Nueva categoría</Boton>
+          </div>
+
+          {cargandoCat ? (
+            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
           ) : (
-            <div className="flex flex-col gap-3">
-              {params.map((p) => {
-                const key = `${p.categoria_parametro}/${p.tipo_parametro}`
-                return (
-                  <div key={key} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
-                    <span className="text-xs font-semibold text-texto-muted shrink-0 w-80 truncate" title={`${p.categoria_parametro} / ${p.tipo_parametro}`}>{p.categoria_parametro}<span className="mx-0.5 text-texto-light">/</span>{p.tipo_parametro}</span>
-                    <input
-                      type="text"
-                      defaultValue={p.valor_parametro}
-                      onBlur={(e) => { if (e.target.value !== p.valor_parametro) guardarInline(p.categoria_parametro, p.tipo_parametro, e.target.value, { replica: p.replica, visible: p.visible, editable: p.editable }) }}
-                      className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
-                    />
-                    <div className="flex items-center gap-2 shrink-0">
-                      <label className="flex items-center gap-1 text-xs text-texto-muted cursor-pointer select-none" title={t('tooltipReplica')}>
-                        <input type="checkbox" checked={p.replica ?? false} onChange={(e) => { e.stopPropagation(); toggleFlag(p, 'replica') }} className="rounded border-borde text-primario focus:ring-primario h-3.5 w-3.5 cursor-pointer" />
-                        {t('labelReplica')}
-                      </label>
-                      <label className="flex items-center gap-1 text-xs text-texto-muted cursor-pointer select-none" title={t('tooltipVisible')}>
-                        <input type="checkbox" checked={p.visible ?? true} onChange={(e) => { e.stopPropagation(); toggleFlag(p, 'visible') }} className="rounded border-borde text-primario focus:ring-primario h-3.5 w-3.5 cursor-pointer" />
-                        {t('labelVisible')}
-                      </label>
-                      <label className="flex items-center gap-1 text-xs text-texto-muted cursor-pointer select-none" title={t('tooltipEditable')}>
-                        <input type="checkbox" checked={p.editable ?? true} onChange={(e) => { e.stopPropagation(); toggleFlag(p, 'editable') }} className="rounded border-borde text-primario focus:ring-primario h-3.5 w-3.5 cursor-pointer" />
-                        {t('labelEditable')}
-                      </label>
-                    </div>
-                    <button onClick={(e) => { const input = (e.currentTarget.parentElement?.querySelector('input[type=text]') as HTMLInputElement); if (input) guardarInline(p.categoria_parametro, p.tipo_parametro, input.value, { replica: p.replica, visible: p.visible, editable: p.editable }) }} disabled={guardando === key} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title={tc('guardar')}><Save size={14} /></button>
-                    <button onClick={() => setParamAEliminar({ cat: p.categoria_parametro, tipo: p.tipo_parametro })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title={t('eliminarTitulo')}><Trash2 size={14} /></button>
-                  </div>
-                )
-              })}
+            <Tabla>
+              <TablaCabecera><tr>
+                <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh><TablaTh>Estado</TablaTh>
+                <TablaTh className="text-right">Acciones</TablaTh>
+              </tr></TablaCabecera>
+              <TablaCuerpo>
+                {categorias.length === 0 ? (
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>No hay categorías registradas</TablaTd></TablaFila>
+                ) : categorias.map((c) => (
+                  <TablaFila key={c.categoria_parametro}
+                    onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }}
+                  >
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
+                    <TablaTd className="font-medium">{c.nombre}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm">{c.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
+                    <TablaTd>
+                      <Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                    </TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver tipos"><Eye size={14} /></button>
+                        <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                        <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                      </div>
+                    </TablaTd>
+                  </TablaFila>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Tipos ── */}
+      {tabActiva === 'tipos' && (
+        <>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-texto-muted">Filtrar por categoría:</p>
+              <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
+                <option value="">Todas</option>
+                {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
+              </select>
+            </div>
+            <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> Nuevo tipo</Boton>
+          </div>
+
+          {filtroCategoria === '' && (
+            <div className="bg-primario-muy-claro/50 border border-primario/20 rounded-lg px-4 py-3">
+              <p className="text-sm text-primario-oscuro">Selecciona una categoría para ver sus tipos, o muestra todos.</p>
             </div>
           )}
 
-          {esAdmin() && (
-            <div className="border-t border-borde mt-4 pt-4">
-              <p className="text-xs font-semibold text-texto-muted uppercase tracking-wider mb-3">{t('agregarParametro')}</p>
-              <div className="flex flex-col gap-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <select value={nuevoParam.categoria_parametro} onChange={(e) => setNuevoParam({ categoria_parametro: e.target.value, tipo_parametro: '', valor_parametro: nuevoParam.valor_parametro })} className={selectClass}>
-                    <option value="">{t('placeholderCategoria')}</option>
-                    {categorias.filter((c) => c.activo).map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
-                  </select>
-                  <select value={nuevoParam.tipo_parametro} onChange={(e) => setNuevoParam({ ...nuevoParam, tipo_parametro: e.target.value })} className={selectClass} disabled={!nuevoParam.categoria_parametro}>
-                    <option value="">{t('placeholderTipo')}</option>
-                    {tiposDisponibles.map((t) => <option key={t.tipo_parametro} value={t.tipo_parametro}>{t.nombre}</option>)}
-                  </select>
-                </div>
-                <div className="flex gap-2">
-                  <input type="text" placeholder={t('placeholderValor')} value={nuevoParam.valor_parametro} onChange={(e) => setNuevoParam({ ...nuevoParam, valor_parametro: e.target.value })} className={`flex-1 ${selectClass}`} />
-                  <Boton variante="primario" tamano="sm" onClick={agregarNuevo}>{t('agregarParametro')}</Boton>
-                </div>
-              </div>
+          {cargandoTipo ? (
+            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : (
+            <Tabla>
+              <TablaCabecera><tr>
+                <TablaTh>Categoría</TablaTh><TablaTh>Código tipo</TablaTh><TablaTh>Nombre</TablaTh>
+                <TablaTh>Descripción</TablaTh><TablaTh>Estado</TablaTh>
+                <TablaTh className="text-right">Acciones</TablaTh>
+              </tr></TablaCabecera>
+              <TablaCuerpo>
+                {tiposFiltrados.length === 0 ? (
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={6 as never}>No hay tipos registrados</TablaTd></TablaFila>
+                ) : tiposFiltrados.map((t) => (
+                  <TablaFila key={`${t.categoria_parametro}/${t.tipo_parametro}`}>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.categoria_parametro}</code></TablaTd>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.tipo_parametro}</code></TablaTd>
+                    <TablaTd className="font-medium">{t.nombre}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm">{t.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
+                    <TablaTd>
+                      <Insignia variante={t.activo ? 'exito' : 'error'}>{t.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                    </TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                        <button onClick={() => setItemAEliminar({ tipo: 'tipoparam', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                      </div>
+                    </TablaTd>
+                  </TablaFila>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
+          )}
+        </>
+      )}
+
+      {/* ── Modal Categoría ── */}
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de parámetro'}>
+        <div className="flex flex-col gap-4 p-4">
+          {!catEditando && (
+            <div>
+              <label className="block text-sm font-medium text-texto mb-1">Código *</label>
+              <input className={inputCls} placeholder="ej: SISTEMA" value={formCat.categoria_parametro}
+                onChange={(e) => setFormCat({ ...formCat, categoria_parametro: e.target.value.toUpperCase() })} />
             </div>
           )}
-        </TarjetaContenido>
-      </Tarjeta>
+          <div>
+            <label className="block text-sm font-medium text-texto mb-1">Nombre *</label>
+            <input className={inputCls} placeholder="Nombre de la categoría" value={formCat.nombre}
+              onChange={(e) => setFormCat({ ...formCat, nombre: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
+            <textarea className={inputCls} rows={2} placeholder="Descripción opcional" value={formCat.descripcion}
+              onChange={(e) => setFormCat({ ...formCat, descripcion: e.target.value })} />
+          </div>
+          {catEditando && (
+            <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
+              <input type="checkbox" checked={formCat.activo} onChange={(e) => setFormCat({ ...formCat, activo: e.target.checked })}
+                className="rounded border-borde text-primario h-4 w-4" />
+              Activo
+            </label>
+          )}
+          {errorCat && <p className="text-sm text-error">{errorCat}</p>}
+        </div>
+        <div className="flex gap-3 justify-end px-4 pb-4">
+          <Boton variante="contorno" onClick={() => setModalCat(false)}>Cancelar</Boton>
+          <Boton variante="primario" onClick={guardarCat} cargando={guardandoCat}>{catEditando ? 'Guardar' : 'Crear'}</Boton>
+        </div>
+      </Modal>
 
-      <ModalConfirmar abierto={!!paramAEliminar} alCerrar={() => setParamAEliminar(null)} alConfirmar={eliminarParam} titulo={t('eliminarTitulo')} mensaje={paramAEliminar ? t('eliminarConfirm', { cat: paramAEliminar.cat, tipo: paramAEliminar.tipo }) : ''} textoConfirmar={tc('eliminar')} />
+      {/* ── Modal Tipo ── */}
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo' : 'Nuevo tipo de parámetro'}>
+        <div className="flex flex-col gap-4 p-4">
+          <div>
+            <label className="block text-sm font-medium text-texto mb-1">Categoría *</label>
+            <select className={selectCls} value={formTipo.categoria_parametro}
+              onChange={(e) => setFormTipo({ ...formTipo, categoria_parametro: e.target.value })}
+              disabled={!!tipoEditando}>
+              <option value="">Selecciona categoría</option>
+              {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
+            </select>
+          </div>
+          {!tipoEditando && (
+            <div>
+              <label className="block text-sm font-medium text-texto mb-1">Código *</label>
+              <input className={inputCls} placeholder="ej: TIMEOUT" value={formTipo.tipo_parametro}
+                onChange={(e) => setFormTipo({ ...formTipo, tipo_parametro: e.target.value.toUpperCase() })} />
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-texto mb-1">Nombre *</label>
+            <input className={inputCls} placeholder="Nombre del tipo" value={formTipo.nombre}
+              onChange={(e) => setFormTipo({ ...formTipo, nombre: e.target.value })} />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
+            <textarea className={inputCls} rows={2} placeholder="Descripción opcional" value={formTipo.descripcion}
+              onChange={(e) => setFormTipo({ ...formTipo, descripcion: e.target.value })} />
+          </div>
+          {tipoEditando && (
+            <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
+              <input type="checkbox" checked={formTipo.activo} onChange={(e) => setFormTipo({ ...formTipo, activo: e.target.checked })}
+                className="rounded border-borde text-primario h-4 w-4" />
+              Activo
+            </label>
+          )}
+          {errorTipo && <p className="text-sm text-error">{errorTipo}</p>}
+        </div>
+        <div className="flex gap-3 justify-end px-4 pb-4">
+          <Boton variante="contorno" onClick={() => setModalTipo(false)}>Cancelar</Boton>
+          <Boton variante="primario" onClick={guardarTipo} cargando={guardandoTipo}>{tipoEditando ? 'Guardar' : 'Crear'}</Boton>
+        </div>
+      </Modal>
+
+      {/* ── Confirmar eliminación ── */}
+      <ModalConfirmar
+        abierto={!!itemAEliminar}
+        alCerrar={() => setItemAEliminar(null)}
+        alConfirmar={confirmarEliminar}
+        titulo="Eliminar"
+        mensaje={itemAEliminar
+          ? itemAEliminar.tipo === 'categoria'
+            ? `¿Eliminar la categoría "${(itemAEliminar.item as CategoriaParametro).nombre}"? Se eliminarán también sus tipos.`
+            : `¿Eliminar el tipo "${(itemAEliminar.item as TipoParametro).nombre}"?`
+          : ''}
+        textoConfirmar="Eliminar"
+        cargando={eliminando}
+      />
     </div>
   )
 }

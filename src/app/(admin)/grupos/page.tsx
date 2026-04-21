@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Plus, Pencil, Layers, Users, Building2, X, Search, Download, Trash2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Pencil, Layers, Users, Building2, X, Search, Download, Trash2, AlertTriangle, ChevronLeft, ChevronRight, Eye } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -32,7 +32,7 @@ export default function PaginaGrupos() {
   const router = useRouter()
 
   // ── Tab principal ──
-  const [tabPrincipal, setTabPrincipal] = useState<'grupos' | 'cambiar' | 'borrar'>('grupos')
+  const [tabPrincipal, setTabPrincipal] = useState<'grupos' | 'entidades' | 'cambiar' | 'borrar'>('grupos')
 
   // ── Estado compartido ──
   const [grupos, setGrupos] = useState<Grupo[]>([])
@@ -421,6 +421,16 @@ export default function PaginaGrupos() {
             Grupos
           </button>
         )}
+        {esSuperAdmin() && (
+          <button
+            onClick={() => setTabPrincipal('entidades')}
+            className={`px-5 py-2.5 text-sm font-medium transition-colors ${
+              tabPrincipal === 'entidades' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
+            }`}
+          >
+            Entidades
+          </button>
+        )}
         <button
           onClick={() => setTabPrincipal('cambiar')}
           className={`px-5 py-2.5 text-sm font-medium transition-colors ${
@@ -480,6 +490,7 @@ export default function PaginaGrupos() {
                 <button
                   key={g.codigo_grupo}
                   onClick={() => setGrupoSeleccionado(g)}
+                  onDoubleClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }}
                   className={`flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
                     grupoSeleccionado?.codigo_grupo === g.codigo_grupo
                       ? 'border-primario bg-primario-muy-claro'
@@ -500,12 +511,14 @@ export default function PaginaGrupos() {
                       <Insignia variante={varianteTipo(g.tipo)}>{etiquetaTipo(g.tipo)}</Insignia>
                     </div>
                   </div>
-                  <button
-                    onClick={(ev) => { ev.stopPropagation(); abrirEditarGrupo(g) }}
-                    className="ml-auto p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors"
-                  >
-                    <Pencil size={13} />
-                  </button>
+                  <div className="ml-auto flex gap-1">
+                    <button onClick={(ev) => { ev.stopPropagation(); setGrupoSeleccionado(g); setTabPrincipal('entidades') }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors" title="Ver entidades">
+                      <Eye size={13} />
+                    </button>
+                    <button onClick={(ev) => { ev.stopPropagation(); abrirEditarGrupo(g) }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors">
+                      <Pencil size={13} />
+                    </button>
+                  </div>
                 </button>
               ))}
             </div>
@@ -717,7 +730,70 @@ export default function PaginaGrupos() {
         )
       )}
 
-      {/* ═══════════════════ TAB 2: CAMBIAR GRUPO ═══════════════════ */}
+      {/* ═══════════════════ TAB 2: ENTIDADES ═══════════════════ */}
+      {tabPrincipal === 'entidades' && (
+        !esSuperAdmin() ? (
+          <div className="flex items-center justify-center h-48 text-texto-muted text-sm">No tienes permisos para acceder a esta sección.</div>
+        ) : (
+          <>
+            <div className="flex items-center gap-3">
+              <p className="text-sm text-texto-muted">Grupo:</p>
+              <select
+                value={grupoSeleccionado?.codigo_grupo || ''}
+                onChange={(e) => {
+                  const g = grupos.find((x) => x.codigo_grupo === e.target.value) || null
+                  setGrupoSeleccionado(g)
+                }}
+                className="rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario"
+              >
+                <option value="">Selecciona un grupo</option>
+                {grupos.map((g) => <option key={g.codigo_grupo} value={g.codigo_grupo}>{g.nombre}</option>)}
+              </select>
+              {grupoSeleccionado && (
+                <Boton variante="primario" tamano="sm" onClick={abrirNuevaEntidad}><Plus size={14} /> Nueva entidad</Boton>
+              )}
+            </div>
+
+            {!grupoSeleccionado ? (
+              <div className="bg-primario-muy-claro/50 border border-primario/20 rounded-lg px-4 py-3">
+                <p className="text-sm text-primario-oscuro">Selecciona un grupo para ver sus entidades, o haz doble clic en un grupo de la lengüeta anterior.</p>
+              </div>
+            ) : cargandoDetalle ? (
+              <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+            ) : (
+              <Tabla>
+                <TablaCabecera><tr>
+                  <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Estado</TablaTh>
+                  <TablaTh className="text-right">Acciones</TablaTh>
+                </tr></TablaCabecera>
+                <TablaCuerpo>
+                  {entidadesFiltradas.length === 0 ? (
+                    <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={4 as never}>No hay entidades en este grupo</TablaTd></TablaFila>
+                  ) : entidadesFiltradas.map((e) => (
+                    <TablaFila key={e.codigo_entidad}>
+                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_entidad}</code></TablaTd>
+                      <TablaTd className="font-medium">{e.nombre}</TablaTd>
+                      <TablaTd>
+                        <Insignia variante={(e as unknown as Record<string, unknown>).activo !== false ? 'exito' : 'error'}>
+                          {(e as unknown as Record<string, unknown>).activo !== false ? 'Activo' : 'Inactivo'}
+                        </Insignia>
+                      </TablaTd>
+                      <TablaTd>
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => abrirEditarEntidad(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                          <button onClick={() => setConfirmarDesactivar(e)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Desactivar"><Building2 size={14} /></button>
+                        </div>
+                      </TablaTd>
+                    </TablaFila>
+                  ))}
+                </TablaCuerpo>
+              </Tabla>
+            )}
+          </>
+        )
+      )}
+
+      {/* ═══════════════════ TAB 3: CAMBIAR GRUPO ═══════════════════ */}
       {tabPrincipal === 'cambiar' && (
         <div className="max-w-md p-6 bg-surface rounded-xl border border-borde shadow-sm">
           <h3 className="text-base font-semibold text-texto mb-1">Cambiar de Grupo</h3>

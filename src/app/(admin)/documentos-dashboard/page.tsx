@@ -80,7 +80,7 @@ export default function PaginaDocumentosDashboard() {
   // Accesos rápidos
   const accesos = [
     { nombre: t('irProcesarDocumentos'), href: '/procesar-documentos', icono: Cpu },
-    { nombre: t('irCargarDocumentos'), href: '/cargar-documentos', icono: FolderTree },
+    { nombre: t('irCargarDocumentos'), href: '/ubicaciones-docs', icono: FolderTree },
     { nombre: t('irCategorias'), href: '/categorias-caracteristica-docs', icono: Tags },
   ]
 

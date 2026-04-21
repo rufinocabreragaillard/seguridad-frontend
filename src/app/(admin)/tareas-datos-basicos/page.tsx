@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Download, Eye } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -425,7 +425,9 @@ export default function PaginaTareasDatosBasicos() {
                 {categorias.length === 0 ? (
                   <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>No hay categorías registradas</TablaTd></TablaFila>
                 ) : categorias.map((c) => (
-                  <TablaFila key={c.codigo_categoria_tarea}>
+                  <TablaFila key={c.codigo_categoria_tarea}
+                    onDoubleClick={() => { setFiltroCatTipo(c.codigo_categoria_tarea); setTabActiva('tipos') }}
+                  >
                     <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_tarea}</code></TablaTd>
                     <TablaTd className="font-medium">{c.nombre_categoria_tarea}</TablaTd>
                     <TablaTd className="text-texto-muted text-sm">{c.descripcion_categoria_tarea || <span className="text-texto-light">—</span>}</TablaTd>
@@ -434,6 +436,7 @@ export default function PaginaTareasDatosBasicos() {
                     </TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => { setFiltroCatTipo(c.codigo_categoria_tarea); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver tipos"><Eye size={14} /></button>
                         <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                         <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                       </div>
@@ -486,7 +489,9 @@ export default function PaginaTareasDatosBasicos() {
                 {tiposFiltrados.length === 0 ? (
                   <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={6 as never}>No hay tipos registrados</TablaTd></TablaFila>
                 ) : tiposFiltrados.map((t) => (
-                  <TablaFila key={`${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`}>
+                  <TablaFila key={`${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`}
+                    onDoubleClick={() => { setFiltroCatEst(t.codigo_categoria_tarea); setFiltroTipoEst(t.codigo_tipo_tarea); setTabActiva('estados') }}
+                  >
                     <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_categoria_tarea}</code></TablaTd>
                     <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_tipo_tarea}</code></TablaTd>
                     <TablaTd className="font-medium">{t.nombre_tipo_tarea}</TablaTd>
@@ -498,6 +503,7 @@ export default function PaginaTareasDatosBasicos() {
                     </TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
+                        <button onClick={() => { setFiltroCatEst(t.codigo_categoria_tarea); setFiltroTipoEst(t.codigo_tipo_tarea); setTabActiva('estados') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver estados"><Eye size={14} /></button>
                         <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                         <button onClick={() => setItemAEliminar({ tipo: 'tipotarea', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                       </div>

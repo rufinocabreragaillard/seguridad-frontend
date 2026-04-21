@@ -18,6 +18,7 @@ import type { Rol, Funcion, Aplicacion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
+import { TabPrompts } from '@/components/ui/tab-prompts'
 
 type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }
 

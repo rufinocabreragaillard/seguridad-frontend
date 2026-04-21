@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Brain, Code2, Lock, Unlock } from 'lucide-react'
-import { BotonesAccionPrompts } from './botones-accion-prompts'
+import { PieBotonesPrompts } from './pie-botones-prompts'
 
 export interface CamposPrompt {
   prompt: string | null
@@ -153,7 +153,7 @@ export function TabPrompts({
       </div>
 
       {/* Botones de acción (clase separada de PieBotonesModal) */}
-      <BotonesAccionPrompts
+      <PieBotonesPrompts
         tabla={tabla}
         pkColumna={pkColumna}
         pkValor={pkValor}

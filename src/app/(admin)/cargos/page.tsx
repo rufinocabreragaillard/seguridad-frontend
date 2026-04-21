@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { TabPrompts } from '@/components/ui/tab-prompts'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Boton } from '@/components/ui/boton'
@@ -33,6 +34,10 @@ type FormCargo = {
   codigo_entidad: string
   prompt: string
   system_prompt: string
+  python: string
+  javascript: string
+  python_editado_manual: boolean
+  javascript_editado_manual: boolean
 }
 
 const selectClass =
@@ -66,7 +71,11 @@ export default function PaginaCargos() {
         codigo_entidad: f.codigo_entidad || undefined,
         prompt: f.prompt.trim() || undefined,
         system_prompt: f.system_prompt.trim() || undefined,
-      }),
+        python: f.python.trim() || undefined,
+        javascript: f.javascript.trim() || undefined,
+        python_editado_manual: f.python_editado_manual,
+        javascript_editado_manual: f.javascript_editado_manual,
+      } as Record<string, unknown>),
     actualizarFn: (id, f) =>
       cargosApi.actualizar(id, {
         nombre_cargo: (f.nombre_cargo ?? '').trim(),
@@ -75,24 +84,35 @@ export default function PaginaCargos() {
         codigo_entidad: f.codigo_entidad,
         prompt: (f.prompt ?? '').trim() || undefined,
         system_prompt: (f.system_prompt ?? '').trim() || undefined,
-      }),
+        python: (f.python ?? '').trim() || undefined,
+        javascript: (f.javascript ?? '').trim() || undefined,
+        python_editado_manual: f.python_editado_manual,
+        javascript_editado_manual: f.javascript_editado_manual,
+      } as Record<string, unknown>),
     eliminarFn: async (id: string) => { await cargosApi.eliminar(id) },
     getId: (c) => c.codigo_cargo,
     camposBusqueda: (c) => [c.codigo_cargo, c.nombre_cargo, c.alias],
-    formInicial: { codigo_cargo: '', nombre_cargo: '', alias: '', descripcion: '', codigo_entidad: '', prompt: '', system_prompt: '' },
-    itemToForm: (c) => ({
-      codigo_cargo: c.codigo_cargo,
-      nombre_cargo: c.nombre_cargo,
-      alias: c.alias ?? '',
-      descripcion: c.descripcion ?? '',
-      codigo_entidad: c.codigo_entidad ?? '',
-      prompt: c.prompt ?? '',
-      system_prompt: c.system_prompt ?? '',
-    }),
+    formInicial: { codigo_cargo: '', nombre_cargo: '', alias: '', descripcion: '', codigo_entidad: '', prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false },
+    itemToForm: (c) => {
+      const c2 = c as unknown as Record<string, unknown>
+      return {
+        codigo_cargo: c.codigo_cargo,
+        nombre_cargo: c.nombre_cargo,
+        alias: c.alias ?? '',
+        descripcion: c.descripcion ?? '',
+        codigo_entidad: c.codigo_entidad ?? '',
+        prompt: c.prompt ?? '',
+        system_prompt: c.system_prompt ?? '',
+        python: c2.python as string || '',
+        javascript: c2.javascript as string || '',
+        python_editado_manual: c2.python_editado_manual as boolean || false,
+        javascript_editado_manual: c2.javascript_editado_manual as boolean || false,
+      }
+    },
   })
 
   // ── Tab activa en el modal ──────────────────────────────────────────────────
-  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'prompt' | 'system_prompt'>('datos')
+  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'prompts'>('datos')
 
   const abrirNuevo = () => { setTabActiva('datos'); crud.abrirNuevo() }
   const abrirEditar = (c: Cargo) => {
@@ -246,8 +266,8 @@ export default function PaginaCargos() {
           {/* Tabs */}
           <div className="flex border-b border-borde mb-4">
             {(crud.editando
-              ? (['datos', 'roles', 'prompt', 'system_prompt'] as const)
-              : (['datos', 'prompt', 'system_prompt'] as const)
+              ? (['datos', 'roles', 'prompts'] as const)
+              : (['datos', 'prompts'] as const)
             ).map((tab) => (
               <button
                 key={tab}
@@ -258,7 +278,7 @@ export default function PaginaCargos() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? t('tabDatos') : tab === 'roles' ? t('tabRoles') : tab === 'prompt' ? 'Prompt' : 'System Prompt'}
+                {tab === 'datos' ? t('tabDatos') : tab === 'roles' ? t('tabRoles') : 'Prompts'}
               </button>
             ))}
           </div>
@@ -339,39 +359,15 @@ export default function PaginaCargos() {
             </div>
           )}
 
-          {/* ── Tab Prompt ────────────────────────────────────────────────── */}
-          {tabActiva === 'prompt' && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-texto-muted">
-                Texto inyectado en el prompt del LLM al procesar documentos o análisis en contexto de este cargo.
-              </p>
-              <textarea
-                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder="Ej: Este cargo gestiona documentos de contratación pública..."
-                value={crud.form.prompt}
-                onChange={(e) => crud.updateForm('prompt', e.target.value)}
-              />
-              <PieBotonesModal
-                editando={!!crud.editando}
-                onGuardar={() => crud.guardar(undefined, undefined, { cerrar: false })}
-                onGuardarYSalir={() => crud.guardar(undefined, undefined, { cerrar: true })}
-                onCerrar={crud.cerrarModal}
-                cargando={crud.guardando}
-              />
-            </div>
-          )}
-
-          {/* ── Tab System Prompt ─────────────────────────────────────────── */}
-          {tabActiva === 'system_prompt' && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-texto-muted">
-                Instrucciones de sistema que se aplican a todas las conversaciones y análisis LLM para usuarios con este cargo.
-              </p>
-              <textarea
-                className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30"
-                placeholder="Ej: Eres un asistente especializado en gestión documental para este cargo..."
-                value={crud.form.system_prompt}
-                onChange={(e) => crud.updateForm('system_prompt', e.target.value)}
+          {/* ── Tab Prompts ───────────────────────────────────────────────── */}
+          {tabActiva === 'prompts' && (
+            <div className="flex flex-col gap-4">
+              <TabPrompts
+                tabla="cargos"
+                pkColumna="codigo_cargo"
+                pkValor={crud.editando?.codigo_cargo ?? null}
+                campos={crud.form}
+                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
               />
               <PieBotonesModal
                 editando={!!crud.editando}

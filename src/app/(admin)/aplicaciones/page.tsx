@@ -35,6 +35,7 @@ export default function PaginaAplicaciones() {
   // ── Modal Aplicacion ──────────────────────────────────────────────────────
   const [modalApp, setModalApp] = useState(false)
   const [appEditando, setAppEditando] = useState<Aplicacion | null>(null)
+  const [appContexto, setAppContexto] = useState<Aplicacion | null>(null)
   const [formApp, setFormApp] = useState<{ codigo_aplicacion: string; nombre: string; alias: string; descripcion: string; tipo: TipoElemento; sidebar_ancho: boolean; prompt: string; system_prompt: string; python: string; javascript: string; python_editado_manual: boolean; javascript_editado_manual: boolean }>({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
   const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'grupos' | 'prompts'>('datos')
   const [guardandoApp, setGuardandoApp] = useState(false)
@@ -232,6 +233,7 @@ export default function PaginaAplicaciones() {
                 <TablaTd className="text-texto-muted text-sm">{a.descripcion || '—'}</TablaTd>
                 <TablaTd>
                   <div className="flex items-center justify-end gap-1">
+                    <button onClick={() => setAppContexto(a)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
                     <button onClick={() => abrirEditarApp(a)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                     <button onClick={() => setConfirmacion(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                   </div>
@@ -407,6 +409,18 @@ export default function PaginaAplicaciones() {
           )}
         </div>
       </Modal>
+
+      {/* ── MODAL EDITOR CONTEXTO APP ── */}
+      {appContexto && (
+        <ModalEditorPrompts
+          abierto={!!appContexto}
+          onCerrar={() => setAppContexto(null)}
+          tabla="aplicaciones"
+          pkColumna="codigo_aplicacion"
+          pkValor={appContexto.codigo_aplicacion}
+          titulo={appContexto.nombre}
+        />
+      )}
 
       {/* ── MODAL CONFIRMAR ── */}
       <ModalConfirmar

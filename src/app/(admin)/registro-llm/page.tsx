@@ -15,6 +15,7 @@ import { registroLLMApi, llmCredencialesApi, llmPreciosApi, llmUsoApi } from '@/
 import type { LLMCredencial, LLMPrecio, LLMUsoFila, LLMUsoResumen } from '@/lib/api'
 import type { RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
+import { TabPrompts } from '@/components/ui/tab-prompts'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { useAuth } from '@/context/AuthContext'
 
@@ -53,9 +54,10 @@ export default function PaginaRegistroLLM() {
   const [busqueda, setBusqueda] = useState('')
   const [modalModelo, setModalModelo] = useState(false)
   const [editandoModelo, setEditandoModelo] = useState<RegistroLLM | null>(null)
-  const [tabModal, setTabModal] = useState<'datos' | 'probar'>('datos')
+  const [tabModal, setTabModal] = useState<'datos' | 'probar' | 'prompts'>('datos')
   const [formModelo, setFormModelo] = useState({
     proveedor: '', nombre_tecnico: '', nombre_visible: '', descripcion: '', estado_valido: false,
+    prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
   const [guardandoModelo, setGuardandoModelo] = useState(false)
   const [errorModelo, setErrorModelo] = useState('')
@@ -79,19 +81,26 @@ export default function PaginaRegistroLLM() {
 
   const abrirNuevoModelo = () => {
     setEditandoModelo(null)
-    setFormModelo({ proveedor: '', nombre_tecnico: '', nombre_visible: '', descripcion: '', estado_valido: false })
+    setFormModelo({ proveedor: '', nombre_tecnico: '', nombre_visible: '', descripcion: '', estado_valido: false, prompt: '', system_prompt: '', python: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setErrorModelo('')
     setModalModelo(true)
   }
 
   const abrirEditarModelo = (m: RegistroLLM) => {
     setEditandoModelo(m)
+    const m2 = m as unknown as Record<string, unknown>
     setFormModelo({
       proveedor: m.proveedor,
       nombre_tecnico: m.nombre_tecnico,
       nombre_visible: m.nombre_visible,
       descripcion: m.descripcion || '',
       estado_valido: m.estado_valido,
+      prompt: m2.prompt as string || '',
+      system_prompt: m2.system_prompt as string || '',
+      python: m2.python as string || '',
+      javascript: m2.javascript as string || '',
+      python_editado_manual: m2.python_editado_manual as boolean || false,
+      javascript_editado_manual: m2.javascript_editado_manual as boolean || false,
     })
     setErrorModelo('')
     setTabModal('datos')
@@ -130,7 +139,13 @@ export default function PaginaRegistroLLM() {
           nombre_visible: formModelo.nombre_visible,
           descripcion: formModelo.descripcion || undefined,
           estado_valido: formModelo.estado_valido,
-        })
+          prompt: formModelo.prompt || undefined,
+          system_prompt: formModelo.system_prompt || undefined,
+          python: formModelo.python || undefined,
+          javascript: formModelo.javascript || undefined,
+          python_editado_manual: formModelo.python_editado_manual,
+          javascript_editado_manual: formModelo.javascript_editado_manual,
+        } as Record<string, unknown>)
       } else {
         const nuevo = await registroLLMApi.crear({
           proveedor: formModelo.proveedor,
@@ -471,6 +486,7 @@ export default function PaginaRegistroLLM() {
                 <div className="flex border-b border-borde -mx-1">
                   <button onClick={() => setTabModal('datos')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabDatos')}</button>
                   <button onClick={() => setTabModal('probar')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'probar' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabProbarConexion')}</button>
+                  <button onClick={() => setTabModal('prompts')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'prompts' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Prompts</button>
                 </div>
               )}
 
@@ -494,6 +510,16 @@ export default function PaginaRegistroLLM() {
                 {errorModelo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorModelo}</p></div>}
                 <PieBotonesModal editando={!!editandoModelo} onGuardar={() => guardarModelo(false)} onGuardarYSalir={() => guardarModelo(true)} onCerrar={() => setModalModelo(false)} cargando={guardandoModelo} />
               </>)}
+
+              {tabModal === 'prompts' && editandoModelo && (
+                <TabPrompts
+                  tabla="registro_llm"
+                  pkColumna="id_modelo"
+                  pkValor={editandoModelo.id_modelo}
+                  campos={formModelo}
+                  onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
+                />
+              )}
 
               {tabModal === 'probar' && editandoModelo && (
                 <div className="flex flex-col gap-4">

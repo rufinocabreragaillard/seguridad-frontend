@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { FileText, Brain, Code2, Lock, Unlock, Save, RefreshCw, Upload } from 'lucide-react'
+import { FileText, Brain, Code2, Lock, Unlock } from 'lucide-react'
 import { Modal } from './modal'
-import { Boton } from './boton'
+import { PieBotonesModal } from './pie-botones-modal'
+import { PieBotonesPrompts } from './pie-botones-prompts'
 import { promptsApi } from '@/lib/api'
 
 type Tab = 'descripcion' | 'prompt' | 'codigo'
@@ -48,8 +49,6 @@ export function ModalEditorPrompts({ abierto, onCerrar, tabla, pkColumna, pkValo
   const [form, setForm] = useState<FormState>(FORM_INICIAL)
   const [cargando, setCargando] = useState(false)
   const [guardando, setGuardando] = useState(false)
-  const [generando, setGenerando] = useState(false)
-  const [sincronizando, setSincronizando] = useState(false)
   const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
 
   useEffect(() => {
@@ -61,12 +60,12 @@ export function ModalEditorPrompts({ abierto, onCerrar, tabla, pkColumna, pkValo
       .getFila(tabla, pkColumna, String(pkValor))
       .then((data) =>
         setForm({
-          descripcion:              String(data.descripcion ?? ''),
-          prompt:                   String(data.prompt ?? ''),
-          system_prompt:            String(data.system_prompt ?? ''),
-          python:                   String(data.python ?? ''),
-          javascript:               String(data.javascript ?? ''),
-          python_editado_manual:    Boolean(data.python_editado_manual),
+          descripcion:               String(data.descripcion ?? ''),
+          prompt:                    String(data.prompt ?? ''),
+          system_prompt:             String(data.system_prompt ?? ''),
+          python:                    String(data.python ?? ''),
+          javascript:                String(data.javascript ?? ''),
+          python_editado_manual:     Boolean(data.python_editado_manual),
           javascript_editado_manual: Boolean(data.javascript_editado_manual),
         }),
       )
@@ -74,12 +73,16 @@ export function ModalEditorPrompts({ abierto, onCerrar, tabla, pkColumna, pkValo
       .finally(() => setCargando(false))
   }, [abierto, tabla, pkColumna, pkValor])
 
-  async function guardar() {
+  async function guardar(cerrarAlTerminar = false) {
     setGuardando(true)
     setMensaje(null)
     try {
       await promptsApi.patchFila(tabla, pkColumna, String(pkValor), form as unknown as Record<string, unknown>)
-      setMensaje({ tipo: 'ok', texto: 'Guardado correctamente.' })
+      if (cerrarAlTerminar) {
+        onCerrar()
+      } else {
+        setMensaje({ tipo: 'ok', texto: 'Guardado correctamente.' })
+      }
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } }; message?: string }
       setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error al guardar.' })
@@ -87,45 +90,6 @@ export function ModalEditorPrompts({ abierto, onCerrar, tabla, pkColumna, pkValo
       setGuardando(false)
     }
   }
-
-  async function generar() {
-    if (!form.prompt.trim()) {
-      setMensaje({ tipo: 'error', texto: 'Escribe un prompt primero.' })
-      return
-    }
-    setGenerando(true)
-    setMensaje(null)
-    try {
-      const res = await promptsApi.compilar({ tabla, pk_columna: pkColumna, pk_valor: String(pkValor), lenguaje: 'ambos', forzar: false })
-      setForm((prev) => ({
-        ...prev,
-        ...(res.python != null ? { python: res.python!, python_editado_manual: false } : {}),
-        ...(res.javascript != null ? { javascript: res.javascript!, javascript_editado_manual: false } : {}),
-      }))
-      setMensaje({ tipo: 'ok', texto: 'Código Python y JavaScript generado desde el prompt.' })
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { detail?: string } }; message?: string }
-      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error al generar.' })
-    } finally {
-      setGenerando(false)
-    }
-  }
-
-  async function sincronizar() {
-    setSincronizando(true)
-    setMensaje(null)
-    try {
-      const res = await promptsApi.sincronizarFila(tabla, pkColumna, String(pkValor))
-      setMensaje({ tipo: 'ok', texto: `Documento ${res.accion} (código ${res.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { detail?: string } }; message?: string }
-      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error al sincronizar.' })
-    } finally {
-      setSincronizando(false)
-    }
-  }
-
-  const ocupado = guardando || generando || sincronizando
 
   return (
     <Modal abierto={abierto} alCerrar={onCerrar} titulo={`Editor de Contexto — ${titulo}`} className="w-[700px] max-w-[95vw]">
@@ -263,36 +227,29 @@ export function ModalEditorPrompts({ abierto, onCerrar, tabla, pkColumna, pkValo
             </div>
           )}
 
-          {/* Footer: Generar | Sincronizar ··· Cerrar | Guardar */}
+          {/* Footer: PieBotonesPrompts (izq) + PieBotonesModal (der) */}
           <div className="flex items-center justify-between mt-4 pt-3 border-t border-borde">
-            <div className="flex gap-2">
-              <Boton
-                variante="contorno"
-                tamano="sm"
-                onClick={generar}
-                disabled={ocupado || !form.prompt.trim()}
-                cargando={generando}
-              >
-                <RefreshCw className="w-4 h-4" /> Generar
-              </Boton>
-              <Boton
-                variante="contorno"
-                tamano="sm"
-                onClick={sincronizar}
-                disabled={ocupado}
-                cargando={sincronizando}
-              >
-                <Upload className="w-4 h-4" /> Sincronizar
-              </Boton>
-            </div>
-            <div className="flex gap-2">
-              <Boton variante="contorno" tamano="sm" onClick={onCerrar} disabled={ocupado}>
-                Cerrar
-              </Boton>
-              <Boton variante="primario" tamano="sm" onClick={guardar} cargando={guardando} disabled={ocupado}>
-                <Save className="w-4 h-4" /> Guardar
-              </Boton>
-            </div>
+            <PieBotonesPrompts
+              tabla={tabla}
+              pkColumna={pkColumna}
+              pkValor={pkValor}
+              tienePrompt={!!form.prompt.trim()}
+              onCodigoGenerado={(r) => {
+                setForm((prev) => ({
+                  ...prev,
+                  ...(r.python != null ? { python: r.python!, python_editado_manual: false } : {}),
+                  ...(r.javascript != null ? { javascript: r.javascript!, javascript_editado_manual: false } : {}),
+                }))
+              }}
+              onMensaje={setMensaje}
+            />
+            <PieBotonesModal
+              editando={true}
+              onGuardar={() => guardar(false)}
+              onGuardarYSalir={() => guardar(true)}
+              onCerrar={onCerrar}
+              cargando={guardando}
+            />
           </div>
         </>
       )}

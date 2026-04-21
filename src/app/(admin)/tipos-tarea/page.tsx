@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { TabPrompts } from '@/components/ui/tab-prompts'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
@@ -40,9 +41,13 @@ type FormTipoTarea = {
   programa: string
   prompt: string
   system_prompt: string
+  python: string
+  javascript: string
+  python_editado_manual: boolean
+  javascript_editado_manual: boolean
 }
 
-type TabModal = 'datos' | 'prompt' | 'system_prompt'
+type TabModal = 'datos' | 'prompts'
 
 const FORM_INICIAL: FormTipoTarea = {
   codigo_categoria_tarea: '',
@@ -54,6 +59,10 @@ const FORM_INICIAL: FormTipoTarea = {
   programa: '',
   prompt: '',
   system_prompt: '',
+  python: '',
+  javascript: '',
+  python_editado_manual: false,
+  javascript_editado_manual: false,
 }
 
 export default function PaginaTiposTarea() {
@@ -79,6 +88,10 @@ export default function PaginaTiposTarea() {
         programa: f.programa.trim() || undefined,
         prompt: f.prompt.trim() || undefined,
         system_prompt: f.system_prompt.trim() || undefined,
+        python: f.python.trim() || undefined,
+        javascript: f.javascript.trim() || undefined,
+        python_editado_manual: f.python_editado_manual,
+        javascript_editado_manual: f.javascript_editado_manual,
       } as any) as Promise<TipoTareaLocal>,
     actualizarFn: (id, f) => {
       const [, categoria, tipo] = id.split('/')
@@ -90,6 +103,10 @@ export default function PaginaTiposTarea() {
         programa: f.programa.trim() || undefined,
         prompt: f.prompt.trim() || undefined,
         system_prompt: f.system_prompt.trim() || undefined,
+        python: f.python.trim() || undefined,
+        javascript: f.javascript.trim() || undefined,
+        python_editado_manual: f.python_editado_manual,
+        javascript_editado_manual: f.javascript_editado_manual,
       } as any) as Promise<TipoTareaLocal>
     },
     eliminarFn: async (id) => {
@@ -99,17 +116,24 @@ export default function PaginaTiposTarea() {
     getId: (t) => `${t.codigo_grupo}/${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`,
     camposBusqueda: (t) => [t.codigo_tipo_tarea, t.nombre_tipo_tarea, t.descripcion_tipo_tarea ?? ''],
     formInicial: FORM_INICIAL,
-    itemToForm: (t) => ({
-      codigo_categoria_tarea: t.codigo_categoria_tarea,
-      codigo_tipo_tarea: t.codigo_tipo_tarea,
-      nombre_tipo_tarea: t.nombre_tipo_tarea,
-      descripcion_tipo_tarea: t.descripcion_tipo_tarea ?? '',
-      ayuda: t.ayuda ?? '',
-      generacion: t.generacion ?? '',
-      programa: t.programa ?? '',
-      prompt: t.prompt ?? '',
-      system_prompt: t.system_prompt ?? '',
-    }),
+    itemToForm: (t) => {
+      const t2 = t as unknown as Record<string, unknown>
+      return {
+        codigo_categoria_tarea: t.codigo_categoria_tarea,
+        codigo_tipo_tarea: t.codigo_tipo_tarea,
+        nombre_tipo_tarea: t.nombre_tipo_tarea,
+        descripcion_tipo_tarea: t.descripcion_tipo_tarea ?? '',
+        ayuda: t.ayuda ?? '',
+        generacion: t.generacion ?? '',
+        programa: t.programa ?? '',
+        prompt: t.prompt ?? '',
+        system_prompt: t.system_prompt ?? '',
+        python: t2.python as string || '',
+        javascript: t2.javascript as string || '',
+        python_editado_manual: t2.python_editado_manual as boolean || false,
+        javascript_editado_manual: t2.javascript_editado_manual as boolean || false,
+      }
+    },
   })
 
   useEffect(() => {
@@ -123,8 +147,7 @@ export default function PaginaTiposTarea() {
 
   const tabs: { key: TabModal; label: string }[] = [
     { key: 'datos', label: 'Datos' },
-    { key: 'prompt', label: 'Prompt' },
-    { key: 'system_prompt', label: 'System Prompt' },
+    { key: 'prompts', label: 'Prompts' },
   ]
 
   return (
@@ -286,23 +309,13 @@ export default function PaginaTiposTarea() {
             </>
           )}
 
-          {tabModal === 'prompt' && (
-            <Textarea
-              etiqueta="Prompt"
-              value={crud.form.prompt}
-              onChange={(e) => crud.updateForm('prompt', e.target.value)}
-              placeholder="Prompt principal para el LLM..."
-              rows={14}
-            />
-          )}
-
-          {tabModal === 'system_prompt' && (
-            <Textarea
-              etiqueta="System Prompt"
-              value={crud.form.system_prompt}
-              onChange={(e) => crud.updateForm('system_prompt', e.target.value)}
-              placeholder="Instrucciones de sistema para el LLM..."
-              rows={14}
+          {tabModal === 'prompts' && (
+            <TabPrompts
+              tabla="tipos_tarea"
+              pkColumna="codigo_tipo_tarea"
+              pkValor={crud.editando?.codigo_tipo_tarea ?? null}
+              campos={crud.form}
+              onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormTipoTarea, valor as string | boolean)}
             />
           )}
 
