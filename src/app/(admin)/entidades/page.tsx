@@ -34,6 +34,7 @@ export default function PaginaEntidades() {
   const [cargando, setCargando] = useState(true)
   const [cargandoAreas, setCargandoAreas] = useState(false)
   const [busquedaAreas, setBusquedaAreas] = useState('')
+  const [busquedaEntidades, setBusquedaEntidades] = useState('')
 
   const [modalEntidad, setModalEntidad] = useState(false)
   const [modalArea, setModalArea] = useState(false)
@@ -199,6 +200,13 @@ export default function PaginaEntidades() {
     }
   }
 
+  // Entidades filtradas
+  const entidadesFiltradas = entidades.filter((e) =>
+    e.nombre.toLowerCase().includes(busquedaEntidades.toLowerCase()) ||
+    e.codigo_entidad.toLowerCase().includes(busquedaEntidades.toLowerCase()) ||
+    (e.descripcion || '').toLowerCase().includes(busquedaEntidades.toLowerCase())
+  )
+
   // Áreas filtradas (mantiene orden jerárquico de la función SQL)
   const areasFiltradas = areas
     .filter((a) =>
@@ -231,7 +239,7 @@ export default function PaginaEntidades() {
             <p className="text-sm text-texto-muted">{entidades.length} entidades registradas</p>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
-                onClick={() => exportarExcel(entidades as unknown as Record<string, unknown>[], [
+                onClick={() => exportarExcel(entidadesFiltradas as unknown as Record<string, unknown>[], [
                   { titulo: 'Grupo', campo: 'codigo_grupo' },
                   { titulo: 'Código', campo: 'codigo_entidad' },
                   { titulo: 'Nombre', campo: 'nombre' },
@@ -239,12 +247,16 @@ export default function PaginaEntidades() {
                   { titulo: 'Estado', campo: 'activo', formato: (v) => v ? 'Activo' : 'Inactivo' },
                   { titulo: 'Fecha creación', campo: 'fecha_creacion', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL') : '' },
                 ], `entidades_${grupoActivo || 'todos'}`)}
-                disabled={entidades.length === 0}
+                disabled={entidadesFiltradas.length === 0}
               >
                 <Download size={15} /> Excel
               </Boton>
               <Boton variante="primario" onClick={abrirNuevaEntidad}><Plus size={16} />{t('nuevaEntidad')}</Boton>
             </div>
+          </div>
+
+          <div className="max-w-sm">
+            <Input placeholder="Buscar por nombre, código o descripción..." value={busquedaEntidades} onChange={(e) => setBusquedaEntidades(e.target.value)} icono={<Search size={15} />} />
           </div>
 
           {cargando ? (
@@ -258,15 +270,15 @@ export default function PaginaEntidades() {
                 <TablaTh className="text-right">Acciones</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
-                {entidades.length === 0 ? (
-                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={6 as never}>No hay entidades registradas</TablaTd></TablaFila>
+                {entidadesFiltradas.length === 0 ? (
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={6 as never}>{busquedaEntidades ? 'No se encontraron entidades' : 'No hay entidades registradas'}</TablaTd></TablaFila>
                 ) : (
                   <SortableDndContext
-                    items={entidades as unknown as Record<string, unknown>[]}
+                    items={entidadesFiltradas as unknown as Record<string, unknown>[]}
                     getId={(item) => (item as unknown as Entidad).codigo_entidad}
                     onReorder={(items) => reordenarEntidades(items as unknown as Entidad[])}
                   >
-                    {entidades.map((e, idx) => (
+                    {entidadesFiltradas.map((e, idx) => (
                       <SortableRow key={e.codigo_entidad} id={e.codigo_entidad}
                         onDoubleClick={() => { setEntidadSeleccionada(e); setTabActiva('areas') }}
                       >
@@ -342,10 +354,10 @@ export default function PaginaEntidades() {
               </div>
               <Tabla>
                 <TablaCabecera><tr>
-                  <TablaTh className="w-28">Código</TablaTh>
+                  <TablaTh className="w-14">Código</TablaTh>
                   <TablaTh>Nombre</TablaTh>
                   <TablaTh className="w-36">Alias</TablaTh>
-                  <TablaTh className="w-32">Ubic. Superior</TablaTh>
+                  <TablaTh className="w-16">Ubic. Superior</TablaTh>
                   <TablaTh className="w-24">Tipo</TablaTh>
                   <TablaTh className="w-20 text-right">Acciones</TablaTh>
                 </tr></TablaCabecera>
