@@ -70,7 +70,7 @@ export function TabRevertir() {
     setErrorCargaInicial(false)
     try {
       const [procsRaw, u] = await Promise.all([
-        procesosApi.listar(),
+        procesosApi.listar('REVERTIR_PROCESAR_DOCS'),
         ubicacionesDocsApi.listar().catch(() => []),
       ])
       const procs = (procsRaw || [])

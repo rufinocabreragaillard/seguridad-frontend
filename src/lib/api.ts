@@ -668,10 +668,10 @@ export interface Proceso {
 }
 
 export const procesosApi = {
-  listar: (codigoFuncion?: string) =>
+  listar: (categoria?: string) =>
     api.get<Proceso[]>('/procesos', {
       params: {
-        ...(codigoFuncion ? { codigo_funcion: codigoFuncion } : {}),
+        ...(categoria ? { categoria } : {}),
       },
     }).then((r) => r.data),
   obtener: (codigo: string) => api.get<Proceso>(`/procesos/${codigo}`).then((r) => r.data),

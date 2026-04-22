@@ -307,9 +307,9 @@ function PaginaProcesarDocumentosInterna() {
         const n = parseInt(nivelParam.valor, 10)
         if (!isNaN(n) && n >= 0 && n <= 5) setNivelesDirectorio(n)
       }
-      // Procesos asignados a esta pantalla (función PROC_DOCUMENTOS), ordenados por `orden`.
+      // Procesos de la categoría PROCESAR_DOCS, ordenados por `orden` (ya viene filtrado y ordenado del backend).
       const procs = (procsRaw || [])
-        .filter((p: ProcesoCatalogo) => !!p.estado_destino && p.codigo_funcion === 'PROC_DOCUMENTOS')
+        .filter((p: ProcesoCatalogo) => !!p.estado_destino)
         .sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0))
       setProcesos(procs)
 

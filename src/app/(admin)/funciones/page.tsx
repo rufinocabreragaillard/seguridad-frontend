@@ -129,7 +129,7 @@ export default function PaginaFunciones() {
   }
   const cargarProcesosDeFuncion = useCallback(async (c: string) => {
     setCargandoProcesos(true)
-    try { setProcesosDeFuncion(await procesosApi.listar(c)) } catch { setProcesosDeFuncion([]) }
+    try { setProcesosDeFuncion(await procesosApi.listar()) } catch { setProcesosDeFuncion([]) }
     finally { setCargandoProcesos(false) }
   }, [])
 
