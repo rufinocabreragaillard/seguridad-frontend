@@ -1704,7 +1704,7 @@ function PaginaProcesarDocumentosInterna() {
         className="max-w-4xl"
       >
         {docDetalle && (
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-4 min-h-[500px]">
             {/* Tabs */}
             <div className="flex gap-1 border-b border-borde -mt-2">
               <button onClick={() => setTabDetalle('datos')}
