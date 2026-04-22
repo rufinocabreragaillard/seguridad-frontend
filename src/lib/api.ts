@@ -574,6 +574,8 @@ export const documentosApi = {
       archivo_no_encontrado?: boolean
       formato_no_soportado?: string
       contenido_vacio?: boolean
+      /** Mensaje de error directo del extractor (PdfProtegidoError, ArchivoNoEscaneable) */
+      detalle_error?: string
       /** Páginas PDF renderizadas como JPEG (solo PDFs mixtos texto+imagen) */
       paginas_imagen?: Array<{ pagina: number; base64: string }>
     },

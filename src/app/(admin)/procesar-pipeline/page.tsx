@@ -428,7 +428,7 @@ export default function PaginaCargaDocsUsuario() {
             }
             if (contenido === null || contenido === NECESITA_OCR) {
               await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', formato_no_soportado: ext })
-            } else if (!contenido.trim()) {
+            } else if (!contenido.trim() && !paginasImagen?.length) {
               await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
             } else {
               await documentosApi.subirTexto(doc.codigo_documento, {
@@ -441,7 +441,17 @@ export default function PaginaCargaDocsUsuario() {
             }
           }
         }
-      } catch { /* continuar */ }
+      } catch (e) {
+        if (e instanceof PdfProtegidoError) {
+          await documentosApi.subirTexto(doc.codigo_documento, {
+            texto_fuente: '', detalle_error: 'PDF protegido con contraseña (desproteger el archivo antes de procesar)',
+          }).catch(() => {})
+        } else if (e instanceof ArchivoNoEscaneable) {
+          await documentosApi.subirTexto(doc.codigo_documento, {
+            texto_fuente: '', detalle_error: e.message,
+          }).catch(() => {})
+        }
+      }
       completados++
       setPaso('EXTRAER', { completados })
     }
