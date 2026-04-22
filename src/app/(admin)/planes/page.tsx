@@ -174,7 +174,7 @@ export default function PaginaPlanes() {
       {/* Modal */}
       {modal && (
         <Modal abierto={modal} alCerrar={() => setModal(false)} titulo={editando ? `Editar plan: ${editando.nombre}` : 'Nuevo plan'} className="max-w-3xl">
-          <div className="flex flex-col gap-4 min-h-[360px]">
+          <div className="flex flex-col gap-4 min-h-[500px]">
             <div className="flex gap-2 border-b border-borde">
               {([
                 { key: 'datos', label: 'Datos' },

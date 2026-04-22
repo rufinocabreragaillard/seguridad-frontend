@@ -668,7 +668,7 @@ export default function PaginaUsuarios() {
         descripcion={usuarioEditando ? undefined : 'El usuario recibirá una invitación por correo'}
         className="w-[min(95vw,42rem)] max-w-none min-h-[32rem]"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Pestañas (solo en edición) */}
           {usuarioEditando && (
             <div className="flex border-b border-borde -mx-1 overflow-x-auto">

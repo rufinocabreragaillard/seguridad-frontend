@@ -844,7 +844,7 @@ export default function PaginaGrupos() {
 
       {/* Modal grupo */}
       <Modal abierto={modalGrupo} alCerrar={() => setModalGrupo(false)} titulo={grupoEditando ? 'Editar grupo' : 'Nuevo grupo'} className="max-w-3xl">
-        <div className="flex flex-col gap-4 min-w-[520px]">
+        <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           <div className="flex border-b border-borde">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button
@@ -942,7 +942,7 @@ export default function PaginaGrupos() {
 
       {/* Modal entidad */}
       <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? `Editar entidad: ${entidadEditando.nombre}` : 'Nueva entidad'}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {entidadEditando && (
             <div className="flex border-b border-borde -mx-1">
               <button onClick={() => setTabModalEntidad('datos')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalEntidad === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabDatos')}</button>

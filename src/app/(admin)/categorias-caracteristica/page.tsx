@@ -554,7 +554,7 @@ export default function PaginaCategoriasCaracteristica() {
 
       {/* Modal Categoría */}
       <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('editarCategoriaTitulo', { nombre: catEditando.nombre_cat_pers }) : t('nuevaCategoriaTitulo')} className="max-w-3xl">
-        <div className="flex flex-col gap-4 min-w-[520px]">
+        <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (

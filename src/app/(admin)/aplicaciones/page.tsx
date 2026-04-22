@@ -247,7 +247,7 @@ export default function PaginaAplicaciones() {
 
       {/* ── MODAL APLICACION ── */}
       <Modal abierto={modalApp} alCerrar={() => setModalApp(false)} titulo={appEditando ? `Editar aplicacion: ${appEditando.nombre}` : 'Nueva aplicacion'} className="max-w-2xl min-h-[680px]">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {appEditando && (
             <div className="flex border-b border-borde -mx-1 overflow-x-auto">
               {([

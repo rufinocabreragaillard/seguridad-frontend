@@ -486,7 +486,7 @@ export default function PaginaRegistroLLM() {
           </Tabla>
 
           <Modal abierto={modalModelo} alCerrar={() => setModalModelo(false)} titulo={editandoModelo ? t('editarTitulo', { nombre: editandoModelo.nombre_visible }) : t('nuevoTitulo')} className="max-w-2xl">
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4 min-h-[500px]">
               {editandoModelo && (
                 <div className="flex border-b border-borde -mx-1">
                   <button onClick={() => setTabModal('datos')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabDatos')}</button>

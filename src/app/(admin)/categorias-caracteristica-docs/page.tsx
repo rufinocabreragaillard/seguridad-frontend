@@ -465,7 +465,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
 
       {/* Modal Categoria */}
       <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('editarCategoriaTitulo', { nombre: catEditando.nombre_cat_docs }) : t('nuevaCategoriaTitulo')} className="max-w-3xl">
-        <div className="flex flex-col gap-4 min-w-[520px]">
+        <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
             {(['datos', 'system_prompt', 'programacion', 'llm'] as const).map((tab) => (
@@ -597,7 +597,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
 
       {/* Modal Tipo */}
       <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? t('editarTipoTitulo', { nombre: tipoEditando.nombre_tipo_docs }) : t('nuevoTipoTitulo')} className="max-w-3xl">
-        <div className="flex flex-col gap-4 min-w-[520px]">
+        <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (

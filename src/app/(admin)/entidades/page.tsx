@@ -410,7 +410,7 @@ export default function PaginaEntidades() {
 
       {/* Modal entidad */}
       <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? 'Editar entidad' : 'Nueva entidad'} className="max-w-3xl">
-        <div className="flex flex-col gap-4 min-w-[520px]">
+        <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (

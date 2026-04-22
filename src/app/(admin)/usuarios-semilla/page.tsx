@@ -626,7 +626,7 @@ export default function PaginaUsuariosSemilla() {
         titulo={usuarioEditando ? `Editar: ${usuarioEditando.nombre}${usuarioEditando.grupo_por_defecto ? ` - ${usuarioEditando.grupo_por_defecto}` : ''}` : 'Nuevo usuario semilla'}
         className="max-w-2xl"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs (solo si editando) */}
           {usuarioEditando && (
             <div className="flex gap-1 border-b border-borde -mt-2">

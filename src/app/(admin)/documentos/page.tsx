@@ -518,7 +518,7 @@ export default function PaginaDocumentos() {
         alCerrar={() => setModal(false)}
         titulo={editando ? `Documento: ${editando.nombre_documento}` : t('nuevoDocumento')}
       >
-        <div className="flex flex-col gap-4 w-[900px] max-w-full">
+        <div className="flex flex-col gap-4 w-[900px] max-w-full min-h-[500px]">
           {/* Tabs dentro del modal */}
           {editando && (
             <div className="flex gap-1 border-b border-borde -mt-2">

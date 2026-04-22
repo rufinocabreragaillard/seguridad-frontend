@@ -690,7 +690,7 @@ export default function PaginaUbicacionesDocs() {
         titulo={editando ? t('editarTitulo', { nombre: editando.nombre_ubicacion }) : ''}
         className="max-w-3xl"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs — siempre en edición */}
           {editando && (
             <div className="flex border-b border-borde">

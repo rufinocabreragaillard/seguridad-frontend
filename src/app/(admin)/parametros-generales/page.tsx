@@ -319,7 +319,7 @@ export default function PaginaParametrosGenerales() {
 
       {/* ── Modal Categoría ── */}
       <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de parámetro'}>
-        <div className="flex flex-col gap-4 p-4">
+        <div className="flex flex-col gap-4 p-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (

@@ -777,7 +777,7 @@ export default function PaginaTareasDatosBasicos() {
 
       {/* Modal Categoría */}
       <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de tarea'}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
@@ -831,7 +831,7 @@ export default function PaginaTareasDatosBasicos() {
 
       {/* Modal Tipo */}
       <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo de tarea' : 'Nuevo tipo de tarea'}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
@@ -905,7 +905,7 @@ export default function PaginaTareasDatosBasicos() {
 
       {/* Modal Estado */}
       <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? 'Editar estado de tarea' : 'Nuevo estado de tarea'}>
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalEst(tab)}

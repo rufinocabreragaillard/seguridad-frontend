@@ -959,7 +959,7 @@ export default function PaginaProcesosDatosBasicos() {
 
       {/* Modal Categoría */}
       <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de proceso'} className="w-[880px] max-w-[95vw]">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
             {(['datos', 'system_prompt', 'programacion'] as TabModal[]).map((tab) => (
@@ -1036,7 +1036,7 @@ export default function PaginaProcesosDatosBasicos() {
 
       {/* Modal Tipo */}
       <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo' : 'Nuevo tipo de proceso'} className="w-[880px] max-w-[95vw]">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
             {(['datos', 'system_prompt', 'programacion'] as TabModal[]).map((tab) => (
@@ -1123,7 +1123,7 @@ export default function PaginaProcesosDatosBasicos() {
 
       {/* Modal Estado */}
       <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? 'Editar estado' : 'Nuevo estado de proceso'} className="w-[880px] max-w-[95vw]">
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
             {(['datos', 'system_prompt', 'programacion'] as TabModal[]).map((tab) => (

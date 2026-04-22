@@ -185,7 +185,7 @@ export default function PaginaEstadosDocs() {
         titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_estado }) : t('nuevoTitulo')}
         className="w-[520px] max-w-[95vw]"
       >
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs — solo al editar */}
           {crud.editando && (
             <div className="flex border-b border-borde overflow-x-auto">

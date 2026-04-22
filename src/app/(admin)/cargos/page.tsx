@@ -271,7 +271,7 @@ export default function PaginaCargos() {
         titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_cargo }) : t('nuevoTitulo')}
         className="max-w-3xl"
       >
-        <div className="flex flex-col gap-0 min-w-[520px]">
+        <div className="flex flex-col gap-0 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde mb-4">
             {(crud.editando

@@ -961,7 +961,7 @@ export default function PaginaCargaDocsUsuario() {
 
       {/* Modal CRUD ubicación */}
       <Modal abierto={modalUb} alCerrar={() => setModalUb(false)} titulo={editandoUb ? `Ubicación Docs.: ${editandoUb.nombre_ubicacion}` : 'Nueva Ubicación'} className="max-w-3xl">
-        <div className="flex flex-col gap-4 min-h-[300px]">
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {editandoUb?.tipo_ubicacion === 'AREA' && (
             <div className="flex border-b border-borde">
               {(['datos', 'prompt', 'system_prompt'] as const).map((tab) => (

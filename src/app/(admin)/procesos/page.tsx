@@ -200,7 +200,7 @@ export default function PaginaProcesos() {
         }
         className="max-w-lg"
       >
-        <div className="flex flex-col gap-4 min-w-[400px] min-h-[380px]">
+        <div className="flex flex-col gap-4 min-w-[400px] min-h-[500px]">
           {crud.editando && (
             <div className="flex gap-2 border-b border-borde -mt-2">
               {([
