@@ -69,7 +69,6 @@ function TabRolesGlobales() {
   const t = useTranslations('rolesGenerales')
   const tc = useTranslations('common')
   const { aplicacionActiva, usuario } = useAuth()
-  const esUsuarioTest = normalizarTipo(usuario?.tipo) === 'TEST'
   const [roles, setRoles] = useState<Rol[]>([])
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([])
   const [cargando, setCargando] = useState(true)
@@ -315,9 +314,7 @@ function TabRolesGlobales() {
     }
   }
 
-  const rolesVisibles = esUsuarioTest
-    ? roles.filter((r) => normalizarTipo(r.tipo) !== 'SISTEMA')
-    : roles
+  const rolesVisibles = roles
 
   return (
     <Tarjeta>

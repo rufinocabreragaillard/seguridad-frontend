@@ -133,6 +133,7 @@ function PaginaProcesarDocumentosInterna() {
 
   // Config
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([])
+  const [procesosCorregir, setProcesosCorregir] = useState<ProcesoCatalogo[]>([])
   const [errorCargaInicial, setErrorCargaInicial] = useState(false)
   const [cargandoInicial, setCargandoInicial] = useState(true)
   const [procesoSel, setProcesoSel] = useState<string>('')   // codigo_proceso del catálogo o PROCESO_RESTABLECER
@@ -150,25 +151,27 @@ function PaginaProcesarDocumentosInterna() {
   const ubicDropdownRef = useRef<HTMLDivElement>(null)
 
   // Proceso seleccionado (contiene estado_origen, estado_destino, id_modelo directamente).
-  // Reemplaza el anterior pasoActual = p.pasos?.[0] (ya no hay pasos anidados).
+  // Busca en PROCESAR primero, luego en CORREGIR.
   const pasoActual = useMemo(() => {
     if (procesoSel === PROCESO_RESTABLECER || procesoSel === PROCESO_RESETEAR_CARGADO) return null
-    const p = procesos.find((x) => x.codigo_proceso === procesoSel)
-    return p ?? null
-  }, [procesos, procesoSel])
+    return procesos.find((x) => x.codigo_proceso === procesoSel)
+      ?? procesosCorregir.find((x) => x.codigo_proceso === procesoSel)
+      ?? null
+  }, [procesos, procesosCorregir, procesoSel])
 
   // Sincronizar n_parallel con el proceso seleccionado
   useEffect(() => {
     const p = procesos.find((x) => x.codigo_proceso === procesoSel)
+      ?? procesosCorregir.find((x) => x.codigo_proceso === procesoSel)
     if (p) setNParallelEdit(p.n_parallel ?? 10)
-  }, [procesoSel, procesos])
+  }, [procesoSel, procesos, procesosCorregir])
 
   // ¿Este proceso usa LLM? Si tiene id_modelo en su paso, lo corre el worker backend.
   // Si no, es un paso client-side (ej. EXTRAER que usa dirHandle).
   const usaLLM = !!(pasoActual?.id_modelo)
   const esRestablecer = procesoSel === PROCESO_RESTABLECER
   const esResetearCargado = procesoSel === PROCESO_RESETEAR_CARGADO
-  const esExtraer = pasoActual?.estado_destino === 'METADATA'
+  const esExtraer = pasoActual?.estado_origen === 'CARGADO' && pasoActual?.estado_destino === 'METADATA'
 
   // Documentos candidatos
   const [documentos, setDocumentos] = useState<Documento[]>([])
@@ -296,8 +299,9 @@ function PaginaProcesarDocumentosInterna() {
     setCargandoInicial(true)
     setErrorCargaInicial(false)
     try {
-      const [procsRaw, u, nivelParam, estados] = await Promise.all([
+      const [procsRaw, procsCorregirRaw, u, nivelParam, estados] = await Promise.all([
         getProcesosDocs(),
+        procesosApi.listar('CORREGIR').catch(() => []),
         ubicacionesDocsApi.listar().catch(() => []),
         parametrosApi.obtenerValor('DOCUMENTOS', 'NIVELES_DIRECTORIO').catch(() => null),
         getEstadosDocs().catch(() => []),
@@ -307,23 +311,24 @@ function PaginaProcesarDocumentosInterna() {
         const n = parseInt(nivelParam.valor, 10)
         if (!isNaN(n) && n >= 0 && n <= 5) setNivelesDirectorio(n)
       }
-      // Procesos de la categoría PROCESAR_DOCS, ordenados por `orden` (ya viene filtrado y ordenado del backend).
+      // Procesos PROCESAR, ordenados por `orden`.
       const procs = (procsRaw || [])
         .filter((p: ProcesoCatalogo) => !!p.estado_destino)
         .sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0))
       setProcesos(procs)
+      const procsCorregir = (procsCorregirRaw || [])
+        .filter((p: ProcesoCatalogo) => !!p.estado_destino)
+        .sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0))
+      setProcesosCorregir(procsCorregir)
 
       // Si venimos del dashboard con ?estado=XXX, seleccionar el proceso cuyo
-      // estado_origen coincide. Estados terminales → RESTABLECER.
-      const TERMINALES = ['NO_ESCANEABLE', 'NO_ENCONTRADO']
+      // estado_origen coincide. Primero buscar en PROCESAR, luego en CORREGIR.
       if (estadoDesdeUrl) {
-        if (TERMINALES.includes(estadoDesdeUrl)) {
-          setProcesoSel(PROCESO_RESTABLECER)
-        } else {
-          const match = procs.find((p: ProcesoCatalogo) => p.estado_origen === estadoDesdeUrl)
-          if (match) setProcesoSel(match.codigo_proceso)
-          else if (procs.length > 0) setProcesoSel(procs[0].codigo_proceso)
-        }
+        const matchProcesar = procs.find((p: ProcesoCatalogo) => p.estado_origen === estadoDesdeUrl)
+        const matchCorregir = procsCorregir.find((p: ProcesoCatalogo) => p.estado_origen === estadoDesdeUrl)
+        if (matchProcesar) setProcesoSel(matchProcesar.codigo_proceso)
+        else if (matchCorregir) setProcesoSel(matchCorregir.codigo_proceso)
+        else if (procs.length > 0) setProcesoSel(procs[0].codigo_proceso)
       }
 
       setUbicaciones(
@@ -502,6 +507,7 @@ function PaginaProcesarDocumentosInterna() {
     try {
       const updated = await procesosApi.actualizar(procesoSel, { n_parallel: nParallelEdit })
       setProcesos((prev) => prev.map((p) => p.codigo_proceso === procesoSel ? { ...p, n_parallel: updated.n_parallel } : p))
+      setProcesosCorregir((prev) => prev.map((p) => p.codigo_proceso === procesoSel ? { ...p, n_parallel: updated.n_parallel } : p))
     } finally {
       setGuardandoParalel(false)
     }
@@ -1019,14 +1025,28 @@ function PaginaProcesarDocumentosInterna() {
               <label className="text-sm font-medium text-texto">{t('etiquetaProceso')}</label>
               <select value={procesoSel} onChange={(e) => setProcesoSel(e.target.value)} className={selectClass} disabled={ejecutando || cargandoInicial}>
                 <option value="">— Sin valor —</option>
-                {procesos.map((p) => {
-                  const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
-                  return (
-                    <option key={p.codigo_proceso} value={p.codigo_proceso}>
-                      {p.nombre_proceso} ({flecha})
-                    </option>
-                  )
-                })}
+                <optgroup label="Procesar">
+                  {procesos.map((p) => {
+                    const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
+                    return (
+                      <option key={p.codigo_proceso} value={p.codigo_proceso}>
+                        {p.nombre_proceso} ({flecha})
+                      </option>
+                    )
+                  })}
+                </optgroup>
+                {procesosCorregir.length > 0 && (
+                  <optgroup label="Corregir inválidos">
+                    {procesosCorregir.map((p) => {
+                      const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
+                      return (
+                        <option key={p.codigo_proceso} value={p.codigo_proceso}>
+                          {p.nombre_proceso} ({flecha})
+                        </option>
+                      )
+                    })}
+                  </optgroup>
+                )}
               </select>
             </div>
 
@@ -1038,15 +1058,11 @@ function PaginaProcesarDocumentosInterna() {
                   const nuevoEstado = e.target.value
                   setEstadoFiltro(nuevoEstado)
                   setYaCargado(false)
-                  // Auto-seleccionar proceso cuyo estado_origen coincida
+                  // Auto-seleccionar proceso cuyo estado_origen coincida (PROCESAR primero, luego CORREGIR)
                   if (nuevoEstado && !procesoSel) {
-                    const TERMINALES = ['NO_ESCANEABLE', 'NO_ENCONTRADO']
-                    if (TERMINALES.includes(nuevoEstado)) {
-                      setProcesoSel(PROCESO_RESTABLECER)
-                    } else {
-                      const match = procesos.find((p) => p.estado_origen === nuevoEstado)
-                      if (match) setProcesoSel(match.codigo_proceso)
-                    }
+                    const match = procesos.find((p) => p.estado_origen === nuevoEstado)
+                      ?? procesosCorregir.find((p) => p.estado_origen === nuevoEstado)
+                    if (match) setProcesoSel(match.codigo_proceso)
                   }
                 }}
                 className={selectClass}

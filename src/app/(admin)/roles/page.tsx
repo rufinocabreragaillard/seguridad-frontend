@@ -26,7 +26,6 @@ export default function PaginaRoles() {
   const t = useTranslations('roles')
   const tc = useTranslations('common')
   const { grupoActivo, aplicacionActiva, usuario } = useAuth()
-  const esUsuarioTest = normalizarTipo(usuario?.tipo) === 'TEST'
   const [roles, setRoles] = useState<Rol[]>([])
   const [funciones, setFunciones] = useState<Funcion[]>([])
   const [cargando, setCargando] = useState(true)
@@ -305,10 +304,9 @@ export default function PaginaRoles() {
 
   // Listas filtradas: por orden cuando no hay búsqueda, por app+nombre cuando hay búsqueda
   const rolesFiltrados = roles
-    .filter((r) => {
-      if (esUsuarioTest && normalizarTipo(r.tipo) === 'SISTEMA') return false
-      return r.nombre.toLowerCase().includes(busquedaRoles.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRoles.toLowerCase()) || (r.alias_de_rol || '').toLowerCase().includes(busquedaRoles.toLowerCase())
-    })
+    .filter((r) =>
+      r.nombre.toLowerCase().includes(busquedaRoles.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRoles.toLowerCase()) || (r.alias_de_rol || '').toLowerCase().includes(busquedaRoles.toLowerCase())
+    )
     .sort(busquedaRoles ? compararPorAppYNombre : (a, b) => (a.orden ?? 0) - (b.orden ?? 0))
 
   const funcionesFiltradas = funciones
@@ -320,10 +318,7 @@ export default function PaginaRoles() {
     const sinAsignar = funciones.filter((f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
     if (!rolEditando) return sinAsignar
     const tipoRol = normalizarTipo(rolEditando.tipo)
-    if (tipoRol === 'SISTEMA') return sinAsignar.filter((f) => normalizarTipo(f.tipo) === 'SISTEMA')
-    if (tipoRol === 'ADMINISTRADOR') return sinAsignar.filter((f) => normalizarTipo(f.tipo) !== 'SISTEMA')
-    if (tipoRol === 'USUARIO') return sinAsignar.filter((f) => normalizarTipo(f.tipo) === 'USUARIO')
-    return sinAsignar
+    return sinAsignar.filter((f) => normalizarTipo(f.tipo) === tipoRol)
   })()
 
   // Filtro de búsqueda para el selector de funciones del rol

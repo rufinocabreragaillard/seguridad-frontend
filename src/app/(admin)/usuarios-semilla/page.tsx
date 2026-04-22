@@ -486,10 +486,7 @@ export default function PaginaUsuariosSemilla() {
       if (!(r.codigo_grupo === grupoForm || r.codigo_grupo == null)) return false
       if (rolesUsuario.some((ra) => ra.codigo_grupo === grupoForm && ra.id_rol === r.id_rol)) return false
       const tipoRol = normalizarTipo(r.tipo)
-      if (tipoUsuarioSemilla === 'SISTEMA') return tipoRol === 'SISTEMA'
-      if (tipoUsuarioSemilla === 'ADMINISTRADOR') return tipoRol !== 'SISTEMA'
-      if (tipoUsuarioSemilla === 'USUARIO') return tipoRol === 'USUARIO'
-      return true
+      return tipoRol === tipoUsuarioSemilla
     })
     .sort((a, b) => {
       const na = a.codigo_aplicacion_origen ? (mapaAppNombre[a.codigo_aplicacion_origen] || a.codigo_aplicacion_origen) : ''

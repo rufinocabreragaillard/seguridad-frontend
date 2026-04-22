@@ -44,7 +44,7 @@ export const getEstadosDocs = (): Promise<EstadoDoc[]> =>
   cargar('estadosDocs', () => estadosDocsApi.listar())
 
 export const getProcesosDocs = (): Promise<Proceso[]> =>
-  cargar('procesosDocs', () => procesosApi.listar('PROCESAR_DOCS'))
+  cargar('procesosDocs', () => procesosApi.listar('PROCESAR'))
 
 export const getLocalesActivos = (): Promise<LocaleSoportado[]> =>
   cargar('localesActivos', () => traduccionesApi.listarLocalesActivos())

@@ -9,7 +9,7 @@ export interface Grupo {
   codigo_grupo: string
   nombre: string
   descripcion?: string
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
+  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   orden?: number
   prompt_insert?: string | null
   prompt_update?: string | null
@@ -183,7 +183,7 @@ export interface Rol {
   funcion_por_defecto?: string
   codigo_aplicacion_origen?: string | null  // FK a aplicaciones, agrupa para ordenar/filtrar
   orden?: number
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
+  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
@@ -206,7 +206,7 @@ export interface Funcion {
   alias_de_funcion?: string
   icono_de_funcion?: string
   codigo_aplicacion_origen?: string | null  // FK a aplicaciones, agrupa para ordenar/filtrar
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
+  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   id_modelo?: number | null  // FK a registro_llm. NULL = sin LLM
   prompt_insert?: string | null
   prompt_update?: string | null
@@ -255,7 +255,7 @@ export interface Aplicacion {
   nombre: string
   alias?: string | null
   descripcion?: string
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'TEST' | 'SISTEMA'
+  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   sidebar_ancho?: boolean
   orden?: number
   prompt_insert?: string | null

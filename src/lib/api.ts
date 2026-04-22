@@ -661,10 +661,13 @@ export interface Proceso {
   batch_size?: number | null
   batch_timeout_seg?: number | null
   codigo_funcion?: string | null
-  /** Campos directos desde tipos_proceso (reemplazan pasos[0]) */
+  /** Campos desde rel_transiciones_estado */
   estado_origen?: string | null
   estado_destino?: string | null
   id_modelo?: number | null
+  /** Categoría de la transición: PROCESAR | REVERTIR | CORREGIR */
+  categoria_transicion?: string | null
+  id_transicion?: number | null
   /** Campo libre JSONB para configuración/datos arbitrarios del proceso */
   json?: unknown | null
   /** @deprecated — ya no se devuelve desde el backend; usar estado_origen/estado_destino/id_modelo */
@@ -672,12 +675,18 @@ export interface Proceso {
 }
 
 export const procesosApi = {
-  listar: (categoria?: string) =>
+  /** @param categoria_transicion — PROCESAR | REVERTIR | CORREGIR (filtra por tipo de transición) */
+  listar: (categoria_transicion?: string) =>
     api.get<Proceso[]>('/procesos', {
       params: {
-        ...(categoria ? { categoria } : {}),
+        ...(categoria_transicion ? { categoria_transicion } : {}),
       },
     }).then((r) => r.data),
+  listarTransiciones: (categoria?: string) =>
+    api.get<{ id: number; categoria: string; estado_origen: string | null; estado_destino: string; codigo_tipo_proceso: string; nombre_proceso: string; id_modelo: number | null; orden: number }[]>(
+      '/procesos/transiciones',
+      { params: categoria ? { categoria } : {} }
+    ).then((r) => r.data),
   obtener: (codigo: string) => api.get<Proceso>(`/procesos/${codigo}`).then((r) => r.data),
   actualizar: (codigo: string, data: { n_parallel?: number; nombre_proceso?: string; descripcion?: string; tipo?: string; orden?: number; codigo_funcion?: string | null; json?: unknown | null }) =>
     api.patch<Proceso>(`/procesos/${codigo}`, data).then((r) => r.data),
