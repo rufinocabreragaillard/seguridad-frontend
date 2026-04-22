@@ -520,7 +520,7 @@ export default function PaginaUbicacionesDocs() {
     return (
       <div key={u.codigo_ubicacion}>
         <div
-          className={`flex items-center gap-2 px-3 py-2 ${rowBg} rounded-lg group transition-colors`}
+          className={`flex items-center gap-2 px-3 py-1 ${rowBg} rounded group transition-colors`}
           style={{ paddingLeft: `${indent + 12}px` }}
         >
           <button
@@ -531,13 +531,13 @@ export default function PaginaUbicacionesDocs() {
           </button>
 
           {expandido && hijos ? (
-            <FolderOpen size={16} className={`${folderColor} shrink-0`} />
+            <FolderOpen size={14} className={`${folderColor} shrink-0`} />
           ) : (
-            <Folder size={16} className={`${folderColor} shrink-0`} />
+            <Folder size={14} className={`${folderColor} shrink-0`} />
           )}
 
           <div className="flex-1 min-w-0">
-            <span className="font-medium text-sm">{u.nombre_ubicacion}</span>
+            <span className="font-medium text-xs">{u.nombre_ubicacion}</span>
             <span className="text-xs text-texto-muted ml-2">({u.codigo_ubicacion})</span>
           </div>
 

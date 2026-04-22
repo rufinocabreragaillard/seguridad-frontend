@@ -240,7 +240,7 @@ export default function PaginaCargaDocsUsuario() {
     return (
       <div key={u.codigo_ubicacion}>
         <div
-          className={`flex items-center gap-2 px-3 py-2 ${rowBg} rounded-lg group transition-colors`}
+          className={`flex items-center gap-2 px-3 py-1 ${rowBg} rounded group transition-colors`}
           style={{ paddingLeft: `${indent + 12}px` }}
         >
           <button
@@ -250,12 +250,12 @@ export default function PaginaCargaDocsUsuario() {
             {expandido ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
           {expandido && hijos ? (
-            <FolderOpen size={16} className={`${folderColor} shrink-0`} />
+            <FolderOpen size={14} className={`${folderColor} shrink-0`} />
           ) : (
-            <Folder size={16} className={`${folderColor} shrink-0`} />
+            <Folder size={14} className={`${folderColor} shrink-0`} />
           )}
           <div className="flex-1 min-w-0">
-            <span className="font-medium text-sm">{u.nombre_ubicacion}</span>
+            <span className="font-medium text-xs">{u.nombre_ubicacion}</span>
             <span className="text-xs text-texto-muted ml-2">({u.codigo_ubicacion})</span>
           </div>
           <span className="text-xs text-texto-muted truncate max-w-[300px] hidden lg:block">
@@ -581,7 +581,7 @@ export default function PaginaCargaDocsUsuario() {
           TAB: Ubicaciones
       ══════════════════════════════════════════════════════════════════════ */}
       {tabActiva === 'ubicaciones' && (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 max-w-[66%]">
           {/* Toolbar — misma presentación que /ubicaciones-docs */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex gap-2 flex-wrap items-start">

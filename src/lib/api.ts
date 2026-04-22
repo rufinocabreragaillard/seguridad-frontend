@@ -1142,8 +1142,8 @@ export const colaEstadosDocsApi = {
       '/cola-estados-docs/inicializar',
       { items, ...(opts || {}) },
     ).then((r) => r.data),
-  inicializarPorEstado: (estado_origen: string, estado_destino: string, codigo_entidad?: string, tope?: number | null, codigo_ubicacion?: string | null) =>
-    api.post<{ encolados: number; omitidos: number; total: number }>('/cola-estados-docs/inicializar-por-estado', { estado_origen, estado_destino, codigo_entidad, tope: tope || null, codigo_ubicacion: codigo_ubicacion || null }).then((r) => r.data),
+  inicializarPorEstado: (estado_origen: string, estado_destino: string, codigo_entidad?: string, tope?: number | null, codigo_ubicacion?: string | null, q?: string | null) =>
+    api.post<{ encolados: number; omitidos: number; total: number }>('/cola-estados-docs/inicializar-por-estado', { estado_origen, estado_destino, codigo_entidad, tope: tope || null, codigo_ubicacion: codigo_ubicacion || null, q: q || null }).then((r) => r.data),
   cerrar: () =>
     api.post<{ eliminados: number }>('/cola-estados-docs/cerrar').then((r) => r.data),
   eliminar: (id: number) => api.delete(`/cola-estados-docs/${id}`),

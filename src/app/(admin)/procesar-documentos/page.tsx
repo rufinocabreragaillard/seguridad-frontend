@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Play, FileText, CheckCircle, XCircle, Loader2, FolderOpen, Clock, Square, Search, CheckSquare, SquareIcon, Trash2, AlertTriangle, ListOrdered, Cpu, Eye, ExternalLink, X, ChevronDown, ChevronRight, Copy, Check, MapPin } from 'lucide-react'
+import { Play, FileText, CheckCircle, XCircle, Loader2, FolderOpen, Clock, Square, Search, Trash2, AlertTriangle, Eye, ExternalLink, X, ChevronDown, ChevronRight, Copy, Check, MapPin } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -129,8 +129,7 @@ function PaginaProcesarDocumentosInterna() {
   const estadoDesdeUrl = searchParams.get('estado')
 
   // Tabs
-  const [tabPrincipal, setTabPrincipal] = useState<'procesar' | 'revertir'>('procesar')
-  const [modoPipeline, setModoPipeline] = useState<'paso-a-paso' | 'todo'>('paso-a-paso')
+  const [tabPrincipal, setTabPrincipal] = useState<'procesar' | 'todo' | 'revertir'>('procesar')
 
   // Config
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([])
@@ -173,7 +172,7 @@ function PaginaProcesarDocumentosInterna() {
 
   // Documentos candidatos
   const [documentos, setDocumentos] = useState<Documento[]>([])
-  const [seleccionados, setSeleccionados] = useState<Set<number>>(new Set())
+  const [totalDocs, setTotalDocs] = useState(0)
   const [cargando, setCargando] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const [yaCargado, setYaCargado] = useState(false)
@@ -217,14 +216,13 @@ function PaginaProcesarDocumentosInterna() {
   const [confirmEliminarDoc, setConfirmEliminarDoc] = useState<Documento | null>(null)
   const [eliminandoDoc, setEliminandoDoc] = useState(false)
 
-  // Selección y eliminación en bloque de docs sin archivo en disco
-  const [seleccionadosSinDisco, setSeleccionadosSinDisco] = useState<Set<number>>(new Set())
+  // Confirmación para eliminación en bloque de docs sin archivo en disco
   const [confirmEliminarBulkSinDisco, setConfirmEliminarBulkSinDisco] = useState(false)
   const [eliminandoBulkSinDisco, setEliminandoBulkSinDisco] = useState(false)
 
-  // Paginación de lista de documentos
+  // Paginación de lista de documentos (server-side para no-EXTRAER, client-side para EXTRAER)
   const [paginaDoc, setPaginaDoc] = useState(1)
-  const [filtroUbicacion, setFiltroUbicacion] = useState('')
+  const [totalPaginasDoc, setTotalPaginasDoc] = useState(1)
 
   // Modal detalle documento (inline, reemplaza navegación a /documentos)
   const [docDetalle, setDocDetalle] = useState<Documento | null>(null)
@@ -379,67 +377,61 @@ function PaginaProcesarDocumentosInterna() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Cargar documentos candidatos según el proceso seleccionado
-  const cargarDocumentos = useCallback(async () => {
+  // Cargar documentos candidatos (paginado server-side para procesos backend; all para EXTRAER)
+  const cargarDocumentos = useCallback(async (pagina = 1) => {
     setCargando(true)
     try {
-      let todos: Documento[]
-      const estadoOverride = estadoFiltro || null
-      // filtroLibre se pasa como q al backend (nombre+ubicación) y se aplica
-      // también client-side sobre estado y detalle_estado
       const qBackend = busqueda.trim() || filtroLibre.trim() || undefined
-      if (estadoOverride) {
-        todos = await documentosApi.listar({ codigo_estado_doc: estadoOverride, activo: true, q: qBackend })
-      } else if (esRestablecer) {
-        const [a, b] = await Promise.all([
-          documentosApi.listar({ codigo_estado_doc: 'NO_ESCANEABLE', activo: true, q: qBackend }),
-          documentosApi.listar({ codigo_estado_doc: 'NO_ENCONTRADO', activo: true, q: qBackend }),
-        ])
-        todos = [...a, ...b]
-      } else if (esResetearCargado) {
-        todos = await documentosApi.listar({ activo: true, q: qBackend })
-      } else if (pasoActual?.estado_origen) {
-        const estadoOrigenFiltro = pasoActual.estado_origen
-        const [docsRaw, idsInv] = await Promise.all([
-          documentosApi.listar({ codigo_estado_doc: estadoOrigenFiltro, activo: true, q: qBackend }),
-          colaEstadosDocsApi.idsInvalidos(estadoOrigenFiltro),
-        ])
-        const idsInvalidos = new Set(idsInv)
-        todos = idsInvalidos.size > 0
-          ? docsRaw.filter(d => !idsInvalidos.has(d.codigo_documento))
-          : docsRaw
-      } else {
-        todos = await documentosApi.listar({ activo: true, q: qBackend })
-      }
+      const rutaPrefijo = ubicacionSel
+        ? ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)?.ruta_completa
+        : undefined
 
-      // Filtro client-side adicional del filtroLibre: estado y detalle_estado
-      // (el backend ya filtró nombre y ubicación via q)
-      let filtrados = todos
-      if (filtroLibre.trim()) {
-        const q = filtroLibre.trim().toLowerCase()
-        filtrados = filtrados.filter((d) =>
-          (d.codigo_estado_doc || '').toLowerCase().includes(q) ||
-          (d.detalle_estado || '').toLowerCase().includes(q) ||
-          (d.nombre_documento || '').toLowerCase().includes(q) ||
-          (d.ubicacion_documento || '').toLowerCase().includes(q)
-        )
-      }
-
-      if (ubicacionSel) {
-        const ubic = ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)
-        if (ubic?.ruta_completa) {
-          filtrados = filtrados.filter((d) => d.ubicacion_documento?.startsWith(ubic.ruta_completa))
+      if (esExtraer || esRestablecer || esResetearCargado) {
+        // EXTRAER necesita todos los docs para el matching con el filesystem.
+        // RESTABLECER/RESETEAR también carga todo (son lotes pequeños de estados terminales).
+        let todos: Documento[]
+        if (esRestablecer) {
+          const [a, b] = await Promise.all([
+            documentosApi.listar({ codigo_estado_doc: 'NO_ESCANEABLE', activo: true, q: qBackend }),
+            documentosApi.listar({ codigo_estado_doc: 'NO_ENCONTRADO', activo: true, q: qBackend }),
+          ])
+          todos = [...a, ...b]
+        } else if (esResetearCargado) {
+          todos = await documentosApi.listar({ activo: true, q: qBackend })
+        } else {
+          // EXTRAER
+          const estadoOrigen = pasoActual?.estado_origen || 'CARGADO'
+          todos = await documentosApi.listar({ codigo_estado_doc: estadoOrigen, activo: true, q: qBackend })
         }
+        if (rutaPrefijo) {
+          todos = todos.filter((d) => d.ubicacion_documento?.startsWith(rutaPrefijo))
+        }
+        setDocumentos(todos)
+        setTotalDocs(todos.length)
+        setTotalPaginasDoc(Math.max(1, Math.ceil(todos.length / DOCS_POR_PAGINA_DEFAULT)))
+        setPaginaDoc(1)
+      } else {
+        // Procesos backend: paginación server-side real
+        const estadoOrigen = estadoFiltro || pasoActual?.estado_origen || undefined
+        const data = await documentosApi.listarPaginado({
+          page: pagina,
+          limit: DOCS_POR_PAGINA_DEFAULT,
+          codigo_estado_doc: estadoOrigen,
+          activo: true,
+          q: qBackend,
+          ruta_prefijo: rutaPrefijo,
+        })
+        setDocumentos(data.items || [])
+        setTotalDocs(data.total)
+        setTotalPaginasDoc(Math.max(1, Math.ceil(data.total / DOCS_POR_PAGINA_DEFAULT)))
+        setPaginaDoc(pagina)
       }
-
-      setDocumentos(filtrados)
-      setSeleccionados(new Set(filtrados.map((d) => d.codigo_documento)))
       setCola([])
       setYaCargado(true)
     } finally {
       setCargando(false)
     }
-  }, [procesoSel, esRestablecer, esResetearCargado, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro, filtroLibre])
+  }, [procesoSel, esExtraer, esRestablecer, esResetearCargado, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro, filtroLibre])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
   // Si se seleccionó un estado explícito, auto-cargar inmediatamente.
@@ -447,62 +439,20 @@ function PaginaProcesarDocumentosInterna() {
   // boton/Enter del filtro para no re-cargar con cada tecla.
   useEffect(() => {
     setDocumentos([])
-    setSeleccionados(new Set())
     setYaCargado(false)
     // Siempre recargar (sin proceso/estado mostramos todos los docs activos).
     cargarDocumentos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [procesoSel, ubicacionSel, estadoFiltro, filtroLibre])
 
-  const toggleSeleccion = (id: number) => {
-    setSeleccionados((prev) => {
-      const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
-      return next
-    })
-  }
-
-  // docsFiltrados incluye TODOS los docs que pasan el filtro de búsqueda/texto,
-  // independientemente de si están en el directorio local o no.
-  // Los que no están en disco se muestran al final en rojo (no se ocultan).
-  const docsFiltrados = documentos.filter((d) => {
-    if (busqueda) {
-      const q = busqueda.toLowerCase()
-      const coincide =
-        d.nombre_documento.toLowerCase().includes(q) ||
-        (d.ubicacion_documento || '').toLowerCase().includes(q) ||
-        (d.codigo_estado_doc || '').toLowerCase().includes(q) ||
-        (d.detalle_estado || '').toLowerCase().includes(q)
-      if (!coincide) return false
-    }
-    if (filtroUbicacion && !(d.ubicacion_documento || '').toLowerCase().includes(filtroUbicacion.toLowerCase())) return false
-    return true
-  })
-
   // Separar en dos grupos: encontrados en disco y no encontrados.
   // Si no hay directorio escaneado, todos van al grupo "enDisco".
   const docsEnDisco = esExtraer && archivosEnDir
-    ? docsFiltrados.filter((d) => archivosEnDir.has(d.nombre_documento))
-    : docsFiltrados
+    ? documentos.filter((d) => archivosEnDir.has(d.nombre_documento))
+    : documentos
   const docsSinDisco = esExtraer && archivosEnDir
-    ? docsFiltrados.filter((d) => !archivosEnDir.has(d.nombre_documento))
+    ? documentos.filter((d) => !archivosEnDir.has(d.nombre_documento))
     : []
-
-  // Paginación
-  const totalPaginas = Math.max(1, Math.ceil(docsEnDisco.length / DOCS_POR_PAGINA_DEFAULT))
-  const paginaActual = Math.min(paginaDoc, totalPaginas)
-  const docsEnDiscoPaginados = docsEnDisco.slice((paginaActual - 1) * DOCS_POR_PAGINA_DEFAULT, paginaActual * DOCS_POR_PAGINA_DEFAULT)
-
-  // Cuando se escanea un directorio en modo EXTRAER, marcar automáticamente los encontrados
-  useEffect(() => {
-    if (esExtraer && archivosEnDir) {
-      const ids = documentos.filter((d) => archivosEnDir.has(d.nombre_documento)).map((d) => d.codigo_documento)
-      setSeleccionados(new Set(ids))
-    }
-  }, [esExtraer, archivosEnDir, documentos])
-
-  const seleccionarTodos = () => setSeleccionados(new Set(docsEnDisco.map((d) => d.codigo_documento)))
-  const deseleccionarTodos = () => setSeleccionados(new Set())
 
   const escanearDirectorio = async (handle: FileSystemDirectoryHandle, maxNiveles: number = nivelesDirectorio): Promise<Set<string>> => {
     const archivos = new Set<string>()
@@ -643,7 +593,6 @@ function PaginaProcesarDocumentosInterna() {
     setEliminandoDoc(true)
     try {
       await documentosApi.desactivar(confirmEliminarDoc.codigo_documento)
-      setSeleccionados((prev) => { const s = new Set(prev); s.delete(confirmEliminarDoc.codigo_documento); return s })
       setDocumentos((prev) => prev.filter((d) => d.codigo_documento !== confirmEliminarDoc!.codigo_documento))
       setConfirmEliminarDoc(null)
     } finally {
@@ -652,16 +601,13 @@ function PaginaProcesarDocumentosInterna() {
   }
 
   const ejecutarEliminarBulkSinDisco = async () => {
-    const ids = seleccionadosSinDisco.size > 0
-      ? Array.from(seleccionadosSinDisco)
-      : docsSinDisco.map((d) => d.codigo_documento)
+    const ids = docsSinDisco.map((d) => d.codigo_documento)
     if (ids.length === 0) return
     setEliminandoBulkSinDisco(true)
     try {
       const res = await documentosApi.eliminarBulk(ids)
       const eliminados = new Set(ids)
       setDocumentos((prev) => prev.filter((d) => !eliminados.has(d.codigo_documento)))
-      setSeleccionadosSinDisco(new Set())
       setConfirmEliminarBulkSinDisco(false)
       if (res.eliminados === 0) alert('No se eliminó ningún documento (no pertenecen al grupo activo).')
     } catch (e) {
@@ -675,11 +621,6 @@ function PaginaProcesarDocumentosInterna() {
   //     con /cola-estados-docs/ejecutar + polling. El navegador ya no corre
   //     el loop LLM.
   const ejecutar = async () => {
-    // EXTRAER y RESTABLECER requieren selección explícita.
-    // Para procesos LLM (ANALIZAR, CHUNKEAR, VECTORIZAR) se puede ejecutar sin
-    // selección: el worker backend ya tiene ítems en la cola y los procesa todos.
-    if (seleccionados.size === 0 && (esExtraer || esRestablecer || esResetearCargado)) return
-
     setEjecutando(true)
     setProcesados(0)
     setCola([])
@@ -688,7 +629,7 @@ function PaginaProcesarDocumentosInterna() {
     // ── RESETEAR A CARGADO ────────────────────────────────────────────────
     if (esResetearCargado) {
       try {
-        const ids = Array.from(seleccionados)
+        const ids = docsEnDisco.map((d) => d.codigo_documento)
         const res = await documentosApi.resetearACargado(ids)
         setCola([{
           id_cola: 0,
@@ -710,7 +651,7 @@ function PaginaProcesarDocumentosInterna() {
     // ── RESTABLECER ───────────────────────────────────────────────────────
     if (esRestablecer) {
       try {
-        const ids = Array.from(seleccionados)
+        const ids = docsEnDisco.map((d) => d.codigo_documento)
         const res = await documentosApi.restablecerEstado(ids)
         setCola([{
           id_cola: 0,
@@ -760,18 +701,15 @@ function PaginaProcesarDocumentosInterna() {
         }
       }
 
-      let ids = Array.from(seleccionados)
-      if (tope) ids = ids.slice(0, parseInt(tope))
-      const colaInicial: ItemCola[] = ids.map((id) => {
-        const doc = documentos.find((d) => d.codigo_documento === id)
-        return {
-          id_cola: id,  // usamos codigo_documento como id para visualización
-          codigo_documento: id,
-          nombre_documento: doc?.nombre_documento || `Doc #${id}`,
-          ubicacion_documento: doc?.ubicacion_documento || undefined,
-          estado_cola: 'PENDIENTE',
-        }
-      })
+      let docsAExtraer = docsEnDisco
+      if (tope) docsAExtraer = docsAExtraer.slice(0, parseInt(tope))
+      const colaInicial: ItemCola[] = docsAExtraer.map((doc) => ({
+        id_cola: doc.codigo_documento,
+        codigo_documento: doc.codigo_documento,
+        nombre_documento: doc.nombre_documento,
+        ubicacion_documento: doc.ubicacion_documento || undefined,
+        estado_cola: 'PENDIENTE',
+      }))
       setCola(colaInicial)
 
       // Número de extracciones concurrentes. PDF.js usa su propio worker interno
@@ -895,46 +833,25 @@ function PaginaProcesarDocumentosInterna() {
     }
     const estadoDestino = pasoActual.estado_destino ?? ''
 
-    // 1. Encolar docs en la tabla:
-    //    - Con selección: encola solo los seleccionados (comportamiento original)
-    //    - Sin selección: encola TODOS los docs en estado origen via inicializarPorEstado
-    //      Esto corrige el caso en que el usuario hace click en Ejecutar sin seleccionar
-    //      docs (p.ej. para VECTORIZAR), donde antes el worker arrancaba pero la UI
-    //      no mostraba progreso alguno porque misItems quedaba vacío.
+    // 1. Encolar docs: INSERT masivo con los mismos filtros activos en la UI
+    //    (estado origen, ubicacion, tope, filtro libre de texto).
     try {
-      if (seleccionados.size === 0) {
-        await colaEstadosDocsApi.inicializarPorEstado(
-          pasoActual.estado_origen || '',
-          estadoDestino,
-          undefined,
-          tope ? parseInt(tope) : null,
-          ubicacionSel || null,
-        )
-      } else {
-        let ids = Array.from(seleccionados)
-        if (tope) ids = ids.slice(0, parseInt(tope))
-        const items = ids.map((id) => ({
-          codigo_documento: id,
-          codigo_estado_doc_destino: estadoDestino,
-        }))
-        await colaEstadosDocsApi.inicializar(items, { codigo_proceso: procesoSel || undefined })
-      }
+      await colaEstadosDocsApi.inicializarPorEstado(
+        pasoActual.estado_origen || '',
+        estadoDestino,
+        undefined,
+        tope ? parseInt(tope) : null,
+        ubicacionSel || null,
+        filtroLibre || null,
+      )
     } catch {
       setEjecutando(false)
       return
     }
 
-    // 2. Cargar cola inicial — filtrar por estado_destino para eficiencia y
-    //    para no superar el límite de 1000 filas si hay muchos items en cola.
+    // 2. Cargar cola inicial — filtrar por estado_destino.
     const pendientesFiltrados = await colaEstadosDocsApi.listar('PENDIENTE', estadoDestino)
-    let misItems: typeof pendientesFiltrados
-    if (seleccionados.size === 0) {
-      // Sin selección: trackear todos los PENDIENTE para este destino
-      misItems = pendientesFiltrados
-    } else {
-      const idsSeleccionados = new Set(Array.from(seleccionados).slice(0, tope ? parseInt(tope) : undefined))
-      misItems = pendientesFiltrados.filter((p) => idsSeleccionados.has(p.codigo_documento))
-    }
+    const misItems = pendientesFiltrados
     const colaInicial: ItemCola[] = misItems.map((p) => {
       const doc = documentos.find((d) => d.codigo_documento === p.codigo_documento)
       return {
@@ -1049,13 +966,19 @@ function PaginaProcesarDocumentosInterna() {
         )}
       </div>
 
-      {/* Lengüetas Procesar / Revertir */}
+      {/* Lengüetas Procesar / Todo / Revertir */}
       <div className="flex gap-1 border-b border-borde -mt-2">
         <button
           onClick={() => setTabPrincipal('procesar')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'procesar' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
         >
-          Procesar
+          {t('tabPasoAPaso')}
+        </button>
+        <button
+          onClick={() => setTabPrincipal('todo')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'todo' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+        >
+          {t('tabTodo')}
         </button>
         <button
           onClick={() => setTabPrincipal('revertir')}
@@ -1067,19 +990,7 @@ function PaginaProcesarDocumentosInterna() {
 
       {tabPrincipal === 'revertir' && <TabRevertir />}
 
-      {tabPrincipal === 'procesar' && (<>
-      <BotonChat className="top-0 right-0" />
-      {/* Selector de modo: Paso a Paso / Pipeline Completo */}
-      <div className="flex gap-2">
-        <Boton variante={modoPipeline === 'paso-a-paso' ? 'primario' : 'contorno'} onClick={() => setModoPipeline('paso-a-paso')}>
-          <ListOrdered size={16} />{t('tabPasoAPaso')}
-        </Boton>
-        <Boton variante={modoPipeline === 'todo' ? 'primario' : 'contorno'} onClick={() => setModoPipeline('todo')}>
-          <Cpu size={16} />{t('tabTodo')}
-        </Boton>
-      </div>
-
-      {modoPipeline === 'todo' && (
+      {tabPrincipal === 'todo' && (
         <TabPipelineTodo
           procesos={procesos}
           estadosDocs={estadosDocs}
@@ -1087,7 +998,8 @@ function PaginaProcesarDocumentosInterna() {
         />
       )}
 
-      {modoPipeline === 'paso-a-paso' && (<>
+      {tabPrincipal === 'procesar' && (<>
+      <BotonChat className="top-0 right-0" />
       {/* Error carga inicial */}
       {errorCargaInicial && (
         <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-error">
@@ -1335,26 +1247,17 @@ function PaginaProcesarDocumentosInterna() {
             </div>
           </div>
 
-          {/* Todos/Ninguno + conteo + Ejecutar/Detener — misma línea */}
+          {/* Conteo + Ejecutar/Detener — misma línea */}
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
-            <Boton variante="contorno" tamano="sm" onClick={seleccionarTodos} disabled={ejecutando || docsFiltrados.length === 0}>
-              <CheckSquare size={14} />{t('todos')}
-            </Boton>
-            <Boton variante="contorno" tamano="sm" onClick={deseleccionarTodos} disabled={ejecutando || seleccionados.size === 0}>
-              <SquareIcon size={14} />{t('ninguno')}
-            </Boton>
             <span className="text-sm text-texto-muted flex items-center gap-2">
               {(() => {
                 const topeNum = tope ? parseInt(tope) : 0
-                const efectivos = topeNum > 0 ? Math.min(seleccionados.size, topeNum) : seleccionados.size
-                const label = efectivos < seleccionados.size
-                  ? `${efectivos} a procesar (Total docs: ${docsEnDisco.length}, Seleccionados: ${seleccionados.size})`
-                  : t('xDeYSeleccionados', { x: seleccionados.size, y: docsEnDisco.length })
-                return <span>{label}</span>
+                const efectivos = topeNum > 0 ? Math.min(totalDocs, topeNum) : totalDocs
+                return <span>{efectivos} {efectivos !== totalDocs ? `a procesar (de ${totalDocs} totales)` : 'documentos'}</span>
               })()}
               {docsSinDisco.length > 0 && (
                 <span className="text-error font-medium">
-                  · {seleccionadosSinDisco.size > 0 ? `${seleccionadosSinDisco.size}/` : ''}{docsSinDisco.length} sin archivo
+                  · {docsSinDisco.length} sin archivo
                 </span>
               )}
             </span>
@@ -1362,11 +1265,11 @@ function PaginaProcesarDocumentosInterna() {
               {docsSinDisco.length > 0 && (
                 <Boton variante="peligro" onClick={() => setConfirmEliminarBulkSinDisco(true)} disabled={ejecutando}>
                   <Trash2 size={14} />
-                  Eliminar sin archivo {seleccionadosSinDisco.size > 0 ? `(${seleccionadosSinDisco.size})` : `(${docsSinDisco.length})`}
+                  Eliminar sin archivo ({docsSinDisco.length})
                 </Boton>
               )}
               <Boton variante="primario" onClick={ejecutar}
-                disabled={ejecutando || !procesoSel || ((esExtraer || esRestablecer) && seleccionados.size === 0)}>
+                disabled={ejecutando || !procesoSel}>
                 {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
                 {ejecutando ? t('ejecutando') : t('ejecutar')}
               </Boton>
@@ -1482,19 +1385,28 @@ function PaginaProcesarDocumentosInterna() {
       {/* Lista de documentos candidatos (visible antes de ejecución) */}
       {cola.length === 0 && (
         <>
-          {documentos.length > 0 && (
-            <div className="flex items-center">
-              <span className="text-xs text-texto-muted">
-                {docsFiltrados.length === documentos.length
-                  ? `${documentos.length} documentos`
-                  : `${docsFiltrados.length} de ${documentos.length} documentos`}
+          {/* Paginación superior */}
+          {totalDocs > DOCS_POR_PAGINA_DEFAULT && (
+            <div className="flex items-center justify-between text-xs text-texto-muted">
+              <span>
+                {(paginaDoc - 1) * DOCS_POR_PAGINA_DEFAULT + 1}–{Math.min(paginaDoc * DOCS_POR_PAGINA_DEFAULT, totalDocs)} de {totalDocs}
               </span>
+              <div className="flex gap-1">
+                <button disabled={paginaDoc <= 1} onClick={() => { setPaginaDoc(1); cargarDocumentos(1) }}
+                  className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">«</button>
+                <button disabled={paginaDoc <= 1} onClick={() => { const p = paginaDoc - 1; setPaginaDoc(p); cargarDocumentos(p) }}
+                  className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">‹</button>
+                <span className="px-3 py-1">{paginaDoc} / {totalPaginasDoc}</span>
+                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { const p = paginaDoc + 1; setPaginaDoc(p); cargarDocumentos(p) }}
+                  className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">›</button>
+                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { setPaginaDoc(totalPaginasDoc); cargarDocumentos(totalPaginasDoc) }}
+                  className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">»</button>
+              </div>
             </div>
           )}
           <Tabla>
             <TablaCabecera>
               <tr>
-                <TablaTh className="w-10" />
                 <TablaTh>{t('colDocumento')}</TablaTh>
                 <TablaTh>{t('colUbicacion')}</TablaTh>
                 <TablaTh>{t('colEstado')}</TablaTh>
@@ -1503,9 +1415,9 @@ function PaginaProcesarDocumentosInterna() {
             </TablaCabecera>
             <TablaCuerpo>
               {cargando ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={5 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={4 as never}>{tc('cargando')}</TablaTd></TablaFila>
               ) : docsEnDisco.length === 0 && docsSinDisco.length === 0 ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={5 as never}>
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={4 as never}>
                   {!yaCargado
                     ? t('escribirFiltro')
                     : documentos.length === 0
@@ -1515,12 +1427,8 @@ function PaginaProcesarDocumentosInterna() {
                     : t('sinResultadosBusqueda')}
                 </TablaTd></TablaFila>
               ) : (<>
-                {docsEnDiscoPaginados.map((d) => (
+                {docsEnDisco.map((d) => (
                 <TablaFila key={d.codigo_documento}>
-                  <TablaTd>
-                    <input type="checkbox" checked={seleccionados.has(d.codigo_documento)}
-                      onChange={() => toggleSeleccion(d.codigo_documento)} className="rounded border-borde" />
-                  </TablaTd>
                   <TablaTd className="max-w-0 w-[40%]">
                     <div className="flex items-center gap-2 min-w-0">
                       {iconoTipoArchivo(d.nombre_documento)}
@@ -1574,30 +1482,15 @@ function PaginaProcesarDocumentosInterna() {
                 ))}
                 {docsSinDisco.length > 0 && (<>
                   <TablaFila>
-                    <TablaTd colSpan={5 as never} className="bg-red-50 py-1.5 px-3">
+                    <TablaTd colSpan={4 as never} className="bg-red-50 py-1.5 px-3">
                       <div className="flex items-center gap-2 text-xs font-medium text-error">
                         <AlertTriangle size={13} className="shrink-0" />
                         {docsSinDisco.length} {docsSinDisco.length === 1 ? 'archivo no encontrado en el directorio seleccionado' : 'archivos no encontrados en el directorio seleccionado'} — no se procesarán
                       </div>
                     </TablaTd>
                   </TablaFila>
-                  {docsSinDisco.map((d) => {
-                    const selSinDisco = seleccionadosSinDisco.has(d.codigo_documento)
-                    return (
+                  {docsSinDisco.map((d) => (
                     <TablaFila key={d.codigo_documento}>
-                      <TablaTd>
-                        <input
-                          type="checkbox"
-                          checked={selSinDisco}
-                          onChange={() => setSeleccionadosSinDisco((prev) => {
-                            const s = new Set(prev)
-                            if (s.has(d.codigo_documento)) s.delete(d.codigo_documento)
-                            else s.add(d.codigo_documento)
-                            return s
-                          })}
-                          className="rounded border-borde cursor-pointer"
-                        />
-                      </TablaTd>
                       <TablaTd className="max-w-0 w-[40%]">
                         <div className="flex items-center gap-2 min-w-0">
                           <AlertTriangle size={14} className="text-error shrink-0" />
@@ -1632,27 +1525,26 @@ function PaginaProcesarDocumentosInterna() {
                         </div>
                       </TablaTd>
                     </TablaFila>
-                    )
-                  })}
+                  ))}
                 </>)}
               </>)}
             </TablaCuerpo>
           </Tabla>
-          {/* Paginación */}
-          {docsEnDisco.length > DOCS_POR_PAGINA_DEFAULT && (
+          {/* Paginación inferior */}
+          {totalDocs > DOCS_POR_PAGINA_DEFAULT && (
             <div className="flex items-center justify-between text-xs text-texto-muted mt-1">
               <span>
-                {(paginaActual - 1) * DOCS_POR_PAGINA_DEFAULT + 1}–{Math.min(paginaActual * DOCS_POR_PAGINA_DEFAULT, docsEnDisco.length)} de {docsEnDisco.length}
+                {(paginaDoc - 1) * DOCS_POR_PAGINA_DEFAULT + 1}–{Math.min(paginaDoc * DOCS_POR_PAGINA_DEFAULT, totalDocs)} de {totalDocs}
               </span>
               <div className="flex gap-1">
-                <button disabled={paginaActual <= 1} onClick={() => setPaginaDoc(1)}
+                <button disabled={paginaDoc <= 1} onClick={() => { setPaginaDoc(1); cargarDocumentos(1) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">«</button>
-                <button disabled={paginaActual <= 1} onClick={() => setPaginaDoc((p) => p - 1)}
+                <button disabled={paginaDoc <= 1} onClick={() => { const p = paginaDoc - 1; setPaginaDoc(p); cargarDocumentos(p) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">‹</button>
-                <span className="px-3 py-1">{paginaActual} / {totalPaginas}</span>
-                <button disabled={paginaActual >= totalPaginas} onClick={() => setPaginaDoc((p) => p + 1)}
+                <span className="px-3 py-1">{paginaDoc} / {totalPaginasDoc}</span>
+                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { const p = paginaDoc + 1; setPaginaDoc(p); cargarDocumentos(p) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">›</button>
-                <button disabled={paginaActual >= totalPaginas} onClick={() => setPaginaDoc(totalPaginas)}
+                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { setPaginaDoc(totalPaginasDoc); cargarDocumentos(totalPaginasDoc) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">»</button>
               </div>
             </div>
@@ -1783,7 +1675,7 @@ function PaginaProcesarDocumentosInterna() {
         alCerrar={() => { setConfirmEliminarBulkSinDisco(false); setEliminandoBulkSinDisco(false) }}
         alConfirmar={ejecutarEliminarBulkSinDisco}
         titulo="Eliminar archivos no encontrados"
-        mensaje={`¿Eliminar ${seleccionadosSinDisco.size > 0 ? seleccionadosSinDisco.size : docsSinDisco.length} documento(s) que no están en el directorio? Esta acción no se puede deshacer.`}
+        mensaje={`¿Eliminar ${docsSinDisco.length} documento(s) que no están en el directorio? Esta acción no se puede deshacer.`}
         textoConfirmar={tc('eliminar')}
         cargando={eliminandoBulkSinDisco}
       />
@@ -2107,7 +1999,6 @@ function PaginaProcesarDocumentosInterna() {
           </div>
         )}
       </Modal>
-    </>)}
     </>)}
     </div>
   )
