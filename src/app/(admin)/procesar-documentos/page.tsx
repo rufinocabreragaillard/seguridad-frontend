@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useRef, useMemo, useLayoutEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { Play, FileText, CheckCircle, XCircle, Loader2, FolderOpen, Clock, Square, Search, Trash2, AlertTriangle, Eye, ExternalLink, X, ChevronDown, ChevronRight, Copy, Check, MapPin } from 'lucide-react'
+import { Play, FileText, CheckCircle, XCircle, Loader2, FolderOpen, Clock, Square, Search, Trash2, AlertTriangle, Eye, ExternalLink, X, ChevronDown, ChevronRight, Copy, Check, MapPin, Download } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -20,7 +20,7 @@ import type { Documento, ColaEstadoDoc, EstadoDoc, CategoriaConCaracteristicasDo
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, type ExtraccionMixta } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { abrirDocumento } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento } from '@/lib/abrir-documento'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
@@ -1365,6 +1365,14 @@ function PaginaProcesarDocumentosInterna() {
                             <FileText size={15} />
                           </BotonAccion>
                         )}
+                        {ubic && (
+                          <BotonAccion
+                            tooltip="Descargar"
+                            onClick={() => descargarDocumento(ubic, c.nombre_documento)}
+                            className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                            <Download size={15} />
+                          </BotonAccion>
+                        )}
                         <BotonAccion
                           tooltip="Ver detalle"
                           onClick={() => abrirDetalleDesdeCola(c)}
@@ -1462,6 +1470,14 @@ function PaginaProcesarDocumentosInterna() {
                           onClick={() => abrirDocumentoLocal(d)}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                           <FileText size={15} />
+                        </BotonAccion>
+                      )}
+                      {d.ubicacion_documento && (
+                        <BotonAccion
+                          tooltip="Descargar"
+                          onClick={() => descargarDocumento(d.ubicacion_documento, d.nombre_documento)}
+                          className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                          <Download size={15} />
                         </BotonAccion>
                       )}
                       <BotonAccion
