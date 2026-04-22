@@ -163,8 +163,29 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
   const texto = paginas.join('\f')
 
   // Si el PDF no tiene capa de texto (imagen escaneada, DRM que bloquea extracción),
-  // el texto queda vacío. Devolvemos el sentinel para que el caller intente OCR.
+  // el texto queda vacío. Renderizamos todas las páginas como imágenes para Vision LLM.
   if (!texto.replace(/\f/g, '').trim()) {
+    const paginasImagen: PaginaImagen[] = []
+    for (let i = 1; i <= pdf.numPages; i++) {
+      try {
+        const pagina = await pdf.getPage(i)
+        const viewport = pagina.getViewport({ scale: 1.5 })
+        const canvas = document.createElement('canvas')
+        canvas.width = viewport.width
+        canvas.height = viewport.height
+        const ctx = canvas.getContext('2d')
+        if (!ctx) continue
+        await pagina.render({ canvasContext: ctx, viewport }).promise
+        const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]
+        paginasImagen.push({ pagina: i, base64 })
+      } catch {
+        // Si falla el render de una página, se omite
+      }
+    }
+    if (paginasImagen.length > 0) {
+      return { texto: '', paginasImagen }
+    }
+    // Fallback: si el render también falla, es realmente inaccesible
     return NECESITA_OCR
   }
 
@@ -176,23 +197,32 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
     for (const numPag of numsPaginaImagen) {
       try {
         const pagina = await pdf.getPage(numPag)
-        const viewport = pagina.getViewport({ scale: 1.5 })
+        // scale 2.0 para mejor calidad OCR (documentos CBR y similares de alta resolución)
+        const viewport = pagina.getViewport({ scale: 2.0 })
         const canvas = document.createElement('canvas')
         canvas.width = viewport.width
         canvas.height = viewport.height
         const ctx = canvas.getContext('2d')
-        if (!ctx) continue
+        if (!ctx) {
+          console.warn(`[extraer-texto] No se pudo obtener contexto 2D para página ${numPag}`)
+          continue
+        }
         await pagina.render({ canvasContext: ctx, viewport }).promise
-        // JPEG 80% — buena legibilidad para texto, ~100-250 KB por página
-        const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]
+        // JPEG 85% — mejor legibilidad para documentos legales con texto fino
+        const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
+        if (!base64) {
+          console.warn(`[extraer-texto] toDataURL vacío para página ${numPag}`)
+          continue
+        }
         paginasImagen.push({ pagina: numPag, base64 })
-      } catch {
-        // Si falla el render de una página, se omite; ANALIZAR usará el texto disponible
+      } catch (err) {
+        console.error(`[extraer-texto] Error renderizando página ${numPag}:`, err)
       }
     }
     if (paginasImagen.length > 0) {
       return { texto, paginasImagen }
     }
+    console.warn(`[extraer-texto] ${numsPaginaImagen.length} páginas imagen detectadas pero ninguna pudo renderizarse`)
   }
 
   return texto

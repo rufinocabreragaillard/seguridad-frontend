@@ -16,7 +16,7 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi } from '@/lib/api'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR } from '@/lib/extraer-texto'
+import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { abrirDocumento } from '@/lib/abrir-documento'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import {
@@ -416,11 +416,29 @@ export default function PaginaCargaDocsUsuario() {
           } else {
             const ext = (doc.ubicacion_documento.split('.').pop() || '').toLowerCase()
             const tExtraccion = Date.now()
-            const contenido = await extraerTextoDeArchivo(fh)
+            const contenidoRaw = await extraerTextoDeArchivo(fh)
             const subDuracionMs = Date.now() - tExtraccion
-            if (contenido === null || contenido === NECESITA_OCR) await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', formato_no_soportado: ext })
-            else if (!contenido.trim()) await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
-            else await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: contenido, caracteres: contenido.length, fecha_inicio_extraccion: new Date(t0).toISOString(), sub_duracion_ms: subDuracionMs })
+            let contenido: string | typeof NECESITA_OCR | null
+            let paginasImagen: ExtraccionMixta['paginasImagen'] | undefined
+            if (typeof contenidoRaw === 'object' && contenidoRaw !== null && 'paginasImagen' in contenidoRaw) {
+              contenido = (contenidoRaw as ExtraccionMixta).texto
+              paginasImagen = (contenidoRaw as ExtraccionMixta).paginasImagen
+            } else {
+              contenido = contenidoRaw as string | typeof NECESITA_OCR | null
+            }
+            if (contenido === null || contenido === NECESITA_OCR) {
+              await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', formato_no_soportado: ext })
+            } else if (!contenido.trim()) {
+              await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
+            } else {
+              await documentosApi.subirTexto(doc.codigo_documento, {
+                texto_fuente: contenido,
+                caracteres: contenido.length,
+                fecha_inicio_extraccion: new Date(t0).toISOString(),
+                sub_duracion_ms: subDuracionMs,
+                ...(paginasImagen ? { paginas_imagen: paginasImagen } : {}),
+              })
+            }
           }
         }
       } catch { /* continuar */ }

@@ -6,7 +6,7 @@ import { Boton } from '@/components/ui/boton'
 import { CirculoProgreso } from '@/components/ui/circulo-progreso'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, type ExtraccionMixta } from '@/lib/extraer-texto'
+import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { useAuth } from '@/context/AuthContext'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
@@ -217,7 +217,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
             }
             if (contenido === null || contenido === NECESITA_OCR) {
               await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', formato_no_soportado: ext })
-            } else if (!contenido.trim()) {
+            } else if (!contenido.trim() && !paginasImagen?.length) {
               await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
             } else {
               await documentosApi.subirTexto(doc.codigo_documento, {
@@ -230,7 +230,18 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
             }
           }
         }
-      } catch { /* continuar */ }
+      } catch (e) {
+        if (e instanceof PdfProtegidoError) {
+          await documentosApi.subirTexto(doc.codigo_documento, {
+            texto_fuente: '', detalle_error: 'PDF protegido con contraseña (desproteger el archivo antes de procesar)',
+          }).catch(() => {})
+        } else if (e instanceof ArchivoNoEscaneable) {
+          await documentosApi.subirTexto(doc.codigo_documento, {
+            texto_fuente: '', detalle_error: e.message,
+          }).catch(() => {})
+        }
+        // Otros errores (red, permisos): silencioso para no cortar el loop
+      }
       completados++
       setPaso('EXTRAER', { completados })
     }
