@@ -15,6 +15,7 @@ import type { EstadoDoc } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 type TabModal = 'datos' | 'system_prompt' | 'programacion'
 
@@ -192,7 +193,7 @@ export default function PaginaEstadosDocs() {
                 <button
                   key={tab.key}
                   onClick={() => setTabModal(tab.key)}
-                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                  className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                     tabModal === tab.key
                       ? 'border-b-2 border-primario text-primario'
                       : 'text-texto-muted hover:text-texto'
@@ -254,7 +255,6 @@ export default function PaginaEstadosDocs() {
                 mostrarPythonInsert={false}
                 mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
-                mostrarBotones={false}
               />
               <PieBotonesModal
                 editando={!!crud.editando}
@@ -262,6 +262,15 @@ export default function PaginaEstadosDocs() {
                 onGuardarYSalir={() => guardarEstado(true)}
                 onCerrar={crud.cerrarModal}
                 cargando={guardandoEstado}
+                botonesIzquierda={crud.editando ? (
+                  <PieBotonesPrompts
+                    tabla="estados_docs"
+                    pkColumna="codigo_estado_doc"
+                    pkValor={crud.editando.codigo_estado_doc}
+                    promptInsert={crud.form.prompt_insert ?? undefined}
+                    promptUpdate={crud.form.prompt_update ?? undefined}
+                  />
+                ) : undefined}
               />
             </div>
           )}
@@ -293,6 +302,15 @@ export default function PaginaEstadosDocs() {
                 onGuardarYSalir={() => guardarEstado(true)}
                 onCerrar={crud.cerrarModal}
                 cargando={guardandoEstado}
+                botonesIzquierda={crud.editando ? (
+                  <PieBotonesPrompts
+                    tabla="estados_docs"
+                    pkColumna="codigo_estado_doc"
+                    pkValor={crud.editando.codigo_estado_doc}
+                    promptInsert={crud.form.prompt_insert ?? undefined}
+                    promptUpdate={crud.form.prompt_update ?? undefined}
+                  />
+                ) : undefined}
               />
             </div>
           )}

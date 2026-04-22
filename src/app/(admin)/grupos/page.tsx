@@ -21,6 +21,7 @@ import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 type UsuarioGrupo = { codigo_usuario: string; fecha_alta?: string; usuarios?: { nombre: string; activo: boolean } }
 
@@ -1052,7 +1053,7 @@ export default function PaginaGrupos() {
               <button
                 key={tab}
                 onClick={() => setTabModalGrupo(tab)}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                   tabModalGrupo === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
                 }`}
               >
@@ -1098,7 +1099,6 @@ export default function PaginaGrupos() {
               mostrarPythonInsert={false}
               mostrarPythonUpdate={false}
               mostrarJavaScript={false}
-              mostrarBotones={false}
             />
           )}
 
@@ -1124,7 +1124,22 @@ export default function PaginaGrupos() {
           )}
 
           {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-          <PieBotonesModal editando={!!grupoEditando} onGuardar={() => guardarGrupo(false)} onGuardarYSalir={() => guardarGrupo(true)} onCerrar={() => setModalGrupo(false)} cargando={guardando} />
+          <PieBotonesModal
+            editando={!!grupoEditando}
+            onGuardar={() => guardarGrupo(false)}
+            onGuardarYSalir={() => guardarGrupo(true)}
+            onCerrar={() => setModalGrupo(false)}
+            cargando={guardando}
+            botonesIzquierda={(tabModalGrupo === 'system_prompt' || tabModalGrupo === 'programacion') && grupoEditando ? (
+              <PieBotonesPrompts
+                tabla="grupos_entidades"
+                pkColumna="codigo_grupo"
+                pkValor={grupoEditando.codigo_grupo}
+                promptInsert={formGrupo.prompt_insert ?? undefined}
+                promptUpdate={formGrupo.prompt_update ?? undefined}
+              />
+            ) : undefined}
+          />
         </div>
       </Modal>
 

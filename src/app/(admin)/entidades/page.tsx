@@ -7,6 +7,7 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Insignia } from '@/components/ui/insignia'
@@ -404,7 +405,7 @@ export default function PaginaEntidades() {
               <button
                 key={tab}
                 onClick={() => setTabModalEntidad(tab)}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                   tabModalEntidad === tab
                     ? 'border-b-2 border-primario text-primario'
                     : 'text-texto-muted hover:text-texto'
@@ -449,7 +450,6 @@ export default function PaginaEntidades() {
                 mostrarPythonInsert={false}
                 mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
-                mostrarBotones={false}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <PieBotonesModal
@@ -458,6 +458,15 @@ export default function PaginaEntidades() {
                 onGuardarYSalir={() => guardarEntidad(true)}
                 onCerrar={() => setModalEntidad(false)}
                 cargando={guardando}
+                botonesIzquierda={entidadEditando ? (
+                  <PieBotonesPrompts
+                    tabla="entidades"
+                    pkColumna="codigo_entidad"
+                    pkValor={entidadEditando.codigo_entidad}
+                    promptInsert={formEntidad.prompt_insert || undefined}
+                    promptUpdate={formEntidad.prompt_update || undefined}
+                  />
+                ) : undefined}
               />
             </div>
           )}
@@ -481,6 +490,15 @@ export default function PaginaEntidades() {
                 onGuardarYSalir={() => guardarEntidad(true)}
                 onCerrar={() => setModalEntidad(false)}
                 cargando={guardando}
+                botonesIzquierda={entidadEditando ? (
+                  <PieBotonesPrompts
+                    tabla="entidades"
+                    pkColumna="codigo_entidad"
+                    pkValor={entidadEditando.codigo_entidad}
+                    promptInsert={formEntidad.prompt_insert || undefined}
+                    promptUpdate={formEntidad.prompt_update || undefined}
+                  />
+                ) : undefined}
               />
             </div>
           )}

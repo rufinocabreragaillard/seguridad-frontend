@@ -6,6 +6,7 @@ import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Boton } from '@/components/ui/boton'
@@ -280,7 +281,7 @@ export default function PaginaCargos() {
               <button
                 key={tab}
                 onClick={() => setTabActiva(tab)}
-                className={`px-4 py-2 text-sm font-medium capitalize transition-colors ${
+                className={`flex-1 text-center px-4 py-2 text-sm font-medium capitalize transition-colors ${
                   tabActiva === tab
                     ? 'border-b-2 border-primario text-primario'
                     : 'text-texto-muted hover:text-texto'
@@ -396,7 +397,6 @@ export default function PaginaCargos() {
                 mostrarPythonInsert={false}
                 mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
-                mostrarBotones={false}
               />
               <div className="mt-auto">
                 <PieBotonesModal
@@ -405,6 +405,15 @@ export default function PaginaCargos() {
                   onGuardarYSalir={() => crud.guardar(undefined, undefined, { cerrar: true })}
                   onCerrar={crud.cerrarModal}
                   cargando={crud.guardando}
+                  botonesIzquierda={crud.editando ? (
+                    <PieBotonesPrompts
+                      tabla="cargos"
+                      pkColumna="codigo_cargo"
+                      pkValor={crud.editando.codigo_cargo}
+                      promptInsert={crud.form.prompt_insert || undefined}
+                      promptUpdate={crud.form.prompt_update || undefined}
+                    />
+                  ) : undefined}
                 />
               </div>
             </div>
@@ -429,6 +438,15 @@ export default function PaginaCargos() {
                   onGuardarYSalir={() => crud.guardar(undefined, undefined, { cerrar: true })}
                   onCerrar={crud.cerrarModal}
                   cargando={crud.guardando}
+                  botonesIzquierda={crud.editando ? (
+                    <PieBotonesPrompts
+                      tabla="cargos"
+                      pkColumna="codigo_cargo"
+                      pkValor={crud.editando.codigo_cargo}
+                      promptInsert={crud.form.prompt_insert || undefined}
+                      promptUpdate={crud.form.prompt_update || undefined}
+                    />
+                  ) : undefined}
                 />
               </div>
             </div>

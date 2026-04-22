@@ -1,8 +1,6 @@
 'use client'
 
-import { useState } from 'react'
 import { Brain, Code2, Lock, Unlock } from 'lucide-react'
-import { PieBotonesPrompts } from './pie-botones-prompts'
 
 export interface CamposPrompt {
   prompt_insert: string | null
@@ -28,6 +26,7 @@ interface TabPromptsProps {
   mostrarPythonInsert?: boolean
   mostrarPythonUpdate?: boolean
   mostrarJavaScript?: boolean
+  /** @deprecated Los botones Generar/Sincronizar ahora se pasan como botonesIzquierda en PieBotonesModal */
   mostrarBotones?: boolean
 }
 
@@ -41,9 +40,9 @@ interface TabPromptsProps {
  *   - javascript                      (código JS compilado, si aplica)
  */
 export function TabPrompts({
-  tabla,
-  pkColumna,
-  pkValor,
+  tabla: _tabla,
+  pkColumna: _pkColumna,
+  pkValor: _pkValor,
   campos,
   onCampoCambiado,
   deshabilitado = false,
@@ -53,23 +52,10 @@ export function TabPrompts({
   mostrarPythonInsert = true,
   mostrarPythonUpdate = true,
   mostrarJavaScript = false,
-  mostrarBotones = true,
+  mostrarBotones: _mostrarBotones,
 }: TabPromptsProps) {
-  const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
-
   return (
     <div className="space-y-5">
-      {mensaje && (
-        <div
-          className={
-            mensaje.tipo === 'ok'
-              ? 'text-sm p-2 rounded bg-green-50 text-green-800 border border-green-200'
-              : 'text-sm p-2 rounded bg-red-50 text-red-800 border border-red-200'
-          }
-        >
-          {mensaje.texto}
-        </div>
-      )}
 
       {/* ── Bloque INSERT ─────────────────────────────────────────────────── */}
       {(mostrarPromptInsert || mostrarPythonInsert) && (
@@ -207,29 +193,6 @@ export function TabPrompts({
         </div>
       )}
 
-      {/* Botones Generar / Sincronizar */}
-      {mostrarBotones && (
-        <PieBotonesPrompts
-          tabla={tabla}
-          pkColumna={pkColumna}
-          pkValor={pkValor}
-          tienePrompt={!!(campos.prompt_insert || campos.prompt_update || '').trim()}
-          onCodigoGenerado={(r) => {
-            if (r.python_insert !== undefined && r.python_insert !== null) {
-              onCampoCambiado('python_insert', r.python_insert)
-              onCampoCambiado('python_editado_manual', false)
-            }
-            if (r.python_update !== undefined && r.python_update !== null) {
-              onCampoCambiado('python_update', r.python_update)
-            }
-            if (r.javascript !== undefined && r.javascript !== null) {
-              onCampoCambiado('javascript', r.javascript)
-              onCampoCambiado('javascript_editado_manual', false)
-            }
-          }}
-          onMensaje={setMensaje}
-        />
-      )}
     </div>
   )
 }

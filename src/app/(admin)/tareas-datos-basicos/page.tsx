@@ -12,6 +12,7 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { tareasDatosBasicosApi } from '@/lib/api'
 import type { CategoriaTarea, TipoTarea, EstadoTarea, EstadoCanonicoTarea, TipoCanonicoTarea } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -780,7 +781,7 @@ export default function PaginaTareasDatosBasicos() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
-                className={`px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
               </button>
             ))}
@@ -801,7 +802,7 @@ export default function PaginaTareasDatosBasicos() {
           {tabModalCat === 'system_prompt' && catEditando && (
             <TabPrompts tabla="categorias_tarea" pkColumna="codigo_categoria_tarea" pkValor={catEditando.codigo_categoria_tarea}
               campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
           {tabModalCat === 'programacion' && catEditando && (
             <TabPrompts tabla="categorias_tarea" pkColumna="codigo_categoria_tarea" pkValor={catEditando.codigo_categoria_tarea}
@@ -815,6 +816,15 @@ export default function PaginaTareasDatosBasicos() {
             onGuardarYSalir={() => guardarCategoria(true)}
             onCerrar={() => setModalCat(false)}
             cargando={guardandoCat}
+            botonesIzquierda={(tabModalCat === 'system_prompt' || tabModalCat === 'programacion') && catEditando ? (
+              <PieBotonesPrompts
+                tabla="categorias_tarea"
+                pkColumna="codigo_categoria_tarea"
+                pkValor={catEditando.codigo_categoria_tarea}
+                promptInsert={promptsCat.prompt_insert ?? undefined}
+                promptUpdate={promptsCat.prompt_update ?? undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>
@@ -825,7 +835,7 @@ export default function PaginaTareasDatosBasicos() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
-                className={`px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
               </button>
             ))}
@@ -866,7 +876,7 @@ export default function PaginaTareasDatosBasicos() {
           {tabModalTipo === 'system_prompt' && tipoEditando && (
             <TabPrompts tabla="tipos_tarea" pkColumna="codigo_tipo_tarea" pkValor={tipoEditando.codigo_tipo_tarea}
               campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
-              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
           {tabModalTipo === 'programacion' && tipoEditando && (
             <TabPrompts tabla="tipos_tarea" pkColumna="codigo_tipo_tarea" pkValor={tipoEditando.codigo_tipo_tarea}
@@ -880,6 +890,15 @@ export default function PaginaTareasDatosBasicos() {
             onGuardarYSalir={() => guardarTipo(true)}
             onCerrar={() => setModalTipo(false)}
             cargando={guardandoTipo}
+            botonesIzquierda={(tabModalTipo === 'system_prompt' || tabModalTipo === 'programacion') && tipoEditando ? (
+              <PieBotonesPrompts
+                tabla="tipos_tarea"
+                pkColumna="codigo_tipo_tarea"
+                pkValor={tipoEditando.codigo_tipo_tarea}
+                promptInsert={promptsTipo.prompt_insert ?? undefined}
+                promptUpdate={promptsTipo.prompt_update ?? undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>
@@ -890,7 +909,7 @@ export default function PaginaTareasDatosBasicos() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalEst(tab)}
-                className={`px-3 py-2 text-sm border-b-2 ${tabModalEst === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalEst === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
               </button>
             ))}
@@ -940,7 +959,7 @@ export default function PaginaTareasDatosBasicos() {
           {tabModalEst === 'system_prompt' && estEditando && (
             <TabPrompts tabla="estados_tarea" pkColumna="codigo_estado_tarea" pkValor={estEditando.codigo_estado_tarea}
               campos={promptsEst} onCampoCambiado={(c, v) => setPromptsEst({ ...promptsEst, [c]: v })}
-              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
           {tabModalEst === 'programacion' && estEditando && (
             <TabPrompts tabla="estados_tarea" pkColumna="codigo_estado_tarea" pkValor={estEditando.codigo_estado_tarea}
@@ -954,6 +973,15 @@ export default function PaginaTareasDatosBasicos() {
             onGuardarYSalir={() => guardarEstado(true)}
             onCerrar={() => setModalEst(false)}
             cargando={guardandoEst}
+            botonesIzquierda={(tabModalEst === 'system_prompt' || tabModalEst === 'programacion') && estEditando ? (
+              <PieBotonesPrompts
+                tabla="estados_tarea"
+                pkColumna="codigo_estado_tarea"
+                pkValor={estEditando.codigo_estado_tarea}
+                promptInsert={promptsEst.prompt_insert ?? undefined}
+                promptUpdate={promptsEst.prompt_update ?? undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>

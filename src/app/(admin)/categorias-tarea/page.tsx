@@ -171,7 +171,7 @@ export default function PaginaCategoriasTarea() {
               type="button"
               onClick={() => setTabModal(key)}
               className={cn(
-                'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+                'flex-1 text-center px-4 py-2 text-sm font-medium border-b-2 transition-colors',
                 tabModal === key
                   ? 'border-primario text-primario'
                   : 'border-transparent text-texto-muted hover:text-texto'

@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { categoriasCaractPersApi, rolesApi } from '@/lib/api'
 import type { CategoriaCaractPers, TipoCaractPers, RolCaractPers, Rol } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -560,7 +561,7 @@ export default function PaginaCategoriasCaracteristica() {
               <button
                 key={tab}
                 onClick={() => setTabModalCat(tab)}
-                className={`px-4 py-2 text-sm font-medium transition-colors ${
+                className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                   tabModalCat === tab
                     ? 'border-b-2 border-primario text-primario'
                     : 'text-texto-muted hover:text-texto'
@@ -613,7 +614,6 @@ export default function PaginaCategoriasCaracteristica() {
               mostrarPythonInsert={false}
               mostrarPythonUpdate={false}
               mostrarJavaScript={false}
-              mostrarBotones={false}
             />
           )}
 
@@ -636,6 +636,15 @@ export default function PaginaCategoriasCaracteristica() {
             onGuardarYSalir={() => guardarCat(true)}
             onCerrar={() => setModalCat(false)}
             cargando={guardandoCat}
+            botonesIzquierda={(tabModalCat === 'system_prompt' || tabModalCat === 'programacion') && catEditando ? (
+              <PieBotonesPrompts
+                tabla="categorias_caract_pers"
+                pkColumna="codigo_cat_pers"
+                pkValor={catEditando.codigo_cat_pers}
+                promptInsert={formCat.prompt_insert || undefined}
+                promptUpdate={formCat.prompt_update || undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>

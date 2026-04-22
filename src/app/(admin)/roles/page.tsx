@@ -18,6 +18,7 @@ import { exportarExcel } from '@/lib/exportar-excel'
 import { etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }
 
@@ -680,7 +681,7 @@ export default function PaginaRoles() {
                 <button
                   key={tab.key}
                   onClick={() => setTabModalRol(tab.key)}
-                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalRol === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}
+                  className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalRol === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}
                 >
                   {tab.label}
                 </button>
@@ -905,10 +906,24 @@ export default function PaginaRoles() {
                 mostrarPythonInsert={false}
                 mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
-                mostrarBotones={false}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-              <PieBotonesModal editando={!!rolEditando} onGuardar={() => guardarRol(false)} onGuardarYSalir={() => guardarRol(true)} onCerrar={() => setModalRol(false)} cargando={guardando} />
+              <PieBotonesModal
+                editando={!!rolEditando}
+                onGuardar={() => guardarRol(false)}
+                onGuardarYSalir={() => guardarRol(true)}
+                onCerrar={() => setModalRol(false)}
+                cargando={guardando}
+                botonesIzquierda={rolEditando ? (
+                  <PieBotonesPrompts
+                    tabla="roles"
+                    pkColumna="id_rol"
+                    pkValor={String(rolEditando.id_rol)}
+                    promptInsert={formRol.prompt_insert ?? undefined}
+                    promptUpdate={formRol.prompt_update ?? undefined}
+                  />
+                ) : undefined}
+              />
             </div>
           )}
 
@@ -934,7 +949,22 @@ export default function PaginaRoles() {
                 mostrarJavaScript={false}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
-              <PieBotonesModal editando={!!rolEditando} onGuardar={() => guardarRol(false)} onGuardarYSalir={() => guardarRol(true)} onCerrar={() => setModalRol(false)} cargando={guardando} />
+              <PieBotonesModal
+                editando={!!rolEditando}
+                onGuardar={() => guardarRol(false)}
+                onGuardarYSalir={() => guardarRol(true)}
+                onCerrar={() => setModalRol(false)}
+                cargando={guardando}
+                botonesIzquierda={rolEditando ? (
+                  <PieBotonesPrompts
+                    tabla="roles"
+                    pkColumna="id_rol"
+                    pkValor={String(rolEditando.id_rol)}
+                    promptInsert={formRol.prompt_insert ?? undefined}
+                    promptUpdate={formRol.prompt_update ?? undefined}
+                  />
+                ) : undefined}
+              />
             </div>
           )}
         </div>

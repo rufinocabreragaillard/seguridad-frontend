@@ -18,6 +18,7 @@ import { useTranslations } from 'next-intl'
 import { TIPOS_ELEMENTO, ETIQUETA_TIPO, DESCRIPCION_TIPO, etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 type FuncionApp = { codigo_funcion: string; orden: number; inicial: boolean; funciones: { nombre_funcion: string } }
 type GrupoApp = { codigo_grupo: string; grupos_entidades: { nombre_grupo: string } }
@@ -256,7 +257,7 @@ export default function PaginaAplicaciones() {
                 { key: 'system_prompt', label: 'System Prompt' },
                 { key: 'programacion', label: 'Programación' },
               ] as { key: typeof tabModalApp; label: string }[]).map((tab) => (
-                <button key={tab.key} onClick={() => setTabModalApp(tab.key)} className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalApp === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
+                <button key={tab.key} onClick={() => setTabModalApp(tab.key)} className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalApp === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
                   {tab.label}
                 </button>
               ))}
@@ -384,10 +385,24 @@ export default function PaginaAplicaciones() {
                 mostrarPythonInsert={false}
                 mostrarPythonUpdate={false}
                 mostrarJavaScript={false}
-                mostrarBotones={false}
               />
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
-              <PieBotonesModal editando={!!appEditando} onGuardar={() => guardarApp(false)} onGuardarYSalir={() => guardarApp(true)} onCerrar={() => setModalApp(false)} cargando={guardandoApp} />
+              <PieBotonesModal
+                editando={!!appEditando}
+                onGuardar={() => guardarApp(false)}
+                onGuardarYSalir={() => guardarApp(true)}
+                onCerrar={() => setModalApp(false)}
+                cargando={guardandoApp}
+                botonesIzquierda={appEditando ? (
+                  <PieBotonesPrompts
+                    tabla="aplicaciones"
+                    pkColumna="codigo_aplicacion"
+                    pkValor={appEditando.codigo_aplicacion}
+                    promptInsert={formApp.prompt_insert ?? undefined}
+                    promptUpdate={formApp.prompt_update ?? undefined}
+                  />
+                ) : undefined}
+              />
             </div>
           )}
           {tabModalApp === 'programacion' && appEditando && (
@@ -411,7 +426,22 @@ export default function PaginaAplicaciones() {
                 mostrarJavaScript={false}
               />
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
-              <PieBotonesModal editando={!!appEditando} onGuardar={() => guardarApp(false)} onGuardarYSalir={() => guardarApp(true)} onCerrar={() => setModalApp(false)} cargando={guardandoApp} />
+              <PieBotonesModal
+                editando={!!appEditando}
+                onGuardar={() => guardarApp(false)}
+                onGuardarYSalir={() => guardarApp(true)}
+                onCerrar={() => setModalApp(false)}
+                cargando={guardandoApp}
+                botonesIzquierda={appEditando ? (
+                  <PieBotonesPrompts
+                    tabla="aplicaciones"
+                    pkColumna="codigo_aplicacion"
+                    pkValor={appEditando.codigo_aplicacion}
+                    promptInsert={formApp.prompt_insert ?? undefined}
+                    promptUpdate={formApp.prompt_update ?? undefined}
+                  />
+                ) : undefined}
+              />
             </div>
           )}
           {tabModalApp === 'grupos' && appEditando && (

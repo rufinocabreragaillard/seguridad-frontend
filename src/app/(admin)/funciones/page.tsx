@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { aplicacionesApi, funcionesApi, procesosApi, registroLLMApi } from '@/lib/api'
 import type { Proceso } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -349,7 +350,7 @@ export default function PaginaFunciones() {
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
             {TABS_MODAL.map((tab) => (
-              <button key={tab.key} onClick={() => setTabModalFuncion(tab.key)} className={`px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalFuncion === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
+              <button key={tab.key} onClick={() => setTabModalFuncion(tab.key)} className={`flex-1 text-center px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalFuncion === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
                 {tab.label}
               </button>
             ))}
@@ -574,6 +575,15 @@ export default function PaginaFunciones() {
                 onGuardarYSalir={() => guardarFuncion(true)}
                 onCerrar={() => setModalFuncion(false)}
                 cargando={guardandoFuncion}
+                botonesIzquierda={funcionEditando ? (
+                  <PieBotonesPrompts
+                    tabla="funciones"
+                    pkColumna="codigo_funcion"
+                    pkValor={funcionEditando.codigo_funcion}
+                    promptInsert={formFuncion.prompt_insert ?? undefined}
+                    promptUpdate={formFuncion.prompt_update ?? undefined}
+                  />
+                ) : undefined}
               />
             </div>
           )}

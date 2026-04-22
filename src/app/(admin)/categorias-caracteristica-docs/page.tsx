@@ -12,6 +12,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { categoriasCaractDocsApi, registroLLMApi } from '@/lib/api'
 import type { CategoriaCaractDocs, TipoCaractDocs, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -471,7 +472,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               <button
                 key={tab}
                 onClick={() => setTabModalCat(tab)}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                   tabModalCat === tab
                     ? 'border-b-2 border-primario text-primario'
                     : 'text-texto-muted hover:text-texto'
@@ -534,7 +535,6 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               mostrarPythonInsert={false}
               mostrarPythonUpdate={false}
               mostrarJavaScript={false}
-              mostrarBotones={false}
             />
           )}
 
@@ -582,6 +582,15 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             onGuardarYSalir={() => guardarCat(true)}
             onCerrar={() => setModalCat(false)}
             cargando={guardandoCat}
+            botonesIzquierda={(tabModalCat === 'system_prompt' || tabModalCat === 'programacion') && catEditando ? (
+              <PieBotonesPrompts
+                tabla="categorias_caract_docs"
+                pkColumna="codigo_cat_docs"
+                pkValor={catEditando.codigo_cat_docs}
+                promptInsert={formCat.prompt_insert || undefined}
+                promptUpdate={formCat.prompt_update || undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>
@@ -595,7 +604,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               <button
                 key={tab}
                 onClick={() => setTabModalTipo(tab)}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                   tabModalTipo === tab
                     ? 'border-b-2 border-primario text-primario'
                     : 'text-texto-muted hover:text-texto'
@@ -630,7 +639,6 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               mostrarPythonInsert={false}
               mostrarPythonUpdate={false}
               mostrarJavaScript={false}
-              mostrarBotones={false}
             />
           )}
 
@@ -653,6 +661,15 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             onGuardarYSalir={() => guardarTipo(true)}
             onCerrar={() => setModalTipo(false)}
             cargando={guardandoTipo}
+            botonesIzquierda={(tabModalTipo === 'system_prompt' || tabModalTipo === 'programacion') && tipoEditando ? (
+              <PieBotonesPrompts
+                tabla="tipos_caract_docs"
+                pkColumna="codigo_tipo_docs"
+                pkValor={tipoEditando.codigo_tipo_docs}
+                promptInsert={formTipo.prompt_insert || undefined}
+                promptUpdate={formTipo.prompt_update || undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>

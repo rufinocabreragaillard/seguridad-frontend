@@ -10,6 +10,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { datosBasicosApi } from '@/lib/api'
 import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -494,7 +495,7 @@ export default function PaginaDatosBasicos() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
-                className={`px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
               </button>
             ))}
@@ -525,7 +526,7 @@ export default function PaginaDatosBasicos() {
           {tabModalCat === 'system_prompt' && catEditando && (
             <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
               campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
 
           {tabModalCat === 'programacion' && catEditando && (
@@ -546,6 +547,15 @@ export default function PaginaDatosBasicos() {
             onGuardarYSalir={() => guardarCategoria(true)}
             onCerrar={() => setModalCat(false)}
             cargando={guardandoCat}
+            botonesIzquierda={(tabModalCat === 'system_prompt' || tabModalCat === 'programacion') && catEditando ? (
+              <PieBotonesPrompts
+                tabla="categorias_parametro"
+                pkColumna="categoria_parametro"
+                pkValor={catEditando.categoria_parametro}
+                promptInsert={promptsCat.prompt_insert ?? undefined}
+                promptUpdate={promptsCat.prompt_update ?? undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>
@@ -561,7 +571,7 @@ export default function PaginaDatosBasicos() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
-                className={`px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
               </button>
             ))}
@@ -608,7 +618,7 @@ export default function PaginaDatosBasicos() {
           {tabModalTipo === 'system_prompt' && tipoEditando && (
             <TabPrompts tabla="tipos_parametro" pkColumna="tipo_parametro" pkValor={tipoEditando.tipo_parametro}
               campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
-              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
 
           {tabModalTipo === 'programacion' && tipoEditando && (
@@ -629,6 +639,15 @@ export default function PaginaDatosBasicos() {
             onGuardarYSalir={() => guardarTipo(true)}
             onCerrar={() => setModalTipo(false)}
             cargando={guardandoTipo}
+            botonesIzquierda={(tabModalTipo === 'system_prompt' || tabModalTipo === 'programacion') && tipoEditando ? (
+              <PieBotonesPrompts
+                tabla="tipos_parametro"
+                pkColumna="tipo_parametro"
+                pkValor={tipoEditando.tipo_parametro}
+                promptInsert={promptsTipo.prompt_insert ?? undefined}
+                promptUpdate={promptsTipo.prompt_update ?? undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>

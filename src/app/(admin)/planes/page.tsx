@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { planesApi, type Plan } from '@/lib/api'
 
@@ -186,7 +187,7 @@ export default function PaginaPlanes() {
                 <button
                   key={t.key}
                   onClick={() => setTab(t.key)}
-                  className={`px-3 py-2 text-sm border-b-2 ${tab === t.key ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}
+                  className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tab === t.key ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}
                 >
                   {t.label}
                 </button>
@@ -306,10 +307,24 @@ export default function PaginaPlanes() {
                   mostrarPythonInsert={false}
                   mostrarPythonUpdate={false}
                   mostrarJavaScript={false}
-                  mostrarBotones={false}
                 />
                 {error && <div className="bg-red-50 border border-red-200 rounded px-3 py-2 text-sm text-error">{error}</div>}
-                <PieBotonesModal editando={!!editando} onGuardar={() => guardar(false)} onGuardarYSalir={() => guardar(true)} onCerrar={() => setModal(false)} cargando={guardando} />
+                <PieBotonesModal
+                  editando={!!editando}
+                  onGuardar={() => guardar(false)}
+                  onGuardarYSalir={() => guardar(true)}
+                  onCerrar={() => setModal(false)}
+                  cargando={guardando}
+                  botonesIzquierda={editando ? (
+                    <PieBotonesPrompts
+                      tabla="planes_clientes"
+                      pkColumna="codigo_plan"
+                      pkValor={editando.codigo_plan}
+                      promptInsert={form.prompt_insert ?? undefined}
+                      promptUpdate={form.prompt_update ?? undefined}
+                    />
+                  ) : undefined}
+                />
               </div>
             )}
 
@@ -334,7 +349,22 @@ export default function PaginaPlanes() {
                   mostrarJavaScript={false}
                 />
                 {error && <div className="bg-red-50 border border-red-200 rounded px-3 py-2 text-sm text-error">{error}</div>}
-                <PieBotonesModal editando={!!editando} onGuardar={() => guardar(false)} onGuardarYSalir={() => guardar(true)} onCerrar={() => setModal(false)} cargando={guardando} />
+                <PieBotonesModal
+                  editando={!!editando}
+                  onGuardar={() => guardar(false)}
+                  onGuardarYSalir={() => guardar(true)}
+                  onCerrar={() => setModal(false)}
+                  cargando={guardando}
+                  botonesIzquierda={editando ? (
+                    <PieBotonesPrompts
+                      tabla="planes_clientes"
+                      pkColumna="codigo_plan"
+                      pkValor={editando.codigo_plan}
+                      promptInsert={form.prompt_insert ?? undefined}
+                      promptUpdate={form.prompt_update ?? undefined}
+                    />
+                  ) : undefined}
+                />
               </div>
             )}
           </div>

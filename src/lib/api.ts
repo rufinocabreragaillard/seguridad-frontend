@@ -1442,6 +1442,8 @@ export interface CompilarPromptRequest {
   pk_valor: string
   lenguaje?: 'python' | 'javascript' | 'ambos'
   forzar?: boolean
+  prompt_insert_content?: string
+  prompt_update_content?: string
 }
 
 export interface CompilarPromptResponse {

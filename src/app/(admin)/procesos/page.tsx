@@ -21,6 +21,7 @@ import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TIPOS_ELEMENTO, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 const selectClass =
   'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50'
@@ -211,7 +212,7 @@ export default function PaginaProcesos() {
                 <button
                   key={tb.key}
                   onClick={() => setTabModal(tb.key)}
-                  className={`px-3 py-2 text-sm border-b-2 ${tabModal === tb.key ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}
+                  className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModal === tb.key ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}
                 >
                   {tb.label}
                 </button>
@@ -265,7 +266,6 @@ export default function PaginaProcesos() {
               mostrarPythonInsert={false}
               mostrarPythonUpdate={false}
               mostrarJavaScript={false}
-              mostrarBotones={false}
             />
           )}
 
@@ -368,6 +368,15 @@ export default function PaginaProcesos() {
             }}
             onCerrar={crud.cerrarModal}
             cargando={crud.guardando}
+            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion') && crud.editando ? (
+              <PieBotonesPrompts
+                tabla="procesos"
+                pkColumna="codigo_proceso"
+                pkValor={crud.editando.codigo_proceso}
+                promptInsert={crud.form.prompt_insert ?? undefined}
+                promptUpdate={crud.form.prompt_update ?? undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>

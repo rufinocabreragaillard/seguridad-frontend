@@ -301,7 +301,7 @@ export default function PaginaParametrosGenerales() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
-                className={`px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
               </button>
             ))}
@@ -337,7 +337,7 @@ export default function PaginaParametrosGenerales() {
           {tabModalCat === 'system_prompt' && catEditando && (
             <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
               campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
 
           {tabModalCat === 'programacion' && catEditando && (
@@ -361,7 +361,7 @@ export default function PaginaParametrosGenerales() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
-                className={`px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
               </button>
             ))}
@@ -406,7 +406,7 @@ export default function PaginaParametrosGenerales() {
           {tabModalTipo === 'system_prompt' && tipoEditando && (
             <TabPrompts tabla="tipos_parametro" pkColumna="tipo_parametro" pkValor={tipoEditando.tipo_parametro}
               campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
-              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} mostrarBotones={false} />
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
 
           {tabModalTipo === 'programacion' && tipoEditando && (

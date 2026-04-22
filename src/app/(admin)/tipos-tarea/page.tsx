@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
@@ -245,7 +246,7 @@ export default function PaginaTiposTarea() {
               type="button"
               onClick={() => setTabModal(key)}
               className={cn(
-                'px-4 py-2 text-sm font-medium border-b-2 transition-colors',
+                'flex-1 text-center px-4 py-2 text-sm font-medium border-b-2 transition-colors',
                 tabModal === key
                   ? 'border-primario text-primario'
                   : 'border-transparent text-texto-muted hover:text-texto',
@@ -333,7 +334,6 @@ export default function PaginaTiposTarea() {
               mostrarPythonInsert={false}
               mostrarPythonUpdate={false}
               mostrarJavaScript={false}
-              mostrarBotones={false}
             />
           )}
 
@@ -369,6 +369,15 @@ export default function PaginaTiposTarea() {
             }}
             onCerrar={crud.cerrarModal}
             cargando={crud.guardando}
+            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion') && crud.editando ? (
+              <PieBotonesPrompts
+                tabla="tipos_tarea"
+                pkColumna="codigo_tipo_tarea"
+                pkValor={crud.editando.codigo_tipo_tarea}
+                promptInsert={crud.form.prompt_insert ?? undefined}
+                promptUpdate={crud.form.prompt_update ?? undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>

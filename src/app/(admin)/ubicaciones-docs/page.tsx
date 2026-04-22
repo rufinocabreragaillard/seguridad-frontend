@@ -18,6 +18,7 @@ import { escanearDirectorio, escanearDirectorioSinHijos, soportaDirectoryPicker,
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle } from '@/lib/file-handle-store'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 export default function PaginaUbicacionesDocs() {
   const { grupoActivo } = useAuth()
@@ -697,7 +698,7 @@ export default function PaginaUbicacionesDocs() {
                 <button
                   key={tab}
                   onClick={() => setTabModal(tab)}
-                  className={`px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                     tabModal === tab
                       ? 'border-b-2 border-primario text-primario'
                       : 'text-texto-muted hover:text-texto'
@@ -789,7 +790,6 @@ export default function PaginaUbicacionesDocs() {
               mostrarPythonInsert={false}
               mostrarPythonUpdate={false}
               mostrarJavaScript={false}
-              mostrarBotones={false}
             />
           )}
 
@@ -827,6 +827,15 @@ export default function PaginaUbicacionesDocs() {
             onGuardarYSalir={() => guardar(true)}
             onCerrar={() => setModal(false)}
             cargando={guardando}
+            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion') && editando ? (
+              <PieBotonesPrompts
+                tabla="ubicaciones_docs"
+                pkColumna="codigo_ubicacion"
+                pkValor={editando.codigo_ubicacion}
+                promptInsert={form.prompt_insert || undefined}
+                promptUpdate={form.prompt_update || undefined}
+              />
+            ) : undefined}
           />
         </div>
       </Modal>

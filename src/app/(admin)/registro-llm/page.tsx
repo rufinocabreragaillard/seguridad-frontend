@@ -16,6 +16,7 @@ import type { LLMCredencial, LLMPrecio, LLMUsoFila, LLMUsoResumen } from '@/lib/
 import type { RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { useAuth } from '@/context/AuthContext'
 
@@ -488,10 +489,10 @@ export default function PaginaRegistroLLM() {
             <div className="flex flex-col gap-4">
               {editandoModelo && (
                 <div className="flex border-b border-borde -mx-1">
-                  <button onClick={() => setTabModal('datos')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabDatos')}</button>
-                  <button onClick={() => setTabModal('probar')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'probar' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabProbarConexion')}</button>
-                  <button onClick={() => setTabModal('system_prompt')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'system_prompt' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>System Prompt</button>
-                  <button onClick={() => setTabModal('programacion')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'programacion' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Programación</button>
+                  <button onClick={() => setTabModal('datos')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabDatos')}</button>
+                  <button onClick={() => setTabModal('probar')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'probar' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabProbarConexion')}</button>
+                  <button onClick={() => setTabModal('system_prompt')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'system_prompt' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>System Prompt</button>
+                  <button onClick={() => setTabModal('programacion')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'programacion' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Programación</button>
                 </div>
               )}
 
@@ -517,32 +518,69 @@ export default function PaginaRegistroLLM() {
               </>)}
 
               {tabModal === 'system_prompt' && editandoModelo && (
-                <TabPrompts
-                  tabla="registro_llm"
-                  pkColumna="id_modelo"
-                  pkValor={editandoModelo.id_modelo}
-                  campos={formModelo}
-                  onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
-                  mostrarPromptInsert={false}
-                  mostrarPromptUpdate={false}
-                  mostrarSystemPrompt={true}
-                  mostrarPythonInsert={false}
-                  mostrarPythonUpdate={false}
-                  mostrarJavaScript={false}
-                  mostrarBotones={false}
-                />
+                <div className="flex flex-col gap-3">
+                  <TabPrompts
+                    tabla="registro_llm"
+                    pkColumna="id_modelo"
+                    pkValor={editandoModelo.id_modelo}
+                    campos={formModelo}
+                    onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
+                    mostrarPromptInsert={false}
+                    mostrarPromptUpdate={false}
+                    mostrarSystemPrompt={true}
+                    mostrarPythonInsert={false}
+                    mostrarPythonUpdate={false}
+                    mostrarJavaScript={false}
+                  />
+                  {errorModelo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorModelo}</p></div>}
+                  <PieBotonesModal
+                    editando={!!editandoModelo}
+                    onGuardar={() => guardarModelo(false)}
+                    onGuardarYSalir={() => guardarModelo(true)}
+                    onCerrar={() => setModalModelo(false)}
+                    cargando={guardandoModelo}
+                    botonesIzquierda={
+                      <PieBotonesPrompts
+                        tabla="registro_llm"
+                        pkColumna="id_modelo"
+                        pkValor={editandoModelo.id_modelo}
+                        promptInsert={formModelo.prompt_insert || undefined}
+                        promptUpdate={formModelo.prompt_update || undefined}
+                      />
+                    }
+                  />
+                </div>
               )}
 
               {tabModal === 'programacion' && editandoModelo && (
-                <TabPrompts
-                  tabla="registro_llm"
-                  pkColumna="id_modelo"
-                  pkValor={editandoModelo.id_modelo}
-                  campos={formModelo}
-                  onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
-                  mostrarSystemPrompt={false}
-                  mostrarJavaScript={false}
-                />
+                <div className="flex flex-col gap-3">
+                  <TabPrompts
+                    tabla="registro_llm"
+                    pkColumna="id_modelo"
+                    pkValor={editandoModelo.id_modelo}
+                    campos={formModelo}
+                    onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
+                    mostrarSystemPrompt={false}
+                    mostrarJavaScript={false}
+                  />
+                  {errorModelo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorModelo}</p></div>}
+                  <PieBotonesModal
+                    editando={!!editandoModelo}
+                    onGuardar={() => guardarModelo(false)}
+                    onGuardarYSalir={() => guardarModelo(true)}
+                    onCerrar={() => setModalModelo(false)}
+                    cargando={guardandoModelo}
+                    botonesIzquierda={
+                      <PieBotonesPrompts
+                        tabla="registro_llm"
+                        pkColumna="id_modelo"
+                        pkValor={editandoModelo.id_modelo}
+                        promptInsert={formModelo.prompt_insert || undefined}
+                        promptUpdate={formModelo.prompt_update || undefined}
+                      />
+                    }
+                  />
+                </div>
               )}
 
               {tabModal === 'probar' && editandoModelo && (
