@@ -9,7 +9,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
-import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { gruposApi, usuariosApi, entidadesApi } from '@/lib/api'
 import { SortableDndContext, SortableListItem } from '@/components/ui/sortable'
@@ -340,6 +339,12 @@ export default function PaginaGrupos() {
     u.nombre.toLowerCase().includes(busquedaUsuario.toLowerCase()) ||
     u.codigo_usuario.toLowerCase().includes(busquedaUsuario.toLowerCase())
   )
+  const gruposFiltrados = grupos.filter((g) =>
+    busquedaGrupos.length === 0 ||
+    g.nombre.toLowerCase().includes(busquedaGrupos.toLowerCase()) ||
+    g.codigo_grupo.toLowerCase().includes(busquedaGrupos.toLowerCase())
+  )
+
   const entidadesFiltradas = entidadesGrupo
     .filter((e) => e.nombre.toLowerCase().includes(busquedaEntidades.toLowerCase()) || e.codigo_entidad.toLowerCase().includes(busquedaEntidades.toLowerCase()))
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
@@ -420,14 +425,9 @@ export default function PaginaGrupos() {
       <BotonChat className="top-0 right-0" />
 
       {/* Header */}
-      <div className="flex items-center justify-between pr-28">
-        <div>
-          <h2 className="page-heading">{t('titulo')}</h2>
-          <p className="text-sm text-texto-muted mt-1">Gestion de grupos, entidades y usuarios asociados</p>
-        </div>
-        {tabPrincipal === 'grupos' && esSuperAdmin() && (
-          <Boton variante="primario" onClick={abrirNuevoGrupo}><Plus size={16} />{t('nuevoGrupo')}</Boton>
-        )}
+      <div className="pr-28">
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">Gestion de grupos, entidades y usuarios asociados</p>
       </div>
 
       {/* Lenguetas principales */}
@@ -479,283 +479,80 @@ export default function PaginaGrupos() {
             No tienes permisos para acceder a esta sección.
           </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Lista de grupos */}
-            <div className="flex flex-col gap-2">
-              <h3 className="text-sm font-semibold text-texto-muted uppercase tracking-wider px-1">Grupos</h3>
-              <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
-                <input
-                  type="text"
-                  placeholder={t('filtrarPlaceholder')}
-                  value={busquedaGrupos}
-                  onChange={(e) => setBusquedaGrupos(e.target.value)}
-                  className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
-                />
+          <>
+            <div className="flex items-center gap-3">
+              <div className="max-w-sm flex-1">
+                <Input placeholder={t('filtrarPlaceholder')} value={busquedaGrupos} onChange={(e) => setBusquedaGrupos(e.target.value)} icono={<Search size={15} />} />
               </div>
-              {cargando ? (
-                <div className="flex flex-col gap-2">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="h-16 bg-surface border border-borde rounded-xl animate-pulse" />
-                  ))}
-                </div>
-              ) : (() => {
-                const gruposFiltrados = grupos.filter((g) =>
-                  busquedaGrupos.length === 0 ||
-                  g.nombre.toLowerCase().includes(busquedaGrupos.toLowerCase()) ||
-                  g.codigo_grupo.toLowerCase().includes(busquedaGrupos.toLowerCase())
-                )
-                return (
-                  <SortableDndContext
-                    items={gruposFiltrados as unknown as Record<string, unknown>[]}
-                    getId={(item) => (item as unknown as Grupo).codigo_grupo}
-                    onReorder={(items) => reordenarGrupos(items as unknown as Grupo[])}
-                  >
-                    {gruposFiltrados.map((g) => (
-                      <SortableListItem key={g.codigo_grupo} id={g.codigo_grupo} className="flex items-center gap-1">
-                        <button
-                          onClick={() => setGrupoSeleccionado(g)}
-                          onDoubleClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }}
-                          className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
-                            grupoSeleccionado?.codigo_grupo === g.codigo_grupo
-                              ? 'border-primario bg-primario-muy-claro'
-                              : 'border-borde bg-surface hover:bg-fondo'
-                          }`}
-                        >
-                          <div className={`p-2 rounded-lg ${
-                            grupoSeleccionado?.codigo_grupo === g.codigo_grupo
-                              ? 'bg-primario text-primario-texto'
-                              : 'bg-fondo text-texto-muted'
-                          }`}>
-                            <Layers size={16} />
-                          </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium text-texto truncate">{g.nombre}</p>
-                            <div className="flex items-center gap-2">
-                              <p className="text-xs text-texto-muted">{g.codigo_grupo}</p>
-                              <Insignia variante={varianteTipo(g.tipo)}>{etiquetaTipo(g.tipo)}</Insignia>
-                            </div>
-                          </div>
-                          <div className="ml-auto flex gap-1">
-                            <button onClick={(ev) => { ev.stopPropagation(); setGrupoSeleccionado(g); setTabPrincipal('entidades') }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors" title="Ver entidades">
-                              <Eye size={13} />
-                            </button>
-                            <button onClick={(ev) => { ev.stopPropagation(); abrirEditarGrupo(g) }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors">
-                              <Pencil size={13} />
-                            </button>
-                          </div>
+              <div className="flex gap-2 ml-auto">
+                <Boton variante="contorno" tamano="sm" disabled={gruposFiltrados.length === 0}
+                  onClick={() => exportarExcel(gruposFiltrados as unknown as Record<string, unknown>[], [
+                    { titulo: 'Código', campo: 'codigo_grupo' },
+                    { titulo: 'Nombre', campo: 'nombre' },
+                    { titulo: 'Tipo', campo: 'tipo' },
+                    { titulo: 'Descripción', campo: 'descripcion' },
+                  ], 'grupos')}>
+                  <Download size={15} />Excel
+                </Boton>
+                <Boton variante="primario" onClick={abrirNuevoGrupo}><Plus size={16} />{t('nuevoGrupo')}</Boton>
+              </div>
+            </div>
+
+            {cargando ? (
+              <div className="flex flex-col gap-2">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="h-16 bg-surface border border-borde rounded-xl animate-pulse" />
+                ))}
+              </div>
+            ) : gruposFiltrados.length === 0 ? (
+              <p className="text-sm text-texto-muted py-4 text-center">
+                {busquedaGrupos ? 'No se encontraron grupos' : 'No hay grupos registrados'}
+              </p>
+            ) : (
+              <SortableDndContext
+                items={gruposFiltrados as unknown as Record<string, unknown>[]}
+                getId={(item) => (item as unknown as Grupo).codigo_grupo}
+                onReorder={(items) => reordenarGrupos(items as unknown as Grupo[])}
+              >
+                {gruposFiltrados.map((g) => (
+                  <SortableListItem key={g.codigo_grupo} id={g.codigo_grupo} className="flex items-center gap-1">
+                    <button
+                      onClick={() => setGrupoSeleccionado(g)}
+                      onDoubleClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }}
+                      className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
+                        grupoSeleccionado?.codigo_grupo === g.codigo_grupo
+                          ? 'border-primario bg-primario-muy-claro'
+                          : 'border-borde bg-surface hover:bg-fondo'
+                      }`}
+                    >
+                      <div className={`p-2 rounded-lg ${
+                        grupoSeleccionado?.codigo_grupo === g.codigo_grupo
+                          ? 'bg-primario text-primario-texto'
+                          : 'bg-fondo text-texto-muted'
+                      }`}>
+                        <Layers size={16} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-texto truncate">{g.nombre}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs text-texto-muted">{g.codigo_grupo}</p>
+                          <Insignia variante={varianteTipo(g.tipo)}>{etiquetaTipo(g.tipo)}</Insignia>
+                        </div>
+                      </div>
+                      <div className="ml-auto flex gap-1">
+                        <button onClick={(ev) => { ev.stopPropagation(); setGrupoSeleccionado(g); setTabPrincipal('entidades') }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors" title="Ver entidades">
+                          <Eye size={13} />
                         </button>
-                      </SortableListItem>
-                    ))}
-                  </SortableDndContext>
-                )
-              })()}
-            </div>
-
-            {/* Detalle del grupo seleccionado */}
-            <div className="lg:col-span-2">
-              {grupoSeleccionado ? (
-                <Tarjeta>
-                  <div className="px-6 py-4 border-b border-borde">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="text-sm font-semibold text-texto">{grupoSeleccionado.nombre}</h3>
-                        <p className="text-xs text-texto-muted mt-0.5">Codigo: {grupoSeleccionado.codigo_grupo}</p>
+                        <button onClick={(ev) => { ev.stopPropagation(); abrirEditarGrupo(g) }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors">
+                          <Pencil size={13} />
+                        </button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        {esSuperAdmin && grupoSeleccionado.tipo !== 'SISTEMA' && grupoSeleccionado.codigo_grupo !== 'ADMIN' && (
-                          <Boton
-                            variante="peligro"
-                            tamano="sm"
-                            onClick={() => { setConfirmarBorrarGrupo(grupoSeleccionado); setTextoBorrar('') }}
-                          >
-                            <Trash2 size={14} />
-                          </Boton>
-                        )}
-                        <Boton
-                          variante="contorno"
-                          tamano="sm"
-                          onClick={() => {
-                            if (tabActivo === 'entidades') {
-                              exportarExcel(entidadesFiltradas as unknown as Record<string, unknown>[], [
-                                { titulo: 'Grupo', campo: 'codigo_grupo' },
-                                { titulo: 'Código entidad', campo: 'codigo_entidad' },
-                                { titulo: 'Nombre', campo: 'nombre' },
-                                { titulo: 'Estado', campo: 'activo', formato: (v) => v ? 'Activo' : 'Inactivo' },
-                              ], `entidades_grupo_${grupoSeleccionado.codigo_grupo}`)
-                            } else {
-                              exportarExcel(usuariosListaFiltrados.map((u) => ({
-                                codigo_usuario: u.codigo_usuario,
-                                nombre: u.usuarios?.nombre ?? u.codigo_usuario,
-                                activo: u.usuarios?.activo,
-                              })), [
-                                { titulo: 'Correo', campo: 'codigo_usuario' },
-                                { titulo: 'Nombre', campo: 'nombre' },
-                                { titulo: 'Estado', campo: 'activo', formato: (v) => v ? 'Activo' : 'Inactivo' },
-                              ], `usuarios_grupo_${grupoSeleccionado.codigo_grupo}`)
-                            }
-                          }}
-                          disabled={tabActivo === 'entidades' ? entidadesFiltradas.length === 0 : usuariosListaFiltrados.length === 0}
-                        >
-                          <Download size={14} />
-                          Excel
-                        </Boton>
-                      </div>
-                    </div>
-                    {/* Tabs internas */}
-                    <div className="flex gap-4 mt-3">
-                      <button
-                        onClick={() => setTabActivo('entidades')}
-                        className={`flex items-center gap-1.5 pb-1 text-sm font-medium border-b-2 transition-colors ${
-                          tabActivo === 'entidades' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'
-                        }`}
-                      >
-                        <Building2 size={14} /> Entidades ({entidadesGrupo.length})
-                      </button>
-                      <button
-                        onClick={() => setTabActivo('usuarios')}
-                        className={`flex items-center gap-1.5 pb-1 text-sm font-medium border-b-2 transition-colors ${
-                          tabActivo === 'usuarios' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'
-                        }`}
-                      >
-                        <Users size={14} /> Usuarios ({usuariosGrupo.length})
-                      </button>
-                    </div>
-                  </div>
-                  <TarjetaContenido className="p-0">
-                    {tabActivo === 'entidades' && (
-                      <div>
-                        <div className="px-4 py-3 border-b border-borde flex items-center gap-3">
-                          <div className="max-w-sm flex-1">
-                            <Input
-                              placeholder={t('buscarEntidadPlaceholder')}
-                              value={busquedaEntidades}
-                              onChange={(e) => setBusquedaEntidades(e.target.value)}
-                              icono={<Search size={15} />}
-                            />
-                          </div>
-                          <Boton variante="primario" tamano="sm" onClick={abrirNuevaEntidad}><Plus size={14} />{t('nuevaEntidad')}</Boton>
-                        </div>
-                        <Tabla>
-                          <TablaCabecera>
-                            <tr><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colEstado')}</TablaTh><TablaTh>{t('colCodigo')}</TablaTh><TablaTh className="text-right">{tc('acciones')}</TablaTh></tr>
-                          </TablaCabecera>
-                          <TablaCuerpo>
-                            {cargandoDetalle ? (
-                              <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={4 as never}>Cargando...</TablaTd></TablaFila>
-                            ) : entidadesFiltradas.length === 0 ? (
-                              <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={4 as never}>{busquedaEntidades ? 'No se encontraron entidades' : 'No hay entidades en este grupo'}</TablaTd></TablaFila>
-                            ) : entidadesFiltradas.map((e) => (
-                              <TablaFila key={e.codigo_entidad}>
-                                <TablaTd className="font-medium">{e.nombre}</TablaTd>
-                                <TablaTd><Insignia variante={e.activo ? 'exito' : 'advertencia'}>{e.activo ? 'Activo' : 'Inactivo'}</Insignia></TablaTd>
-                                <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{e.codigo_entidad}</code></TablaTd>
-                                <TablaTd className="text-right">
-                                  <div className="flex items-center justify-end gap-1">
-                                    <button onClick={() => abrirEditarEntidad(e)} className="p-1 rounded hover:bg-fondo text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                                    {e.activo && (
-                                      <button onClick={() => setConfirmarDesactivar(e)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Desactivar"><X size={14} /></button>
-                                    )}
-                                  </div>
-                                </TablaTd>
-                              </TablaFila>
-                            ))}
-                          </TablaCuerpo>
-                        </Tabla>
-                      </div>
-                    )}
-
-                    {tabActivo === 'usuarios' && (
-                      <div className="flex flex-col gap-4 p-4">
-                        <div className="flex gap-2">
-                          <div className="flex-1 relative" ref={dropdownRef}>
-                            <div className="relative">
-                              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
-                              <input
-                                type="text"
-                                placeholder={t('buscarUsuarioPlaceholder')}
-                                value={busquedaUsuario}
-                                onChange={(e) => { setBusquedaUsuario(e.target.value); setDropdownAbierto(true); setUsuarioNuevo('') }}
-                                onFocus={() => setDropdownAbierto(true)}
-                                className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
-                              />
-                            </div>
-                            {dropdownAbierto && busquedaUsuario.length > 0 && (
-                              <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                                {usuariosFiltrados.length === 0 ? (
-                                  <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron usuarios</div>
-                                ) : usuariosFiltrados.slice(0, 20).map((u) => (
-                                  <button
-                                    key={u.codigo_usuario}
-                                    onClick={() => { setUsuarioNuevo(u.codigo_usuario); setBusquedaUsuario(`${u.nombre} (${u.codigo_usuario})`); setDropdownAbierto(false) }}
-                                    className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
-                                  >
-                                    <span className="font-medium">{u.nombre}</span>
-                                    <span className="ml-2 text-texto-muted text-xs">{u.codigo_usuario}</span>
-                                  </button>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                          <Boton variante="primario" onClick={() => { asignarUsuarioAlGrupo(); setBusquedaUsuario('') }} cargando={asignandoUsuario} disabled={!usuarioNuevo}>
-                            <Plus size={14} />{t('agregarUsuario')}
-                          </Boton>
-                        </div>
-
-                        {error && (
-                          <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-                            <p className="text-sm text-error">{error}</p>
-                          </div>
-                        )}
-
-                        {usuariosGrupo.length > 0 && (
-                          <div className="max-w-sm">
-                            <Input
-                              placeholder={t('filtrarUsuariosPlaceholder')}
-                              value={busquedaUsuariosLista}
-                              onChange={(e) => setBusquedaUsuariosLista(e.target.value)}
-                              icono={<Search size={15} />}
-                            />
-                          </div>
-                        )}
-
-                        {cargandoDetalle ? (
-                          <div className="flex flex-col gap-2">
-                            {[1, 2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}
-                          </div>
-                        ) : usuariosGrupo.length === 0 ? (
-                          <p className="text-sm text-texto-muted text-center py-4">No hay usuarios en este grupo</p>
-                        ) : usuariosListaFiltrados.length === 0 ? (
-                          <p className="text-sm text-texto-muted text-center py-4">No se encontraron usuarios</p>
-                        ) : (
-                          <div className="flex flex-col gap-2">
-                            {usuariosListaFiltrados.map((u) => (
-                              <div key={u.codigo_usuario} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
-                                <div>
-                                  <span className="text-sm font-medium text-texto">{u.usuarios?.nombre ?? u.codigo_usuario}</span>
-                                  <span className="ml-2 text-xs text-texto-muted">{u.codigo_usuario}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <Insignia variante={u.usuarios?.activo ? 'exito' : 'advertencia'}>{u.usuarios?.activo ? 'Activo' : 'Inactivo'}</Insignia>
-                                  <button onClick={() => quitarUsuarioDelGrupo(u.codigo_usuario)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar del grupo">
-                                    <X size={14} />
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </TarjetaContenido>
-                </Tarjeta>
-              ) : (
-                <div className="flex items-center justify-center h-48 text-texto-muted text-sm">
-                  Selecciona un grupo para ver su detalle
-                </div>
-              )}
-            </div>
-          </div>
+                    </button>
+                  </SortableListItem>
+                ))}
+              </SortableDndContext>
+            )}
+          </>
         )
       )}
 

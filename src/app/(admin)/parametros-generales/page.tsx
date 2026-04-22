@@ -1,12 +1,14 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Eye } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Search, Download } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
+import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Insignia } from '@/components/ui/insignia'
+import { exportarExcel } from '@/lib/exportar-excel'
 import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { datosBasicosApi } from '@/lib/api'
@@ -49,6 +51,7 @@ export default function PaginaParametrosGenerales() {
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [busquedaCat, setBusquedaCat] = useState('')
 
   // ── Eliminación ────────────────────────────────────────────────────────────
   const [itemAEliminar, setItemAEliminar] = useState<ItemEliminar | null>(null)
@@ -149,6 +152,12 @@ export default function PaginaParametrosGenerales() {
     finally { setEliminando(false) }
   }
 
+  const catsFiltradas = categorias.filter((c) =>
+    busquedaCat.length === 0 ||
+    c.categoria_parametro.toLowerCase().includes(busquedaCat.toLowerCase()) ||
+    c.nombre.toLowerCase().includes(busquedaCat.toLowerCase())
+  )
+
   const tiposFiltrados = filtroCategoria ? tipos.filter((t) => t.categoria_parametro === filtroCategoria) : tipos
 
   const tabs: { id: TabId; label: string }[] = [
@@ -176,9 +185,22 @@ export default function PaginaParametrosGenerales() {
       {/* ── Tab: Categorías ── */}
       {tabActiva === 'categorias' && (
         <>
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-texto-muted">{categorias.length} categorías registradas</p>
-            <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> Nueva categoría</Boton>
+          <div className="flex items-center gap-3">
+            <div className="max-w-sm flex-1">
+              <Input placeholder="Buscar categoría..." value={busquedaCat} onChange={(e) => setBusquedaCat(e.target.value)} icono={<Search size={15} />} />
+            </div>
+            <div className="flex gap-2 ml-auto">
+              <Boton variante="contorno" tamano="sm" disabled={catsFiltradas.length === 0}
+                onClick={() => exportarExcel(catsFiltradas as unknown as Record<string, unknown>[], [
+                  { titulo: 'Código', campo: 'categoria_parametro' },
+                  { titulo: 'Nombre', campo: 'nombre' },
+                  { titulo: 'Descripción', campo: 'descripcion' },
+                  { titulo: 'Estado', campo: 'activo', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
+                ], 'categorias-parametro')}>
+                <Download size={15} />Excel
+              </Boton>
+              <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> Nueva categoría</Boton>
+            </div>
           </div>
 
           {cargandoCat ? (
@@ -192,15 +214,16 @@ export default function PaginaParametrosGenerales() {
                 <TablaTh className="text-right">Acciones</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
-                {categorias.length === 0 ? (
-                  <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={7 as never}>No hay categorías registradas</TablaTd></tr>
+                {catsFiltradas.length === 0 ? (
+                  <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={7 as never}>{busquedaCat ? 'No se encontraron categorías' : 'No hay categorías registradas'}</TablaTd></tr>
                 ) : (
                   <SortableDndContext
-                    items={categorias as unknown as Record<string, unknown>[]}
+                    items={catsFiltradas as unknown as Record<string, unknown>[]}
                     getId={(item) => (item as unknown as CategoriaParametro).categoria_parametro}
                     onReorder={(items) => reordenarCategorias(items as unknown as CategoriaParametro[])}
+                    disabled={!!busquedaCat}
                   >
-                    {categorias.map((c, idx) => (
+                    {catsFiltradas.map((c, idx) => (
                       <SortableRow key={c.categoria_parametro} id={c.categoria_parametro}
                         onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }}
                       >
