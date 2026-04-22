@@ -809,7 +809,14 @@ export default function PaginaUsuariosSemilla() {
                       {dropdownRolPpalAbierto && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {[{ id_rol: 0, nombre: '— Sin rol —', codigo_rol: '', codigo_grupo: null, tipo: tipoGrupoForm } as Rol,
-                            ...rolesGrupo.filter((r) => normalizarTipo(r.tipo) === tipoGrupoForm)]
+                            ...rolesGrupo.filter((r) => {
+                              if (!(r.codigo_grupo === grupoForm || r.codigo_grupo == null)) return false
+                              const tipoRol = normalizarTipo(r.tipo)
+                              if (tipoUsuarioSemilla === 'SISTEMA') return tipoRol === 'SISTEMA'
+                              if (tipoUsuarioSemilla === 'ADMINISTRADOR') return tipoRol !== 'SISTEMA'
+                              if (tipoUsuarioSemilla === 'USUARIO') return tipoRol === 'USUARIO'
+                              return true
+                            })]
                             .filter((r) => r.id_rol === 0 || !busquedaRolPpal || r.nombre.toLowerCase().includes(busquedaRolPpal.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRolPpal.toLowerCase()))
                             .slice(0, 21).map((r) => (
                               <button key={r.id_rol} type="button"
