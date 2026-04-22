@@ -11,7 +11,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { gruposApi, usuariosApi, entidadesApi } from '@/lib/api'
-import { SortableDndContext, SortableListItem } from '@/components/ui/sortable'
+import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { useAuth } from '@/context/AuthContext'
 import type { Grupo, Entidad, Usuario } from '@/lib/tipos'
@@ -53,7 +53,9 @@ export default function PaginaGrupos() {
   const [modalGrupo, setModalGrupo] = useState(false)
   const [grupoEditando, setGrupoEditando] = useState<Grupo | null>(null)
   const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO' as TipoElemento, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
-  const [tabModalGrupo, setTabModalGrupo] = useState<'datos' | 'system_prompt' | 'programacion'>('datos')
+  const [tabModalGrupo, setTabModalGrupo] = useState<'datos' | 'usuarios' | 'system_prompt' | 'programacion'>('datos')
+  const [usuariosModalGrupo, setUsuariosModalGrupo] = useState<UsuarioGrupo[]>([])
+  const [cargandoUsuariosModal, setCargandoUsuariosModal] = useState(false)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
 
@@ -158,13 +160,21 @@ export default function PaginaGrupos() {
     setModalGrupo(true)
   }
 
-  const abrirEditarGrupo = (g: Grupo) => {
+  const abrirEditarGrupo = async (g: Grupo) => {
     setGrupoEditando(g)
     const g2 = g as unknown as Record<string, unknown>
     setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, descripcion: g.descripcion || '', tipo: normalizarTipo(g.tipo), prompt_insert: g2.prompt_insert as string || '', prompt_update: g2.prompt_update as string || '', system_prompt: g.system_prompt || '', python_insert: g2.python_insert as string || '', python_update: g2.python_update as string || '', javascript: g2.javascript as string || '', python_editado_manual: (g2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (g2.javascript_editado_manual as boolean) ?? false })
     setTabModalGrupo('datos')
     setError('')
+    setUsuariosModalGrupo([])
     setModalGrupo(true)
+    setCargandoUsuariosModal(true)
+    try {
+      const usrs = await gruposApi.listarUsuarios(g.codigo_grupo)
+      setUsuariosModalGrupo(usrs)
+    } finally {
+      setCargandoUsuariosModal(false)
+    }
   }
 
   const guardarGrupo = async (cerrar: boolean) => {
@@ -324,7 +334,9 @@ export default function PaginaGrupos() {
   }
 
   const usuariosDisponiblesEnt = todosUsuarios.filter((u) =>
-    u.activo && !usuariosEntidad.some((ue) => ue.codigo_usuario === u.codigo_usuario)
+    u.activo &&
+    !usuariosEntidad.some((ue) => ue.codigo_usuario === u.codigo_usuario) &&
+    usuariosGrupo.some((ug) => ug.codigo_usuario === u.codigo_usuario)
   )
   const usuariosFiltradosEnt = usuariosDisponiblesEnt.filter((u) =>
     busquedaUsuarioEnt.length === 0 ||
@@ -509,48 +521,38 @@ export default function PaginaGrupos() {
                 {busquedaGrupos ? 'No se encontraron grupos' : 'No hay grupos registrados'}
               </p>
             ) : (
-              <SortableDndContext
-                items={gruposFiltrados as unknown as Record<string, unknown>[]}
-                getId={(item) => (item as unknown as Grupo).codigo_grupo}
-                onReorder={(items) => reordenarGrupos(items as unknown as Grupo[])}
-              >
-                {gruposFiltrados.map((g) => (
-                  <SortableListItem key={g.codigo_grupo} id={g.codigo_grupo} className="flex items-center gap-1">
-                    <button
-                      onClick={() => setGrupoSeleccionado(g)}
-                      onDoubleClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }}
-                      className={`flex-1 flex items-center gap-3 px-4 py-3 rounded-xl border text-left transition-colors ${
-                        grupoSeleccionado?.codigo_grupo === g.codigo_grupo
-                          ? 'border-primario bg-primario-muy-claro'
-                          : 'border-borde bg-surface hover:bg-fondo'
-                      }`}
-                    >
-                      <div className={`p-2 rounded-lg ${
-                        grupoSeleccionado?.codigo_grupo === g.codigo_grupo
-                          ? 'bg-primario text-primario-texto'
-                          : 'bg-fondo text-texto-muted'
-                      }`}>
-                        <Layers size={16} />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-texto truncate">{g.nombre}</p>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs text-texto-muted">{g.codigo_grupo}</p>
-                          <Insignia variante={varianteTipo(g.tipo)}>{etiquetaTipo(g.tipo)}</Insignia>
-                        </div>
-                      </div>
-                      <div className="ml-auto flex gap-1">
-                        <button onClick={(ev) => { ev.stopPropagation(); setGrupoSeleccionado(g); setTabPrincipal('entidades') }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors" title="Ver entidades">
-                          <Eye size={13} />
-                        </button>
-                        <button onClick={(ev) => { ev.stopPropagation(); abrirEditarGrupo(g) }} className="p-1 rounded hover:bg-white text-texto-muted hover:text-primario transition-colors">
-                          <Pencil size={13} />
-                        </button>
-                      </div>
-                    </button>
-                  </SortableListItem>
-                ))}
-              </SortableDndContext>
+              <Tabla>
+                <TablaCabecera>
+                  <tr>
+                    <TablaTh className="w-8" />
+                    <TablaTh>Nombre</TablaTh>
+                    <TablaTh>Código</TablaTh>
+                    <TablaTh>Tipo</TablaTh>
+                    <TablaTh className="text-right">Acciones</TablaTh>
+                  </tr>
+                </TablaCabecera>
+                <TablaCuerpo>
+                  <SortableDndContext
+                    items={gruposFiltrados as unknown as Record<string, unknown>[]}
+                    getId={(item) => (item as unknown as Grupo).codigo_grupo}
+                    onReorder={(items) => reordenarGrupos(items as unknown as Grupo[])}
+                  >
+                    {gruposFiltrados.map((g) => (
+                      <SortableRow key={g.codigo_grupo} id={g.codigo_grupo}>
+                        <TablaTd><button className={`text-sm font-medium text-left w-full${grupoSeleccionado?.codigo_grupo === g.codigo_grupo ? ' text-primario' : ' text-texto'}`} onClick={() => setGrupoSeleccionado(g)}>{g.nombre}</button></TablaTd>
+                        <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{g.codigo_grupo}</code></TablaTd>
+                        <TablaTd><Insignia variante={varianteTipo(g.tipo)}>{etiquetaTipo(g.tipo)}</Insignia></TablaTd>
+                        <TablaTd>
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver entidades"><Eye size={14} /></button>
+                            <button onClick={() => abrirEditarGrupo(g)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                          </div>
+                        </TablaTd>
+                      </SortableRow>
+                    ))}
+                  </SortableDndContext>
+                </TablaCuerpo>
+              </Tabla>
             )}
           </>
         )
@@ -846,15 +848,15 @@ export default function PaginaGrupos() {
       <Modal abierto={modalGrupo} alCerrar={() => setModalGrupo(false)} titulo={grupoEditando ? 'Editar grupo' : 'Nuevo grupo'} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+            {(['datos', ...(grupoEditando ? ['usuarios'] : []), 'system_prompt', 'programacion'] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setTabModalGrupo(tab)}
+                onClick={() => setTabModalGrupo(tab as typeof tabModalGrupo)}
                 className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                   tabModalGrupo === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+                {tab === 'datos' ? 'Datos' : tab === 'usuarios' ? `Usuarios${usuariosModalGrupo.length > 0 ? ` (${usuariosModalGrupo.length})` : ''}` : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
               </button>
             ))}
           </div>
@@ -872,6 +874,31 @@ export default function PaginaGrupos() {
               </div>
               {grupoEditando && <Input etiqueta="Código" value={formGrupo.codigo_grupo} disabled readOnly />}
             </>
+          )}
+
+          {tabModalGrupo === 'usuarios' && grupoEditando && (
+            <div className="flex flex-col gap-3 flex-1">
+              {cargandoUsuariosModal ? (
+                <div className="text-sm text-texto-muted text-center py-8">Cargando usuarios...</div>
+              ) : usuariosModalGrupo.length === 0 ? (
+                <div className="text-sm text-texto-muted text-center py-8">No hay usuarios en este grupo</div>
+              ) : (
+                <Tabla>
+                  <TablaCabecera><tr><TablaTh>Nombre</TablaTh><TablaTh>Código</TablaTh></tr></TablaCabecera>
+                  <TablaCuerpo>
+                    {usuariosModalGrupo.map((u) => (
+                      <TablaFila key={u.codigo_usuario}>
+                        <TablaTd className="font-medium">{u.usuarios?.nombre ?? u.codigo_usuario}</TablaTd>
+                        <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{u.codigo_usuario}</code></TablaTd>
+                      </TablaFila>
+                    ))}
+                  </TablaCuerpo>
+                </Tabla>
+              )}
+              <div className="flex justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalGrupo(false)}>Salir</Boton>
+              </div>
+            </div>
           )}
 
           {tabModalGrupo === 'system_prompt' && grupoEditando && (
