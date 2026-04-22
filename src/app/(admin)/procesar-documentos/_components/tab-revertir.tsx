@@ -113,13 +113,13 @@ export function TabRevertir() {
   }, [procesoSel, filtroLibre, ubicacionSel, tope])
 
   const cargarDocumentos = useCallback(async (pagina: number) => {
-    if (!pasoActual?.estado_origen) return
+    if (!pasoActual?.estado_origen && !filtroLibre) return
     setCargando(true)
     try {
       const data = await documentosApi.listarPaginado({
         page: pagina,
         limit: DOCS_POR_PAGINA,
-        codigo_estado_doc: pasoActual.estado_origen,
+        codigo_estado_doc: pasoActual?.estado_origen || undefined,
         activo: true,
         q: filtroLibre || undefined,
         ruta_prefijo: rutaUbicacion,
@@ -135,36 +135,39 @@ export function TabRevertir() {
   }, [pasoActual, filtroLibre, rutaUbicacion])
 
   const buscar = async () => {
-    if (!pasoActual?.estado_origen) return
+    if (!pasoActual?.estado_origen && !filtroLibre) return
     setCargando(true)
     setConteo(null)
     setResultado(null)
     setError(null)
     setDocumentos([])
     try {
-      const [conteoRes, docsRes] = await Promise.all([
-        documentosApi.revertir({
-          estados_origen: pasoActual.estado_origen ? [pasoActual.estado_origen] : [],
+      // Siempre cargar la lista de documentos (con o sin proceso)
+      const docsRes = await documentosApi.listarPaginado({
+        page: 1,
+        limit: DOCS_POR_PAGINA,
+        codigo_estado_doc: pasoActual?.estado_origen || undefined,
+        activo: true,
+        q: filtroLibre || undefined,
+        ruta_prefijo: rutaUbicacion,
+      })
+      setDocumentos(docsRes.items || [])
+      setPaginaActual(1)
+      setTotalPaginas(Math.max(1, Math.ceil(docsRes.total / DOCS_POR_PAGINA)))
+      setYaBuscado(true)
+
+      // El conteo para revertir solo aplica cuando hay un proceso seleccionado
+      if (pasoActual?.estado_origen) {
+        const conteoRes = await documentosApi.revertir({
+          estados_origen: [pasoActual.estado_origen],
           estado_destino: pasoActual.estado_destino || '',
           q: filtroLibre || undefined,
           codigo_ubicacion: ubicacionSel || undefined,
           tope: tope ? parseInt(tope) : undefined,
           solo_contar: true,
-        }),
-        documentosApi.listarPaginado({
-          page: 1,
-          limit: DOCS_POR_PAGINA,
-          codigo_estado_doc: pasoActual.estado_origen,
-          activo: true,
-          q: filtroLibre || undefined,
-          ruta_prefijo: rutaUbicacion,
-        }),
-      ])
-      setConteo(conteoRes.conteo)
-      setDocumentos(docsRes.items || [])
-      setPaginaActual(1)
-      setTotalPaginas(Math.max(1, Math.ceil(docsRes.total / DOCS_POR_PAGINA)))
-      setYaBuscado(true)
+        })
+        setConteo(conteoRes.conteo)
+      }
     } catch {
       setError('Error al consultar los documentos candidatos.')
     } finally {
@@ -429,7 +432,7 @@ export function TabRevertir() {
 
           {/* Buscar + count + Ejecutar/Detener — misma línea */}
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
-            <Boton variante="contorno" tamano="sm" onClick={buscar} disabled={ejecutando || cargando || !procesoSel}>
+            <Boton variante="contorno" tamano="sm" onClick={buscar} disabled={ejecutando || cargando || (!procesoSel && !filtroLibre)}>
               {cargando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
               Buscar
             </Boton>
