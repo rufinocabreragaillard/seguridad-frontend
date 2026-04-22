@@ -34,7 +34,7 @@ export default function PaginaUbicacionesDocs() {
   // ── Modal CRUD ────────────────────────────────────────────────────────────
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState<UbicacionDoc | null>(null)
-  const [tabModal, setTabModal] = useState<'datos' | 'system_prompt' | 'programacion'>('datos')
+  const [tabModal, setTabModal] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
   const [form, setForm] = useState({
     codigo_ubicacion: '',
     nombre_ubicacion: '',
@@ -694,7 +694,7 @@ export default function PaginaUbicacionesDocs() {
           {/* Tabs — siempre en edición */}
           {editando && (
             <div className="flex border-b border-borde">
-              {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+              {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setTabModal(tab)}
@@ -704,7 +704,7 @@ export default function PaginaUbicacionesDocs() {
                       : 'text-texto-muted hover:text-texto'
                   }`}
                 >
-                  {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+                  {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
                 </button>
               ))}
             </div>
@@ -793,8 +793,8 @@ export default function PaginaUbicacionesDocs() {
             />
           )}
 
-          {/* Tab Programación */}
-          {tabModal === 'programacion' && editando && (
+          {/* Tab Programación Insert */}
+          {tabModal === 'programacion_insert' && editando && (
             <TabPrompts
               tabla="ubicaciones_docs"
               pkColumna="codigo_ubicacion"
@@ -812,6 +812,31 @@ export default function PaginaUbicacionesDocs() {
               onCampoCambiado={(c, v) => setForm({ ...form, [c]: v })}
               mostrarSystemPrompt={false}
               mostrarJavaScript={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonUpdate={false}
+            />
+          )}
+          {/* Tab Programación Update */}
+          {tabModal === 'programacion_update' && editando && (
+            <TabPrompts
+              tabla="ubicaciones_docs"
+              pkColumna="codigo_ubicacion"
+              pkValor={editando.codigo_ubicacion}
+              campos={{
+                prompt_insert: form.prompt_insert,
+                prompt_update: form.prompt_update,
+                system_prompt: form.system_prompt,
+                python_insert: form.python_insert,
+                python_update: form.python_update,
+                javascript: form.javascript,
+                python_editado_manual: form.python_editado_manual,
+                javascript_editado_manual: form.javascript_editado_manual,
+              }}
+              onCampoCambiado={(c, v) => setForm({ ...form, [c]: v })}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptInsert={false}
+              mostrarPythonInsert={false}
             />
           )}
 
@@ -827,7 +852,7 @@ export default function PaginaUbicacionesDocs() {
             onGuardarYSalir={() => guardar(true)}
             onCerrar={() => setModal(false)}
             cargando={guardando}
-            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion') && editando ? (
+            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion_insert' || tabModal === 'programacion_update') && editando ? (
               <PieBotonesPrompts
                 tabla="ubicaciones_docs"
                 pkColumna="codigo_ubicacion"

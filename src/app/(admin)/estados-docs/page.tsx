@@ -17,7 +17,7 @@ import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
-type TabModal = 'datos' | 'system_prompt' | 'programacion'
+type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
 
 export default function PaginaEstadosDocs() {
   const t = useTranslations('estadosDocs')
@@ -137,7 +137,8 @@ export default function PaginaEstadosDocs() {
   const TABS: { key: TabModal; label: string }[] = [
     { key: 'datos', label: 'Datos' },
     { key: 'system_prompt', label: 'System Prompt' },
-    { key: 'programacion', label: 'Programación' },
+    { key: 'programacion_insert', label: 'Prog. Insert' },
+    { key: 'programacion_update', label: 'Prog. Update' },
   ]
 
   return (
@@ -275,8 +276,8 @@ export default function PaginaEstadosDocs() {
             </div>
           )}
 
-          {/* Tab Programación */}
-          {crud.editando && tabModal === 'programacion' && (
+          {/* Tab Programación Insert */}
+          {crud.editando && tabModal === 'programacion_insert' && (
             <div className="flex flex-col gap-3">
               <TabPrompts
                 tabla="estados_docs"
@@ -295,6 +296,49 @@ export default function PaginaEstadosDocs() {
                 onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
                 mostrarSystemPrompt={false}
                 mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
+              />
+              <PieBotonesModal
+                editando={!!crud.editando}
+                onGuardar={() => guardarEstado(false)}
+                onGuardarYSalir={() => guardarEstado(true)}
+                onCerrar={crud.cerrarModal}
+                cargando={guardandoEstado}
+                botonesIzquierda={crud.editando ? (
+                  <PieBotonesPrompts
+                    tabla="estados_docs"
+                    pkColumna="codigo_estado_doc"
+                    pkValor={crud.editando.codigo_estado_doc}
+                    promptInsert={crud.form.prompt_insert ?? undefined}
+                    promptUpdate={crud.form.prompt_update ?? undefined}
+                  />
+                ) : undefined}
+              />
+            </div>
+          )}
+          {/* Tab Programación Update */}
+          {crud.editando && tabModal === 'programacion_update' && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="estados_docs"
+                pkColumna="codigo_estado_doc"
+                pkValor={crud.editando.codigo_estado_doc}
+                campos={{
+                  prompt_insert: crud.form.prompt_insert,
+                  prompt_update: crud.form.prompt_update,
+                  system_prompt: crud.form.system_prompt,
+                  python_insert: crud.form.python_insert,
+                  python_update: crud.form.python_update,
+                  javascript: crud.form.javascript,
+                  python_editado_manual: crud.form.python_editado_manual,
+                  javascript_editado_manual: crud.form.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
               />
               <PieBotonesModal
                 editando={!!crud.editando}

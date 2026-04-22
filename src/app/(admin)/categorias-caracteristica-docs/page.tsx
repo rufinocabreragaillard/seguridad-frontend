@@ -33,7 +33,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [cargandoCat, setCargandoCat] = useState(true)
   const [busquedaCat, setBusquedaCat] = useState('')
   const [modalCat, setModalCat] = useState(false)
-  const [tabModalCat, setTabModalCat] = useState<'datos' | 'system_prompt' | 'programacion' | 'llm'>('datos')
+  const [tabModalCat, setTabModalCat] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
   const [catEditando, setCatEditando] = useState<CategoriaCaractDocs | null>(null)
   const [formCat, setFormCat] = useState({
     codigo_cat_docs: '', nombre_cat_docs: '', descripcion_cat_docs: '',
@@ -54,7 +54,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [tipos, setTipos] = useState<TipoCaractDocs[]>([])
   const [cargandoTipos, setCargandoTipos] = useState(false)
   const [modalTipo, setModalTipo] = useState(false)
-  const [tabModalTipo, setTabModalTipo] = useState<'datos' | 'system_prompt' | 'programacion'>('datos')
+  const [tabModalTipo, setTabModalTipo] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
   const [tipoEditando, setTipoEditando] = useState<TipoCaractDocs | null>(null)
   const [formTipo, setFormTipo] = useState({
     codigo_tipo_docs: '', nombre_tipo_docs: '',
@@ -468,7 +468,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion', 'llm'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'llm'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModalCat(tab)}
@@ -478,7 +478,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion' ? 'Programación' : 'LLM'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : 'LLM'}
               </button>
             ))}
           </div>
@@ -538,8 +538,8 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             />
           )}
 
-          {/* Tab Programación */}
-          {tabModalCat === 'programacion' && (
+          {/* Tab Programación Insert */}
+          {tabModalCat === 'programacion_insert' && (
             <TabPrompts
               tabla="categorias_caract_docs"
               pkColumna="codigo_cat_docs"
@@ -548,6 +548,22 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
               mostrarSystemPrompt={false}
               mostrarJavaScript={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonUpdate={false}
+            />
+          )}
+          {/* Tab Programación Update */}
+          {tabModalCat === 'programacion_update' && (
+            <TabPrompts
+              tabla="categorias_caract_docs"
+              pkColumna="codigo_cat_docs"
+              pkValor={catEditando?.codigo_cat_docs ?? null}
+              campos={formCat}
+              onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptInsert={false}
+              mostrarPythonInsert={false}
             />
           )}
 
@@ -582,7 +598,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             onGuardarYSalir={() => guardarCat(true)}
             onCerrar={() => setModalCat(false)}
             cargando={guardandoCat}
-            botonesIzquierda={(tabModalCat === 'system_prompt' || tabModalCat === 'programacion') && catEditando ? (
+            botonesIzquierda={(tabModalCat === 'system_prompt' || tabModalCat === 'programacion_insert' || tabModalCat === 'programacion_update') && catEditando ? (
               <PieBotonesPrompts
                 tabla="categorias_caract_docs"
                 pkColumna="codigo_cat_docs"
@@ -600,7 +616,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModalTipo(tab)}
@@ -610,7 +626,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
               </button>
             ))}
           </div>
@@ -642,7 +658,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             />
           )}
 
-          {tabModalTipo === 'programacion' && (
+          {tabModalTipo === 'programacion_insert' && (
             <TabPrompts
               tabla="tipos_caract_docs"
               pkColumna="codigo_tipo_docs"
@@ -651,6 +667,21 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
               mostrarSystemPrompt={false}
               mostrarJavaScript={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonUpdate={false}
+            />
+          )}
+          {tabModalTipo === 'programacion_update' && (
+            <TabPrompts
+              tabla="tipos_caract_docs"
+              pkColumna="codigo_tipo_docs"
+              pkValor={tipoEditando?.codigo_tipo_docs ?? null}
+              campos={formTipo}
+              onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptInsert={false}
+              mostrarPythonInsert={false}
             />
           )}
 
@@ -661,7 +692,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             onGuardarYSalir={() => guardarTipo(true)}
             onCerrar={() => setModalTipo(false)}
             cargando={guardandoTipo}
-            botonesIzquierda={(tabModalTipo === 'system_prompt' || tabModalTipo === 'programacion') && tipoEditando ? (
+            botonesIzquierda={(tabModalTipo === 'system_prompt' || tabModalTipo === 'programacion_insert' || tabModalTipo === 'programacion_update') && tipoEditando ? (
               <PieBotonesPrompts
                 tabla="tipos_caract_docs"
                 pkColumna="codigo_tipo_docs"

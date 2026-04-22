@@ -121,7 +121,7 @@ export default function PaginaCargos() {
   })
 
   // ── Tab activa en el modal ──────────────────────────────────────────────────
-  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'system_prompt' | 'programacion'>('datos')
+  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
 
   const abrirNuevo = () => { setTabActiva('datos'); crud.abrirNuevo() }
   const abrirEditar = (c: Cargo) => {
@@ -275,8 +275,8 @@ export default function PaginaCargos() {
           {/* Tabs */}
           <div className="flex border-b border-borde mb-4">
             {(crud.editando
-              ? (['datos', 'roles', 'system_prompt', 'programacion'] as const)
-              : (['datos', 'system_prompt', 'programacion'] as const)
+              ? (['datos', 'roles', 'system_prompt', 'programacion_insert', 'programacion_update'] as const)
+              : (['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const)
             ).map((tab) => (
               <button
                 key={tab}
@@ -293,7 +293,9 @@ export default function PaginaCargos() {
                   ? t('tabRoles')
                   : tab === 'system_prompt'
                   ? t('tabSystemPrompt')
-                  : t('tabProgramacion')}
+                  : tab === 'programacion_insert'
+                  ? 'Prog. Insert'
+                  : 'Prog. Update'}
               </button>
             ))}
           </div>
@@ -419,8 +421,8 @@ export default function PaginaCargos() {
             </div>
           )}
 
-          {/* ── Tab Programación ──────────────────────────────────────────── */}
-          {tabActiva === 'programacion' && (
+          {/* ── Tab Programación Insert ──────────────────────────────────────────── */}
+          {tabActiva === 'programacion_insert' && (
             <div className="flex flex-col gap-4 min-h-[500px]">
               <TabPrompts
                 tabla="cargos"
@@ -430,6 +432,42 @@ export default function PaginaCargos() {
                 onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
                 mostrarSystemPrompt={false}
                 mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
+              />
+              <div className="mt-auto">
+                <PieBotonesModal
+                  editando={!!crud.editando}
+                  onGuardar={() => crud.guardar(undefined, undefined, { cerrar: false })}
+                  onGuardarYSalir={() => crud.guardar(undefined, undefined, { cerrar: true })}
+                  onCerrar={crud.cerrarModal}
+                  cargando={crud.guardando}
+                  botonesIzquierda={crud.editando ? (
+                    <PieBotonesPrompts
+                      tabla="cargos"
+                      pkColumna="codigo_cargo"
+                      pkValor={crud.editando.codigo_cargo}
+                      promptInsert={crud.form.prompt_insert || undefined}
+                      promptUpdate={crud.form.prompt_update || undefined}
+                    />
+                  ) : undefined}
+                />
+              </div>
+            </div>
+          )}
+          {/* ── Tab Programación Update ──────────────────────────────────────────── */}
+          {tabActiva === 'programacion_update' && (
+            <div className="flex flex-col gap-4 min-h-[500px]">
+              <TabPrompts
+                tabla="cargos"
+                pkColumna="codigo_cargo"
+                pkValor={crud.editando?.codigo_cargo ?? null}
+                campos={crud.form}
+                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
               />
               <div className="mt-auto">
                 <PieBotonesModal

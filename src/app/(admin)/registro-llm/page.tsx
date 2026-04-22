@@ -55,7 +55,7 @@ export default function PaginaRegistroLLM() {
   const [busqueda, setBusqueda] = useState('')
   const [modalModelo, setModalModelo] = useState(false)
   const [editandoModelo, setEditandoModelo] = useState<RegistroLLM | null>(null)
-  const [tabModal, setTabModal] = useState<'datos' | 'probar' | 'system_prompt' | 'programacion'>('datos')
+  const [tabModal, setTabModal] = useState<'datos' | 'probar' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
   const [formModelo, setFormModelo] = useState({
     proveedor: '', nombre_tecnico: '', nombre_visible: '', descripcion: '', estado_valido: false,
     prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
@@ -492,7 +492,8 @@ export default function PaginaRegistroLLM() {
                   <button onClick={() => setTabModal('datos')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabDatos')}</button>
                   <button onClick={() => setTabModal('probar')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'probar' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabProbarConexion')}</button>
                   <button onClick={() => setTabModal('system_prompt')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'system_prompt' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>System Prompt</button>
-                  <button onClick={() => setTabModal('programacion')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'programacion' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Programación</button>
+                  <button onClick={() => setTabModal('programacion_insert')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'programacion_insert' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Prog. Insert</button>
+                  <button onClick={() => setTabModal('programacion_update')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'programacion_update' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Prog. Update</button>
                 </div>
               )}
 
@@ -552,7 +553,7 @@ export default function PaginaRegistroLLM() {
                 </div>
               )}
 
-              {tabModal === 'programacion' && editandoModelo && (
+              {tabModal === 'programacion_insert' && editandoModelo && (
                 <div className="flex flex-col gap-3">
                   <TabPrompts
                     tabla="registro_llm"
@@ -562,6 +563,40 @@ export default function PaginaRegistroLLM() {
                     onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
                     mostrarSystemPrompt={false}
                     mostrarJavaScript={false}
+                    mostrarPromptUpdate={false}
+                    mostrarPythonUpdate={false}
+                  />
+                  {errorModelo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorModelo}</p></div>}
+                  <PieBotonesModal
+                    editando={!!editandoModelo}
+                    onGuardar={() => guardarModelo(false)}
+                    onGuardarYSalir={() => guardarModelo(true)}
+                    onCerrar={() => setModalModelo(false)}
+                    cargando={guardandoModelo}
+                    botonesIzquierda={
+                      <PieBotonesPrompts
+                        tabla="registro_llm"
+                        pkColumna="id_modelo"
+                        pkValor={editandoModelo.id_modelo}
+                        promptInsert={formModelo.prompt_insert || undefined}
+                        promptUpdate={formModelo.prompt_update || undefined}
+                      />
+                    }
+                  />
+                </div>
+              )}
+              {tabModal === 'programacion_update' && editandoModelo && (
+                <div className="flex flex-col gap-3">
+                  <TabPrompts
+                    tabla="registro_llm"
+                    pkColumna="id_modelo"
+                    pkValor={editandoModelo.id_modelo}
+                    campos={formModelo}
+                    onCampoCambiado={(campo, valor) => setFormModelo({ ...formModelo, [campo]: valor })}
+                    mostrarSystemPrompt={false}
+                    mostrarJavaScript={false}
+                    mostrarPromptInsert={false}
+                    mostrarPythonInsert={false}
                   />
                   {errorModelo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorModelo}</p></div>}
                   <PieBotonesModal

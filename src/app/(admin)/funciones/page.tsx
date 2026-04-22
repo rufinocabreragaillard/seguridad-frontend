@@ -74,7 +74,7 @@ export default function PaginaFunciones() {
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'system_prompt' | 'programacion' | 'llm'>('datos')
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
   const [guardandoFuncion, setGuardandoFuncion] = useState(false)
   const [errorFuncion, setErrorFuncion] = useState('')
 
@@ -141,7 +141,7 @@ export default function PaginaFunciones() {
     } catch { cargarProcesosDeFuncion(funcionEditando!.codigo_funcion) }
   }
 
-  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'system_prompt' | 'programacion' | 'llm' = 'datos') => {
+  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
     setFuncionEditando(f)
     setFormFuncion({
       codigo_funcion: f.codigo_funcion,
@@ -287,7 +287,8 @@ export default function PaginaFunciones() {
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
       { key: 'procesos', label: `Procesos de Función (${procesosDeFuncion.length})` },
       { key: 'system_prompt', label: 'System Prompt' },
-      { key: 'programacion', label: 'Programación' },
+      { key: 'programacion_insert', label: 'Prog. Insert' },
+      { key: 'programacion_update', label: 'Prog. Update' },
       { key: 'llm', label: 'LLM' },
     ] : []),
   ] as { key: typeof tabModalFuncion; label: string }[]
@@ -333,7 +334,7 @@ export default function PaginaFunciones() {
                     >
                       {traduciendo === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <Languages size={14} />}
                     </button>
-                    <button onClick={() => abrirEditarFuncion(f, 'programacion')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
+                    <button onClick={() => abrirEditarFuncion(f, 'programacion_insert')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
                     <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                     <button onClick={() => setConfirmacion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                   </div>
@@ -547,8 +548,8 @@ export default function PaginaFunciones() {
             </div>
           )}
 
-          {/* Tab Programación */}
-          {tabModalFuncion === 'programacion' && funcionEditando && (
+          {/* Tab Programación Insert */}
+          {tabModalFuncion === 'programacion_insert' && funcionEditando && (
             <div className="flex flex-col gap-3">
               <TabPrompts
                 tabla="funciones"
@@ -567,6 +568,50 @@ export default function PaginaFunciones() {
                 onCampoCambiado={(c, v) => setFormFuncion({ ...formFuncion, [c]: v })}
                 mostrarSystemPrompt={false}
                 mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
+              />
+              {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
+              <PieBotonesModal
+                editando={!!funcionEditando}
+                onGuardar={() => guardarFuncion(false)}
+                onGuardarYSalir={() => guardarFuncion(true)}
+                onCerrar={() => setModalFuncion(false)}
+                cargando={guardandoFuncion}
+                botonesIzquierda={funcionEditando ? (
+                  <PieBotonesPrompts
+                    tabla="funciones"
+                    pkColumna="codigo_funcion"
+                    pkValor={funcionEditando.codigo_funcion}
+                    promptInsert={formFuncion.prompt_insert ?? undefined}
+                    promptUpdate={formFuncion.prompt_update ?? undefined}
+                  />
+                ) : undefined}
+              />
+            </div>
+          )}
+          {/* Tab Programación Update */}
+          {tabModalFuncion === 'programacion_update' && funcionEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="funciones"
+                pkColumna="codigo_funcion"
+                pkValor={funcionEditando.codigo_funcion}
+                campos={{
+                  prompt_insert: formFuncion.prompt_insert,
+                  prompt_update: formFuncion.prompt_update,
+                  system_prompt: formFuncion.system_prompt,
+                  python_insert: formFuncion.python_insert,
+                  python_update: formFuncion.python_update,
+                  javascript: formFuncion.javascript,
+                  python_editado_manual: formFuncion.python_editado_manual,
+                  javascript_editado_manual: formFuncion.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormFuncion({ ...formFuncion, [c]: v })}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
               />
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
               <PieBotonesModal

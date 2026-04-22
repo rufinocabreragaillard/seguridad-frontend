@@ -16,8 +16,8 @@ import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
 
 type TabId = 'categorias' | 'tipos'
-type TabModalCat = 'datos' | 'system_prompt' | 'programacion'
-type TabModalTipo = 'datos' | 'system_prompt' | 'programacion'
+type TabModalCat = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
+type TabModalTipo = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
 
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaParametro }
@@ -322,10 +322,10 @@ export default function PaginaParametrosGenerales() {
         <div className="flex flex-col gap-4 p-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex gap-1 border-b border-borde -mt-2">
-            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
               </button>
             ))}
           </div>
@@ -363,10 +363,15 @@ export default function PaginaParametrosGenerales() {
               mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
 
-          {tabModalCat === 'programacion' && catEditando && (
+          {tabModalCat === 'programacion_insert' && catEditando && (
             <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
               campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarSystemPrompt={false} mostrarJavaScript={false} />
+              mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptUpdate={false} mostrarPythonUpdate={false} />
+          )}
+          {tabModalCat === 'programacion_update' && catEditando && (
+            <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
+              campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
+              mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
           )}
 
           {errorCat && <p className="text-sm text-error">{errorCat}</p>}
@@ -382,10 +387,10 @@ export default function PaginaParametrosGenerales() {
         <div className="flex flex-col gap-4 p-4">
           {/* Tabs */}
           <div className="flex gap-1 border-b border-borde -mt-2">
-            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
               </button>
             ))}
           </div>
@@ -432,10 +437,15 @@ export default function PaginaParametrosGenerales() {
               mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
 
-          {tabModalTipo === 'programacion' && tipoEditando && (
+          {tabModalTipo === 'programacion_insert' && tipoEditando && (
             <TabPrompts tabla="tipos_parametro" pkColumna="tipo_parametro" pkValor={tipoEditando.tipo_parametro}
               campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
-              mostrarSystemPrompt={false} mostrarJavaScript={false} />
+              mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptUpdate={false} mostrarPythonUpdate={false} />
+          )}
+          {tabModalTipo === 'programacion_update' && tipoEditando && (
+            <TabPrompts tabla="tipos_parametro" pkColumna="tipo_parametro" pkValor={tipoEditando.tipo_parametro}
+              campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
+              mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
           )}
 
           {errorTipo && <p className="text-sm text-error">{errorTipo}</p>}

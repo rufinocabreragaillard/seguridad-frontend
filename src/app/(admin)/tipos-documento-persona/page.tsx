@@ -34,7 +34,7 @@ export default function PaginaTiposDocumentoPersona() {
   const { grupoActivo } = useAuth()
   const t = useTranslations('tiposDocumentoPersona')
   const tc = useTranslations('common')
-  const [tabModal, setTabModal] = useState<'datos' | 'system_prompt' | 'programacion'>('datos')
+  const [tabModal, setTabModal] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
 
   const crud = useCrudPage<TipoDocumentoPersona, FormTipoDocPers>({
     cargarFn: tiposDocumentoPersonaApi.listar,
@@ -131,7 +131,7 @@ export default function PaginaTiposDocumentoPersona() {
         <div className="flex flex-col gap-4 min-w-[480px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModal(tab)}
@@ -141,7 +141,7 @@ export default function PaginaTiposDocumentoPersona() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
               </button>
             ))}
           </div>
@@ -183,7 +183,7 @@ export default function PaginaTiposDocumentoPersona() {
             />
           )}
 
-          {tabModal === 'programacion' && (
+          {tabModal === 'programacion_insert' && (
             <TabPrompts
               tabla="tipos_documento_persona"
               pkColumna="codigo_tipo_doc"
@@ -192,6 +192,21 @@ export default function PaginaTiposDocumentoPersona() {
               onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormTipoDocPers, valor as string | boolean)}
               mostrarSystemPrompt={false}
               mostrarJavaScript={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonUpdate={false}
+            />
+          )}
+          {tabModal === 'programacion_update' && (
+            <TabPrompts
+              tabla="tipos_documento_persona"
+              pkColumna="codigo_tipo_doc"
+              pkValor={crud.editando?.codigo_tipo_doc ?? null}
+              campos={crud.form}
+              onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormTipoDocPers, valor as string | boolean)}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptInsert={false}
+              mostrarPythonInsert={false}
             />
           )}
 
@@ -218,7 +233,7 @@ export default function PaginaTiposDocumentoPersona() {
             }}
             onCerrar={crud.cerrarModal}
             cargando={crud.guardando}
-            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion') && crud.editando ? (
+            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion_insert' || tabModal === 'programacion_update') && crud.editando ? (
               <PieBotonesPrompts
                 tabla="tipos_documento_persona"
                 pkColumna="codigo_tipo_doc"

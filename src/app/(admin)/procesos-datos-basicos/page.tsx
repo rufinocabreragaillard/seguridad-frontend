@@ -16,7 +16,7 @@ import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
 
 type TabId = 'categorias' | 'tipos' | 'estados' | 'canonicos'
-type TabModal = 'datos' | 'system_prompt' | 'programacion'
+type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
 
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaProceso }
@@ -555,7 +555,7 @@ export default function PaginaProcesosDatosBasicos() {
     `px-5 py-2.5 text-sm font-medium transition-colors ${tabActiva === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
   const tabModalCls = (activa: string, id: string) =>
     `flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${activa === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
-  const TABS_MODAL_LABELS: Record<TabModal, string> = { datos: 'Datos', system_prompt: 'System Prompt', programacion: 'Programación' }
+  const TABS_MODAL_LABELS: Record<TabModal, string> = { datos: 'Datos', system_prompt: 'System Prompt', programacion_insert: 'Prog. Insert', programacion_update: 'Prog. Update' }
   const textareaCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
 
   return (
@@ -962,7 +962,7 @@ export default function PaginaProcesosDatosBasicos() {
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
-            {(['datos', 'system_prompt', 'programacion'] as TabModal[]).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[]).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)} className={tabModalCls(tabModalCat, tab)}>
                 {TABS_MODAL_LABELS[tab]}
               </button>
@@ -1001,22 +1001,27 @@ export default function PaginaProcesosDatosBasicos() {
             </div>
           )}
 
-          {/* Tab Programación */}
-          {tabModalCat === 'programacion' && (
+          {/* Tab Programación Insert */}
+          {tabModalCat === 'programacion_insert' && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-texto">Prompt insert</label>
                 <textarea value={formCat.prompt_insert}
                   onChange={(e) => setFormCat({ ...formCat, prompt_insert: e.target.value })}
-                  rows={6}
+                  rows={12}
                   placeholder="Prompt para INSERT"
                   className={textareaCls} />
               </div>
+            </div>
+          )}
+          {/* Tab Programación Update */}
+          {tabModalCat === 'programacion_update' && (
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-texto">Prompt update</label>
                 <textarea value={formCat.prompt_update}
                   onChange={(e) => setFormCat({ ...formCat, prompt_update: e.target.value })}
-                  rows={6}
+                  rows={12}
                   placeholder="Prompt para UPDATE"
                   className={textareaCls} />
               </div>
@@ -1039,7 +1044,7 @@ export default function PaginaProcesosDatosBasicos() {
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
-            {(['datos', 'system_prompt', 'programacion'] as TabModal[]).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[]).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)} className={tabModalCls(tabModalTipo, tab)}>
                 {TABS_MODAL_LABELS[tab]}
               </button>
@@ -1088,22 +1093,27 @@ export default function PaginaProcesosDatosBasicos() {
             </div>
           )}
 
-          {/* Tab Programación */}
-          {tabModalTipo === 'programacion' && (
+          {/* Tab Programación Insert */}
+          {tabModalTipo === 'programacion_insert' && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-texto">Prompt insert</label>
                 <textarea value={formTipo.prompt_insert}
                   onChange={(e) => setFormTipo({ ...formTipo, prompt_insert: e.target.value })}
-                  rows={6}
+                  rows={12}
                   placeholder="Prompt para INSERT"
                   className={textareaCls} />
               </div>
+            </div>
+          )}
+          {/* Tab Programación Update */}
+          {tabModalTipo === 'programacion_update' && (
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-texto">Prompt update</label>
                 <textarea value={formTipo.prompt_update}
                   onChange={(e) => setFormTipo({ ...formTipo, prompt_update: e.target.value })}
-                  rows={6}
+                  rows={12}
                   placeholder="Prompt para UPDATE"
                   className={textareaCls} />
               </div>
@@ -1126,7 +1136,7 @@ export default function PaginaProcesosDatosBasicos() {
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
-            {(['datos', 'system_prompt', 'programacion'] as TabModal[]).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[]).map((tab) => (
               <button key={tab} onClick={() => setTabModalEst(tab)} className={tabModalCls(tabModalEst, tab)}>
                 {TABS_MODAL_LABELS[tab]}
               </button>
@@ -1268,22 +1278,27 @@ export default function PaginaProcesosDatosBasicos() {
             </div>
           )}
 
-          {/* Tab Programación */}
-          {tabModalEst === 'programacion' && (
+          {/* Tab Programación Insert */}
+          {tabModalEst === 'programacion_insert' && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-texto">Prompt insert</label>
                 <textarea value={formEst.prompt_insert}
                   onChange={(e) => setFormEst({ ...formEst, prompt_insert: e.target.value })}
-                  rows={6}
+                  rows={12}
                   placeholder="Prompt específico del estado (INSERT)"
                   className={textareaCls} />
               </div>
+            </div>
+          )}
+          {/* Tab Programación Update */}
+          {tabModalEst === 'programacion_update' && (
+            <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-texto">Prompt update</label>
                 <textarea value={formEst.prompt_update}
                   onChange={(e) => setFormEst({ ...formEst, prompt_update: e.target.value })}
-                  rows={6}
+                  rows={12}
                   placeholder="Prompt específico del estado (UPDATE)"
                   className={textareaCls} />
               </div>

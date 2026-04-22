@@ -43,7 +43,7 @@ type FormProceso = {
   json: string
 }
 
-type TabProceso = 'datos' | 'system_prompt' | 'programacion' | 'json'
+type TabProceso = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'json'
 
 export default function PaginaProcesos() {
   const t = useTranslations('procesos')
@@ -206,7 +206,8 @@ export default function PaginaProcesos() {
               {([
                 { key: 'datos' as TabProceso, label: 'Datos' },
                 { key: 'system_prompt' as TabProceso, label: 'System Prompt' },
-                { key: 'programacion' as TabProceso, label: 'Programación' },
+                { key: 'programacion_insert' as TabProceso, label: 'Prog. Insert' },
+                { key: 'programacion_update' as TabProceso, label: 'Prog. Update' },
                 { key: 'json' as TabProceso, label: 'JSON' },
               ]).map((tb) => (
                 <button
@@ -269,7 +270,7 @@ export default function PaginaProcesos() {
             />
           )}
 
-          {tabModal === 'programacion' && crud.editando && (
+          {tabModal === 'programacion_insert' && crud.editando && (
             <TabPrompts
               tabla="procesos"
               pkColumna="codigo_proceso"
@@ -287,6 +288,30 @@ export default function PaginaProcesos() {
               onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
               mostrarSystemPrompt={false}
               mostrarJavaScript={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonUpdate={false}
+            />
+          )}
+          {tabModal === 'programacion_update' && crud.editando && (
+            <TabPrompts
+              tabla="procesos"
+              pkColumna="codigo_proceso"
+              pkValor={crud.editando.codigo_proceso}
+              campos={{
+                prompt_insert: crud.form.prompt_insert,
+                prompt_update: crud.form.prompt_update,
+                system_prompt: crud.form.system_prompt,
+                python_insert: crud.form.python_insert,
+                python_update: crud.form.python_update,
+                javascript: crud.form.javascript,
+                python_editado_manual: crud.form.python_editado_manual,
+                javascript_editado_manual: crud.form.javascript_editado_manual,
+              }}
+              onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptInsert={false}
+              mostrarPythonInsert={false}
             />
           )}
 
@@ -368,7 +393,7 @@ export default function PaginaProcesos() {
             }}
             onCerrar={crud.cerrarModal}
             cargando={crud.guardando}
-            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion') && crud.editando ? (
+            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion_insert' || tabModal === 'programacion_update') && crud.editando ? (
               <PieBotonesPrompts
                 tabla="procesos"
                 pkColumna="codigo_proceso"

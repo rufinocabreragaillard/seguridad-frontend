@@ -33,7 +33,7 @@ export default function PaginaCategoriasCaracteristica() {
   const [cargandoCat, setCargandoCat] = useState(true)
   const [busquedaCat, setBusquedaCat] = useState('')
   const [modalCat, setModalCat] = useState(false)
-  const [tabModalCat, setTabModalCat] = useState<'datos' | 'system_prompt' | 'programacion'>('datos')
+  const [tabModalCat, setTabModalCat] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
   const [catEditando, setCatEditando] = useState<CategoriaCaractPers | null>(null)
   const [formCat, setFormCat] = useState({
     codigo_cat_pers: '', nombre_cat_pers: '', descripcion_cat_pers: '',
@@ -557,7 +557,7 @@ export default function PaginaCategoriasCaracteristica() {
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModalCat(tab)}
@@ -567,7 +567,7 @@ export default function PaginaCategoriasCaracteristica() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
               </button>
             ))}
           </div>
@@ -617,7 +617,7 @@ export default function PaginaCategoriasCaracteristica() {
             />
           )}
 
-          {tabModalCat === 'programacion' && (
+          {tabModalCat === 'programacion_insert' && (
             <TabPrompts
               tabla="categorias_caract_pers"
               pkColumna="codigo_cat_pers"
@@ -626,6 +626,21 @@ export default function PaginaCategoriasCaracteristica() {
               onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
               mostrarSystemPrompt={false}
               mostrarJavaScript={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonUpdate={false}
+            />
+          )}
+          {tabModalCat === 'programacion_update' && (
+            <TabPrompts
+              tabla="categorias_caract_pers"
+              pkColumna="codigo_cat_pers"
+              pkValor={catEditando?.codigo_cat_pers ?? null}
+              campos={formCat}
+              onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptInsert={false}
+              mostrarPythonInsert={false}
             />
           )}
 
@@ -636,7 +651,7 @@ export default function PaginaCategoriasCaracteristica() {
             onGuardarYSalir={() => guardarCat(true)}
             onCerrar={() => setModalCat(false)}
             cargando={guardandoCat}
-            botonesIzquierda={(tabModalCat === 'system_prompt' || tabModalCat === 'programacion') && catEditando ? (
+            botonesIzquierda={(tabModalCat === 'system_prompt' || tabModalCat === 'programacion_insert' || tabModalCat === 'programacion_update') && catEditando ? (
               <PieBotonesPrompts
                 tabla="categorias_caract_pers"
                 pkColumna="codigo_cat_pers"

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { Brain, Code2, Lock, Unlock } from 'lucide-react'
 
 export interface CamposPrompt {
@@ -54,6 +55,7 @@ export function TabPrompts({
   mostrarJavaScript = false,
   mostrarBotones: _mostrarBotones,
 }: TabPromptsProps) {
+  const [updateEditadoManual, setUpdateEditadoManual] = useState(false)
   return (
     <div className="space-y-5">
 
@@ -132,9 +134,22 @@ export function TabPrompts({
 
           {mostrarPythonUpdate && (
             <div>
-              <label className="text-sm font-medium flex items-center gap-1 mb-1">
-                <Code2 className="w-4 h-4" /> Python UPDATE compilado
-              </label>
+              <div className="flex items-center justify-between mb-1">
+                <label className="text-sm font-medium flex items-center gap-1">
+                  <Code2 className="w-4 h-4" /> Python UPDATE compilado
+                </label>
+                <label className="text-xs flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={updateEditadoManual}
+                    onChange={(e) => setUpdateEditadoManual(e.target.checked)}
+                  />
+                  {updateEditadoManual
+                    ? <Lock className="w-3 h-3 text-amber-600" />
+                    : <Unlock className="w-3 h-3" />}
+                  edición manual
+                </label>
+              </div>
               <textarea
                 className="w-full border border-borde rounded px-3 py-2 text-xs min-h-[100px] font-mono bg-gris-fondo"
                 value={campos.python_update || ''}
@@ -152,7 +167,7 @@ export function TabPrompts({
         <div>
           <label className="block text-sm font-medium mb-1">System Prompt (instrucción base LLM)</label>
           <textarea
-            className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[100px] font-mono"
+            className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[250px] font-mono"
             value={campos.system_prompt || ''}
             onChange={(e) => onCampoCambiado('system_prompt', e.target.value)}
             placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."

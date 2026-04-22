@@ -50,7 +50,7 @@ type FormTarea = {
   javascript_editado_manual: boolean
 }
 
-type TabTarea = 'datos' | 'json' | 'system_prompt' | 'programacion'
+type TabTarea = 'datos' | 'json' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
 
 export default function PaginaTareasMantenedor() {
   const t = useTranslations('tareas')
@@ -210,7 +210,8 @@ export default function PaginaTareasMantenedor() {
               { key: 'json' as TabTarea, label: 'JSON' },
               ...(crud.editando ? [
                 { key: 'system_prompt' as TabTarea, label: 'System Prompt' },
-                { key: 'programacion' as TabTarea, label: 'Programación' },
+                { key: 'programacion_insert' as TabTarea, label: 'Prog. Insert' },
+                { key: 'programacion_update' as TabTarea, label: 'Prog. Update' },
               ] : []),
             ]).map((tb) => (
               <button
@@ -296,7 +297,7 @@ export default function PaginaTareasMantenedor() {
             />
           )}
 
-          {tabModal === 'programacion' && crud.editando && (
+          {tabModal === 'programacion_insert' && crud.editando && (
             <TabPrompts
               tabla="tareas"
               pkColumna="id_tarea"
@@ -305,6 +306,21 @@ export default function PaginaTareasMantenedor() {
               onCampoCambiado={(c, v) => crud.updateForm(c as keyof FormTarea, v)}
               mostrarSystemPrompt={false}
               mostrarJavaScript={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonUpdate={false}
+            />
+          )}
+          {tabModal === 'programacion_update' && crud.editando && (
+            <TabPrompts
+              tabla="tareas"
+              pkColumna="id_tarea"
+              pkValor={crud.editando.id_tarea}
+              campos={{ prompt_insert: crud.form.prompt_insert, prompt_update: crud.form.prompt_update, system_prompt: crud.form.system_prompt, python_insert: crud.form.python_insert, python_update: crud.form.python_update, javascript: crud.form.javascript, python_editado_manual: crud.form.python_editado_manual, javascript_editado_manual: crud.form.javascript_editado_manual }}
+              onCampoCambiado={(c, v) => crud.updateForm(c as keyof FormTarea, v)}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptInsert={false}
+              mostrarPythonInsert={false}
             />
           )}
 
@@ -332,7 +348,7 @@ export default function PaginaTareasMantenedor() {
             }}
             onCerrar={crud.cerrarModal}
             cargando={crud.guardando}
-            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion') && crud.editando ? (
+            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion_insert' || tabModal === 'programacion_update') && crud.editando ? (
               <PieBotonesPrompts
                 tabla="tareas"
                 pkColumna="id_tarea"

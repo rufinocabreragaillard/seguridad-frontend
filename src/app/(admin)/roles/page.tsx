@@ -38,7 +38,7 @@ export default function PaginaRoles() {
   const [modalRol, setModalRol] = useState(false)
   const [rolEditando, setRolEditando] = useState<Rol | null>(null)
   const [formRol, setFormRol] = useState({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: '', tipo: 'USUARIO' as TipoElemento, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, inicial: false })
-  const [tabModalRol, setTabModalRol] = useState<'datos' | 'funciones' | 'system_prompt' | 'programacion'>('datos')
+  const [tabModalRol, setTabModalRol] = useState<'datos' | 'funciones' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
 
   // Funciones del rol en edición
   const [funcionesRol, setFuncionesRol] = useState<FuncionAsignada[]>([])
@@ -161,7 +161,7 @@ export default function PaginaRoles() {
     setModalRol(true)
   }
 
-  const abrirEditarRol = (r: Rol, tabInicial: 'datos' | 'funciones' | 'system_prompt' | 'programacion' = 'datos') => {
+  const abrirEditarRol = (r: Rol, tabInicial: 'datos' | 'funciones' | 'system_prompt' | 'programacion_insert' | 'programacion_update' = 'datos') => {
     setRolEditando(r)
     const r2 = r as unknown as Record<string, unknown>
     setFormRol({ codigo_rol: r.codigo_rol, nombre: r.nombre, alias_de_rol: r.alias_de_rol || '', descripcion: r.descripcion || '', url_inicio: r.url_inicio || '', funcion_por_defecto: r.funcion_por_defecto || '', codigo_aplicacion_origen: r.codigo_aplicacion_origen || '', tipo: normalizarTipo(r.tipo), prompt_insert: r2.prompt_insert as string || '', prompt_update: r2.prompt_update as string || '', system_prompt: r2.system_prompt as string || '', python_insert: r2.python_insert as string || '', python_update: r2.python_update as string || '', javascript: r2.javascript as string || '', python_editado_manual: (r2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (r2.javascript_editado_manual as boolean) ?? false, inicial: r.inicial ?? false })
@@ -574,7 +574,7 @@ export default function PaginaRoles() {
                   </TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">
-                      <button onClick={() => abrirEditarRol(r, 'programacion')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
+                      <button onClick={() => abrirEditarRol(r, 'programacion_insert')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
                       <button onClick={() => abrirEditarRol(r)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                       <button
                         onClick={() => guardarInline(r.id_rol)}
@@ -676,7 +676,8 @@ export default function PaginaRoles() {
                 { key: 'datos', label: t('tabDatos') },
                 { key: 'funciones', label: t('tabFuncionesAsignadas') },
                 { key: 'system_prompt', label: 'System Prompt' },
-                { key: 'programacion', label: 'Programación' },
+                { key: 'programacion_insert', label: 'Prog. Insert' },
+                { key: 'programacion_update', label: 'Prog. Update' },
               ] as { key: typeof tabModalRol; label: string }[]).map((tab) => (
                 <button
                   key={tab.key}
@@ -927,8 +928,8 @@ export default function PaginaRoles() {
             </div>
           )}
 
-          {/* Tab Programación — rol */}
-          {tabModalRol === 'programacion' && rolEditando && (
+          {/* Tab Programación Insert — rol */}
+          {tabModalRol === 'programacion_insert' && rolEditando && (
             <div className="flex flex-col gap-3">
               <TabPrompts
                 tabla="roles"
@@ -947,6 +948,50 @@ export default function PaginaRoles() {
                 onCampoCambiado={(c, v) => setFormRol({ ...formRol, [c]: v })}
                 mostrarSystemPrompt={false}
                 mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
+              />
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
+              <PieBotonesModal
+                editando={!!rolEditando}
+                onGuardar={() => guardarRol(false)}
+                onGuardarYSalir={() => guardarRol(true)}
+                onCerrar={() => setModalRol(false)}
+                cargando={guardando}
+                botonesIzquierda={rolEditando ? (
+                  <PieBotonesPrompts
+                    tabla="roles"
+                    pkColumna="id_rol"
+                    pkValor={String(rolEditando.id_rol)}
+                    promptInsert={formRol.prompt_insert ?? undefined}
+                    promptUpdate={formRol.prompt_update ?? undefined}
+                  />
+                ) : undefined}
+              />
+            </div>
+          )}
+          {/* Tab Programación Update — rol */}
+          {tabModalRol === 'programacion_update' && rolEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="roles"
+                pkColumna="id_rol"
+                pkValor={String(rolEditando.id_rol)}
+                campos={{
+                  prompt_insert: formRol.prompt_insert,
+                  prompt_update: formRol.prompt_update,
+                  system_prompt: formRol.system_prompt,
+                  python_insert: formRol.python_insert,
+                  python_update: formRol.python_update,
+                  javascript: formRol.javascript,
+                  python_editado_manual: formRol.python_editado_manual,
+                  javascript_editado_manual: formRol.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormRol({ ...formRol, [c]: v })}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <PieBotonesModal

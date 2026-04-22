@@ -43,7 +43,7 @@ export default function PaginaEntidades() {
   const [areaEditando, setAreaEditando] = useState<Area | null>(null)
   const [entidadEditando, setEntidadEditando] = useState<Entidad | null>(null)
   const [formEntidad, setFormEntidad] = useState({ codigo_entidad: '', nombre: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
-  const [tabModalEntidad, setTabModalEntidad] = useState<'datos' | 'system_prompt' | 'programacion'>('datos')
+  const [tabModalEntidad, setTabModalEntidad] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
   const [formArea, setFormArea] = useState({ codigo_area: '', nombre: '', alias: '', descripcion: '', codigo_area_superior: '', tipo_ubicacion: 'VIRTUAL' as 'AREA' | 'CONTENIDO' | 'VIRTUAL' })
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
@@ -413,7 +413,7 @@ export default function PaginaEntidades() {
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModalEntidad(tab)}
@@ -423,7 +423,7 @@ export default function PaginaEntidades() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? 'System Prompt' : 'Programación'}
+                {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
               </button>
             ))}
           </div>
@@ -483,8 +483,8 @@ export default function PaginaEntidades() {
             </div>
           )}
 
-          {/* Tab Programación */}
-          {tabModalEntidad === 'programacion' && (
+          {/* Tab Programación Insert */}
+          {tabModalEntidad === 'programacion_insert' && (
             <div className="flex flex-col gap-4">
               <TabPrompts
                 tabla="entidades"
@@ -494,6 +494,41 @@ export default function PaginaEntidades() {
                 onCampoCambiado={(campo, valor) => setFormEntidad({ ...formEntidad, [campo]: valor })}
                 mostrarSystemPrompt={false}
                 mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
+              />
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
+              <PieBotonesModal
+                editando={!!entidadEditando}
+                onGuardar={() => guardarEntidad(false)}
+                onGuardarYSalir={() => guardarEntidad(true)}
+                onCerrar={() => setModalEntidad(false)}
+                cargando={guardando}
+                botonesIzquierda={entidadEditando ? (
+                  <PieBotonesPrompts
+                    tabla="entidades"
+                    pkColumna="codigo_entidad"
+                    pkValor={entidadEditando.codigo_entidad}
+                    promptInsert={formEntidad.prompt_insert || undefined}
+                    promptUpdate={formEntidad.prompt_update || undefined}
+                  />
+                ) : undefined}
+              />
+            </div>
+          )}
+          {/* Tab Programación Update */}
+          {tabModalEntidad === 'programacion_update' && (
+            <div className="flex flex-col gap-4">
+              <TabPrompts
+                tabla="entidades"
+                pkColumna="codigo_entidad"
+                pkValor={entidadEditando?.codigo_entidad ?? null}
+                campos={formEntidad}
+                onCampoCambiado={(campo, valor) => setFormEntidad({ ...formEntidad, [campo]: valor })}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
               />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <PieBotonesModal
