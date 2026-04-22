@@ -9,7 +9,7 @@ interface PieBotonesPromptsProps {
   tabla: string
   pkColumna: string
   pkValor: string | number | null
-  tienePrompt: boolean
+  tienePrompt?: boolean  // si no se pasa, se auto-computa desde promptInsert/promptUpdate
   promptInsert?: string | null
   promptUpdate?: string | null
   onCodigoGenerado?: (r: { python_insert?: string | null; python_update?: string | null; javascript?: string | null }) => void
@@ -38,6 +38,7 @@ export function PieBotonesPrompts({
   const [mensajeLocal, setMensajeLocal] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
 
   const yaGuardado = pkValor !== null && pkValor !== undefined && String(pkValor).trim() !== ''
+  const _tienePrompt = tienePrompt ?? !!(promptInsert || promptUpdate || '').trim()
 
   function emitirMensaje(m: { tipo: 'ok' | 'error'; texto: string }) {
     setMensajeLocal(m)
@@ -50,7 +51,7 @@ export function PieBotonesPrompts({
       emitirMensaje({ tipo: 'error', texto: 'Guarda el registro antes de generar código.' })
       return
     }
-    if (!tienePrompt) {
+    if (!_tienePrompt) {
       emitirMensaje({ tipo: 'error', texto: 'Escribe un prompt primero.' })
       return
     }
@@ -104,7 +105,7 @@ export function PieBotonesPrompts({
         <Boton
           className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
           onClick={ejecutarGenerar}
-          disabled={generando || sincronizando || !tienePrompt}
+          disabled={generando || sincronizando || !_tienePrompt}
           cargando={generando}
         >
           <RefreshCw className="w-4 h-4" /> Generar
