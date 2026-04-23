@@ -68,7 +68,7 @@ export function TabPrompts({
                 <Brain className="w-4 h-4" /> Prompt INSERT
               </label>
               <textarea
-                className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[120px] font-mono"
+                className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[100px] font-mono"
                 value={campos.prompt_insert || ''}
                 onChange={(e) => onCampoCambiado('prompt_insert', e.target.value)}
                 placeholder="Instrucción que ejecutará el LLM al crear este registro..."
@@ -119,7 +119,7 @@ export function TabPrompts({
                 <Brain className="w-4 h-4" /> Prompt UPDATE
               </label>
               <textarea
-                className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[120px] font-mono"
+                className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[100px] font-mono"
                 value={campos.prompt_update || ''}
                 onChange={(e) => onCampoCambiado('prompt_update', e.target.value)}
                 placeholder="Instrucción que ejecutará el LLM al modificar este registro..."
@@ -163,7 +163,7 @@ export function TabPrompts({
         <div>
           <label className="block text-sm font-medium mb-1">System Prompt (instrucción base LLM)</label>
           <textarea
-            className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[50px] font-mono"
+            className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[150px] font-mono"
             value={campos.system_prompt || ''}
             onChange={(e) => onCampoCambiado('system_prompt', e.target.value)}
             placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."

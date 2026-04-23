@@ -19,7 +19,7 @@ import type { Proceso } from '@/lib/api'
 import type { Funcion } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
-import { TIPOS_ELEMENTO, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
+import { etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
@@ -43,7 +43,7 @@ type FormProceso = {
   json: string
 }
 
-type TabProceso = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'json'
+type TabProceso = 'datos' | 'clasificacion' | 'actores' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'json'
 
 export default function PaginaProcesos() {
   const t = useTranslations('procesos')
@@ -205,6 +205,8 @@ export default function PaginaProcesos() {
             <div className="flex gap-2 border-b border-borde -mt-2">
               {([
                 { key: 'datos' as TabProceso, label: 'Datos' },
+                { key: 'clasificacion' as TabProceso, label: 'Clasificación' },
+                { key: 'actores' as TabProceso, label: 'Actores' },
                 { key: 'system_prompt' as TabProceso, label: 'System Prompt' },
                 { key: 'programacion_insert' as TabProceso, label: 'Prog. Insert' },
                 { key: 'programacion_update' as TabProceso, label: 'Prog. Update' },
@@ -230,12 +232,21 @@ export default function PaginaProcesos() {
               />
 
               <Input
+                etiqueta={t('etiquetaTipo')}
+                value={etiquetaTipo(crud.form.tipo)}
+                onChange={() => {}}
+                disabled
+              />
+
+              <Input
                 etiqueta={t('etiquetaNombre')}
                 value={crud.form.nombre_proceso}
                 onChange={(e) => crud.updateForm('nombre_proceso', e.target.value)}
                 placeholder={t('placeholderNombre')}
                 autoFocus
               />
+
+              <div />
 
               <div className="col-span-2">
                 <Textarea
@@ -246,7 +257,11 @@ export default function PaginaProcesos() {
                   rows={3}
                 />
               </div>
+            </div>
+          )}
 
+          {tabModal === 'clasificacion' && crud.editando && (
+            <div className="grid grid-cols-2 gap-4">
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-texto">{t('etiquetaFuncion')}</label>
                 <select
@@ -263,29 +278,17 @@ export default function PaginaProcesos() {
                 </select>
                 <p className="text-xs text-texto-muted">{t('descFuncion')}</p>
               </div>
-
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-texto">{t('etiquetaTipo')}</label>
-                <select
-                  className={selectClass}
-                  value={crud.form.tipo}
-                  onChange={(e) => crud.updateForm('tipo', e.target.value)}
-                >
-                  {TIPOS_ELEMENTO.map((tp) => (
-                    <option key={tp} value={tp}>
-                      {etiquetaTipo(tp)}
-                    </option>
-                  ))}
-                </select>
+              <div className="col-span-2 text-xs text-texto-muted italic">
+                Campos pendientes: codigo_categoria_proceso, codigo_tipo_proceso, codigo_estado (FK a estados_procesos).
               </div>
+            </div>
+          )}
 
-              <Input
-                etiqueta={t('etiquetaParalelo')}
-                type="number"
-                value={String(crud.form.n_parallel)}
-                onChange={(e) => crud.updateForm('n_parallel', Number(e.target.value))}
-                placeholder="1"
-              />
+          {tabModal === 'actores' && crud.editando && (
+            <div className="grid grid-cols-2 gap-4">
+              <div className="col-span-2 text-xs text-texto-muted italic">
+                Campos pendientes: codigo_grupo, codigo_entidad, codigo_usuario, codigo_usuario_asignado, fecha_inicio, fecha_fin, fecha_comprometida, costo, costo_en_tiempo.
+              </div>
             </div>
           )}
 
@@ -363,7 +366,7 @@ export default function PaginaProcesos() {
             <div className="flex flex-col gap-1">
               <label className="text-sm font-medium text-texto">{t('etiquetaJson')}</label>
               <textarea
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm font-mono text-texto focus:outline-none focus:ring-2 focus:ring-primario min-h-[75px]"
+                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm font-mono text-texto focus:outline-none focus:ring-2 focus:ring-primario min-h-[150px]"
                 value={crud.form.json}
                 onChange={(e) => crud.updateForm('json', e.target.value)}
                 placeholder='{\n  "clave": "valor"\n}'
