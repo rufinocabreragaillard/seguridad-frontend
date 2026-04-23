@@ -19,7 +19,6 @@ import type { Proceso } from '@/lib/api'
 import type { Funcion } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
-import { etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
@@ -29,7 +28,6 @@ const selectClass =
 type FormProceso = {
   nombre_proceso: string
   descripcion: string
-  tipo: string
   n_parallel: number
   codigo_funcion: string
   prompt_insert: string
@@ -71,7 +69,6 @@ export default function PaginaProcesos() {
         nombre_proceso: f.nombre_proceso?.trim(),
         descripcion: f.descripcion?.trim() || undefined,
         n_parallel: f.n_parallel,
-        tipo: f.tipo,
         codigo_funcion: f.codigo_funcion ? f.codigo_funcion : null,
         prompt_insert: f.prompt_insert || undefined,
         prompt_update: f.prompt_update || undefined,
@@ -87,15 +84,14 @@ export default function PaginaProcesos() {
       return r
     },
     getId: (p) => p.codigo_proceso,
-    camposBusqueda: (p) => [p.codigo_proceso, p.nombre_proceso, p.tipo, p.codigo_funcion ?? ''],
-    formInicial: { nombre_proceso: '', descripcion: '', tipo: 'USUARIO', n_parallel: 1, codigo_funcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, json: '' },
+    camposBusqueda: (p) => [p.codigo_proceso, p.nombre_proceso, p.codigo_funcion ?? ''],
+    formInicial: { nombre_proceso: '', descripcion: '', n_parallel: 1, codigo_funcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, json: '' },
     itemToForm: (p) => {
       const jsonVal = (p as unknown as Record<string, unknown>).json
       const jsonStr = jsonVal == null ? '' : JSON.stringify(jsonVal, null, 2)
       return {
         nombre_proceso: p.nombre_proceso,
         descripcion: p.descripcion ?? '',
-        tipo: p.tipo ?? 'USUARIO',
         n_parallel: p.n_parallel,
         codigo_funcion: p.codigo_funcion ?? '',
         prompt_insert: (p as unknown as Record<string, unknown>).prompt_insert as string ?? '',
@@ -147,7 +143,6 @@ export default function PaginaProcesos() {
           { titulo: t('colCodigo'), campo: 'codigo_proceso' },
           { titulo: t('colNombre'), campo: 'nombre_proceso' },
           { titulo: t('colFuncion'), campo: 'codigo_funcion' },
-          { titulo: t('colTipo'), campo: 'tipo' },
           { titulo: t('colOrden'), campo: 'orden' },
           { titulo: t('colParalelo'), campo: 'n_parallel' },
         ]}
@@ -166,12 +161,6 @@ export default function PaginaProcesos() {
               ) : (
                 <span className="text-xs text-texto-muted">—</span>
               ),
-          },
-          {
-            titulo: t('colTipo'),
-            render: (p: Proceso) => (
-              <Insignia variante={varianteTipo(p.tipo)}>{etiquetaTipo(p.tipo)}</Insignia>
-            ),
           },
           {
             titulo: t('colParalelo'),
@@ -227,13 +216,6 @@ export default function PaginaProcesos() {
               <Input
                 etiqueta={t('etiquetaCodigo')}
                 value={crud.editando.codigo_proceso}
-                onChange={() => {}}
-                disabled
-              />
-
-              <Input
-                etiqueta={t('etiquetaTipo')}
-                value={etiquetaTipo(crud.form.tipo)}
                 onChange={() => {}}
                 disabled
               />

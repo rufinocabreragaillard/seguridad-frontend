@@ -655,7 +655,6 @@ export interface Proceso {
   codigo_proceso: string
   nombre_proceso: string
   descripcion: string | null
-  tipo: string
   orden: number
   prompt?: string | null
   system_prompt?: string | null
