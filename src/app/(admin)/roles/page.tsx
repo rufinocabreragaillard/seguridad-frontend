@@ -871,18 +871,31 @@ export default function PaginaRoles() {
             </div>
           )}
 
-          {/* Tab System Prompt — textarea directo, sin botones Generar ni Sincronizar */}
+          {/* Tab System Prompt — sin botones Generar ni Sincronizar */}
           {tabModalRol === 'system_prompt' && rolEditando && (
             <div className="flex flex-col gap-3">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">System Prompt (instrucción base LLM)</label>
-                <textarea
-                  value={formRol.system_prompt}
-                  onChange={(e) => setFormRol({ ...formRol, system_prompt: e.target.value })}
-                  placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."
-                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono min-h-[200px] resize-y focus:outline-none focus:ring-2 focus:ring-primario"
-                />
-              </div>
+              <TabPrompts
+                tabla="roles"
+                pkColumna="id_rol"
+                pkValor={String(rolEditando.id_rol)}
+                campos={{
+                  prompt_insert: formRol.prompt_insert,
+                  prompt_update: formRol.prompt_update,
+                  system_prompt: formRol.system_prompt,
+                  python_insert: formRol.python_insert,
+                  python_update: formRol.python_update,
+                  javascript: formRol.javascript,
+                  python_editado_manual: formRol.python_editado_manual,
+                  javascript_editado_manual: formRol.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormRol({ ...formRol, [c]: v })}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
+                mostrarSystemPrompt={true}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
+                mostrarJavaScript={false}
+              />
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <PieBotonesModal
                 editando={!!rolEditando}
