@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useTranslations } from 'next-intl'
+import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -13,32 +14,33 @@ import {
   columnaNombre,
 } from '@/components/ui/tabla-crud'
 import { Insignia } from '@/components/ui/insignia'
-import { procesosApi, funcionesApi } from '@/lib/api'
+import {
+  procesosApi,
+  funcionesApi,
+  procesosDatosBasicosApi,
+  gruposApi,
+  entidadesApi,
+  usuariosApi,
+} from '@/lib/api'
 import { invalidarCatalogo } from '@/lib/catalogos'
 import type { Proceso } from '@/lib/api'
-import type { Funcion } from '@/lib/tipos'
+import type {
+  Funcion,
+  CategoriaProceso,
+  TipoProceso,
+  EstadoProceso,
+  Grupo,
+  Entidad,
+  Usuario,
+} from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
-import { TabPrompts } from '@/components/ui/tab-prompts'
-import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-
-const selectClass =
-  'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50'
 
 type FormProceso = {
   nombre_proceso: string
   descripcion: string
   n_parallel: number
   codigo_funcion: string
-  prompt_insert: string
-  prompt_update: string
-  system_prompt: string
-  python_insert: string
-  python_update: string
-  javascript: string
-  python_editado_manual: boolean
-  javascript_editado_manual: boolean
-  json: string
   // Clasificación
   codigo_categoria_proceso: string
   codigo_tipo_proceso: string
@@ -55,44 +57,125 @@ type FormProceso = {
   costo_en_tiempo: string
 }
 
-type TabProceso = 'datos' | 'clasificacion' | 'actores' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'json'
+type TabProceso = 'datos' | 'clasificacion' | 'actores'
+
+type OpcionBuscable = { valor: string; etiqueta: string; hint?: string }
+
+function SelectorBuscable({
+  etiqueta,
+  valor,
+  opciones,
+  onSeleccionar,
+  placeholder = 'Buscar...',
+  disabled = false,
+}: {
+  etiqueta: string
+  valor: string
+  opciones: OpcionBuscable[]
+  onSeleccionar: (valor: string) => void
+  placeholder?: string
+  disabled?: boolean
+}) {
+  const [abierto, setAbierto] = useState(false)
+  const [busqueda, setBusqueda] = useState('')
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const fn = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setAbierto(false)
+    }
+    document.addEventListener('mousedown', fn)
+    return () => document.removeEventListener('mousedown', fn)
+  }, [])
+
+  useEffect(() => {
+    if (abierto) return
+    const sel = opciones.find((o) => o.valor === valor)
+    setBusqueda(sel ? sel.etiqueta : '')
+  }, [valor, opciones, abierto])
+
+  const filtradas = opciones.filter((o) => {
+    if (!busqueda) return true
+    const q = busqueda.toLowerCase()
+    return o.etiqueta.toLowerCase().includes(q) || o.valor.toLowerCase().includes(q) || (o.hint ?? '').toLowerCase().includes(q)
+  })
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-sm font-medium text-texto">{etiqueta}</label>
+      <div className="relative" ref={ref}>
+        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
+        <input
+          type="text"
+          placeholder={placeholder}
+          value={busqueda}
+          disabled={disabled}
+          onChange={(e) => {
+            setBusqueda(e.target.value)
+            setAbierto(true)
+            if (!e.target.value) onSeleccionar('')
+          }}
+          onFocus={() => !disabled && setAbierto(true)}
+          className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60"
+        />
+        {abierto && !disabled && (
+          <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
+            <button
+              type="button"
+              onClick={() => { onSeleccionar(''); setBusqueda(''); setAbierto(false) }}
+              className="w-full text-left px-3 py-2 text-sm text-texto-muted italic hover:bg-primario-muy-claro hover:text-primario transition-colors"
+            >
+              — Sin selección —
+            </button>
+            {filtradas.slice(0, 30).map((o) => (
+              <button
+                key={o.valor}
+                type="button"
+                onClick={() => { onSeleccionar(o.valor); setBusqueda(o.etiqueta); setAbierto(false) }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors flex items-center gap-2"
+              >
+                <span className="font-medium">{o.etiqueta}</span>
+                {o.hint && <span className="text-texto-muted text-xs">{o.hint}</span>}
+              </button>
+            ))}
+            {filtradas.length === 0 && <div className="px-3 py-2 text-sm text-texto-muted">Sin resultados</div>}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 export default function PaginaProcesos() {
   const t = useTranslations('procesos')
 
   const [funciones, setFunciones] = useState<Funcion[]>([])
+  const [categorias, setCategorias] = useState<CategoriaProceso[]>([])
+  const [tiposProc, setTiposProc] = useState<TipoProceso[]>([])
+  const [estadosProc, setEstadosProc] = useState<EstadoProceso[]>([])
+  const [grupos, setGrupos] = useState<Grupo[]>([])
+  const [entidades, setEntidades] = useState<Entidad[]>([])
+  const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [tabModal, setTabModal] = useState<TabProceso>('datos')
 
   useEffect(() => {
     funcionesApi.listar().then(setFunciones).catch(() => setFunciones([]))
+    procesosDatosBasicosApi.listarCategorias().then(setCategorias).catch(() => setCategorias([]))
+    procesosDatosBasicosApi.listarTipos().then(setTiposProc).catch(() => setTiposProc([]))
+    procesosDatosBasicosApi.listarEstados().then(setEstadosProc).catch(() => setEstadosProc([]))
+    gruposApi.listar().then(setGrupos).catch(() => setGrupos([]))
+    entidadesApi.listar().then(setEntidades).catch(() => setEntidades([]))
+    usuariosApi.listar().then(setUsuarios).catch(() => setUsuarios([]))
   }, [])
 
   const crud = useCrudPage<Proceso, FormProceso>({
     cargarFn: () => procesosApi.listar(),
     actualizarFn: async (id, f) => {
-      let jsonParsed: unknown = null
-      const jsonTxt = (f.json ?? '').trim()
-      if (jsonTxt) {
-        try {
-          jsonParsed = JSON.parse(jsonTxt)
-        } catch {
-          throw new Error(t('errorJsonInvalido'))
-        }
-      }
       const r = await procesosApi.actualizar(id, {
         nombre_proceso: f.nombre_proceso?.trim(),
         descripcion: f.descripcion?.trim() || undefined,
         n_parallel: f.n_parallel,
         codigo_funcion: f.codigo_funcion ? f.codigo_funcion : null,
-        prompt_insert: f.prompt_insert || undefined,
-        prompt_update: f.prompt_update || undefined,
-        system_prompt: f.system_prompt || undefined,
-        python_insert: f.python_insert || undefined,
-        python_update: f.python_update || undefined,
-        javascript: f.javascript || undefined,
-        python_editado_manual: f.python_editado_manual,
-        javascript_editado_manual: f.javascript_editado_manual,
-        json: jsonTxt ? jsonParsed : null,
       } as Record<string, unknown>)
       invalidarCatalogo('procesosDocs')
       return r
@@ -101,31 +184,18 @@ export default function PaginaProcesos() {
     camposBusqueda: (p) => [p.codigo_proceso, p.nombre_proceso, p.codigo_funcion ?? ''],
     formInicial: {
       nombre_proceso: '', descripcion: '', n_parallel: 1, codigo_funcion: '',
-      prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '',
-      python_editado_manual: false, javascript_editado_manual: false, json: '',
       codigo_categoria_proceso: '', codigo_tipo_proceso: '', codigo_estado: '',
       codigo_grupo: '', codigo_entidad: '', codigo_usuario: '', codigo_usuario_asignado: '',
       fecha_inicio: '', fecha_fin: '', fecha_comprometida: '', costo: '', costo_en_tiempo: '',
     },
     itemToForm: (p) => {
       const raw = p as unknown as Record<string, unknown>
-      const jsonVal = raw.json
-      const jsonStr = jsonVal == null ? '' : JSON.stringify(jsonVal, null, 2)
       const str = (v: unknown) => (v == null ? '' : String(v))
       return {
         nombre_proceso: p.nombre_proceso,
         descripcion: p.descripcion ?? '',
         n_parallel: p.n_parallel,
         codigo_funcion: p.codigo_funcion ?? '',
-        prompt_insert: str(raw.prompt_insert),
-        prompt_update: str(raw.prompt_update),
-        system_prompt: str(raw.system_prompt),
-        python_insert: str(raw.python_insert),
-        python_update: str(raw.python_update),
-        javascript: str(raw.javascript),
-        python_editado_manual: (raw.python_editado_manual as boolean) ?? false,
-        javascript_editado_manual: (raw.javascript_editado_manual as boolean) ?? false,
-        json: jsonStr,
         codigo_categoria_proceso: str(raw.codigo_categoria_proceso),
         codigo_tipo_proceso: str(raw.codigo_tipo_proceso),
         codigo_estado: str(raw.codigo_estado),
@@ -142,9 +212,6 @@ export default function PaginaProcesos() {
     },
   })
 
-  const funcionesOrdenadas = [...funciones].sort((a, b) =>
-    a.nombre.localeCompare(b.nombre),
-  )
   const nombreFuncion = (codigo?: string | null): string => {
     if (!codigo) return ''
     return funciones.find((f) => f.codigo_funcion === codigo)?.nombre ?? codigo
@@ -160,6 +227,41 @@ export default function PaginaProcesos() {
       crud.cargar()
     } catch { crud.cargar() }
   }
+
+  // ── Opciones para selectores buscables ─────────────────────────────────
+  const opcionesFunciones: OpcionBuscable[] = [...funciones]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+    .map((f) => ({ valor: f.codigo_funcion, etiqueta: f.nombre, hint: f.codigo_funcion }))
+
+  const opcionesCategorias: OpcionBuscable[] = [...categorias]
+    .sort((a, b) => a.nombre_categoria_proceso.localeCompare(b.nombre_categoria_proceso))
+    .map((c) => ({ valor: c.codigo_categoria_proceso, etiqueta: c.nombre_categoria_proceso, hint: c.codigo_categoria_proceso }))
+
+  const opcionesTipos: OpcionBuscable[] = [...tiposProc]
+    .filter((tp) => !crud.form.codigo_categoria_proceso || tp.codigo_categoria_proceso === crud.form.codigo_categoria_proceso)
+    .sort((a, b) => a.nombre_tipo_proceso.localeCompare(b.nombre_tipo_proceso))
+    .map((tp) => ({ valor: tp.codigo_tipo_proceso, etiqueta: tp.nombre_tipo_proceso, hint: tp.codigo_tipo_proceso }))
+
+  const opcionesEstados: OpcionBuscable[] = [...estadosProc]
+    .filter((e) =>
+      (!crud.form.codigo_categoria_proceso || e.codigo_categoria_proceso === crud.form.codigo_categoria_proceso) &&
+      (!crud.form.codigo_tipo_proceso || e.codigo_tipo_proceso === crud.form.codigo_tipo_proceso)
+    )
+    .sort((a, b) => a.nombre_estado.localeCompare(b.nombre_estado))
+    .map((e) => ({ valor: e.codigo_estado_proceso, etiqueta: e.nombre_estado, hint: e.codigo_estado_proceso }))
+
+  const opcionesGrupos: OpcionBuscable[] = [...grupos]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+    .map((g) => ({ valor: g.codigo_grupo, etiqueta: g.nombre, hint: g.codigo_grupo }))
+
+  const opcionesEntidades: OpcionBuscable[] = [...entidades]
+    .filter((en) => !crud.form.codigo_grupo || en.codigo_grupo === crud.form.codigo_grupo)
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+    .map((en) => ({ valor: en.codigo_entidad, etiqueta: en.nombre, hint: en.codigo_entidad }))
+
+  const opcionesUsuarios: OpcionBuscable[] = [...usuarios]
+    .sort((a, b) => a.nombre.localeCompare(b.nombre))
+    .map((u) => ({ valor: u.codigo_usuario, etiqueta: u.nombre, hint: u.codigo_usuario }))
 
   return (
     <div className="relative flex flex-col gap-6 max-w-5xl">
@@ -231,10 +333,6 @@ export default function PaginaProcesos() {
                 { key: 'datos' as TabProceso, label: 'Datos' },
                 { key: 'clasificacion' as TabProceso, label: 'Clasificación' },
                 { key: 'actores' as TabProceso, label: 'Actores' },
-                { key: 'system_prompt' as TabProceso, label: 'System Prompt' },
-                { key: 'programacion_insert' as TabProceso, label: 'Prog. Insert' },
-                { key: 'programacion_update' as TabProceso, label: 'Prog. Update' },
-                { key: 'json' as TabProceso, label: 'JSON' },
               ]).map((tb) => (
                 <button
                   key={tb.key}
@@ -279,69 +377,80 @@ export default function PaginaProcesos() {
 
           {tabModal === 'clasificacion' && crud.editando && (
             <div className="grid grid-cols-2 gap-4">
-              <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-texto">{t('etiquetaFuncion')}</label>
-                <select
-                  className={selectClass}
-                  value={crud.form.codigo_funcion}
-                  onChange={(e) => crud.updateForm('codigo_funcion', e.target.value)}
-                >
-                  <option value="">{t('sinFuncion')}</option>
-                  {funcionesOrdenadas.map((f) => (
-                    <option key={f.codigo_funcion} value={f.codigo_funcion}>
-                      {f.nombre}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-texto-muted">{t('descFuncion')}</p>
-              </div>
+              <SelectorBuscable
+                etiqueta={t('etiquetaFuncion')}
+                valor={crud.form.codigo_funcion}
+                opciones={opcionesFunciones}
+                onSeleccionar={(v) => crud.updateForm('codigo_funcion', v)}
+                placeholder={t('sinFuncion')}
+              />
               <div />
-              <Input
+              <SelectorBuscable
                 etiqueta="Categoría del proceso"
-                value={crud.form.codigo_categoria_proceso}
-                onChange={(e) => crud.updateForm('codigo_categoria_proceso', e.target.value)}
-                placeholder="codigo_categoria_proceso"
+                valor={crud.form.codigo_categoria_proceso}
+                opciones={opcionesCategorias}
+                onSeleccionar={(v) => {
+                  crud.updateForm('codigo_categoria_proceso', v)
+                  crud.updateForm('codigo_tipo_proceso', '')
+                  crud.updateForm('codigo_estado', '')
+                }}
+                placeholder="Buscar categoría..."
               />
-              <Input
+              <SelectorBuscable
                 etiqueta="Tipo de proceso"
-                value={crud.form.codigo_tipo_proceso}
-                onChange={(e) => crud.updateForm('codigo_tipo_proceso', e.target.value)}
-                placeholder="codigo_tipo_proceso"
+                valor={crud.form.codigo_tipo_proceso}
+                opciones={opcionesTipos}
+                onSeleccionar={(v) => {
+                  crud.updateForm('codigo_tipo_proceso', v)
+                  crud.updateForm('codigo_estado', '')
+                }}
+                placeholder={crud.form.codigo_categoria_proceso ? 'Buscar tipo...' : 'Seleccione categoría primero'}
+                disabled={!crud.form.codigo_categoria_proceso}
               />
-              <Input
+              <SelectorBuscable
                 etiqueta="Estado"
-                value={crud.form.codigo_estado}
-                onChange={(e) => crud.updateForm('codigo_estado', e.target.value)}
-                placeholder="codigo_estado (FK a estados_procesos)"
+                valor={crud.form.codigo_estado}
+                opciones={opcionesEstados}
+                onSeleccionar={(v) => crud.updateForm('codigo_estado', v)}
+                placeholder={crud.form.codigo_tipo_proceso ? 'Buscar estado...' : 'Seleccione tipo primero'}
+                disabled={!crud.form.codigo_tipo_proceso}
               />
             </div>
           )}
 
           {tabModal === 'actores' && crud.editando && (
             <div className="grid grid-cols-2 gap-4">
-              <Input
+              <SelectorBuscable
                 etiqueta="Grupo"
-                value={crud.form.codigo_grupo}
-                onChange={(e) => crud.updateForm('codigo_grupo', e.target.value)}
-                placeholder="codigo_grupo"
+                valor={crud.form.codigo_grupo}
+                opciones={opcionesGrupos}
+                onSeleccionar={(v) => {
+                  crud.updateForm('codigo_grupo', v)
+                  crud.updateForm('codigo_entidad', '')
+                }}
+                placeholder="Buscar grupo..."
               />
-              <Input
+              <SelectorBuscable
                 etiqueta="Entidad"
-                value={crud.form.codigo_entidad}
-                onChange={(e) => crud.updateForm('codigo_entidad', e.target.value)}
-                placeholder="codigo_entidad"
+                valor={crud.form.codigo_entidad}
+                opciones={opcionesEntidades}
+                onSeleccionar={(v) => crud.updateForm('codigo_entidad', v)}
+                placeholder={crud.form.codigo_grupo ? 'Buscar entidad...' : 'Seleccione grupo primero'}
+                disabled={!crud.form.codigo_grupo}
               />
-              <Input
+              <SelectorBuscable
                 etiqueta="Usuario"
-                value={crud.form.codigo_usuario}
-                onChange={(e) => crud.updateForm('codigo_usuario', e.target.value)}
-                placeholder="codigo_usuario"
+                valor={crud.form.codigo_usuario}
+                opciones={opcionesUsuarios}
+                onSeleccionar={(v) => crud.updateForm('codigo_usuario', v)}
+                placeholder="Buscar usuario..."
               />
-              <Input
+              <SelectorBuscable
                 etiqueta="Usuario asignado"
-                value={crud.form.codigo_usuario_asignado}
-                onChange={(e) => crud.updateForm('codigo_usuario_asignado', e.target.value)}
-                placeholder="codigo_usuario_asignado"
+                valor={crud.form.codigo_usuario_asignado}
+                opciones={opcionesUsuarios}
+                onSeleccionar={(v) => crud.updateForm('codigo_usuario_asignado', v)}
+                placeholder="Buscar usuario..."
               />
               <Input
                 etiqueta="Fecha inicio"
@@ -378,90 +487,6 @@ export default function PaginaProcesos() {
             </div>
           )}
 
-          {tabModal === 'system_prompt' && crud.editando && (
-            <TabPrompts
-              tabla="procesos"
-              pkColumna="codigo_proceso"
-              pkValor={crud.editando.codigo_proceso}
-              campos={{
-                prompt_insert: crud.form.prompt_insert,
-                prompt_update: crud.form.prompt_update,
-                system_prompt: crud.form.system_prompt,
-                python_insert: crud.form.python_insert,
-                python_update: crud.form.python_update,
-                javascript: crud.form.javascript,
-                python_editado_manual: crud.form.python_editado_manual,
-                javascript_editado_manual: crud.form.javascript_editado_manual,
-              }}
-              onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
-              mostrarPromptInsert={false}
-              mostrarPromptUpdate={false}
-              mostrarSystemPrompt={true}
-              mostrarPythonInsert={false}
-              mostrarPythonUpdate={false}
-              mostrarJavaScript={false}
-            />
-          )}
-
-          {tabModal === 'programacion_insert' && crud.editando && (
-            <TabPrompts
-              tabla="procesos"
-              pkColumna="codigo_proceso"
-              pkValor={crud.editando.codigo_proceso}
-              campos={{
-                prompt_insert: crud.form.prompt_insert,
-                prompt_update: crud.form.prompt_update,
-                system_prompt: crud.form.system_prompt,
-                python_insert: crud.form.python_insert,
-                python_update: crud.form.python_update,
-                javascript: crud.form.javascript,
-                python_editado_manual: crud.form.python_editado_manual,
-                javascript_editado_manual: crud.form.javascript_editado_manual,
-              }}
-              onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
-              mostrarSystemPrompt={false}
-              mostrarJavaScript={false}
-              mostrarPromptUpdate={false}
-              mostrarPythonUpdate={false}
-            />
-          )}
-          {tabModal === 'programacion_update' && crud.editando && (
-            <TabPrompts
-              tabla="procesos"
-              pkColumna="codigo_proceso"
-              pkValor={crud.editando.codigo_proceso}
-              campos={{
-                prompt_insert: crud.form.prompt_insert,
-                prompt_update: crud.form.prompt_update,
-                system_prompt: crud.form.system_prompt,
-                python_insert: crud.form.python_insert,
-                python_update: crud.form.python_update,
-                javascript: crud.form.javascript,
-                python_editado_manual: crud.form.python_editado_manual,
-                javascript_editado_manual: crud.form.javascript_editado_manual,
-              }}
-              onCampoCambiado={(c, v) => crud.updateForm(c as keyof typeof crud.form, v as never)}
-              mostrarSystemPrompt={false}
-              mostrarJavaScript={false}
-              mostrarPromptInsert={false}
-              mostrarPythonInsert={false}
-            />
-          )}
-
-          {tabModal === 'json' && crud.editando && (
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-texto">{t('etiquetaJson')}</label>
-              <textarea
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm font-mono text-texto focus:outline-none focus:ring-2 focus:ring-primario min-h-[150px]"
-                value={crud.form.json}
-                onChange={(e) => crud.updateForm('json', e.target.value)}
-                placeholder='{\n  "clave": "valor"\n}'
-                spellCheck={false}
-              />
-              <p className="text-xs text-texto-muted">{t('descJson')}</p>
-            </div>
-          )}
-
           {crud.error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
               <p className="text-sm text-error">{crud.error}</p>
@@ -486,15 +511,6 @@ export default function PaginaProcesos() {
             }}
             onCerrar={crud.cerrarModal}
             cargando={crud.guardando}
-            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion_insert' || tabModal === 'programacion_update') && crud.editando ? (
-              <PieBotonesPrompts
-                tabla="procesos"
-                pkColumna="codigo_proceso"
-                pkValor={crud.editando.codigo_proceso}
-                promptInsert={crud.form.prompt_insert ?? undefined}
-                promptUpdate={crud.form.prompt_update ?? undefined}
-              />
-            ) : undefined}
           />
         </div>
       </Modal>
