@@ -990,7 +990,7 @@ export default function PaginaProcesosDatosBasicos() {
       )}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de proceso'} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar categoría de proceso: ${catEditando.nombre_categoria_proceso}` : 'Nueva categoría de proceso'} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -1126,33 +1126,35 @@ export default function PaginaProcesosDatosBasicos() {
               {mensajeMdCat && (
                 <p className={`text-xs px-1 ${mensajeMdCat.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdCat.texto}</p>
               )}
-              <div className="flex gap-2 pt-2">
-                <Boton
-                  onClick={async () => {
-                    setGenerandoMdCat(true); setMensajeMdCat(null)
-                    try {
-                      const r = await procesosDatosBasicosApi.generarMdCategoria(catEditando.codigo_categoria_proceso)
-                      setFormCat((p) => ({ ...p, md: r.md }))
-                      setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado.' })
-                    } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
-                    finally { setGenerandoMdCat(false) }
-                  }}
-                  cargando={generandoMdCat}
-                  disabled={generandoMdCat || sincronizandoMdCat}
-                >Generar</Boton>
-                <Boton
-                  variante="secundario"
-                  onClick={async () => {
-                    setSincronizandoMdCat(true); setMensajeMdCat(null)
-                    try {
-                      const r = await promptsApi.sincronizarFila('categorias_proceso', 'codigo_categoria_proceso', catEditando.codigo_categoria_proceso)
-                      setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
-                    } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
-                    finally { setSincronizandoMdCat(false) }
-                  }}
-                  cargando={sincronizandoMdCat}
-                  disabled={generandoMdCat || sincronizandoMdCat || !formCat.md}
-                >Sincronizar</Boton>
+              <div className="flex items-center justify-between pt-2 gap-2">
+                <div className="flex gap-2">
+                  <Boton
+                    onClick={async () => {
+                      setGenerandoMdCat(true); setMensajeMdCat(null)
+                      try {
+                        const r = await procesosDatosBasicosApi.generarMdCategoria(catEditando.codigo_categoria_proceso)
+                        setFormCat((p) => ({ ...p, md: r.md }))
+                        setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado.' })
+                      } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                      finally { setGenerandoMdCat(false) }
+                    }}
+                    cargando={generandoMdCat}
+                    disabled={generandoMdCat || sincronizandoMdCat}
+                  >Generar</Boton>
+                  <Boton
+                    variante="secundario"
+                    onClick={async () => {
+                      setSincronizandoMdCat(true); setMensajeMdCat(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('categorias_proceso', 'codigo_categoria_proceso', catEditando.codigo_categoria_proceso)
+                        setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
+                      } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                      finally { setSincronizandoMdCat(false) }
+                    }}
+                    cargando={sincronizandoMdCat}
+                    disabled={generandoMdCat || sincronizandoMdCat || !formCat.md}
+                  >Sincronizar</Boton>
+                </div>
                 <Boton variante="contorno" onClick={() => setModalCat(false)}>Salir</Boton>
               </div>
             </div>
@@ -1182,7 +1184,7 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo */}
-      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo' : 'Nuevo tipo de proceso'} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? `Editar tipo de proceso: ${tipoEditando.nombre_tipo_proceso}` : 'Nuevo tipo de proceso'} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -1321,33 +1323,35 @@ export default function PaginaProcesosDatosBasicos() {
               {mensajeMdTipo && (
                 <p className={`text-xs px-1 ${mensajeMdTipo.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdTipo.texto}</p>
               )}
-              <div className="flex gap-2 pt-2">
-                <Boton
-                  onClick={async () => {
-                    setGenerandoMdTipo(true); setMensajeMdTipo(null)
-                    try {
-                      const r = await procesosDatosBasicosApi.generarMdTipo(tipoEditando.codigo_categoria_proceso, tipoEditando.codigo_tipo_proceso)
-                      setFormTipo((p) => ({ ...p, md: r.md }))
-                      setMensajeMdTipo({ tipo: 'ok', texto: 'Markdown generado.' })
-                    } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
-                    finally { setGenerandoMdTipo(false) }
-                  }}
-                  cargando={generandoMdTipo}
-                  disabled={generandoMdTipo || sincronizandoMdTipo}
-                >Generar</Boton>
-                <Boton
-                  variante="secundario"
-                  onClick={async () => {
-                    setSincronizandoMdTipo(true); setMensajeMdTipo(null)
-                    try {
-                      const r = await promptsApi.sincronizarFila('tipos_proceso', 'codigo_tipo_proceso', tipoEditando.codigo_tipo_proceso)
-                      setMensajeMdTipo({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
-                    } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
-                    finally { setSincronizandoMdTipo(false) }
-                  }}
-                  cargando={sincronizandoMdTipo}
-                  disabled={generandoMdTipo || sincronizandoMdTipo || !formTipo.md}
-                >Sincronizar</Boton>
+              <div className="flex items-center justify-between pt-2 gap-2">
+                <div className="flex gap-2">
+                  <Boton
+                    onClick={async () => {
+                      setGenerandoMdTipo(true); setMensajeMdTipo(null)
+                      try {
+                        const r = await procesosDatosBasicosApi.generarMdTipo(tipoEditando.codigo_categoria_proceso, tipoEditando.codigo_tipo_proceso)
+                        setFormTipo((p) => ({ ...p, md: r.md }))
+                        setMensajeMdTipo({ tipo: 'ok', texto: 'Markdown generado.' })
+                      } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                      finally { setGenerandoMdTipo(false) }
+                    }}
+                    cargando={generandoMdTipo}
+                    disabled={generandoMdTipo || sincronizandoMdTipo}
+                  >Generar</Boton>
+                  <Boton
+                    variante="secundario"
+                    onClick={async () => {
+                      setSincronizandoMdTipo(true); setMensajeMdTipo(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('tipos_proceso', 'codigo_tipo_proceso', tipoEditando.codigo_tipo_proceso)
+                        setMensajeMdTipo({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
+                      } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                      finally { setSincronizandoMdTipo(false) }
+                    }}
+                    cargando={sincronizandoMdTipo}
+                    disabled={generandoMdTipo || sincronizandoMdTipo || !formTipo.md}
+                  >Sincronizar</Boton>
+                </div>
                 <Boton variante="contorno" onClick={() => setModalTipo(false)}>Salir</Boton>
               </div>
             </div>
@@ -1377,7 +1381,7 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Estado */}
-      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? 'Editar estado' : 'Nuevo estado de proceso'} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? `Editar estado de proceso: ${estEditando.nombre_estado}` : 'Nuevo estado de proceso'} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -1553,33 +1557,35 @@ export default function PaginaProcesosDatosBasicos() {
               {mensajeMdEst && (
                 <p className={`text-xs px-1 ${mensajeMdEst.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdEst.texto}</p>
               )}
-              <div className="flex gap-2 pt-2">
-                <Boton
-                  onClick={async () => {
-                    setGenerandoMdEst(true); setMensajeMdEst(null)
-                    try {
-                      const r = await procesosDatosBasicosApi.generarMdEstado(estEditando.codigo_categoria_proceso, estEditando.codigo_tipo_proceso, estEditando.codigo_estado_proceso)
-                      setFormEst((p) => ({ ...p, md: r.md }))
-                      setMensajeMdEst({ tipo: 'ok', texto: 'Markdown generado.' })
-                    } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
-                    finally { setGenerandoMdEst(false) }
-                  }}
-                  cargando={generandoMdEst}
-                  disabled={generandoMdEst || sincronizandoMdEst}
-                >Generar</Boton>
-                <Boton
-                  variante="secundario"
-                  onClick={async () => {
-                    setSincronizandoMdEst(true); setMensajeMdEst(null)
-                    try {
-                      const r = await promptsApi.sincronizarFila('estados_procesos', 'codigo_estado_proceso', estEditando.codigo_estado_proceso)
-                      setMensajeMdEst({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
-                    } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
-                    finally { setSincronizandoMdEst(false) }
-                  }}
-                  cargando={sincronizandoMdEst}
-                  disabled={generandoMdEst || sincronizandoMdEst || !formEst.md}
-                >Sincronizar</Boton>
+              <div className="flex items-center justify-between pt-2 gap-2">
+                <div className="flex gap-2">
+                  <Boton
+                    onClick={async () => {
+                      setGenerandoMdEst(true); setMensajeMdEst(null)
+                      try {
+                        const r = await procesosDatosBasicosApi.generarMdEstado(estEditando.codigo_categoria_proceso, estEditando.codigo_tipo_proceso, estEditando.codigo_estado_proceso)
+                        setFormEst((p) => ({ ...p, md: r.md }))
+                        setMensajeMdEst({ tipo: 'ok', texto: 'Markdown generado.' })
+                      } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                      finally { setGenerandoMdEst(false) }
+                    }}
+                    cargando={generandoMdEst}
+                    disabled={generandoMdEst || sincronizandoMdEst}
+                  >Generar</Boton>
+                  <Boton
+                    variante="secundario"
+                    onClick={async () => {
+                      setSincronizandoMdEst(true); setMensajeMdEst(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('estados_procesos', 'codigo_estado_proceso', estEditando.codigo_estado_proceso)
+                        setMensajeMdEst({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
+                      } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                      finally { setSincronizandoMdEst(false) }
+                    }}
+                    cargando={sincronizandoMdEst}
+                    disabled={generandoMdEst || sincronizandoMdEst || !formEst.md}
+                  >Sincronizar</Boton>
+                </div>
                 <Boton variante="contorno" onClick={() => setModalEst(false)}>Salir</Boton>
               </div>
             </div>
