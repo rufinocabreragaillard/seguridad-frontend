@@ -774,13 +774,21 @@ export default function PaginaUsuariosSemilla() {
                   <input type="text" placeholder="Buscar grupo..."
                     value={busquedaGrupoForm}
                     onChange={(e) => { setBusquedaGrupoForm(e.target.value); setDropdownGrupoFormAbierto(true); if (!e.target.value) setForm({ ...form, grupo_por_defecto: '' }) }}
-                    onFocus={() => setDropdownGrupoFormAbierto(true)}
+                    onFocus={() => { setBusquedaGrupoForm(''); setDropdownGrupoFormAbierto(true) }}
                     className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
                   {dropdownGrupoFormAbierto && (
                     <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
                       {grupos.filter((g) => !busquedaGrupoForm || g.nombre.toLowerCase().includes(busquedaGrupoForm.toLowerCase()) || g.codigo_grupo.toLowerCase().includes(busquedaGrupoForm.toLowerCase())).slice(0, 20).map((g) => (
                         <button key={g.codigo_grupo} type="button"
-                          onClick={() => { setForm({ ...form, grupo_por_defecto: g.codigo_grupo }); setBusquedaGrupoForm(`${g.nombre} — ${g.codigo_grupo}`); setDropdownGrupoFormAbierto(false) }}
+                          onClick={() => {
+                            setForm({ ...form, grupo_por_defecto: g.codigo_grupo, entidad_por_defecto: '', codigo_area: '', id_rol_principal: '', aplicacion_por_defecto: '' })
+                            setBusquedaGrupoForm(`${g.nombre} — ${g.codigo_grupo}`)
+                            setBusquedaEntidadForm('')
+                            setBusquedaAreaForm('')
+                            setBusquedaRolPpal('')
+                            setBusquedaAppForm('')
+                            setDropdownGrupoFormAbierto(false)
+                          }}
                           className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors flex items-center gap-2">
                           <span className="font-medium">{g.nombre}</span>
                           <span className="text-texto-muted text-xs">{g.codigo_grupo}</span>
