@@ -14,6 +14,7 @@ interface PieBotonesPromptsProps {
   promptUpdate?: string | null
   mostrarGenerar?: boolean
   mostrarSincronizar?: boolean
+  sincronizarHabilitado?: boolean  // override del disabled de Sincronizar (undefined = lógica por defecto)
   onCodigoGenerado?: (r: { python_insert?: string | null; python_update?: string | null; javascript?: string | null }) => void
   onSincronizado?: (r: { codigo_documento: number; accion: string }) => void
   onMensaje?: (m: { tipo: 'ok' | 'error'; texto: string }) => void
@@ -33,6 +34,7 @@ export function PieBotonesPrompts({
   promptUpdate,
   mostrarGenerar = true,
   mostrarSincronizar = true,
+  sincronizarHabilitado,
   onCodigoGenerado,
   onSincronizado,
   onMensaje,
@@ -120,7 +122,7 @@ export function PieBotonesPrompts({
           <Boton
             className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
             onClick={ejecutarSincronizar}
-            disabled={generando || sincronizando || !yaGuardado}
+            disabled={generando || sincronizando || (sincronizarHabilitado !== undefined ? !sincronizarHabilitado : !yaGuardado)}
             cargando={sincronizando}
           >
             <Upload className="w-4 h-4" /> Sincronizar

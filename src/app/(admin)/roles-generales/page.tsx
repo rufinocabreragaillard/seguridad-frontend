@@ -698,6 +698,7 @@ function TabRolesGlobales() {
                     pkValor={String(editando.id_rol)}
                     promptInsert={form.prompt_insert || undefined}
                     promptUpdate={form.prompt_update || undefined}
+                    mostrarSincronizar={false}
                   />
                 ) : undefined}
               />
@@ -739,6 +740,7 @@ function TabRolesGlobales() {
                     pkValor={String(editando.id_rol)}
                     promptInsert={form.prompt_insert || undefined}
                     promptUpdate={form.prompt_update || undefined}
+                    mostrarSincronizar={false}
                   />
                 ) : undefined}
               />
@@ -765,7 +767,8 @@ function TabRolesGlobales() {
                   promptInsert={form.prompt_insert || undefined}
                   promptUpdate={form.prompt_update || undefined}
                   mostrarGenerar={true}
-                  mostrarSincronizar={false}
+                  mostrarSincronizar={true}
+                  sincronizarHabilitado={!!(form.md)}
                 />
                 <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cerrar')}</Boton>
               </div>
