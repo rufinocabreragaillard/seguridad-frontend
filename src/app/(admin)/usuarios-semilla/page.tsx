@@ -530,12 +530,12 @@ export default function PaginaUsuariosSemilla() {
       <BotonChat />
       <div className="flex items-center justify-between pr-28">
         <div>
-          <h2 className="page-heading">Usuarios Semilla</h2>
+          <h2 className="page-heading">Usuarios</h2>
           <p className="text-sm text-texto-muted mt-1">
             Gestión global de usuarios administradores iniciales por grupo. Sin filtro de grupo activo.
           </p>
         </div>
-        <Boton variante="primario" onClick={abrirNuevo}><Plus size={16} />Nuevo usuario semilla</Boton>
+        <Boton variante="primario" onClick={abrirNuevo}><Plus size={16} />Nuevo usuario</Boton>
       </div>
 
       {/* Buscador */}
@@ -620,7 +620,7 @@ export default function PaginaUsuariosSemilla() {
       <Modal
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
-        titulo={usuarioEditando ? `Editar: ${usuarioEditando.nombre}${usuarioEditando.grupo_por_defecto ? ` - ${usuarioEditando.grupo_por_defecto}` : ''}` : 'Nuevo usuario semilla'}
+        titulo={usuarioEditando ? `Editar: ${usuarioEditando.nombre}${usuarioEditando.grupo_por_defecto ? ` - ${usuarioEditando.grupo_por_defecto}` : ''}` : 'Nuevo usuario'}
         className="max-w-2xl"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">
