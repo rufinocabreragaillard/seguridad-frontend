@@ -628,6 +628,11 @@ function PaginaProcesarDocumentosInterna() {
   //     con /cola-estados-docs/ejecutar + polling. El navegador ya no corre
   //     el loop LLM.
   const ejecutar = async () => {
+    // Confirmar el filtro libre si el usuario escribió pero no presionó Enter
+    const filtroEfectivo = filtroLibreInput.trim() || filtroLibre.trim() || ''
+    if (filtroEfectivo !== filtroLibre) {
+      setFiltroLibre(filtroEfectivo)
+    }
     setEjecutando(true)
     setProcesados(0)
     setCola([])
@@ -708,7 +713,13 @@ function PaginaProcesarDocumentosInterna() {
         }
       }
 
-      let docsAExtraer = docsEnDisco
+      // Aplicar filtro efectivo sobre los docs ya cargados (por si el usuario no presionó Enter)
+      let docsAExtraer = filtroEfectivo
+        ? docsEnDisco.filter((d) =>
+            d.nombre_documento?.toLowerCase().includes(filtroEfectivo.toLowerCase()) ||
+            d.ubicacion_documento?.toLowerCase().includes(filtroEfectivo.toLowerCase())
+          )
+        : docsEnDisco
       if (tope) docsAExtraer = docsAExtraer.slice(0, parseInt(tope))
       const colaInicial: ItemCola[] = docsAExtraer.map((doc) => ({
         id_cola: doc.codigo_documento,
@@ -849,7 +860,7 @@ function PaginaProcesarDocumentosInterna() {
         undefined,
         tope ? parseInt(tope) : null,
         ubicacionSel || null,
-        filtroLibre || null,
+        filtroEfectivo || null,
       )
     } catch {
       setEjecutando(false)
