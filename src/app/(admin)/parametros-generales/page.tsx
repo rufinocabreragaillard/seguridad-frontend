@@ -10,14 +10,16 @@ import { Tabla, TablaCabecera, TablaCuerpo, TablaTh, TablaTd } from '@/component
 import { Insignia } from '@/components/ui/insignia'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
-import { datosBasicosApi } from '@/lib/api'
+import { datosBasicosApi, promptsApi } from '@/lib/api'
 import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
 
 type TabId = 'categorias' | 'tipos'
-type TabModalCat = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
-type TabModalTipo = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
+type TabModalCat = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
+type TabModalTipo = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaParametro }
@@ -36,6 +38,10 @@ export default function PaginaParametrosGenerales() {
   const [catEditando, setCatEditando] = useState<CategoriaParametro | null>(null)
   const [formCat, setFormCat] = useState({ categoria_parametro: '', nombre: '', descripcion: '', activo: true })
   const [promptsCat, setPromptsCat] = useState<CamposPrompt>({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [mdCat, setMdCat] = useState<string>('')
+  const [generandoMdCat, setGenerandoMdCat] = useState(false)
+  const [sincronizandoMdCat, setSincronizandoMdCat] = useState(false)
+  const [mensajeMdCat, setMensajeMdCat] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [tabModalCat, setTabModalCat] = useState<TabModalCat>('datos')
   const [guardandoCat, setGuardandoCat] = useState(false)
   const [errorCat, setErrorCat] = useState('')
@@ -47,6 +53,10 @@ export default function PaginaParametrosGenerales() {
   const [tipoEditando, setTipoEditando] = useState<TipoParametro | null>(null)
   const [formTipo, setFormTipo] = useState({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '', activo: true })
   const [promptsTipo, setPromptsTipo] = useState<CamposPrompt>({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+  const [mdTipo, setMdTipo] = useState<string>('')
+  const [generandoMdTipo, setGenerandoMdTipo] = useState(false)
+  const [sincronizandoMdTipo, setSincronizandoMdTipo] = useState(false)
+  const [mensajeMdTipo, setMensajeMdTipo] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [tabModalTipo, setTabModalTipo] = useState<TabModalTipo>('datos')
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
@@ -99,37 +109,43 @@ export default function PaginaParametrosGenerales() {
   useEffect(() => { cargarCategorias(); cargarTipos() }, [cargarCategorias, cargarTipos])
 
   // ── Categorías: guardar ────────────────────────────────────────────────────
-  const abrirNuevaCat = () => { setCatEditando(null); setFormCat({ categoria_parametro: '', nombre: '', descripcion: '', activo: true }); setPromptsCat({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false }); setTabModalCat('datos'); setErrorCat(''); setModalCat(true) }
-  const abrirEditarCat = (c: CategoriaParametro) => { const c2 = c as unknown as Record<string, unknown>; setCatEditando(c); setFormCat({ categoria_parametro: c.categoria_parametro, nombre: c.nombre, descripcion: c.descripcion || '', activo: c.activo }); setPromptsCat({ prompt_insert: c2.prompt_insert as string ?? null, prompt_update: c2.prompt_update as string ?? null, system_prompt: c2.system_prompt as string ?? null, python_insert: c2.python_insert as string ?? null, python_update: c2.python_update as string ?? null, javascript: c2.javascript as string ?? null, python_editado_manual: c2.python_editado_manual as boolean ?? false, javascript_editado_manual: c2.javascript_editado_manual as boolean ?? false }); setTabModalCat('datos'); setErrorCat(''); setModalCat(true) }
+  const abrirNuevaCat = () => { setCatEditando(null); setFormCat({ categoria_parametro: '', nombre: '', descripcion: '', activo: true }); setPromptsCat({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false }); setMdCat(''); setMensajeMdCat(null); setTabModalCat('datos'); setErrorCat(''); setModalCat(true) }
+  const abrirEditarCat = (c: CategoriaParametro) => { const c2 = c as unknown as Record<string, unknown>; setCatEditando(c); setFormCat({ categoria_parametro: c.categoria_parametro, nombre: c.nombre, descripcion: c.descripcion || '', activo: c.activo }); setPromptsCat({ prompt_insert: c2.prompt_insert as string ?? null, prompt_update: c2.prompt_update as string ?? null, system_prompt: c2.system_prompt as string ?? null, python_insert: c2.python_insert as string ?? null, python_update: c2.python_update as string ?? null, javascript: c2.javascript as string ?? null, python_editado_manual: c2.python_editado_manual as boolean ?? false, javascript_editado_manual: c2.javascript_editado_manual as boolean ?? false }); setMdCat((c2.md as string) || ''); setMensajeMdCat(null); setTabModalCat('datos'); setErrorCat(''); setModalCat(true) }
 
-  const guardarCat = async () => {
+  const guardarCat = async (cerrar: boolean) => {
     if (!formCat.categoria_parametro.trim() || !formCat.nombre.trim()) { setErrorCat('Código y nombre son obligatorios'); return }
     setGuardandoCat(true); setErrorCat('')
     try {
       if (catEditando) {
-        await datosBasicosApi.actualizarCategoria(catEditando.categoria_parametro, { nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo, prompt_insert: promptsCat.prompt_insert, prompt_update: promptsCat.prompt_update, system_prompt: promptsCat.system_prompt, python_insert: promptsCat.python_insert, python_update: promptsCat.python_update, javascript: promptsCat.javascript, python_editado_manual: promptsCat.python_editado_manual, javascript_editado_manual: promptsCat.javascript_editado_manual })
+        const actualizado = await datosBasicosApi.actualizarCategoria(catEditando.categoria_parametro, { nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo, prompt_insert: promptsCat.prompt_insert, prompt_update: promptsCat.prompt_update, system_prompt: promptsCat.system_prompt, python_insert: promptsCat.python_insert, python_update: promptsCat.python_update, javascript: promptsCat.javascript, python_editado_manual: promptsCat.python_editado_manual, javascript_editado_manual: promptsCat.javascript_editado_manual })
+        setCatEditando(actualizado)
       } else {
-        await datosBasicosApi.crearCategoria({ categoria_parametro: formCat.categoria_parametro.toUpperCase(), nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo })
+        const creada = await datosBasicosApi.crearCategoria({ categoria_parametro: formCat.categoria_parametro.toUpperCase(), nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo })
+        if (!cerrar) setCatEditando(creada)
       }
-      setModalCat(false); cargarCategorias()
+      if (cerrar) setModalCat(false)
+      cargarCategorias()
     } catch (e) { setErrorCat(e instanceof Error ? e.message : 'Error al guardar') }
     finally { setGuardandoCat(false) }
   }
 
   // ── Tipos: guardar ─────────────────────────────────────────────────────────
-  const abrirNuevoTipo = () => { setTipoEditando(null); setFormTipo({ categoria_parametro: filtroCategoria, tipo_parametro: '', nombre: '', descripcion: '', activo: true }); setPromptsTipo({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false }); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
-  const abrirEditarTipo = (t: TipoParametro) => { const t2 = t as unknown as Record<string, unknown>; setTipoEditando(t); setFormTipo({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, nombre: t.nombre, descripcion: t.descripcion || '', activo: t.activo }); setPromptsTipo({ prompt_insert: t2.prompt_insert as string ?? null, prompt_update: t2.prompt_update as string ?? null, system_prompt: t2.system_prompt as string ?? null, python_insert: t2.python_insert as string ?? null, python_update: t2.python_update as string ?? null, javascript: t2.javascript as string ?? null, python_editado_manual: t2.python_editado_manual as boolean ?? false, javascript_editado_manual: t2.javascript_editado_manual as boolean ?? false }); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
+  const abrirNuevoTipo = () => { setTipoEditando(null); setFormTipo({ categoria_parametro: filtroCategoria, tipo_parametro: '', nombre: '', descripcion: '', activo: true }); setPromptsTipo({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false }); setMdTipo(''); setMensajeMdTipo(null); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
+  const abrirEditarTipo = (t: TipoParametro) => { const t2 = t as unknown as Record<string, unknown>; setTipoEditando(t); setFormTipo({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, nombre: t.nombre, descripcion: t.descripcion || '', activo: t.activo }); setPromptsTipo({ prompt_insert: t2.prompt_insert as string ?? null, prompt_update: t2.prompt_update as string ?? null, system_prompt: t2.system_prompt as string ?? null, python_insert: t2.python_insert as string ?? null, python_update: t2.python_update as string ?? null, javascript: t2.javascript as string ?? null, python_editado_manual: t2.python_editado_manual as boolean ?? false, javascript_editado_manual: t2.javascript_editado_manual as boolean ?? false }); setMdTipo((t2.md as string) || ''); setMensajeMdTipo(null); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
 
-  const guardarTipo = async () => {
+  const guardarTipo = async (cerrar: boolean) => {
     if (!formTipo.categoria_parametro || !formTipo.tipo_parametro.trim() || !formTipo.nombre.trim()) { setErrorTipo('Categoría, código y nombre son obligatorios'); return }
     setGuardandoTipo(true); setErrorTipo('')
     try {
       if (tipoEditando) {
-        await datosBasicosApi.actualizarTipo(tipoEditando.categoria_parametro, tipoEditando.tipo_parametro, { nombre: formTipo.nombre, descripcion: formTipo.descripcion, activo: formTipo.activo, prompt_insert: promptsTipo.prompt_insert, prompt_update: promptsTipo.prompt_update, system_prompt: promptsTipo.system_prompt, python_insert: promptsTipo.python_insert, python_update: promptsTipo.python_update, javascript: promptsTipo.javascript, python_editado_manual: promptsTipo.python_editado_manual, javascript_editado_manual: promptsTipo.javascript_editado_manual })
+        const actualizado = await datosBasicosApi.actualizarTipo(tipoEditando.categoria_parametro, tipoEditando.tipo_parametro, { nombre: formTipo.nombre, descripcion: formTipo.descripcion, activo: formTipo.activo, prompt_insert: promptsTipo.prompt_insert, prompt_update: promptsTipo.prompt_update, system_prompt: promptsTipo.system_prompt, python_insert: promptsTipo.python_insert, python_update: promptsTipo.python_update, javascript: promptsTipo.javascript, python_editado_manual: promptsTipo.python_editado_manual, javascript_editado_manual: promptsTipo.javascript_editado_manual })
+        setTipoEditando(actualizado)
       } else {
-        await datosBasicosApi.crearTipo({ categoria_parametro: formTipo.categoria_parametro, tipo_parametro: formTipo.tipo_parametro.toUpperCase(), nombre: formTipo.nombre, descripcion: formTipo.descripcion, activo: formTipo.activo })
+        const creado = await datosBasicosApi.crearTipo({ categoria_parametro: formTipo.categoria_parametro, tipo_parametro: formTipo.tipo_parametro.toUpperCase(), nombre: formTipo.nombre, descripcion: formTipo.descripcion, activo: formTipo.activo })
+        if (!cerrar) setTipoEditando(creado)
       }
-      setModalTipo(false); cargarTipos()
+      if (cerrar) setModalTipo(false)
+      cargarTipos()
     } catch (e) { setErrorTipo(e instanceof Error ? e.message : 'Error al guardar') }
     finally { setGuardandoTipo(false) }
   }
@@ -318,67 +334,184 @@ export default function PaginaParametrosGenerales() {
       )}
 
       {/* ── Modal Categoría ── */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de parámetro'}>
-        <div className="flex flex-col gap-4 p-4 min-h-[500px]">
+      <Modal
+        abierto={modalCat}
+        alCerrar={() => setModalCat(false)}
+        titulo={catEditando ? `Editar categoría: ${catEditando.nombre}` : 'Nueva categoría de parámetro'}
+        className="w-[853px] max-w-[95vw]"
+      >
+        <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
-          <div className="flex gap-1 border-b border-borde -mt-2">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
+          <div className="flex gap-1 border-b border-borde -mt-2 overflow-x-auto">
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
-                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
+                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 whitespace-nowrap ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prompt Insert' : tab === 'programacion_update' ? 'Prompt Update' : '.md'}
               </button>
             ))}
           </div>
 
-          {tabModalCat === 'datos' && <>
-            {!catEditando && (
+          {tabModalCat === 'datos' && (
+            <div className="flex flex-col gap-4">
+              {!catEditando && (
+                <div>
+                  <label className="block text-sm font-medium text-texto mb-1">Código *</label>
+                  <input className={inputCls} placeholder="ej: SISTEMA" value={formCat.categoria_parametro}
+                    onChange={(e) => setFormCat({ ...formCat, categoria_parametro: e.target.value.toUpperCase() })} />
+                </div>
+              )}
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Código *</label>
-                <input className={inputCls} placeholder="ej: SISTEMA" value={formCat.categoria_parametro}
-                  onChange={(e) => setFormCat({ ...formCat, categoria_parametro: e.target.value.toUpperCase() })} />
+                <label className="block text-sm font-medium text-texto mb-1">Nombre *</label>
+                <input className={inputCls} placeholder="Nombre de la categoría" value={formCat.nombre}
+                  onChange={(e) => setFormCat({ ...formCat, nombre: e.target.value })} />
               </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-texto mb-1">Nombre *</label>
-              <input className={inputCls} placeholder="Nombre de la categoría" value={formCat.nombre}
-                onChange={(e) => setFormCat({ ...formCat, nombre: e.target.value })} />
+              <div>
+                <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
+                <textarea className={inputCls} rows={2} placeholder="Descripción opcional" value={formCat.descripcion}
+                  onChange={(e) => setFormCat({ ...formCat, descripcion: e.target.value })} />
+              </div>
+              {catEditando && (
+                <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
+                  <input type="checkbox" checked={formCat.activo} onChange={(e) => setFormCat({ ...formCat, activo: e.target.checked })}
+                    className="rounded border-borde text-primario h-4 w-4" />
+                  Activo
+                </label>
+              )}
+              {errorCat && <p className="text-sm text-error">{errorCat}</p>}
+              <PieBotonesModal
+                editando={!!catEditando}
+                onGuardar={() => guardarCat(false)}
+                onGuardarYSalir={() => guardarCat(true)}
+                onCerrar={() => setModalCat(false)}
+                cargando={guardandoCat}
+              />
             </div>
-            <div>
-              <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
-              <textarea className={inputCls} rows={2} placeholder="Descripción opcional" value={formCat.descripcion}
-                onChange={(e) => setFormCat({ ...formCat, descripcion: e.target.value })} />
-            </div>
-            {catEditando && (
-              <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                <input type="checkbox" checked={formCat.activo} onChange={(e) => setFormCat({ ...formCat, activo: e.target.checked })}
-                  className="rounded border-borde text-primario h-4 w-4" />
-                Activo
-              </label>
-            )}
-          </>}
+          )}
 
           {tabModalCat === 'system_prompt' && catEditando && (
-            <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
-              campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
+            <div className="flex flex-col gap-3">
+              <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
+                campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
+                mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true} mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
+              {errorCat && <p className="text-sm text-error">{errorCat}</p>}
+              <PieBotonesModal
+                editando={!!catEditando}
+                onGuardar={() => guardarCat(false)}
+                onGuardarYSalir={() => guardarCat(true)}
+                onCerrar={() => setModalCat(false)}
+                cargando={guardandoCat}
+              />
+            </div>
           )}
 
           {tabModalCat === 'programacion_insert' && catEditando && (
-            <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
-              campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptUpdate={false} mostrarPythonUpdate={false} />
+            <div className="flex flex-col gap-3">
+              <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
+                campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
+                mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptUpdate={false} mostrarPythonUpdate={false} />
+              {errorCat && <p className="text-sm text-error">{errorCat}</p>}
+              <PieBotonesModal
+                editando={!!catEditando}
+                onGuardar={() => guardarCat(false)}
+                onGuardarYSalir={() => guardarCat(true)}
+                onCerrar={() => setModalCat(false)}
+                cargando={guardandoCat}
+                botonesIzquierda={
+                  <PieBotonesPrompts
+                    tabla="categorias_parametro"
+                    pkColumna="categoria_parametro"
+                    pkValor={catEditando.categoria_parametro}
+                    promptInsert={promptsCat.prompt_insert ?? undefined}
+                    promptUpdate={promptsCat.prompt_update ?? undefined}
+                    mostrarSincronizar={false}
+                  />
+                }
+              />
+            </div>
           )}
           {tabModalCat === 'programacion_update' && catEditando && (
-            <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
-              campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
-              mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
+            <div className="flex flex-col gap-3">
+              <TabPrompts tabla="categorias_parametro" pkColumna="categoria_parametro" pkValor={catEditando.categoria_parametro}
+                campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
+                mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
+              {errorCat && <p className="text-sm text-error">{errorCat}</p>}
+              <PieBotonesModal
+                editando={!!catEditando}
+                onGuardar={() => guardarCat(false)}
+                onGuardarYSalir={() => guardarCat(true)}
+                onCerrar={() => setModalCat(false)}
+                cargando={guardandoCat}
+                botonesIzquierda={
+                  <PieBotonesPrompts
+                    tabla="categorias_parametro"
+                    pkColumna="categoria_parametro"
+                    pkValor={catEditando.categoria_parametro}
+                    promptInsert={promptsCat.prompt_insert ?? undefined}
+                    promptUpdate={promptsCat.prompt_update ?? undefined}
+                    mostrarSincronizar={false}
+                  />
+                }
+              />
+            </div>
           )}
 
-          {errorCat && <p className="text-sm text-error">{errorCat}</p>}
-        </div>
-        <div className="flex gap-3 justify-end px-4 pb-4">
-          <Boton variante="contorno" onClick={() => setModalCat(false)}>Cancelar</Boton>
-          <Boton variante="primario" onClick={guardarCat} cargando={guardandoCat}>{catEditando ? 'Guardar' : 'Crear'}</Boton>
+          {tabModalCat === 'md' && catEditando && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={mdCat || ''}
+                  readOnly
+                  rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMdCat && (
+                <p className={`text-xs px-1 ${mensajeMdCat.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMdCat.texto}
+                </p>
+              )}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMdCat(true); setMensajeMdCat(null)
+                      try {
+                        const r = await datosBasicosApi.generarMdCategoria(catEditando.categoria_parametro)
+                        setMdCat(r.md)
+                        setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMdCat(false) }
+                    }}
+                    cargando={generandoMdCat}
+                    disabled={generandoMdCat || sincronizandoMdCat}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMdCat(true); setMensajeMdCat(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('categorias_parametro', 'categoria_parametro', catEditando.categoria_parametro)
+                        setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMdCat(false) }
+                    }}
+                    cargando={sincronizandoMdCat}
+                    disabled={generandoMdCat || sincronizandoMdCat || !mdCat}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={() => setModalCat(false)}>Salir</Boton>
+              </div>
+            </div>
+          )}
         </div>
       </Modal>
 
@@ -452,7 +585,7 @@ export default function PaginaParametrosGenerales() {
         </div>
         <div className="flex gap-3 justify-end px-4 pb-4">
           <Boton variante="contorno" onClick={() => setModalTipo(false)}>Cancelar</Boton>
-          <Boton variante="primario" onClick={guardarTipo} cargando={guardandoTipo}>{tipoEditando ? 'Guardar' : 'Crear'}</Boton>
+          <Boton variante="primario" onClick={() => guardarTipo(true)} cargando={guardandoTipo}>{tipoEditando ? 'Guardar' : 'Crear'}</Boton>
         </div>
       </Modal>
 
