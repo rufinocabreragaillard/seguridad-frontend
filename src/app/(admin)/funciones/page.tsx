@@ -283,14 +283,6 @@ export default function PaginaFunciones() {
     ] : []),
   ] as { key: typeof tabModalFuncion; label: string }[]
 
-  // Si cambia el grupo y el tab activo ya no esta disponible, volver a 'datos'
-  useEffect(() => {
-    if (modalFuncion && !TABS_MODAL.some((t) => t.key === tabModalFuncion)) {
-      setTabModalFuncion('datos')
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grupoActivo, modalFuncion])
-
   return (
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat />
