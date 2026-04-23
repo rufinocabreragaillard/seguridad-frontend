@@ -874,7 +874,7 @@ export default function PaginaUsuariosSemilla() {
                       <input type="text" placeholder={cargandoEntidades ? 'Cargando...' : 'Buscar entidad...'}
                         value={busquedaEntidadForm}
                         onChange={(e) => { setBusquedaEntidadForm(e.target.value); setDropdownEntidadFormAbierto(true); if (!e.target.value) setForm({ ...form, entidad_por_defecto: '' }) }}
-                        onFocus={() => setDropdownEntidadFormAbierto(true)}
+                        onFocus={() => { setBusquedaEntidadForm(''); setDropdownEntidadFormAbierto(true) }}
                         disabled={cargandoEntidades}
                         className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60" />
                       {dropdownEntidadFormAbierto && !cargandoEntidades && (
@@ -901,7 +901,7 @@ export default function PaginaUsuariosSemilla() {
                       <input type="text" placeholder={!form.entidad_por_defecto ? 'Seleccione entidad primero' : cargandoAreas ? 'Cargando...' : 'Buscar área...'}
                         value={busquedaAreaForm}
                         onChange={(e) => { setBusquedaAreaForm(e.target.value); setDropdownAreaFormAbierto(true); if (!e.target.value) setForm({ ...form, codigo_area: '' }) }}
-                        onFocus={() => { if (form.entidad_por_defecto) setDropdownAreaFormAbierto(true) }}
+                        onFocus={() => { if (form.entidad_por_defecto) { setBusquedaAreaForm(''); setDropdownAreaFormAbierto(true) } }}
                         disabled={!form.entidad_por_defecto || cargandoAreas}
                         className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60" />
                       {dropdownAreaFormAbierto && form.entidad_por_defecto && !cargandoAreas && (
@@ -927,7 +927,7 @@ export default function PaginaUsuariosSemilla() {
                       <input type="text" placeholder="Buscar rol..."
                         value={busquedaRolPpal}
                         onChange={(e) => { setBusquedaRolPpal(e.target.value); setDropdownRolPpalAbierto(true); if (!e.target.value) setForm({ ...form, id_rol_principal: '' }) }}
-                        onFocus={() => setDropdownRolPpalAbierto(true)}
+                        onFocus={() => { setBusquedaRolPpal(''); setDropdownRolPpalAbierto(true) }}
                         className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
                       {dropdownRolPpalAbierto && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
