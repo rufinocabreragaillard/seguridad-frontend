@@ -481,7 +481,7 @@ export default function PaginaFunciones() {
                 <textarea
                   value={formFuncion.system_prompt || ''}
                   onChange={(e) => setFormFuncion({ ...formFuncion, system_prompt: e.target.value })}
-                  rows={16}
+                  rows={13}
                   placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono focus:outline-none focus:ring-2 focus:ring-primario"
                 />
@@ -592,7 +592,7 @@ export default function PaginaFunciones() {
                 <textarea
                   value={formFuncion.md || ''}
                   readOnly
-                  rows={16}
+                  rows={13}
                   placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
