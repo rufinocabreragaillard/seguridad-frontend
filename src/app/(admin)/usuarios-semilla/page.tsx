@@ -931,14 +931,13 @@ export default function PaginaUsuariosSemilla() {
                         className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
                       {dropdownRolPpalAbierto && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {[{ id_rol: 0, nombre: '— Sin rol —', codigo_rol: '', codigo_grupo: null } as unknown as Rol,
-                            // Todos los roles asignados al usuario (cualquier grupo), deduplicados por id_rol
-                            ...Array.from(new Map(rolesUsuario.map((ra) => [ra.id_rol, ra])).values()).map((ra) => ({
+                          {[{ id_rol: 0, nombre: '— Sin rol —', codigo_rol: '' } as unknown as Rol,
+                            // Roles únicos asignados al usuario (deduplicados por id_rol, sin mostrar grupo)
+                            ...Array.from(new Map(rolesUsuario.map((ra) => [ra.id_rol, {
                               id_rol: ra.id_rol,
                               nombre: ra.roles?.nombre || ra.codigo_rol || `Rol ${ra.id_rol}`,
                               codigo_rol: ra.roles?.codigo_rol || ra.codigo_rol || '',
-                              codigo_grupo: ra.codigo_grupo,
-                            } as Rol))]
+                            }])).values())]
                             .filter((r) => r.id_rol === 0 || !busquedaRolPpal || r.nombre.toLowerCase().includes(busquedaRolPpal.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRolPpal.toLowerCase()))
                             .slice(0, 21).map((r) => (
                               <button key={r.id_rol} type="button"
@@ -947,7 +946,6 @@ export default function PaginaUsuariosSemilla() {
                                 {r.id_rol === 0 ? <span className="text-texto-muted italic">{t('sinRol')}</span> : <>
                                   <span className="font-medium">{r.nombre}</span>
                                   <span className="text-texto-muted text-xs">{r.codigo_rol}</span>
-                                  {r.codigo_grupo && <span className="text-xs text-texto-muted">{r.codigo_grupo}</span>}
                                 </>}
                               </button>
                             ))}
