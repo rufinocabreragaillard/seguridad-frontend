@@ -371,6 +371,8 @@ export const aplicacionesApi = {
     api.post(`/aplicaciones/${id}/grupos`, { codigo_grupo: codigoGrupo }),
   quitarGrupo: (id: string, codigoGrupo: string) =>
     api.delete(`/aplicaciones/${id}/grupos/${codigoGrupo}`),
+  generarMd: (codigo: string) =>
+    api.post<{ md: string }>(`/aplicaciones/${codigo}/generar-md`).then((r) => r.data),
 }
 
 // ─── Entidades ────────────────────────────────────────────────────────────────
@@ -492,6 +494,11 @@ export const datosBasicosApi = {
     api.delete(`/datos-basicos/tipos/${categoria}/${tipo}`),
   reordenarTipos: (items: { categoria_parametro: string; tipo_parametro: string; orden: number }[]) =>
     api.put('/datos-basicos/tipos/reordenar', items).then((r) => r.data),
+
+  generarMdCategoria: (categoria: string) =>
+    api.post<{ md: string }>(`/datos-basicos/categorias/${categoria}/generar-md`).then((r) => r.data),
+  generarMdTipo: (categoria: string, tipo: string) =>
+    api.post<{ md: string }>(`/datos-basicos/tipos/${categoria}/${tipo}/generar-md`).then((r) => r.data),
 }
 
 // ─── Documentos ──────────────────────────────────────────────────────────────

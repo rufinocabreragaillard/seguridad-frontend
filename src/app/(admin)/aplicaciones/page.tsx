@@ -10,7 +10,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { aplicacionesApi, funcionesApi, gruposApi } from '@/lib/api'
+import { aplicacionesApi, funcionesApi, gruposApi, promptsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Aplicacion, Funcion, Grupo } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -35,10 +35,13 @@ export default function PaginaAplicaciones() {
   // ── Modal Aplicacion ──────────────────────────────────────────────────────
   const [modalApp, setModalApp] = useState(false)
   const [appEditando, setAppEditando] = useState<Aplicacion | null>(null)
-  const [formApp, setFormApp] = useState<{ codigo_aplicacion: string; nombre: string; alias: string; descripcion: string; tipo: TipoElemento; sidebar_ancho: boolean; prompt_insert: string; prompt_update: string; system_prompt: string; python_insert: string; python_update: string; javascript: string; python_editado_manual: boolean; javascript_editado_manual: boolean }>({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
-  const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'grupos' | 'system_prompt' | 'programacion'>('datos')
+  const [formApp, setFormApp] = useState<{ codigo_aplicacion: string; nombre: string; alias: string; descripcion: string; tipo: TipoElemento; sidebar_ancho: boolean; prompt_insert: string; prompt_update: string; system_prompt: string; python_insert: string; python_update: string; javascript: string; python_editado_manual: boolean; javascript_editado_manual: boolean; md: string }>({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
+  const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'grupos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
   const [guardandoApp, setGuardandoApp] = useState(false)
   const [errorApp, setErrorApp] = useState('')
+  const [generandoMd, setGenerandoMd] = useState(false)
+  const [sincronizandoMd, setSincronizandoMd] = useState(false)
+  const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
 
   // Funciones de la app
   const [funcionesApp, setFuncionesApp] = useState<FuncionApp[]>([])
@@ -101,10 +104,10 @@ export default function PaginaAplicaciones() {
 
   // ── Aplicacion: CRUD ──────────────────────────────────────────────────────
   const abrirNuevaApp = () => {
-    setAppEditando(null); setFormApp({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
-    setErrorApp(''); setTabModalApp('datos'); setModalApp(true)
+    setAppEditando(null); setFormApp({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
+    setErrorApp(''); setMensajeMd(null); setTabModalApp('datos'); setModalApp(true)
   }
-  const abrirEditarApp = (a: Aplicacion, tabInicial: 'datos' | 'funciones' | 'grupos' | 'system_prompt' | 'programacion' = 'datos') => {
+  const abrirEditarApp = (a: Aplicacion, tabInicial: 'datos' | 'funciones' | 'grupos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md' = 'datos') => {
     setAppEditando(a); setFormApp({
       codigo_aplicacion: a.codigo_aplicacion, nombre: a.nombre, alias: a.alias || '', descripcion: a.descripcion || '',
       tipo: normalizarTipo(a.tipo), sidebar_ancho: a.sidebar_ancho !== false,
@@ -116,8 +119,9 @@ export default function PaginaAplicaciones() {
       javascript: (a as Record<string, unknown>).javascript as string || '',
       python_editado_manual: ((a as Record<string, unknown>).python_editado_manual as boolean) ?? false,
       javascript_editado_manual: ((a as Record<string, unknown>).javascript_editado_manual as boolean) ?? false,
+      md: (a as Record<string, unknown>).md as string || '',
     })
-    setErrorApp(''); setTabModalApp(tabInicial); cargarFuncionesApp(a.codigo_aplicacion); cargarGruposApp(a.codigo_aplicacion); setModalApp(true)
+    setErrorApp(''); setMensajeMd(null); setTabModalApp(tabInicial); cargarFuncionesApp(a.codigo_aplicacion); cargarGruposApp(a.codigo_aplicacion); setModalApp(true)
   }
   const guardarApp = async (cerrar: boolean) => {
     if (!formApp.codigo_aplicacion || !formApp.nombre) { setErrorApp('Codigo y nombre son obligatorios'); return }
@@ -234,7 +238,7 @@ export default function PaginaAplicaciones() {
                 <TablaTd className="text-texto-muted text-sm">{a.descripcion || '—'}</TablaTd>
                 <TablaTd>
                   <div className="flex items-center justify-end gap-1">
-                    <button onClick={() => abrirEditarApp(a, 'programacion')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
+                    <button onClick={() => abrirEditarApp(a, 'programacion_insert')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
                     <button onClick={() => abrirEditarApp(a)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                     <button onClick={() => setConfirmacion(a)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                   </div>
@@ -255,7 +259,9 @@ export default function PaginaAplicaciones() {
                 { key: 'funciones', label: `${t('tabFunciones')} (${funcionesApp.length})` },
                 { key: 'grupos', label: `${t('tabGrupos')} (${gruposApp.length})` },
                 { key: 'system_prompt', label: 'System Prompt' },
-                { key: 'programacion', label: 'Programación' },
+                { key: 'programacion_insert', label: 'Prog. Insert' },
+                { key: 'programacion_update', label: 'Prog. Update' },
+                { key: 'md', label: '.md' },
               ] as { key: typeof tabModalApp; label: string }[]).map((tab) => (
                 <button key={tab.key} onClick={() => setTabModalApp(tab.key)} className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalApp === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
                   {tab.label}
@@ -364,28 +370,16 @@ export default function PaginaAplicaciones() {
           )}
           {tabModalApp === 'system_prompt' && appEditando && (
             <div className="flex flex-col gap-3">
-              <TabPrompts
-                tabla="aplicaciones"
-                pkColumna="codigo_aplicacion"
-                pkValor={appEditando.codigo_aplicacion}
-                campos={{
-                  prompt_insert: formApp.prompt_insert,
-                  prompt_update: formApp.prompt_update,
-                  system_prompt: formApp.system_prompt,
-                  python_insert: formApp.python_insert,
-                  python_update: formApp.python_update,
-                  javascript: formApp.javascript,
-                  python_editado_manual: formApp.python_editado_manual,
-                  javascript_editado_manual: formApp.javascript_editado_manual,
-                }}
-                onCampoCambiado={(c, v) => setFormApp({ ...formApp, [c]: v })}
-                mostrarPromptInsert={false}
-                mostrarPromptUpdate={false}
-                mostrarSystemPrompt={true}
-                mostrarPythonInsert={false}
-                mostrarPythonUpdate={false}
-                mostrarJavaScript={false}
-              />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">System Prompt (instrucción base para el LLM)</label>
+                <textarea
+                  value={formApp.system_prompt || ''}
+                  onChange={(e) => setFormApp({ ...formApp, system_prompt: e.target.value })}
+                  rows={17}
+                  placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono focus:outline-none focus:ring-2 focus:ring-primario"
+                />
+              </div>
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
               <PieBotonesModal
                 editando={!!appEditando}
@@ -393,19 +387,10 @@ export default function PaginaAplicaciones() {
                 onGuardarYSalir={() => guardarApp(true)}
                 onCerrar={() => setModalApp(false)}
                 cargando={guardandoApp}
-                botonesIzquierda={appEditando ? (
-                  <PieBotonesPrompts
-                    tabla="aplicaciones"
-                    pkColumna="codigo_aplicacion"
-                    pkValor={appEditando.codigo_aplicacion}
-                    promptInsert={formApp.prompt_insert ?? undefined}
-                    promptUpdate={formApp.prompt_update ?? undefined}
-                  />
-                ) : undefined}
               />
             </div>
           )}
-          {tabModalApp === 'programacion' && appEditando && (
+          {tabModalApp === 'programacion_insert' && appEditando && (
             <div className="flex flex-col gap-3">
               <TabPrompts
                 tabla="aplicaciones"
@@ -424,6 +409,8 @@ export default function PaginaAplicaciones() {
                 onCampoCambiado={(c, v) => setFormApp({ ...formApp, [c]: v })}
                 mostrarSystemPrompt={false}
                 mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
               />
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
               <PieBotonesModal
@@ -439,9 +426,109 @@ export default function PaginaAplicaciones() {
                     pkValor={appEditando.codigo_aplicacion}
                     promptInsert={formApp.prompt_insert ?? undefined}
                     promptUpdate={formApp.prompt_update ?? undefined}
+                    mostrarSincronizar={false}
                   />
                 ) : undefined}
               />
+            </div>
+          )}
+          {tabModalApp === 'programacion_update' && appEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="aplicaciones"
+                pkColumna="codigo_aplicacion"
+                pkValor={appEditando.codigo_aplicacion}
+                campos={{
+                  prompt_insert: formApp.prompt_insert,
+                  prompt_update: formApp.prompt_update,
+                  system_prompt: formApp.system_prompt,
+                  python_insert: formApp.python_insert,
+                  python_update: formApp.python_update,
+                  javascript: formApp.javascript,
+                  python_editado_manual: formApp.python_editado_manual,
+                  javascript_editado_manual: formApp.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormApp({ ...formApp, [c]: v })}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
+              />
+              {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
+              <PieBotonesModal
+                editando={!!appEditando}
+                onGuardar={() => guardarApp(false)}
+                onGuardarYSalir={() => guardarApp(true)}
+                onCerrar={() => setModalApp(false)}
+                cargando={guardandoApp}
+                botonesIzquierda={appEditando ? (
+                  <PieBotonesPrompts
+                    tabla="aplicaciones"
+                    pkColumna="codigo_aplicacion"
+                    pkValor={appEditando.codigo_aplicacion}
+                    promptInsert={formApp.prompt_insert ?? undefined}
+                    promptUpdate={formApp.prompt_update ?? undefined}
+                    mostrarSincronizar={false}
+                  />
+                ) : undefined}
+              />
+            </div>
+          )}
+          {tabModalApp === 'md' && appEditando && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={formApp.md || ''}
+                  readOnly
+                  rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMd && (
+                <p className={`text-xs px-1 ${mensajeMd.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMd.texto}
+                </p>
+              )}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await aplicacionesApi.generarMd(appEditando.codigo_aplicacion)
+                        setFormApp((prev) => ({ ...prev, md: r.md }))
+                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMd(false) }
+                    }}
+                    cargando={generandoMd}
+                    disabled={generandoMd || sincronizandoMd}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('aplicaciones', 'codigo_aplicacion', appEditando.codigo_aplicacion)
+                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMd(false) }
+                    }}
+                    cargando={sincronizandoMd}
+                    disabled={generandoMd || sincronizandoMd || !formApp.md}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={() => setModalApp(false)}>Salir</Boton>
+              </div>
             </div>
           )}
           {tabModalApp === 'grupos' && appEditando && (
