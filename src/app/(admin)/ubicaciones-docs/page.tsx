@@ -925,6 +925,7 @@ export default function PaginaUbicacionesDocs() {
                 pkValor={editando.codigo_ubicacion}
                 promptInsert={form.prompt_insert || undefined}
                 promptUpdate={form.prompt_update || undefined}
+                modo={tabModal === 'programacion_update' ? 'update' : 'insert'}
               />
             ) : undefined}
           />

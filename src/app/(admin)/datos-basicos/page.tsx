@@ -559,6 +559,7 @@ export default function PaginaDatosBasicos() {
                 pkValor={catEditando.categoria_parametro}
                 promptInsert={promptsCat.prompt_insert ?? undefined}
                 promptUpdate={promptsCat.prompt_update ?? undefined}
+                modo={tabModalCat === 'programacion_update' ? 'update' : 'insert'}
               />
             ) : undefined}
           />
@@ -656,6 +657,7 @@ export default function PaginaDatosBasicos() {
                 pkValor={tipoEditando.tipo_parametro}
                 promptInsert={promptsTipo.prompt_insert ?? undefined}
                 promptUpdate={promptsTipo.prompt_update ?? undefined}
+                modo={tabModalTipo === 'programacion_update' ? 'update' : 'insert'}
               />
             ) : undefined}
           />

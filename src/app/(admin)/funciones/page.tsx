@@ -539,6 +539,7 @@ export default function PaginaFunciones() {
                     pkValor={funcionEditando.codigo_funcion}
                     promptInsert={formFuncion.prompt_insert ?? undefined}
                     promptUpdate={formFuncion.prompt_update ?? undefined}
+                    modo="insert"
                     mostrarSincronizar={false}
                   />
                 ) : undefined}
@@ -582,6 +583,7 @@ export default function PaginaFunciones() {
                     pkValor={funcionEditando.codigo_funcion}
                     promptInsert={formFuncion.prompt_insert ?? undefined}
                     promptUpdate={formFuncion.prompt_update ?? undefined}
+                    modo="update"
                     mostrarSincronizar={false}
                   />
                 ) : undefined}

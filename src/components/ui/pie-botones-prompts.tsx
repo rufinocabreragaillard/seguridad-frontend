@@ -12,6 +12,7 @@ interface PieBotonesPromptsProps {
   tienePrompt?: boolean  // si no se pasa, se auto-computa desde promptInsert/promptUpdate
   promptInsert?: string | null
   promptUpdate?: string | null
+  modo?: 'insert' | 'update'  // default 'insert'. Determina qué prompt se usa y qué campo se devuelve
   mostrarGenerar?: boolean
   mostrarSincronizar?: boolean
   sincronizarHabilitado?: boolean  // override del disabled de Sincronizar (undefined = lógica por defecto)
@@ -32,6 +33,7 @@ export function PieBotonesPrompts({
   tienePrompt,
   promptInsert,
   promptUpdate,
+  modo = 'insert',
   mostrarGenerar = true,
   mostrarSincronizar = true,
   sincronizarHabilitado,
@@ -44,7 +46,12 @@ export function PieBotonesPrompts({
   const [mensajeLocal, setMensajeLocal] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
 
   const yaGuardado = pkValor !== null && pkValor !== undefined && String(pkValor).trim() !== ''
-  const _tienePrompt = tienePrompt ?? !!(promptInsert || promptUpdate || '').trim()
+  // tienePrompt se computa según el modo: insert mira promptInsert, update mira promptUpdate
+  const _tienePrompt = tienePrompt ?? (
+    modo === 'update'
+      ? !!(promptUpdate || '').trim()
+      : !!(promptInsert || '').trim()
+  )
 
   function emitirMensaje(m: { tipo: 'ok' | 'error'; texto: string }) {
     setMensajeLocal(m)
@@ -63,14 +70,21 @@ export function PieBotonesPrompts({
     }
     setGenerando(true)
     try {
+      const lenguaje = modo === 'update' ? 'python_update' : 'python_insert'
       const res = await promptsApi.compilar({
         tabla, pk_columna: pkColumna, pk_valor: String(pkValor),
-        lenguaje: 'ambos', forzar: false,
-        prompt_insert_content: promptInsert || undefined,
-        prompt_update_content: promptUpdate || undefined,
+        lenguaje,
+        forzar: false,
+        prompt_insert_content: modo === 'insert' ? (promptInsert || undefined) : undefined,
+        prompt_update_content: modo === 'update' ? (promptUpdate || undefined) : undefined,
       })
-      onCodigoGenerado?.({ python_insert: res.python_insert, python_update: res.python_update, javascript: res.javascript })
-      emitirMensaje({ tipo: 'ok', texto: 'Código Python y JavaScript generado desde el prompt.' })
+      if (modo === 'update') {
+        onCodigoGenerado?.({ python_update: res.python_update })
+      } else {
+        onCodigoGenerado?.({ python_insert: res.python_insert })
+      }
+      const label = modo === 'update' ? 'Python Update' : 'Python Insert'
+      emitirMensaje({ tipo: 'ok', texto: `Código ${label} generado desde el prompt.` })
     } catch (e: unknown) {
       const err = e as { message?: string; response?: { data?: { detail?: string } } }
       emitirMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error al generar' })
@@ -115,7 +129,7 @@ export function PieBotonesPrompts({
             disabled={generando || sincronizando || !_tienePrompt}
             cargando={generando}
           >
-            <RefreshCw className="w-4 h-4" /> Generar
+            <RefreshCw className="w-4 h-4" /> {modo === 'update' ? 'Generar Python Update' : 'Generar Python Insert'}
           </Boton>
         )}
         {mostrarSincronizar && (

@@ -330,6 +330,7 @@ export default function PaginaPlanes() {
                       pkValor={editando.codigo_plan}
                       promptInsert={form.prompt_insert ?? undefined}
                       promptUpdate={form.prompt_update ?? undefined}
+                      modo="insert"
                     />
                   ) : undefined}
                 />
@@ -372,6 +373,7 @@ export default function PaginaPlanes() {
                       pkValor={editando.codigo_plan}
                       promptInsert={form.prompt_insert ?? undefined}
                       promptUpdate={form.prompt_update ?? undefined}
+                      modo="insert"
                     />
                   ) : undefined}
                 />
@@ -413,6 +415,7 @@ export default function PaginaPlanes() {
                       pkValor={editando.codigo_plan}
                       promptInsert={form.prompt_insert ?? undefined}
                       promptUpdate={form.prompt_update ?? undefined}
+                      modo="update"
                     />
                   ) : undefined}
                 />
