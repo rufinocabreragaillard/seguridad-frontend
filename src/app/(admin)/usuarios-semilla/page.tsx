@@ -485,9 +485,11 @@ export default function PaginaUsuariosSemilla() {
   useEffect(() => {
     if (dropdownRolPpalAbierto) return
     if (!form.id_rol_principal) { setBusquedaRolPpal(''); return }
+    const ra = rolesUsuario.find((ra) => ra.id_rol === Number(form.id_rol_principal))
+    if (ra) { setBusquedaRolPpal(ra.roles?.nombre || ra.codigo_rol || `Rol ${ra.id_rol}`); return }
     const r = rolesGrupo.find((r) => r.id_rol === Number(form.id_rol_principal))
     if (r) setBusquedaRolPpal(r.nombre)
-  }, [form.id_rol_principal, rolesGrupo, dropdownRolPpalAbierto])
+  }, [form.id_rol_principal, rolesGrupo, rolesUsuario, dropdownRolPpalAbierto])
 
   useEffect(() => {
     if (dropdownAppFormAbierto) return
@@ -929,15 +931,14 @@ export default function PaginaUsuariosSemilla() {
                         className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
                       {dropdownRolPpalAbierto && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {[{ id_rol: 0, nombre: '— Sin rol —', codigo_rol: '', codigo_grupo: null, tipo: tipoGrupoForm } as Rol,
-                            ...rolesGrupo.filter((r) => {
-                              if (!(r.codigo_grupo === grupoForm || r.codigo_grupo == null)) return false
-                              const tipoRol = normalizarTipo(r.tipo)
-                              if (tipoUsuarioSemilla === 'SISTEMA') return tipoRol === 'SISTEMA'
-                              if (tipoUsuarioSemilla === 'ADMINISTRADOR') return tipoRol !== 'SISTEMA'
-                              if (tipoUsuarioSemilla === 'USUARIO') return tipoRol === 'USUARIO'
-                              return true
-                            })]
+                          {[{ id_rol: 0, nombre: '— Sin rol —', codigo_rol: '', codigo_grupo: null } as unknown as Rol,
+                            // Todos los roles asignados al usuario (cualquier grupo), deduplicados por id_rol
+                            ...Array.from(new Map(rolesUsuario.map((ra) => [ra.id_rol, ra])).values()).map((ra) => ({
+                              id_rol: ra.id_rol,
+                              nombre: ra.roles?.nombre || ra.codigo_rol || `Rol ${ra.id_rol}`,
+                              codigo_rol: ra.roles?.codigo_rol || ra.codigo_rol || '',
+                              codigo_grupo: ra.codigo_grupo,
+                            } as Rol))]
                             .filter((r) => r.id_rol === 0 || !busquedaRolPpal || r.nombre.toLowerCase().includes(busquedaRolPpal.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRolPpal.toLowerCase()))
                             .slice(0, 21).map((r) => (
                               <button key={r.id_rol} type="button"
@@ -946,7 +947,7 @@ export default function PaginaUsuariosSemilla() {
                                 {r.id_rol === 0 ? <span className="text-texto-muted italic">{t('sinRol')}</span> : <>
                                   <span className="font-medium">{r.nombre}</span>
                                   <span className="text-texto-muted text-xs">{r.codigo_rol}</span>
-                                  {r.codigo_grupo == null && <span className="text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">{tc('global')}</span>}
+                                  {r.codigo_grupo && <span className="text-xs text-texto-muted">{r.codigo_grupo}</span>}
                                 </>}
                               </button>
                             ))}
