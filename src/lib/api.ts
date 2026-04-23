@@ -340,6 +340,21 @@ export const funcionesApi = {
     ).then((r) => r.data),
   generarMd: (codigo: string) =>
     api.post<{ md: string }>(`/funciones/${codigo}/generar-md`).then((r) => r.data),
+  listarTablas: (codigo: string) =>
+    api.get<{ id_tabla: number; nombre_tabla: string; descripcion: string | null }[]>(
+      `/funciones/${codigo}/tablas`
+    ).then((r) => r.data),
+  asignarTabla: (codigo: string, idTabla: number) =>
+    api.post(`/funciones/${codigo}/tablas`, { id_tabla: idTabla }),
+  quitarTabla: (codigo: string, idTabla: number) =>
+    api.delete(`/funciones/${codigo}/tablas/${idTabla}`),
+}
+
+export const tablaApisApi = {
+  listar: () =>
+    api.get<{ id_tabla: number; nombre_tabla: string; descripcion: string | null }[]>(
+      '/tabla-apis'
+    ).then((r) => r.data),
 }
 
 // ─── Aplicaciones ─────────────────────────────────────────────────────────────

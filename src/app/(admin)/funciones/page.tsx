@@ -13,7 +13,7 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { aplicacionesApi, funcionesApi, registroLLMApi, promptsApi } from '@/lib/api'
+import { aplicacionesApi, funcionesApi, registroLLMApi, promptsApi, tablaApisApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Aplicacion, Funcion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -74,7 +74,7 @@ export default function PaginaFunciones() {
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'tablas' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
   const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
@@ -86,6 +86,14 @@ export default function PaginaFunciones() {
   const [cargandoAppsFuncion, setCargandoAppsFuncion] = useState(false)
   const [appNuevaFuncion, setAppNuevaFuncion] = useState('')
   const [asignandoAppFuncion, setAsignandoAppFuncion] = useState(false)
+
+  // Tablas de la funcion
+  type TablaApi = { id_tabla: number; nombre_tabla: string; descripcion: string | null }
+  const [tablasDeFuncion, setTablasDeFuncion] = useState<TablaApi[]>([])
+  const [todasTablas, setTodasTablas] = useState<TablaApi[]>([])
+  const [cargandoTablasFuncion, setCargandoTablasFuncion] = useState(false)
+  const [tablaNuevaFuncion, setTablaNuevaFuncion] = useState('')
+  const [asignandoTablaFuncion, setAsignandoTablaFuncion] = useState(false)
 
   // Confirmar eliminacion
   const [confirmacion, setConfirmacion] = useState<Funcion | null>(null)
@@ -113,6 +121,13 @@ export default function PaginaFunciones() {
 
   useEffect(() => { cargar() }, [cargar])
 
+  // Cargar tablas cuando el usuario navega al tab Tablas
+  useEffect(() => {
+    if (tabModalFuncion === 'tablas' && funcionEditando && tablasDeFuncion.length === 0 && !cargandoTablasFuncion) {
+      cargarTablasDeFuncion(funcionEditando.codigo_funcion)
+    }
+  }, [tabModalFuncion, funcionEditando, tablasDeFuncion.length, cargandoTablasFuncion, cargarTablasDeFuncion])
+
   // ── Funcion: CRUD ─────────────────────────────────────────────────────────
   const abrirNuevaFuncion = () => {
     setFuncionEditando(null)
@@ -127,7 +142,7 @@ export default function PaginaFunciones() {
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
-  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
+  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'tablas' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
     setFuncionEditando(f)
     setFormFuncion({
       codigo_funcion: f.codigo_funcion,
@@ -159,6 +174,7 @@ export default function PaginaFunciones() {
     setMensajeMd(null)
     setTabModalFuncion(tabInicial)
     cargarAppsDeFuncion(f.codigo_funcion)
+    if (tabInicial === 'tablas') cargarTablasDeFuncion(f.codigo_funcion)
     setModalFuncion(true)
   }
   const guardarFuncion = async (cerrar: boolean) => {
@@ -222,6 +238,36 @@ export default function PaginaFunciones() {
     catch (e) { setErrorFuncion(e instanceof Error ? e.message : 'Error') }
   }
 
+  // ── Funcion: tablas ───────────────────────────────────────────────────────────
+  const cargarTablasDeFuncion = useCallback(async (c: string) => {
+    setCargandoTablasFuncion(true)
+    try {
+      const [tablasFun, todas] = await Promise.all([
+        funcionesApi.listarTablas(c),
+        todasTablas.length > 0 ? Promise.resolve(todasTablas) : tablaApisApi.listar(),
+      ])
+      setTablasDeFuncion(tablasFun)
+      if (todasTablas.length === 0) setTodasTablas(todas)
+    } catch { setTablasDeFuncion([]) }
+    finally { setCargandoTablasFuncion(false) }
+  }, [todasTablas])
+
+  const asignarTablaAFuncion = async () => {
+    if (!tablaNuevaFuncion || !funcionEditando) return
+    setAsignandoTablaFuncion(true)
+    try {
+      await funcionesApi.asignarTabla(funcionEditando.codigo_funcion, parseInt(tablaNuevaFuncion))
+      setTablaNuevaFuncion('')
+      cargarTablasDeFuncion(funcionEditando.codigo_funcion)
+    } catch (e) { setErrorFuncion(e instanceof Error ? e.message : 'Error') }
+    finally { setAsignandoTablaFuncion(false) }
+  }
+  const quitarTablaFuncion = async (idTabla: number) => {
+    if (!funcionEditando) return
+    try { await funcionesApi.quitarTabla(funcionEditando.codigo_funcion, idTabla); cargarTablasDeFuncion(funcionEditando.codigo_funcion) }
+    catch (e) { setErrorFuncion(e instanceof Error ? e.message : 'Error') }
+  }
+
   // ── Eliminacion ───────────────────────────────────────────────────────────
   const ejecutarEliminacion = async () => {
     if (!confirmacion) return; setEliminando(true)
@@ -273,6 +319,7 @@ export default function PaginaFunciones() {
     { key: 'otros', label: 'Otros Datos' },
     ...(funcionEditando ? [
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
+      { key: 'tablas', label: `Tablas (${tablasDeFuncion.length})` },
       ...(esAdmin ? [
         { key: 'system_prompt', label: 'System Prompt' },
         { key: 'programacion_insert', label: 'Prog. Insert' },
@@ -474,6 +521,53 @@ export default function PaginaFunciones() {
               {cargandoAppsFuncion ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
               : appsDeFuncion.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene aplicaciones asignadas</p>
               : <div className="flex flex-col gap-2">{appsDeFuncion.map((af) => (<div key={af.codigo_aplicacion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{af.aplicaciones?.nombre_aplicacion || af.codigo_aplicacion}</span><span className="ml-2 text-xs text-texto-muted">{af.codigo_aplicacion}</span></div><button onClick={() => quitarAppDeFuncion(af.codigo_aplicacion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
+            </div>
+          )}
+
+          {/* Tab Tablas */}
+          {tabModalFuncion === 'tablas' && funcionEditando && (
+            <div className="flex flex-col gap-4">
+              <p className="text-xs text-texto-muted">Tablas de base de datos que gestiona esta función. Se usan para generar el documento <code>.md</code> y para la búsqueda en el chat.</p>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <select
+                    value={tablaNuevaFuncion}
+                    onChange={(e) => setTablaNuevaFuncion(e.target.value)}
+                    className={selectClass}
+                    onClick={() => { if (todasTablas.length === 0) cargarTablasDeFuncion(funcionEditando.codigo_funcion) }}
+                  >
+                    <option value="">Seleccionar tabla...</option>
+                    {todasTablas
+                      .filter((t) => !tablasDeFuncion.some((tf) => tf.id_tabla === t.id_tabla))
+                      .map((t) => (
+                        <option key={t.id_tabla} value={String(t.id_tabla)}>{t.nombre_tabla}</option>
+                      ))}
+                  </select>
+                </div>
+                <Boton variante="primario" onClick={asignarTablaAFuncion} cargando={asignandoTablaFuncion} disabled={!tablaNuevaFuncion}>
+                  <Plus size={14} />Asignar
+                </Boton>
+              </div>
+              {cargandoTablasFuncion
+                ? <div className="flex flex-col gap-2">{[1, 2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+                : tablasDeFuncion.length === 0
+                  ? <p className="text-sm text-texto-muted text-center py-4">No tiene tablas asignadas</p>
+                  : (
+                    <div className="flex flex-col gap-2">
+                      {tablasDeFuncion.map((t) => (
+                        <div key={t.id_tabla} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
+                          <div>
+                            <code className="text-sm font-medium text-texto font-mono">{t.nombre_tabla}</code>
+                            {t.descripcion && <span className="ml-2 text-xs text-texto-muted">{t.descripcion}</span>}
+                          </div>
+                          <button onClick={() => quitarTablaFuncion(t.id_tabla)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
             </div>
           )}

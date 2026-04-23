@@ -7,26 +7,31 @@ import { FileText, Cpu, Tags, FolderTree, AlertTriangle, CheckCircle, Clock, Arr
 import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { documentosApi } from '@/lib/api'
 import { getEstadosDocs } from '@/lib/catalogos'
-import type { Documento, EstadoDoc } from '@/lib/tipos'
+import type { EstadoDoc } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
 
 export default function PaginaDocumentosDashboard() {
   const t = useTranslations('documentosDashboard')
-  const tc = useTranslations('common')
   const router = useRouter()
-  const [documentos, setDocumentos] = useState<Documento[]>([])
+  const [conteoPorEstado, setConteoPorEstado] = useState<Record<string, number>>({})
+  const [totalDocs, setTotalDocs] = useState(0)
+  const [activosDocs, setActivosDocs] = useState(0)
   const [estados, setEstados] = useState<EstadoDoc[]>([])
   const [cargando, setCargando] = useState(true)
 
   useEffect(() => {
     const cargar = async () => {
       try {
-        const [docs, ests] = await Promise.all([
-          documentosApi.listar(),
+        const [conteos, ests, paginadoTotal, paginadoActivos] = await Promise.all([
+          documentosApi.contarPorEstado(),
           getEstadosDocs(),
+          documentosApi.listarPaginado({ page: 1, limit: 1 }),
+          documentosApi.listarPaginado({ page: 1, limit: 1, activo: true }),
         ])
-        setDocumentos(docs)
+        setConteoPorEstado(conteos)
         setEstados(ests)
+        setTotalDocs(paginadoTotal.total)
+        setActivosDocs(paginadoActivos.total)
       } finally {
         setCargando(false)
       }
@@ -35,17 +40,10 @@ export default function PaginaDocumentosDashboard() {
   }, [])
 
   // ── Estadísticas ──────────────────────────────────────────────────────────
-  const total = documentos.length
-  const activos = documentos.filter((d) => d.activo).length
-  const sinEstado = documentos.filter((d) => d.activo && !d.codigo_estado_doc).length
-
-  // Conteo por estado
-  const conteoPorEstado: Record<string, number> = {}
-  for (const d of documentos.filter((d) => d.activo)) {
-    if (d.codigo_estado_doc) {
-      conteoPorEstado[d.codigo_estado_doc] = (conteoPorEstado[d.codigo_estado_doc] || 0) + 1
-    }
-  }
+  const total = totalDocs
+  const activos = activosDocs
+  // Documentos activos sin estado = activos menos la suma de todos los conteos
+  const sinEstado = Math.max(0, activos - Object.values(conteoPorEstado).reduce((s, v) => s + v, 0))
   const estadosOrdenados = [...estados].filter((e) => e.activo).sort((a, b) => a.orden - b.orden)
 
   // Estados del pipeline válido (orden termina en 0: 10, 20, 40, 50, 60…)
