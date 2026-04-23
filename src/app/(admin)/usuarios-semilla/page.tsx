@@ -333,6 +333,7 @@ export default function PaginaUsuariosSemilla() {
         alias: form.alias || undefined,
         telefono: form.telefono || undefined,
         descripcion: form.descripcion || undefined,
+        tipo: form.tipo || undefined,
         grupo_por_defecto: form.grupo_por_defecto || undefined,
         entidad_por_defecto: form.entidad_por_defecto || undefined,
         codigo_area: form.codigo_area || undefined,
@@ -727,6 +728,19 @@ export default function PaginaUsuariosSemilla() {
             />
           </div>
 
+          {/* Tipo de usuario */}
+          <div className="flex flex-col gap-1">
+            <label className="text-sm font-medium text-texto">Tipo de usuario</label>
+            <select
+              value={form.tipo}
+              onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+              className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+            >
+              <option value="ADMINISTRADOR">Administrador</option>
+              <option value="USUARIO">Usuario</option>
+            </select>
+          </div>
+
           {/* Sidebar colapsado por defecto */}
           <label className="flex items-center gap-3 cursor-pointer select-none">
             <input
@@ -751,6 +765,33 @@ export default function PaginaUsuariosSemilla() {
           {/* ── Tab Inicialización ─────────────────────────────────────── */}
           {tabActiva === 'inicializacion' && usuarioEditando && (
             <div className="flex flex-col gap-4">
+
+              {/* Grupo buscable — siempre visible para poder cambiarlo */}
+              <div className="flex flex-col gap-1">
+                <label className="text-sm font-medium text-texto">Grupo por defecto *</label>
+                <div className="relative" ref={dropdownGrupoFormRef}>
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
+                  <input type="text" placeholder="Buscar grupo..."
+                    value={busquedaGrupoForm}
+                    onChange={(e) => { setBusquedaGrupoForm(e.target.value); setDropdownGrupoFormAbierto(true); if (!e.target.value) setForm({ ...form, grupo_por_defecto: '' }) }}
+                    onFocus={() => setDropdownGrupoFormAbierto(true)}
+                    className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
+                  {dropdownGrupoFormAbierto && (
+                    <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                      {grupos.filter((g) => !busquedaGrupoForm || g.nombre.toLowerCase().includes(busquedaGrupoForm.toLowerCase()) || g.codigo_grupo.toLowerCase().includes(busquedaGrupoForm.toLowerCase())).slice(0, 20).map((g) => (
+                        <button key={g.codigo_grupo} type="button"
+                          onClick={() => { setForm({ ...form, grupo_por_defecto: g.codigo_grupo }); setBusquedaGrupoForm(`${g.nombre} — ${g.codigo_grupo}`); setDropdownGrupoFormAbierto(false) }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors flex items-center gap-2">
+                          <span className="font-medium">{g.nombre}</span>
+                          <span className="text-texto-muted text-xs">{g.codigo_grupo}</span>
+                        </button>
+                      ))}
+                      {grupos.length === 0 && <div className="px-3 py-2 text-sm text-texto-muted">Sin grupos disponibles</div>}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               {form.grupo_por_defecto ? (
                 <div className="grid grid-cols-2 gap-x-4 gap-y-3">
 
