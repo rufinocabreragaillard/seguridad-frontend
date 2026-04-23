@@ -121,12 +121,6 @@ export default function PaginaFunciones() {
 
   useEffect(() => { cargar() }, [cargar])
 
-  // Cargar tablas cuando el usuario navega al tab Tablas
-  useEffect(() => {
-    if (tabModalFuncion === 'tablas' && funcionEditando && tablasDeFuncion.length === 0 && !cargandoTablasFuncion) {
-      cargarTablasDeFuncion(funcionEditando.codigo_funcion)
-    }
-  }, [tabModalFuncion, funcionEditando, tablasDeFuncion.length, cargandoTablasFuncion, cargarTablasDeFuncion])
 
   // ── Funcion: CRUD ─────────────────────────────────────────────────────────
   const abrirNuevaFuncion = () => {
@@ -267,6 +261,13 @@ export default function PaginaFunciones() {
     try { await funcionesApi.quitarTabla(funcionEditando.codigo_funcion, idTabla); cargarTablasDeFuncion(funcionEditando.codigo_funcion) }
     catch (e) { setErrorFuncion(e instanceof Error ? e.message : 'Error') }
   }
+
+  // Cargar tablas cuando el usuario navega al tab Tablas
+  useEffect(() => {
+    if (tabModalFuncion === 'tablas' && funcionEditando && tablasDeFuncion.length === 0 && !cargandoTablasFuncion) {
+      cargarTablasDeFuncion(funcionEditando.codigo_funcion)
+    }
+  }, [tabModalFuncion, funcionEditando, tablasDeFuncion.length, cargandoTablasFuncion, cargarTablasDeFuncion])
 
   // ── Eliminacion ───────────────────────────────────────────────────────────
   const ejecutarEliminacion = async () => {
