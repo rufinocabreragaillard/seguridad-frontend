@@ -374,6 +374,8 @@ export default function PaginaRoles() {
     const sinAsignar = funciones.filter((f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
     if (!rolEditando) return sinAsignar
     const tipoRol = normalizarTipo(rolEditando.tipo)
+    // SISTEMA puede asignar funciones de cualquier tipo (administra todo el sistema)
+    if (tipoRol === 'SISTEMA') return sinAsignar
     return sinAsignar.filter((f) => normalizarTipo(f.tipo) === tipoRol)
   })()
 
@@ -794,7 +796,7 @@ export default function PaginaRoles() {
             <div className="flex flex-col gap-4">
               {(() => {
                 const tipoRol = normalizarTipo(rolEditando.tipo)
-                if (tipoRol === 'SISTEMA') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo funciones de tipo <strong>Sistema</strong> pueden asignarse a este rol.</div>
+                if (tipoRol === 'SISTEMA') return <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-xs text-purple-700">Los roles de tipo <strong>Sistema</strong> pueden asignar funciones de cualquier tipo.</div>
                 if (tipoRol === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Funciones de tipo <strong>Sistema</strong> no pueden asignarse a roles de Administración.</div>
                 if (tipoRol === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo funciones de tipo <strong>Usuario</strong> pueden asignarse a este rol.</div>
                 return null
