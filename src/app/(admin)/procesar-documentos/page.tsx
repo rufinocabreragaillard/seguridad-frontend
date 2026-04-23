@@ -1717,7 +1717,7 @@ function PaginaProcesarDocumentosInterna() {
       <Modal
         abierto={!!docDetalle}
         alCerrar={() => setDocDetalle(null)}
-        titulo={docDetalle ? docDetalle.nombre_documento : ''}
+        titulo={docDetalle ? `No. ${docDetalle.codigo_documento} - Doc. : ${docDetalle.nombre_documento}` : ''}
         className="max-w-4xl"
       >
         {docDetalle && (
