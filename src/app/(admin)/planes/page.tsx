@@ -10,9 +10,9 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { planesApi, type Plan } from '@/lib/api'
+import { planesApi, promptsApi, type Plan } from '@/lib/api'
 
-type TabModal = 'datos' | 'features' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
+type TabModal = 'datos' | 'features' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
 const PLAN_VACIO: Partial<Plan> = {
   codigo_plan: '',
@@ -58,6 +58,10 @@ export default function PaginaPlanes() {
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
   const [confirmacion, setConfirmacion] = useState<Plan | null>(null)
+  const [generandoMd, setGenerandoMd] = useState(false)
+  const [sincronizandoMd, setSincronizandoMd] = useState(false)
+  const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [md, setMd] = useState('')
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -83,6 +87,8 @@ export default function PaginaPlanes() {
     setForm({ ...p })
     setTab('datos')
     setError('')
+    setMd((p as unknown as Record<string, unknown>).md as string || '')
+    setMensajeMd(null)
     setModal(true)
   }
 
@@ -183,6 +189,7 @@ export default function PaginaPlanes() {
                   { key: 'system_prompt' as TabModal, label: 'System Prompt' },
                   { key: 'programacion_insert' as TabModal, label: 'Prog. Insert' },
                   { key: 'programacion_update' as TabModal, label: 'Prog. Update' },
+                  { key: 'md' as TabModal, label: '.md' },
                 ] : []),
               ] as { key: TabModal; label: string }[]).map((t) => (
                 <button
@@ -409,6 +416,64 @@ export default function PaginaPlanes() {
                     />
                   ) : undefined}
                 />
+              </div>
+            )}
+
+            {tab === 'md' && editando && (
+              <div className="flex flex-col gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                  <textarea
+                    value={md}
+                    readOnly
+                    rows={13}
+                    placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                    className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                  />
+                </div>
+                {mensajeMd && (
+                  <p className={`text-xs px-1 ${mensajeMd.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                    {mensajeMd.texto}
+                  </p>
+                )}
+                <div className="flex justify-between items-center pt-2">
+                  <div className="flex gap-2">
+                    <Boton
+                      className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                      onClick={async () => {
+                        setGenerandoMd(true); setMensajeMd(null)
+                        try {
+                          const r = await planesApi.generarMd(editando.codigo_plan)
+                          setMd(r.md)
+                          setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        } catch (e) {
+                          setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        } finally { setGenerandoMd(false) }
+                      }}
+                      cargando={generandoMd}
+                      disabled={generandoMd || sincronizandoMd}
+                    >
+                      Generar
+                    </Boton>
+                    <Boton
+                      className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                      onClick={async () => {
+                        setSincronizandoMd(true); setMensajeMd(null)
+                        try {
+                          const r = await promptsApi.sincronizarFila('planes_clientes', 'codigo_plan', editando.codigo_plan)
+                          setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        } catch (e) {
+                          setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        } finally { setSincronizandoMd(false) }
+                      }}
+                      cargando={sincronizandoMd}
+                      disabled={generandoMd || sincronizandoMd || !md}
+                    >
+                      Sincronizar
+                    </Boton>
+                  </div>
+                  <Boton variante="contorno" onClick={() => setModal(false)}>Salir</Boton>
+                </div>
               </div>
             )}
           </div>

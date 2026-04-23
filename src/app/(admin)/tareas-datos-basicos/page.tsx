@@ -13,15 +13,15 @@ import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { tareasDatosBasicosApi } from '@/lib/api'
+import { tareasDatosBasicosApi, promptsApi } from '@/lib/api'
 import type { CategoriaTarea, TipoTarea, EstadoTarea, EstadoCanonicoTarea, TipoCanonicoTarea } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
 
 type TabId = 'categorias' | 'tipos' | 'estados' | 'tipos-canonicos'
-type TabModalCat = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
-type TabModalTipo = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
-type TabModalEst = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
+type TabModalCat = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
+type TabModalTipo = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
+type TabModalEst = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaTarea }
@@ -44,6 +44,10 @@ export default function PaginaTareasDatosBasicos() {
   const [tabModalCat, setTabModalCat] = useState<TabModalCat>('datos')
   const [guardandoCat, setGuardandoCat] = useState(false)
   const [errorCat, setErrorCat] = useState('')
+  const [generandoMdCat, setGenerandoMdCat] = useState(false)
+  const [sincronizandoMdCat, setSincronizandoMdCat] = useState(false)
+  const [mensajeMdCat, setMensajeMdCat] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [mdCat, setMdCat] = useState('')
 
   // ── Tipos ──────────────────────────────────────────────────────────────────
   const [tipos, setTipos] = useState<TipoTarea[]>([])
@@ -58,6 +62,10 @@ export default function PaginaTareasDatosBasicos() {
   const [tabModalTipo, setTabModalTipo] = useState<TabModalTipo>('datos')
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
+  const [generandoMdTipo, setGenerandoMdTipo] = useState(false)
+  const [sincronizandoMdTipo, setSincronizandoMdTipo] = useState(false)
+  const [mensajeMdTipo, setMensajeMdTipo] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [mdTipo, setMdTipo] = useState('')
   const [filtroCatTipo, setFiltroCatTipo] = useState('')
   const [tiposCanonicos, setTiposCanonicos] = useState<TipoCanonicoTarea[]>([])
 
@@ -74,6 +82,10 @@ export default function PaginaTareasDatosBasicos() {
   const [tabModalEst, setTabModalEst] = useState<TabModalEst>('datos')
   const [guardandoEst, setGuardandoEst] = useState(false)
   const [errorEst, setErrorEst] = useState('')
+  const [generandoMdEst, setGenerandoMdEst] = useState(false)
+  const [sincronizandoMdEst, setSincronizandoMdEst] = useState(false)
+  const [mensajeMdEst, setMensajeMdEst] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [mdEst, setMdEst] = useState('')
   const [filtroCatEst, setFiltroCatEst] = useState('')
   const [filtroTipoEst, setFiltroTipoEst] = useState('')
   const [canonicosEst, setCanonicoEst] = useState<EstadoCanonicoTarea[]>([])
@@ -142,6 +154,8 @@ export default function PaginaTareasDatosBasicos() {
     })
     const c2 = c as unknown as Record<string, unknown>
     setPromptsCat({ prompt_insert: c2.prompt_insert as string ?? null, prompt_update: c2.prompt_update as string ?? null, system_prompt: c.system_prompt ?? null, python_insert: c2.python_insert as string ?? null, python_update: c2.python_update as string ?? null, javascript: c2.javascript as string ?? null, python_editado_manual: c.python_editado_manual ?? false, javascript_editado_manual: c.javascript_editado_manual ?? false })
+    setMdCat(c2.md as string || '')
+    setMensajeMdCat(null)
     setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
@@ -199,6 +213,8 @@ export default function PaginaTareasDatosBasicos() {
     })
     const t2 = t as unknown as Record<string, unknown>
     setPromptsTipo({ prompt_insert: t2.prompt_insert as string ?? null, prompt_update: t2.prompt_update as string ?? null, system_prompt: t.system_prompt ?? null, python_insert: t2.python_insert as string ?? null, python_update: t2.python_update as string ?? null, javascript: t2.javascript as string ?? null, python_editado_manual: t.python_editado_manual ?? false, javascript_editado_manual: t.javascript_editado_manual ?? false })
+    setMdTipo(t2.md as string || '')
+    setMensajeMdTipo(null)
     setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
@@ -269,6 +285,8 @@ export default function PaginaTareasDatosBasicos() {
     })
     const e2 = e as unknown as Record<string, unknown>
     setPromptsEst({ prompt_insert: e2.prompt_insert as string ?? null, prompt_update: e2.prompt_update as string ?? null, system_prompt: e.system_prompt ?? null, python_insert: e2.python_insert as string ?? null, python_update: e2.python_update as string ?? null, javascript: e2.javascript as string ?? null, python_editado_manual: e.python_editado_manual ?? false, javascript_editado_manual: e.javascript_editado_manual ?? false })
+    setMdEst(e2.md as string || '')
+    setMensajeMdEst(null)
     setTabModalEst('datos')
     setErrorEst('')
     setModalEst(true)
@@ -776,13 +794,13 @@ export default function PaginaTareasDatosBasicos() {
       )}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? 'Editar categoría' : 'Nueva categoría de tarea'}>
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar categoría tarea: ${catEditando.nombre_categoria_tarea}` : 'Nueva categoría de tarea'}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
-              <button key={tab} onClick={() => setTabModalCat(tab)}
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(catEditando ? ['md'] : [])] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalCat(tab as TabModalCat)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>
             ))}
           </div>
@@ -814,7 +832,29 @@ export default function PaginaTareasDatosBasicos() {
               campos={promptsCat} onCampoCambiado={(c, v) => setPromptsCat({ ...promptsCat, [c]: v })}
               mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
           )}
+          {catEditando && tabModalCat === 'md' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea value={mdCat} readOnly rows={13} placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
+              </div>
+              {mensajeMdCat && <p className={`text-xs px-1 ${mensajeMdCat.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdCat.texto}</p>}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => { setGenerandoMdCat(true); setMensajeMdCat(null); try { const r = await tareasDatosBasicosApi.generarMdCategoria(catEditando.codigo_categoria_tarea); setMdCat(r.md); setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado correctamente.' }) } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' }) } finally { setGenerandoMdCat(false) } }}
+                    cargando={generandoMdCat} disabled={generandoMdCat || sincronizandoMdCat}>Generar</Boton>
+                  <Boton className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => { setSincronizandoMdCat(true); setMensajeMdCat(null); try { const r = await promptsApi.sincronizarFila('categorias_tarea', 'codigo_categoria_tarea', catEditando.codigo_categoria_tarea); setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` }) } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' }) } finally { setSincronizandoMdCat(false) } }}
+                    cargando={sincronizandoMdCat} disabled={generandoMdCat || sincronizandoMdCat || !mdCat}>Sincronizar</Boton>
+                </div>
+                <Boton variante="contorno" onClick={() => setModalCat(false)}>Salir</Boton>
+              </div>
+            </div>
+          )}
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
+          {tabModalCat !== 'md' && (
           <PieBotonesModal
             editando={!!catEditando}
             onGuardar={() => guardarCategoria(false)}
@@ -831,17 +871,18 @@ export default function PaginaTareasDatosBasicos() {
               />
             ) : undefined}
           />
+          )}
         </div>
       </Modal>
 
       {/* Modal Tipo */}
-      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? 'Editar tipo de tarea' : 'Nuevo tipo de tarea'}>
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? `Editar tipo de tarea: ${tipoEditando.nombre_tipo_tarea}` : 'Nuevo tipo de tarea'}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
-              <button key={tab} onClick={() => setTabModalTipo(tab)}
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(tipoEditando ? ['md'] : [])] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalTipo(tab as TabModalTipo)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>
             ))}
           </div>
@@ -893,7 +934,29 @@ export default function PaginaTareasDatosBasicos() {
               campos={promptsTipo} onCampoCambiado={(c, v) => setPromptsTipo({ ...promptsTipo, [c]: v })}
               mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
           )}
+          {tipoEditando && tabModalTipo === 'md' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea value={mdTipo} readOnly rows={13} placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
+              </div>
+              {mensajeMdTipo && <p className={`text-xs px-1 ${mensajeMdTipo.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdTipo.texto}</p>}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => { setGenerandoMdTipo(true); setMensajeMdTipo(null); try { const r = await tareasDatosBasicosApi.generarMdTipo(tipoEditando.codigo_categoria_tarea, tipoEditando.codigo_tipo_tarea); setMdTipo(r.md); setMensajeMdTipo({ tipo: 'ok', texto: 'Markdown generado correctamente.' }) } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' }) } finally { setGenerandoMdTipo(false) } }}
+                    cargando={generandoMdTipo} disabled={generandoMdTipo || sincronizandoMdTipo}>Generar</Boton>
+                  <Boton className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => { setSincronizandoMdTipo(true); setMensajeMdTipo(null); try { const r = await promptsApi.sincronizarFila('tipos_tarea', 'codigo_tipo_tarea', tipoEditando.codigo_tipo_tarea); setMensajeMdTipo({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` }) } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' }) } finally { setSincronizandoMdTipo(false) } }}
+                    cargando={sincronizandoMdTipo} disabled={generandoMdTipo || sincronizandoMdTipo || !mdTipo}>Sincronizar</Boton>
+                </div>
+                <Boton variante="contorno" onClick={() => setModalTipo(false)}>Salir</Boton>
+              </div>
+            </div>
+          )}
           {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}
+          {tabModalTipo !== 'md' && (
           <PieBotonesModal
             editando={!!tipoEditando}
             onGuardar={() => guardarTipo(false)}
@@ -910,17 +973,18 @@ export default function PaginaTareasDatosBasicos() {
               />
             ) : undefined}
           />
+          )}
         </div>
       </Modal>
 
       {/* Modal Estado */}
-      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? 'Editar estado de tarea' : 'Nuevo estado de tarea'}>
+      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? `Editar estado de tarea: ${estEditando.nombre_estado_tarea}` : 'Nuevo estado de tarea'}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
-              <button key={tab} onClick={() => setTabModalEst(tab)}
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(estEditando ? ['md'] : [])] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalEst(tab as TabModalEst)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalEst === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>
             ))}
           </div>
@@ -981,7 +1045,29 @@ export default function PaginaTareasDatosBasicos() {
               campos={promptsEst} onCampoCambiado={(c, v) => setPromptsEst({ ...promptsEst, [c]: v })}
               mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
           )}
+          {estEditando && tabModalEst === 'md' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea value={mdEst} readOnly rows={13} placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
+              </div>
+              {mensajeMdEst && <p className={`text-xs px-1 ${mensajeMdEst.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdEst.texto}</p>}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => { setGenerandoMdEst(true); setMensajeMdEst(null); try { const r = await tareasDatosBasicosApi.generarMdEstado(estEditando.codigo_categoria_tarea, estEditando.codigo_tipo_tarea, estEditando.codigo_estado_tarea); setMdEst(r.md); setMensajeMdEst({ tipo: 'ok', texto: 'Markdown generado correctamente.' }) } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' }) } finally { setGenerandoMdEst(false) } }}
+                    cargando={generandoMdEst} disabled={generandoMdEst || sincronizandoMdEst}>Generar</Boton>
+                  <Boton className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => { setSincronizandoMdEst(true); setMensajeMdEst(null); try { const r = await promptsApi.sincronizarFila('estados_tarea', 'codigo_estado_tarea', estEditando.codigo_estado_tarea); setMensajeMdEst({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` }) } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' }) } finally { setSincronizandoMdEst(false) } }}
+                    cargando={sincronizandoMdEst} disabled={generandoMdEst || sincronizandoMdEst || !mdEst}>Sincronizar</Boton>
+                </div>
+                <Boton variante="contorno" onClick={() => setModalEst(false)}>Salir</Boton>
+              </div>
+            </div>
+          )}
           {errorEst && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorEst}</p></div>}
+          {tabModalEst !== 'md' && (
           <PieBotonesModal
             editando={!!estEditando}
             onGuardar={() => guardarEstado(false)}
@@ -998,6 +1084,7 @@ export default function PaginaTareasDatosBasicos() {
               />
             ) : undefined}
           />
+          )}
         </div>
       </Modal>
 

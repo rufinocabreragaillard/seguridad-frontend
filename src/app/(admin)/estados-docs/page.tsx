@@ -9,15 +9,16 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { TablaCrud, columnaCodigo, columnaNombre, columnaDescripcion, columnaEstado } from '@/components/ui/tabla-crud'
-import { estadosDocsApi } from '@/lib/api'
+import { estadosDocsApi, promptsApi } from '@/lib/api'
 import { invalidarCatalogo } from '@/lib/catalogos'
 import type { EstadoDoc } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
+import { Boton } from '@/components/ui/boton'
 
-type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
+type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
 export default function PaginaEstadosDocs() {
   const t = useTranslations('estadosDocs')
@@ -85,10 +86,20 @@ export default function PaginaEstadosDocs() {
     }),
   })
 
-  // Reset tab when modal opens
+  // Reset tab when modal opens and load md
   useEffect(() => {
-    if (crud.modal) setTabModal('datos')
-  }, [crud.modal])
+    if (crud.modal) {
+      setTabModal('datos')
+      setMensajeMd(null)
+      const e = crud.editando as unknown as Record<string, unknown>
+      setMd((e?.md as string) || '')
+    }
+  }, [crud.modal, crud.editando])
+
+  const [generandoMd, setGenerandoMd] = useState(false)
+  const [sincronizandoMd, setSincronizandoMd] = useState(false)
+  const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [md, setMd] = useState('')
 
   const [guardandoLocal, setGuardandoLocal] = useState(false)
   const guardandoEstado = crud.guardando || guardandoLocal
@@ -139,6 +150,7 @@ export default function PaginaEstadosDocs() {
     { key: 'system_prompt', label: 'System Prompt' },
     { key: 'programacion_insert', label: 'Prog. Insert' },
     { key: 'programacion_update', label: 'Prog. Update' },
+    { key: 'md', label: '.md' },
   ]
 
   return (
@@ -356,6 +368,65 @@ export default function PaginaEstadosDocs() {
                   />
                 ) : undefined}
               />
+            </div>
+          )}
+
+          {/* Tab .md */}
+          {crud.editando && tabModal === 'md' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={md}
+                  readOnly
+                  rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMd && (
+                <p className={`text-xs px-1 ${mensajeMd.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMd.texto}
+                </p>
+              )}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await estadosDocsApi.generarMd(crud.editando!.codigo_estado_doc)
+                        setMd(r.md)
+                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMd(false) }
+                    }}
+                    cargando={generandoMd}
+                    disabled={generandoMd || sincronizandoMd}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('estados_docs', 'codigo_estado_doc', crud.editando!.codigo_estado_doc)
+                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMd(false) }
+                    }}
+                    cargando={sincronizandoMd}
+                    disabled={generandoMd || sincronizandoMd || !md}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={crud.cerrarModal}>Salir</Boton>
+              </div>
             </div>
           )}
 

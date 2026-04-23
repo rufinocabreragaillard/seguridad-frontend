@@ -13,7 +13,7 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Insignia } from '@/components/ui/insignia'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
-import { entidadesApi, ubicacionesDocsApi } from '@/lib/api'
+import { entidadesApi, promptsApi, ubicacionesDocsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Entidad, Area } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -43,7 +43,11 @@ export default function PaginaEntidades() {
   const [areaEditando, setAreaEditando] = useState<Area | null>(null)
   const [entidadEditando, setEntidadEditando] = useState<Entidad | null>(null)
   const [formEntidad, setFormEntidad] = useState({ codigo_entidad: '', nombre: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
-  const [tabModalEntidad, setTabModalEntidad] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
+  const [tabModalEntidad, setTabModalEntidad] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
+  const [generandoMdEnt, setGenerandoMdEnt] = useState(false)
+  const [sincronizandoMdEnt, setSincronizandoMdEnt] = useState(false)
+  const [mensajeMdEnt, setMensajeMdEnt] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [mdEnt, setMdEnt] = useState('')
   const [formArea, setFormArea] = useState({ codigo_area: '', nombre: '', alias: '', descripcion: '', codigo_area_superior: '', tipo_ubicacion: 'VIRTUAL' as 'AREA' | 'CONTENIDO' | 'VIRTUAL' })
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
@@ -103,6 +107,8 @@ export default function PaginaEntidades() {
     setEntidadEditando(e)
     const e2 = e as unknown as Record<string, unknown>
     setFormEntidad({ codigo_entidad: e.codigo_entidad, nombre: e.nombre, descripcion: e.descripcion || '', prompt_insert: e2.prompt_insert as string || '', prompt_update: e2.prompt_update as string || '', system_prompt: e2.system_prompt as string || '', python_insert: e2.python_insert as string || '', python_update: e2.python_update as string || '', javascript: e2.javascript as string || '', python_editado_manual: e2.python_editado_manual as boolean || false, javascript_editado_manual: e2.javascript_editado_manual as boolean || false })
+    setMdEnt(e2.md as string || '')
+    setMensajeMdEnt(null)
     setTabModalEntidad('datos')
     setError('')
     setModalEntidad(true)
@@ -409,21 +415,21 @@ export default function PaginaEntidades() {
       )}
 
       {/* Modal entidad */}
-      <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? 'Editar entidad' : 'Nueva entidad'} className="max-w-3xl">
+      <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? `Editar entidad: ${entidadEditando.nombre}` : 'Nueva entidad'} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(entidadEditando ? ['md'] : [])] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setTabModalEntidad(tab)}
+                onClick={() => setTabModalEntidad(tab as typeof tabModalEntidad)}
                 className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                   tabModalEntidad === tab
                     ? 'border-b-2 border-primario text-primario'
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
+                {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>
             ))}
           </div>
@@ -547,6 +553,65 @@ export default function PaginaEntidades() {
                   />
                 ) : undefined}
               />
+            </div>
+          )}
+
+          {/* Tab .md */}
+          {tabModalEntidad === 'md' && entidadEditando && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={mdEnt}
+                  readOnly
+                  rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMdEnt && (
+                <p className={`text-xs px-1 ${mensajeMdEnt.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMdEnt.texto}
+                </p>
+              )}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMdEnt(true); setMensajeMdEnt(null)
+                      try {
+                        const r = await entidadesApi.generarMd(entidadEditando.codigo_entidad)
+                        setMdEnt(r.md)
+                        setMensajeMdEnt({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMdEnt({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMdEnt(false) }
+                    }}
+                    cargando={generandoMdEnt}
+                    disabled={generandoMdEnt || sincronizandoMdEnt}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMdEnt(true); setMensajeMdEnt(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('entidades', 'codigo_entidad', entidadEditando.codigo_entidad)
+                        setMensajeMdEnt({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMdEnt({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMdEnt(false) }
+                    }}
+                    cargando={sincronizandoMdEnt}
+                    disabled={generandoMdEnt || sincronizandoMdEnt || !mdEnt}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={() => setModalEntidad(false)}>{tc('salir')}</Boton>
+              </div>
             </div>
           )}
         </div>

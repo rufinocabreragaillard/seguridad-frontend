@@ -13,7 +13,7 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { categoriasCaractPersApi, rolesApi } from '@/lib/api'
+import { categoriasCaractPersApi, rolesApi, promptsApi } from '@/lib/api'
 import type { CategoriaCaractPers, TipoCaractPers, RolCaractPers, Rol } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
@@ -33,7 +33,11 @@ export default function PaginaCategoriasCaracteristica() {
   const [cargandoCat, setCargandoCat] = useState(true)
   const [busquedaCat, setBusquedaCat] = useState('')
   const [modalCat, setModalCat] = useState(false)
-  const [tabModalCat, setTabModalCat] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
+  const [tabModalCat, setTabModalCat] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
+  const [generandoMdCat, setGenerandoMdCat] = useState(false)
+  const [sincronizandoMdCat, setSincronizandoMdCat] = useState(false)
+  const [mensajeMdCat, setMensajeMdCat] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [mdCat, setMdCat] = useState('')
   const [catEditando, setCatEditando] = useState<CategoriaCaractPers | null>(null)
   const [formCat, setFormCat] = useState({
     codigo_cat_pers: '', nombre_cat_pers: '', descripcion_cat_pers: '',
@@ -147,6 +151,8 @@ export default function PaginaCategoriasCaracteristica() {
       python_editado_manual: c2.python_editado_manual as boolean || false,
       javascript_editado_manual: c2.javascript_editado_manual as boolean || false,
     })
+    setMdCat(c2.md as string || '')
+    setMensajeMdCat(null)
     setTabModalCat('datos')
     setErrorCat('')
     setModalCat(true)
@@ -557,17 +563,17 @@ export default function PaginaCategoriasCaracteristica() {
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(catEditando ? ['md'] : [])] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setTabModalCat(tab)}
+                onClick={() => setTabModalCat(tab as 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md')}
                 className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
                   tabModalCat === tab
                     ? 'border-b-2 border-primario text-primario'
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>
             ))}
           </div>
@@ -644,7 +650,66 @@ export default function PaginaCategoriasCaracteristica() {
             />
           )}
 
+          {catEditando && tabModalCat === 'md' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={mdCat}
+                  readOnly
+                  rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMdCat && (
+                <p className={`text-xs px-1 ${mensajeMdCat.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMdCat.texto}
+                </p>
+              )}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMdCat(true); setMensajeMdCat(null)
+                      try {
+                        const r = await categoriasCaractPersApi.generarMd(catEditando.codigo_cat_pers)
+                        setMdCat(r.md)
+                        setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMdCat(false) }
+                    }}
+                    cargando={generandoMdCat}
+                    disabled={generandoMdCat || sincronizandoMdCat}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMdCat(true); setMensajeMdCat(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('categorias_caract_pers', 'codigo_cat_pers', catEditando.codigo_cat_pers)
+                        setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMdCat(false) }
+                    }}
+                    cargando={sincronizandoMdCat}
+                    disabled={generandoMdCat || sincronizandoMdCat || !mdCat}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={() => setModalCat(false)}>Salir</Boton>
+              </div>
+            </div>
+          )}
+
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
+          {tabModalCat !== 'md' && (
           <PieBotonesModal
             editando={!!catEditando}
             onGuardar={() => guardarCat(false)}
@@ -661,6 +726,7 @@ export default function PaginaCategoriasCaracteristica() {
               />
             ) : undefined}
           />
+          )}
         </div>
       </Modal>
 

@@ -7,6 +7,8 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
+import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import {
   TablaCrud,
   columnaCodigo,
@@ -14,10 +16,11 @@ import {
   columnaDescripcion,
 } from '@/components/ui/tabla-crud'
 import { Insignia } from '@/components/ui/insignia'
-import { tareasDatosBasicosApi } from '@/lib/api'
+import { tareasDatosBasicosApi, promptsApi } from '@/lib/api'
 import type { CategoriaTarea } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { Boton } from '@/components/ui/boton'
 import { cn } from '@/lib/utils'
 
 type FormCategoriaTarea = {
@@ -30,9 +33,14 @@ type FormCategoriaTarea = {
   prompt_insert: string
   prompt_update: string
   system_prompt: string
+  python_insert: string
+  python_update: string
+  javascript: string
+  python_editado_manual: boolean
+  javascript_editado_manual: boolean
 }
 
-type TabModal = 'datos' | 'prompt' | 'system_prompt'
+type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
 const FORM_INICIAL: FormCategoriaTarea = {
   codigo_categoria_tarea: '',
@@ -44,10 +52,19 @@ const FORM_INICIAL: FormCategoriaTarea = {
   prompt_insert: '',
   prompt_update: '',
   system_prompt: '',
+  python_insert: '',
+  python_update: '',
+  javascript: '',
+  python_editado_manual: false,
+  javascript_editado_manual: false,
 }
 
 export default function PaginaCategoriasTarea() {
   const [tabModal, setTabModal] = useState<TabModal>('datos')
+  const [generandoMd, setGenerandoMd] = useState(false)
+  const [sincronizandoMd, setSincronizandoMd] = useState(false)
+  const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [md, setMd] = useState('')
 
   const crud = useCrudPage<CategoriaTarea, FormCategoriaTarea>({
     cargarFn: () => tareasDatosBasicosApi.listarCategorias(),
@@ -78,22 +95,35 @@ export default function PaginaCategoriasTarea() {
     getId: (c) => c.codigo_categoria_tarea,
     camposBusqueda: (c) => [c.codigo_categoria_tarea, c.nombre_categoria_tarea, c.descripcion_categoria_tarea ?? ''],
     formInicial: FORM_INICIAL,
-    itemToForm: (c) => ({
-      codigo_categoria_tarea: c.codigo_categoria_tarea,
-      nombre_categoria_tarea: c.nombre_categoria_tarea,
-      descripcion_categoria_tarea: c.descripcion_categoria_tarea ?? '',
-      ayuda: (c as any).ayuda ?? '',
-      generacion: (c as any).generacion ?? '',
-      programa: (c as any).programa ?? '',
-      prompt_insert: (c as any).prompt_insert ?? '',
-      prompt_update: (c as any).prompt_update ?? '',
-      system_prompt: (c as any).system_prompt ?? '',
-    }),
+    itemToForm: (c) => {
+      const c2 = c as unknown as Record<string, unknown>
+      return {
+        codigo_categoria_tarea: c.codigo_categoria_tarea,
+        nombre_categoria_tarea: c.nombre_categoria_tarea,
+        descripcion_categoria_tarea: c.descripcion_categoria_tarea ?? '',
+        ayuda: c2.ayuda as string ?? '',
+        generacion: c2.generacion as string ?? '',
+        programa: c2.programa as string ?? '',
+        prompt_insert: c2.prompt_insert as string ?? '',
+        prompt_update: c2.prompt_update as string ?? '',
+        system_prompt: c2.system_prompt as string ?? '',
+        python_insert: c2.python_insert as string ?? '',
+        python_update: c2.python_update as string ?? '',
+        javascript: c2.javascript as string ?? '',
+        python_editado_manual: c2.python_editado_manual as boolean ?? false,
+        javascript_editado_manual: c2.javascript_editado_manual as boolean ?? false,
+      }
+    },
   })
 
   useEffect(() => {
-    if (crud.modal) setTabModal('datos')
-  }, [crud.modal])
+    if (crud.modal) {
+      setTabModal('datos')
+      setMensajeMd(null)
+      const item = crud.editando as unknown as Record<string, unknown>
+      setMd(item?.md as string || '')
+    }
+  }, [crud.modal, crud.editando])
 
   const filtradosOrdenados = [...crud.filtrados].sort((a, b) =>
     a.nombre_categoria_tarea.localeCompare(b.nombre_categoria_tarea),
@@ -101,8 +131,10 @@ export default function PaginaCategoriasTarea() {
 
   const tabs: { key: TabModal; label: string }[] = [
     { key: 'datos', label: 'Datos' },
-    { key: 'prompt', label: 'Prompt' },
     { key: 'system_prompt', label: 'System Prompt' },
+    { key: 'programacion_insert', label: 'Prog. Insert' },
+    { key: 'programacion_update', label: 'Prog. Update' },
+    ...(crud.editando ? [{ key: 'md' as TabModal, label: '.md' }] : []),
   ]
 
   return (
@@ -158,7 +190,7 @@ export default function PaginaCategoriasTarea() {
         alCerrar={crud.cerrarModal}
         titulo={
           crud.editando
-            ? `Editar: ${crud.editando.nombre_categoria_tarea}`
+            ? `Editar categoría tarea: ${crud.editando.nombre_categoria_tarea}`
             : 'Nueva Categoría de Tarea'
         }
         className="max-w-2xl"
@@ -230,26 +262,110 @@ export default function PaginaCategoriasTarea() {
             </>
           )}
 
-          {/* Tab Prompt */}
-          {tabModal === 'prompt' && (
-            <Textarea
-              etiqueta="Prompt"
-              value={crud.form.prompt_insert}
-              onChange={(e) => crud.updateForm('prompt_insert', e.target.value)}
-              placeholder="Prompt principal para el LLM..."
-              rows={14}
+          {/* Tab System Prompt */}
+          {tabModal === 'system_prompt' && (
+            <TabPrompts
+              tabla="categorias_tarea"
+              pkColumna="codigo_categoria_tarea"
+              pkValor={crud.editando?.codigo_categoria_tarea ?? null}
+              campos={crud.form}
+              onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCategoriaTarea, valor as string | boolean)}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
+              mostrarSystemPrompt={true}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
+              mostrarJavaScript={false}
             />
           )}
 
-          {/* Tab System Prompt */}
-          {tabModal === 'system_prompt' && (
-            <Textarea
-              etiqueta="System Prompt"
-              value={crud.form.system_prompt}
-              onChange={(e) => crud.updateForm('system_prompt', e.target.value)}
-              placeholder="Instrucciones de sistema para el LLM..."
-              rows={14}
+          {/* Tab Prog. Insert */}
+          {tabModal === 'programacion_insert' && (
+            <TabPrompts
+              tabla="categorias_tarea"
+              pkColumna="codigo_categoria_tarea"
+              pkValor={crud.editando?.codigo_categoria_tarea ?? null}
+              campos={crud.form}
+              onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCategoriaTarea, valor as string | boolean)}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonUpdate={false}
             />
+          )}
+
+          {/* Tab Prog. Update */}
+          {tabModal === 'programacion_update' && (
+            <TabPrompts
+              tabla="categorias_tarea"
+              pkColumna="codigo_categoria_tarea"
+              pkValor={crud.editando?.codigo_categoria_tarea ?? null}
+              campos={crud.form}
+              onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCategoriaTarea, valor as string | boolean)}
+              mostrarSystemPrompt={false}
+              mostrarJavaScript={false}
+              mostrarPromptInsert={false}
+              mostrarPythonInsert={false}
+            />
+          )}
+
+          {/* Tab .md */}
+          {crud.editando && tabModal === 'md' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={md}
+                  readOnly
+                  rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMd && (
+                <p className={`text-xs px-1 ${mensajeMd.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMd.texto}
+                </p>
+              )}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await tareasDatosBasicosApi.generarMdCategoria(crud.editando!.codigo_categoria_tarea)
+                        setMd(r.md)
+                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMd(false) }
+                    }}
+                    cargando={generandoMd}
+                    disabled={generandoMd || sincronizandoMd}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('categorias_tarea', 'codigo_categoria_tarea', crud.editando!.codigo_categoria_tarea)
+                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMd(false) }
+                    }}
+                    cargando={sincronizandoMd}
+                    disabled={generandoMd || sincronizandoMd || !md}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={crud.cerrarModal}>Salir</Boton>
+              </div>
+            </div>
           )}
 
           {crud.error && (
@@ -258,6 +374,7 @@ export default function PaginaCategoriasTarea() {
             </div>
           )}
 
+          {tabModal !== 'md' && (
           <PieBotonesModal
             editando={!!crud.editando}
             onGuardar={() => {
@@ -270,7 +387,17 @@ export default function PaginaCategoriasTarea() {
             }}
             onCerrar={crud.cerrarModal}
             cargando={crud.guardando}
+            botonesIzquierda={(tabModal === 'system_prompt' || tabModal === 'programacion_insert' || tabModal === 'programacion_update') && crud.editando ? (
+              <PieBotonesPrompts
+                tabla="categorias_tarea"
+                pkColumna="codigo_categoria_tarea"
+                pkValor={crud.editando.codigo_categoria_tarea}
+                promptInsert={crud.form.prompt_insert || undefined}
+                promptUpdate={crud.form.prompt_update || undefined}
+              />
+            ) : undefined}
           />
+          )}
         </div>
       </Modal>
 

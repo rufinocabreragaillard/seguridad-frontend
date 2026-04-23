@@ -21,7 +21,7 @@ import {
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Insignia } from '@/components/ui/insignia'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
-import { cargosApi, entidadesApi, rolesApi } from '@/lib/api'
+import { cargosAdminApi, cargosApi, entidadesApi, promptsApi, rolesApi } from '@/lib/api'
 import type { Cargo, RolCargo, Entidad, Rol } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { useAuth } from '@/context/AuthContext'
@@ -121,12 +121,18 @@ export default function PaginaCargos() {
   })
 
   // ── Tab activa en el modal ──────────────────────────────────────────────────
-  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
+  const [tabActiva, setTabActiva] = useState<'datos' | 'roles' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
+  const [generandoMd, setGenerandoMd] = useState(false)
+  const [sincronizandoMd, setSincronizandoMd] = useState(false)
+  const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [md, setMd] = useState('')
 
-  const abrirNuevo = () => { setTabActiva('datos'); crud.abrirNuevo() }
+  const abrirNuevo = () => { setTabActiva('datos'); setMensajeMd(null); setMd(''); crud.abrirNuevo() }
   const abrirEditar = (c: Cargo) => {
     setTabActiva('datos')
     setRolesCargo([])
+    setMensajeMd(null)
+    setMd((c as unknown as Record<string, unknown>).md as string || '')
     crud.abrirEditar(c)
     cargarRolesCargo(c.codigo_cargo)
   }
@@ -275,7 +281,7 @@ export default function PaginaCargos() {
           {/* Tabs */}
           <div className="flex border-b border-borde mb-4">
             {(crud.editando
-              ? (['datos', 'roles', 'system_prompt', 'programacion_insert', 'programacion_update'] as const)
+              ? (['datos', 'roles', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as const)
               : (['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const)
             ).map((tab) => (
               <button
@@ -295,7 +301,9 @@ export default function PaginaCargos() {
                   ? t('tabSystemPrompt')
                   : tab === 'programacion_insert'
                   ? 'Prog. Insert'
-                  : 'Prog. Update'}
+                  : tab === 'programacion_update'
+                  ? 'Prog. Update'
+                  : '.md'}
               </button>
             ))}
           </div>
@@ -486,6 +494,65 @@ export default function PaginaCargos() {
                     />
                   ) : undefined}
                 />
+              </div>
+            </div>
+          )}
+
+          {/* ── Tab .md ──────────────────────────────────────────────────── */}
+          {tabActiva === 'md' && crud.editando && (
+            <div className="flex flex-col gap-4 min-h-[500px]">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={md}
+                  readOnly
+                  rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMd && (
+                <p className={`text-xs px-1 ${mensajeMd.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMd.texto}
+                </p>
+              )}
+              <div className="mt-auto flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await cargosAdminApi.generarMd(crud.editando!.codigo_cargo)
+                        setMd(r.md)
+                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMd(false) }
+                    }}
+                    cargando={generandoMd}
+                    disabled={generandoMd || sincronizandoMd}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('cargos', 'codigo_cargo', crud.editando!.codigo_cargo)
+                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMd(false) }
+                    }}
+                    cargando={sincronizandoMd}
+                    disabled={generandoMd || sincronizandoMd || !md}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={crud.cerrarModal}>{tc('salir')}</Boton>
               </div>
             </div>
           )}

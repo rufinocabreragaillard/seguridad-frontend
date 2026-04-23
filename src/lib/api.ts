@@ -775,6 +775,8 @@ export const tiposDocumentoPersonaApi = {
   actualizar: (codigo: string, datos: Partial<TipoDocumentoPersona>) =>
     api.put<TipoDocumentoPersona>(`/tipos-documento-persona/${codigo}`, datos).then((r) => r.data),
   desactivar: (codigo: string) => api.delete(`/tipos-documento-persona/${codigo}`),
+  generarMd: (codigo: string) =>
+    api.post<{ md: string }>(`/tipos-documento-persona/${codigo}/generar-md`).then((r) => r.data),
 }
 
 // ─── Categorías Características Persona ─────────────────────────────────────
@@ -788,6 +790,8 @@ export const categoriasCaractPersApi = {
   desactivar: (codigo: string) => api.delete(`/categorias-caracteristica/${codigo}`),
   reordenar: (orden: { codigo: string; orden: number }[]) =>
     api.put('/categorias-caracteristica/orden', orden),
+  generarMd: (codigo: string) =>
+    api.post<{ md: string }>(`/categorias-caracteristica/${codigo}/generar-md`).then((r) => r.data),
   // Tipos
   listarTipos: (codigo: string) =>
     api.get<TipoCaractPers[]>(`/categorias-caracteristica/${codigo}/tipos`).then((r) => r.data),
@@ -845,6 +849,8 @@ export const registroLLMApi = {
   desactivar: (id: number) => api.delete(`/registro-llm/${id}`),
   probar: (id: number, mensaje: string) =>
     api.post<{ respuesta: string; tiempo_ms: number; modelo: string }>(`/registro-llm/${id}/probar`, { mensaje }).then((r) => r.data),
+  generarMd: (id: number) =>
+    api.post<{ md: string }>(`/registro-llm/${id}/generar-md`).then((r) => r.data),
 }
 
 // ─── LLM Credenciales por grupo ──────────────────────────────────────────────
@@ -1068,6 +1074,13 @@ export const tareasDatosBasicosApi = {
     api.delete(`/tareas-datos-basicos/estados-tarea/${categoria}/${tipo}/${codigo}`),
   reordenarEstadosTar: (items: { codigo_categoria_tarea: string; codigo_tipo_tarea: string; codigo_estado_tarea: string; orden: number }[]) =>
     api.put('/tareas-datos-basicos/estados-tarea/reordenar', items).then((r) => r.data),
+
+  generarMdCategoria: (codigo: string) =>
+    api.post<{ md: string }>(`/tareas-datos-basicos/categorias/${codigo}/generar-md`).then((r) => r.data),
+  generarMdTipo: (categoria: string, codigo: string) =>
+    api.post<{ md: string }>(`/tareas-datos-basicos/tipos-tarea/${categoria}/${codigo}/generar-md`).then((r) => r.data),
+  generarMdEstado: (categoria: string, tipo: string, codigo: string) =>
+    api.post<{ md: string }>(`/tareas-datos-basicos/estados-tarea/${categoria}/${tipo}/${codigo}/generar-md`).then((r) => r.data),
 }
 
 // ─── Procesos: Datos Básicos ──────────────────────────────────────────────────
@@ -1159,6 +1172,8 @@ export const estadosDocsApi = {
   actualizar: (codigo: string, datos: Partial<EstadoDoc>) =>
     api.put<EstadoDoc>(`/estados-docs/${codigo}`, datos).then((r) => r.data),
   desactivar: (codigo: string) => api.delete(`/estados-docs/${codigo}`),
+  generarMd: (codigo: string) =>
+    api.post<{ md: string }>(`/estados-docs/${codigo}/generar-md`).then((r) => r.data),
 }
 
 // ─── Cola Estados Docs ─────────────────────────────────────────────────────
@@ -1240,6 +1255,8 @@ export const ubicacionesDocsApi = {
     api.delete<{ mensaje: string; ubicaciones: number; relaciones_quitadas: number; documentos_eliminados: number }>(`/ubicaciones-docs/${codigo}`).then((r) => r.data),
   /** @deprecated usar eliminar() — el backend ahora hace hard delete cascade */
   desactivar: (codigo: string) => api.delete(`/ubicaciones-docs/${codigo}`),
+  generarMd: (codigo: string) =>
+    api.post<{ md: string }>(`/ubicaciones-docs/${codigo}/generar-md`).then((r) => r.data),
   sincronizar: (datos: { codigo_entidad?: string; directorios: { codigo_ubicacion: string; nombre_ubicacion: string; codigo_ubicacion_superior: string | null; ruta_completa: string; nivel: number }[] }) =>
     api.post<{ insertadas: number; eliminadas: number; actualizadas: number; total: number; excluidas: number }>('/ubicaciones-docs/sincronizar', datos).then((r) => r.data),
   // Documentos en ubicación
@@ -1551,6 +1568,8 @@ export const planesApi = {
   actualizar: (codigo: string, datos: Partial<Plan>) =>
     api.put<Plan>(`/planes/${codigo}`, datos).then((r) => r.data),
   eliminar: (codigo: string) => api.delete(`/planes/${codigo}`),
+  generarMd: (codigo: string) =>
+    api.post<{ md: string }>(`/planes/${codigo}/generar-md`).then((r) => r.data),
 }
 
 export const promptsApi = {

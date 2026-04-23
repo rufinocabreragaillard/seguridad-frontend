@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -10,11 +10,12 @@ import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { TablaCrud, columnaCodigo, columnaNombre, columnaDescripcion, columnaEstado } from '@/components/ui/tabla-crud'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { tiposDocumentoPersonaApi } from '@/lib/api'
+import { tiposDocumentoPersonaApi, promptsApi } from '@/lib/api'
 import type { TipoDocumentoPersona } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { useAuth } from '@/context/AuthContext'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { Boton } from '@/components/ui/boton'
 
 type FormTipoDocPers = {
   codigo_tipo_doc: string
@@ -34,7 +35,19 @@ export default function PaginaTiposDocumentoPersona() {
   const { grupoActivo } = useAuth()
   const t = useTranslations('tiposDocumentoPersona')
   const tc = useTranslations('common')
-  const [tabModal, setTabModal] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
+  const [tabModal, setTabModal] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
+  const [generandoMd, setGenerandoMd] = useState(false)
+  const [sincronizandoMd, setSincronizandoMd] = useState(false)
+  const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [md, setMd] = useState('')
+
+  useEffect(() => {
+    if (crud.modal) {
+      setMensajeMd(null)
+      const item = crud.editando as unknown as Record<string, unknown>
+      setMd((item?.md as string) || '')
+    }
+  }, [crud.modal, crud.editando])
 
   const crud = useCrudPage<TipoDocumentoPersona, FormTipoDocPers>({
     cargarFn: tiposDocumentoPersonaApi.listar,
@@ -131,7 +144,7 @@ export default function PaginaTiposDocumentoPersona() {
         <div className="flex flex-col gap-4 min-w-[480px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
+            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as const).filter(tab => tab !== 'md' || !!crud.editando).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setTabModal(tab)}
@@ -141,7 +154,7 @@ export default function PaginaTiposDocumentoPersona() {
                     : 'text-texto-muted hover:text-texto'
                 }`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
+                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>
             ))}
           </div>
@@ -210,11 +223,71 @@ export default function PaginaTiposDocumentoPersona() {
             />
           )}
 
+          {/* Tab .md */}
+          {crud.editando && tabModal === 'md' && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={md}
+                  readOnly
+                  rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMd && (
+                <p className={`text-xs px-1 ${mensajeMd.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMd.texto}
+                </p>
+              )}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await tiposDocumentoPersonaApi.generarMd(crud.editando!.codigo_tipo_doc)
+                        setMd(r.md)
+                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMd(false) }
+                    }}
+                    cargando={generandoMd}
+                    disabled={generandoMd || sincronizandoMd}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('tipos_documento_persona', 'codigo_tipo_doc', crud.editando!.codigo_tipo_doc)
+                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMd(false) }
+                    }}
+                    cargando={sincronizandoMd}
+                    disabled={generandoMd || sincronizandoMd || !md}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={crud.cerrarModal}>Salir</Boton>
+              </div>
+            </div>
+          )}
+
           {crud.error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
               <p className="text-sm text-error">{crud.error}</p>
             </div>
           )}
+          {tabModal !== 'md' && (
           <PieBotonesModal
             editando={!!crud.editando}
             onGuardar={() => {
@@ -243,6 +316,7 @@ export default function PaginaTiposDocumentoPersona() {
               />
             ) : undefined}
           />
+          )}
         </div>
       </Modal>
 

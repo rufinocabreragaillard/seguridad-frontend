@@ -15,7 +15,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi } from '@/lib/api'
+import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi } from '@/lib/api'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { abrirDocumento } from '@/lib/abrir-documento'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
@@ -28,6 +28,8 @@ import { useAuth } from '@/context/AuthContext'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import type { UbicacionDoc, Documento } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 
@@ -67,11 +69,17 @@ export default function PaginaCargaDocsUsuario() {
   // Modal CRUD ubicaciones
   const [modalUb, setModalUb] = useState(false)
   const [editandoUb, setEditandoUb] = useState<UbicacionDoc | null>(null)
-  const [tabModalUb, setTabModalUb] = useState<'datos' | 'prompt' | 'system_prompt'>('datos')
+  const [tabModalUb, setTabModalUb] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
+  const [generandoMdUb, setGenerandoMdUb] = useState(false)
+  const [sincronizandoMdUb, setSincronizandoMdUb] = useState(false)
+  const [mensajeMdUb, setMensajeMdUb] = useState<string | null>(null)
+  const [mdUb, setMdUb] = useState('')
   const [formUb, setFormUb] = useState({
     codigo_ubicacion: '', nombre_ubicacion: '', alias_ubicacion: '',
     descripcion: '', codigo_ubicacion_superior: '', ubicacion_habilitada: true,
-    prompt: '', system_prompt: '',
+    prompt_insert: '', prompt_update: '', system_prompt: '',
+    python_insert: '', python_update: '', javascript: '',
+    python_editado_manual: false, javascript_editado_manual: false,
   })
   const [guardandoUb, setGuardandoUb] = useState(false)
   const [errorUb, setErrorUb] = useState('')
@@ -110,12 +118,15 @@ export default function PaginaCargaDocsUsuario() {
   // CRUD ubicaciones
   const abrirNuevaUb = (padre?: string) => {
     setEditandoUb(null)
-    setFormUb({ codigo_ubicacion: '', nombre_ubicacion: '', alias_ubicacion: '', descripcion: '', codigo_ubicacion_superior: padre || '', ubicacion_habilitada: true, prompt: '', system_prompt: '' })
+    setFormUb({ codigo_ubicacion: '', nombre_ubicacion: '', alias_ubicacion: '', descripcion: '', codigo_ubicacion_superior: padre || '', ubicacion_habilitada: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setTabModalUb('datos'); setErrorUb(''); setModalUb(true)
   }
   const abrirEditarUb = (u: UbicacionDoc) => {
     setEditandoUb(u)
-    setFormUb({ codigo_ubicacion: u.codigo_ubicacion, nombre_ubicacion: u.nombre_ubicacion, alias_ubicacion: u.alias_ubicacion || '', descripcion: u.descripcion || '', codigo_ubicacion_superior: u.codigo_ubicacion_superior || '', ubicacion_habilitada: u.ubicacion_habilitada, prompt: u.prompt || '', system_prompt: u.system_prompt || '' })
+    const u2 = u as unknown as Record<string, unknown>
+    setFormUb({ codigo_ubicacion: u.codigo_ubicacion, nombre_ubicacion: u.nombre_ubicacion, alias_ubicacion: u.alias_ubicacion || '', descripcion: u.descripcion || '', codigo_ubicacion_superior: u.codigo_ubicacion_superior || '', ubicacion_habilitada: u.ubicacion_habilitada, prompt_insert: u.prompt_insert || '', prompt_update: u.prompt_update || '', system_prompt: u.system_prompt || '', python_insert: u.python_insert || '', python_update: u.python_update || '', javascript: u2.javascript as string || '', python_editado_manual: u2.python_editado_manual as boolean || false, javascript_editado_manual: u2.javascript_editado_manual as boolean || false })
+    setMdUb(u2.md as string || '')
+    setMensajeMdUb(null)
     setTabModalUb('datos'); setErrorUb(''); setModalUb(true)
   }
   const guardarUb = async (cerrar: boolean) => {
@@ -127,7 +138,7 @@ export default function PaginaCargaDocsUsuario() {
           nombre_ubicacion: formUb.nombre_ubicacion, alias_ubicacion: formUb.alias_ubicacion || undefined,
           descripcion: formUb.descripcion || undefined, codigo_ubicacion_superior: formUb.codigo_ubicacion_superior || undefined,
           ubicacion_habilitada: formUb.ubicacion_habilitada,
-          ...(editandoUb.tipo_ubicacion === 'AREA' ? { prompt: formUb.prompt || undefined, system_prompt: formUb.system_prompt || undefined } : {}),
+          ...(editandoUb.tipo_ubicacion === 'AREA' ? { prompt_insert: formUb.prompt_insert || undefined, prompt_update: formUb.prompt_update || undefined, system_prompt: formUb.system_prompt || undefined, python_insert: formUb.python_insert || undefined, python_update: formUb.python_update || undefined, javascript: formUb.javascript || undefined, python_editado_manual: formUb.python_editado_manual, javascript_editado_manual: formUb.javascript_editado_manual } : {}),
         })
         if (cerrar) setModalUb(false)
       } else {
@@ -964,9 +975,15 @@ export default function PaginaCargaDocsUsuario() {
         <div className="flex flex-col gap-4 min-h-[500px]">
           {editandoUb?.tipo_ubicacion === 'AREA' && (
             <div className="flex border-b border-borde">
-              {(['datos', 'prompt', 'system_prompt'] as const).map((tab) => (
-                <button key={tab} onClick={() => setTabModalUb(tab)} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalUb === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
-                  {tab === 'datos' ? 'Datos' : tab === 'prompt' ? 'Prompt' : 'System Prompt'}
+              {([
+                { key: 'datos', label: 'Datos' },
+                { key: 'system_prompt', label: 'System Prompt' },
+                { key: 'programacion_insert', label: 'Prog. Insert' },
+                { key: 'programacion_update', label: 'Prog. Update' },
+                { key: 'md', label: '.md' },
+              ] as { key: typeof tabModalUb; label: string }[]).map(({ key, label }) => (
+                <button key={key} onClick={() => setTabModalUb(key)} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalUb === key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
+                  {label}
                 </button>
               ))}
             </div>
@@ -1019,30 +1036,123 @@ export default function PaginaCargaDocsUsuario() {
               {editandoUb && <Input etiqueta="Código" value={formUb.codigo_ubicacion} disabled readOnly />}
             </div>
           )}
-          {tabModalUb === 'prompt' && editandoUb?.tipo_ubicacion === 'AREA' && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-texto-muted">
-                Texto que se inyecta en el prompt del LLM para dar contexto específico a esta área. Se usa en clasificación de documentos y análisis.
-              </p>
-              <textarea className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30" placeholder="Ej: Esta área gestiona documentos de contratación pública..." value={formUb.prompt} onChange={(e) => setFormUb({ ...formUb, prompt: e.target.value })} />
-            </div>
-          )}
           {tabModalUb === 'system_prompt' && editandoUb?.tipo_ubicacion === 'AREA' && (
+            <TabPrompts
+              tabla="ubicaciones_docs"
+              pkColumna="codigo_ubicacion"
+              pkValor={editandoUb.codigo_ubicacion}
+              campos={formUb}
+              onCampoCambiado={(campo, valor) => setFormUb((prev) => ({ ...prev, [campo]: valor }))}
+              mostrarSystemPrompt={true}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={false}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={false}
+              mostrarJavaScript={false}
+            />
+          )}
+          {tabModalUb === 'programacion_insert' && editandoUb?.tipo_ubicacion === 'AREA' && (
+            <TabPrompts
+              tabla="ubicaciones_docs"
+              pkColumna="codigo_ubicacion"
+              pkValor={editandoUb.codigo_ubicacion}
+              campos={formUb}
+              onCampoCambiado={(campo, valor) => setFormUb((prev) => ({ ...prev, [campo]: valor }))}
+              mostrarSystemPrompt={false}
+              mostrarPromptInsert={true}
+              mostrarPromptUpdate={false}
+              mostrarPythonInsert={true}
+              mostrarPythonUpdate={false}
+              mostrarJavaScript={false}
+            />
+          )}
+          {tabModalUb === 'programacion_update' && editandoUb?.tipo_ubicacion === 'AREA' && (
+            <TabPrompts
+              tabla="ubicaciones_docs"
+              pkColumna="codigo_ubicacion"
+              pkValor={editandoUb.codigo_ubicacion}
+              campos={formUb}
+              onCampoCambiado={(campo, valor) => setFormUb((prev) => ({ ...prev, [campo]: valor }))}
+              mostrarSystemPrompt={false}
+              mostrarPromptInsert={false}
+              mostrarPromptUpdate={true}
+              mostrarPythonInsert={false}
+              mostrarPythonUpdate={true}
+              mostrarJavaScript={true}
+            />
+          )}
+          {tabModalUb === 'md' && editandoUb && (
             <div className="flex flex-col gap-3">
-              <p className="text-sm text-texto-muted">
-                Instrucciones de sistema que se prependen a todas las conversaciones y análisis LLM en esta área. Define el tono, restricciones y rol del asistente.
-              </p>
-              <textarea className="w-full h-48 p-3 text-sm border border-borde rounded-lg font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario/30" placeholder="Ej: Eres un asistente especializado en documentación de esta área..." value={formUb.system_prompt} onChange={(e) => setFormUb({ ...formUb, system_prompt: e.target.value })} />
+              <textarea
+                readOnly
+                rows={13}
+                value={mdUb}
+                className="w-full text-sm font-mono rounded-lg border border-borde px-3 py-2 bg-fondo text-texto resize-none focus:outline-none"
+                placeholder="Sin contenido .md generado"
+              />
+              {mensajeMdUb && (
+                <p className="text-xs text-texto-muted">{mensajeMdUb}</p>
+              )}
+              <div className="flex gap-2">
+                <Boton
+                  variante="secundario"
+                  cargando={generandoMdUb}
+                  onClick={async () => {
+                    setGenerandoMdUb(true)
+                    setMensajeMdUb(null)
+                    try {
+                      const res = await ubicacionesDocsApi.generarMd(editandoUb.codigo_ubicacion)
+                      setMdUb((res as unknown as Record<string, unknown>).md as string || '')
+                      setMensajeMdUb('Markdown generado correctamente')
+                    } catch {
+                      setMensajeMdUb('Error al generar markdown')
+                    } finally {
+                      setGenerandoMdUb(false)
+                    }
+                  }}
+                >
+                  Generar
+                </Boton>
+                <Boton
+                  variante="secundario"
+                  cargando={sincronizandoMdUb}
+                  onClick={async () => {
+                    setSincronizandoMdUb(true)
+                    setMensajeMdUb(null)
+                    try {
+                      await promptsApi.sincronizarFila('ubicaciones_docs', 'codigo_ubicacion', editandoUb.codigo_ubicacion)
+                      setMensajeMdUb('Sincronizado correctamente')
+                    } catch {
+                      setMensajeMdUb('Error al sincronizar')
+                    } finally {
+                      setSincronizandoMdUb(false)
+                    }
+                  }}
+                >
+                  Sincronizar
+                </Boton>
+              </div>
             </div>
           )}
           {errorUb && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorUb}</p></div>}
-          <PieBotonesModal
-            editando={!!editandoUb}
-            onGuardar={() => guardarUb(false)}
-            onGuardarYSalir={() => guardarUb(true)}
-            onCerrar={() => setModalUb(false)}
-            cargando={guardandoUb}
-          />
+          {tabModalUb !== 'md' && (
+            <PieBotonesModal
+              editando={!!editandoUb}
+              onGuardar={() => guardarUb(false)}
+              onGuardarYSalir={() => guardarUb(true)}
+              onCerrar={() => setModalUb(false)}
+              cargando={guardandoUb}
+              botonesIzquierda={(tabModalUb === 'system_prompt' || tabModalUb === 'programacion_insert' || tabModalUb === 'programacion_update') && editandoUb ? (
+                <PieBotonesPrompts
+                  tabla="ubicaciones_docs"
+                  pkColumna="codigo_ubicacion"
+                  pkValor={editandoUb.codigo_ubicacion}
+                  promptInsert={formUb.prompt_insert || undefined}
+                  promptUpdate={formUb.prompt_update || undefined}
+                />
+              ) : undefined}
+            />
+          )}
         </div>
       </Modal>
 

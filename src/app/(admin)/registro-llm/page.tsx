@@ -11,7 +11,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { registroLLMApi, llmCredencialesApi, llmPreciosApi, llmUsoApi } from '@/lib/api'
+import { registroLLMApi, llmCredencialesApi, llmPreciosApi, llmUsoApi, promptsApi } from '@/lib/api'
 import type { LLMCredencial, LLMPrecio, LLMUsoFila, LLMUsoResumen } from '@/lib/api'
 import type { RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -55,7 +55,11 @@ export default function PaginaRegistroLLM() {
   const [busqueda, setBusqueda] = useState('')
   const [modalModelo, setModalModelo] = useState(false)
   const [editandoModelo, setEditandoModelo] = useState<RegistroLLM | null>(null)
-  const [tabModal, setTabModal] = useState<'datos' | 'probar' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
+  const [tabModal, setTabModal] = useState<'datos' | 'probar' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
+  const [generandoMd, setGenerandoMd] = useState(false)
+  const [sincronizandoMd, setSincronizandoMd] = useState(false)
+  const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [md, setMd] = useState('')
   const [formModelo, setFormModelo] = useState({
     proveedor: '', nombre_tecnico: '', nombre_visible: '', descripcion: '', estado_valido: false,
     prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
@@ -110,6 +114,8 @@ export default function PaginaRegistroLLM() {
     setMensajePrueba('')
     setRespuestaPrueba(null)
     setErrorPrueba('')
+    setMd((m as unknown as Record<string, unknown>).md as string || '')
+    setMensajeMd(null)
     setModalModelo(true)
   }
 
@@ -494,6 +500,7 @@ export default function PaginaRegistroLLM() {
                   <button onClick={() => setTabModal('system_prompt')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'system_prompt' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>System Prompt</button>
                   <button onClick={() => setTabModal('programacion_insert')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'programacion_insert' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Prog. Insert</button>
                   <button onClick={() => setTabModal('programacion_update')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'programacion_update' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>Prog. Update</button>
+                  <button onClick={() => setTabModal('md')} className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${tabModal === 'md' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>.md</button>
                 </div>
               )}
 
@@ -615,6 +622,64 @@ export default function PaginaRegistroLLM() {
                       />
                     }
                   />
+                </div>
+              )}
+
+              {tabModal === 'md' && editandoModelo && (
+                <div className="flex flex-col gap-3">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                    <textarea
+                      value={md}
+                      readOnly
+                      rows={13}
+                      placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                      className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                    />
+                  </div>
+                  {mensajeMd && (
+                    <p className={`text-xs px-1 ${mensajeMd.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                      {mensajeMd.texto}
+                    </p>
+                  )}
+                  <div className="flex justify-between items-center pt-2">
+                    <div className="flex gap-2">
+                      <Boton
+                        className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                        onClick={async () => {
+                          setGenerandoMd(true); setMensajeMd(null)
+                          try {
+                            const r = await registroLLMApi.generarMd(editandoModelo.id_modelo)
+                            setMd(r.md)
+                            setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                          } catch (e) {
+                            setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                          } finally { setGenerandoMd(false) }
+                        }}
+                        cargando={generandoMd}
+                        disabled={generandoMd || sincronizandoMd}
+                      >
+                        Generar
+                      </Boton>
+                      <Boton
+                        className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                        onClick={async () => {
+                          setSincronizandoMd(true); setMensajeMd(null)
+                          try {
+                            const r = await promptsApi.sincronizarFila('registro_llm', 'id_modelo', String(editandoModelo.id_modelo))
+                            setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                          } catch (e) {
+                            setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                          } finally { setSincronizandoMd(false) }
+                        }}
+                        cargando={sincronizandoMd}
+                        disabled={generandoMd || sincronizandoMd || !md}
+                      >
+                        Sincronizar
+                      </Boton>
+                    </div>
+                    <Boton variante="contorno" onClick={() => setModalModelo(false)}>{tc('salir')}</Boton>
+                  </div>
                 </div>
               )}
 
