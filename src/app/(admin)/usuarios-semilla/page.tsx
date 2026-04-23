@@ -932,21 +932,14 @@ export default function PaginaUsuariosSemilla() {
                       {dropdownRolPpalAbierto && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {[{ id_rol: 0, nombre: '— Sin rol —', codigo_rol: '' } as unknown as Rol,
-                            // Roles asignados al usuario (de todos los grupos), con fallback a rolesGrupo
-                            ...Array.from(new Map([
-                              // Primero los de rolesUsuario (con nombre resuelto via join)
-                              ...rolesUsuario.map((ra) => [ra.id_rol, {
+                            // Solo roles asignados al usuario en el grupo seleccionado
+                            ...rolesUsuario
+                              .filter((ra) => ra.codigo_grupo === grupoForm)
+                              .map((ra) => ({
                                 id_rol: ra.id_rol,
                                 nombre: ra.roles?.nombre || ra.roles?.codigo_rol || ra.codigo_rol || `Rol ${ra.id_rol}`,
                                 codigo_rol: ra.roles?.codigo_rol || ra.codigo_rol || '',
-                              }] as [number, { id_rol: number; nombre: string; codigo_rol: string }]),
-                              // Luego rolesGrupo como fallback (solo agrega los que no estén ya)
-                              ...rolesGrupo.filter(r => r.codigo_grupo === grupoForm || r.codigo_grupo == null).map((r) => [r.id_rol, {
-                                id_rol: r.id_rol,
-                                nombre: r.nombre,
-                                codigo_rol: r.codigo_rol,
-                              }] as [number, { id_rol: number; nombre: string; codigo_rol: string }]),
-                            ]).values())]
+                              }))]
                             .filter((r) => r.id_rol === 0 || !busquedaRolPpal || r.nombre.toLowerCase().includes(busquedaRolPpal.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRolPpal.toLowerCase()))
                             .slice(0, 21).map((r) => (
                               <button key={r.id_rol} type="button"
