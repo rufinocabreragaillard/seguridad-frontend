@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search, Save, Brain } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronUp, ChevronDown, X, Download, Search, Brain } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -10,7 +10,6 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { Tarjeta, TarjetaCabecera, TarjetaTitulo, TarjetaContenido } from '@/components/ui/tarjeta'
 import { rolesApi, funcionesApi, aplicacionesApi, registroLLMApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Rol, Funcion, Aplicacion, RegistroLLM } from '@/lib/tipos'
@@ -36,8 +35,15 @@ export default function PaginaRoles() {
   // Modal rol
   const [modalRol, setModalRol] = useState(false)
   const [rolEditando, setRolEditando] = useState<Rol | null>(null)
-  const [formRol, setFormRol] = useState({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: '', tipo: 'USUARIO' as TipoElemento, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, inicial: false })
-  const [tabModalRol, setTabModalRol] = useState<'datos' | 'funciones' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
+  const [formRol, setFormRol] = useState({
+    codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '',
+    funcion_por_defecto: '', codigo_aplicacion_origen: '', tipo: 'USUARIO' as TipoElemento,
+    prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '',
+    javascript: '', python_editado_manual: false, javascript_editado_manual: false,
+    inicial: false, inicial_admin_grupo: false, inicial_admin_general: false,
+    md: '',
+  })
+  const [tabModalRol, setTabModalRol] = useState<'datos' | 'funciones' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
 
   // Funciones del rol en edición
   const [funcionesRol, setFuncionesRol] = useState<FuncionAsignada[]>([])
@@ -54,7 +60,7 @@ export default function PaginaRoles() {
   const [formFuncion, setFormFuncion] = useState({
     codigo_funcion: '', nombre: '', descripcion: '', url_funcion: '',
     alias_de_funcion: '', icono_de_funcion: '',
-    id_modelo: '' as string,  // string para el <select>; '' = sin LLM
+    id_modelo: '' as string,
     system_prompt: '',
     codigo_aplicacion_origen: '',
   })
@@ -74,39 +80,6 @@ export default function PaginaRoles() {
 
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
-
-  // Edición inline de booleans por fila
-  const [inlineChanges, setInlineChanges] = useState<Map<number, { inicial: boolean; inicial_admin_grupo: boolean; inicial_admin_general: boolean }>>(new Map())
-  const [guardandoInline, setGuardandoInline] = useState<Set<number>>(new Set())
-
-  const getInlineVal = (r: Rol, campo: 'inicial' | 'inicial_admin_grupo' | 'inicial_admin_general') => {
-    const pending = inlineChanges.get(r.id_rol)
-    return pending !== undefined ? pending[campo] : (r[campo] ?? false)
-  }
-
-  const handleInlineCheck = (r: Rol, campo: 'inicial' | 'inicial_admin_grupo' | 'inicial_admin_general', valor: boolean) => {
-    setInlineChanges(prev => {
-      const next = new Map(prev)
-      const current = next.get(r.id_rol) ?? { inicial: r.inicial ?? false, inicial_admin_grupo: r.inicial_admin_grupo ?? false, inicial_admin_general: r.inicial_admin_general ?? false }
-      next.set(r.id_rol, { ...current, [campo]: valor })
-      return next
-    })
-  }
-
-  const guardarInline = async (idRol: number) => {
-    const cambios = inlineChanges.get(idRol)
-    if (!cambios) return
-    setGuardandoInline(prev => new Set([...prev, idRol]))
-    try {
-      await rolesApi.actualizar(idRol, cambios)
-      setInlineChanges(prev => { const next = new Map(prev); next.delete(idRol); return next })
-      cargar()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
-    } finally {
-      setGuardandoInline(prev => { const next = new Set(prev); next.delete(idRol); return next })
-    }
-  }
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -154,16 +127,44 @@ export default function PaginaRoles() {
 
   const abrirNuevoRol = () => {
     setRolEditando(null)
-    setFormRol({ codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '', funcion_por_defecto: '', codigo_aplicacion_origen: aplicacionActiva || '', tipo: 'USUARIO', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, inicial: false })
+    setFormRol({
+      codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '',
+      funcion_por_defecto: '', codigo_aplicacion_origen: aplicacionActiva || '', tipo: 'USUARIO',
+      prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '',
+      javascript: '', python_editado_manual: false, javascript_editado_manual: false,
+      inicial: false, inicial_admin_grupo: false, inicial_admin_general: false,
+      md: '',
+    })
     setError('')
     setTabModalRol('datos')
     setModalRol(true)
   }
 
-  const abrirEditarRol = (r: Rol, tabInicial: 'datos' | 'funciones' | 'system_prompt' | 'programacion_insert' | 'programacion_update' = 'datos') => {
+  const abrirEditarRol = (r: Rol, tabInicial: typeof tabModalRol = 'datos') => {
     setRolEditando(r)
     const r2 = r as unknown as Record<string, unknown>
-    setFormRol({ codigo_rol: r.codigo_rol, nombre: r.nombre, alias_de_rol: r.alias_de_rol || '', descripcion: r.descripcion || '', url_inicio: r.url_inicio || '', funcion_por_defecto: r.funcion_por_defecto || '', codigo_aplicacion_origen: r.codigo_aplicacion_origen || '', tipo: normalizarTipo(r.tipo), prompt_insert: r2.prompt_insert as string || '', prompt_update: r2.prompt_update as string || '', system_prompt: r2.system_prompt as string || '', python_insert: r2.python_insert as string || '', python_update: r2.python_update as string || '', javascript: r2.javascript as string || '', python_editado_manual: (r2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (r2.javascript_editado_manual as boolean) ?? false, inicial: r.inicial ?? false })
+    setFormRol({
+      codigo_rol: r.codigo_rol,
+      nombre: r.nombre,
+      alias_de_rol: r.alias_de_rol || '',
+      descripcion: r.descripcion || '',
+      url_inicio: r.url_inicio || '',
+      funcion_por_defecto: r.funcion_por_defecto || '',
+      codigo_aplicacion_origen: r.codigo_aplicacion_origen || '',
+      tipo: normalizarTipo(r.tipo),
+      prompt_insert: r2.prompt_insert as string || '',
+      prompt_update: r2.prompt_update as string || '',
+      system_prompt: r2.system_prompt as string || '',
+      python_insert: r2.python_insert as string || '',
+      python_update: r2.python_update as string || '',
+      javascript: r2.javascript as string || '',
+      python_editado_manual: (r2.python_editado_manual as boolean) ?? false,
+      javascript_editado_manual: (r2.javascript_editado_manual as boolean) ?? false,
+      inicial: r.inicial ?? false,
+      inicial_admin_grupo: (r2.inicial_admin_grupo as boolean) ?? false,
+      inicial_admin_general: (r2.inicial_admin_general as boolean) ?? false,
+      md: r2.md as string || '',
+    })
     setError('')
     setTabModalRol(tabInicial)
     setFuncionNueva('')
@@ -182,15 +183,67 @@ export default function PaginaRoles() {
     try {
       const origen = formRol.codigo_aplicacion_origen || null
       if (rolEditando) {
-        await rolesApi.actualizar(rolEditando.id_rol, { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, prompt_insert: formRol.prompt_insert || undefined, prompt_update: formRol.prompt_update || undefined, system_prompt: formRol.system_prompt || undefined, python_insert: formRol.python_insert || undefined, python_update: formRol.python_update || undefined, javascript: formRol.javascript || undefined, python_editado_manual: formRol.python_editado_manual, javascript_editado_manual: formRol.javascript_editado_manual, inicial: formRol.inicial } as Record<string, unknown>)
+        await rolesApi.actualizar(rolEditando.id_rol, {
+          nombre: formRol.nombre,
+          alias_de_rol: formRol.alias_de_rol || undefined,
+          descripcion: formRol.descripcion,
+          url_inicio: formRol.url_inicio,
+          funcion_por_defecto: formRol.funcion_por_defecto || undefined,
+          codigo_aplicacion_origen: origen,
+          prompt_insert: formRol.prompt_insert || undefined,
+          prompt_update: formRol.prompt_update || undefined,
+          system_prompt: formRol.system_prompt || undefined,
+          python_insert: formRol.python_insert || undefined,
+          python_update: formRol.python_update || undefined,
+          javascript: formRol.javascript || undefined,
+          python_editado_manual: formRol.python_editado_manual,
+          javascript_editado_manual: formRol.javascript_editado_manual,
+          inicial: formRol.inicial,
+          inicial_admin_grupo: formRol.inicial_admin_grupo,
+          inicial_admin_general: formRol.inicial_admin_general,
+          md: formRol.md || undefined,
+        } as Record<string, unknown>)
       } else {
-        const payload: Record<string, unknown> = { nombre: formRol.nombre, alias_de_rol: formRol.alias_de_rol || undefined, descripcion: formRol.descripcion, url_inicio: formRol.url_inicio, funcion_por_defecto: formRol.funcion_por_defecto || undefined, codigo_aplicacion_origen: origen, codigo_grupo: grupoActivo || 'ADMIN', inicial: formRol.inicial, tipo: formRol.tipo }
+        const payload: Record<string, unknown> = {
+          nombre: formRol.nombre,
+          alias_de_rol: formRol.alias_de_rol || undefined,
+          descripcion: formRol.descripcion,
+          url_inicio: formRol.url_inicio,
+          funcion_por_defecto: formRol.funcion_por_defecto || undefined,
+          codigo_aplicacion_origen: origen,
+          codigo_grupo: grupoActivo || 'ADMIN',
+          inicial: formRol.inicial,
+          inicial_admin_grupo: formRol.inicial_admin_grupo,
+          inicial_admin_general: formRol.inicial_admin_general,
+          tipo: formRol.tipo,
+        }
         if (esGlobalCreate && formRol.codigo_rol) payload.codigo_rol = formRol.codigo_rol
         const nuevo = await rolesApi.crear(payload as Parameters<typeof rolesApi.crear>[0])
         if (!cerrar && nuevo) {
           setRolEditando(nuevo as Rol)
           const r2 = nuevo as unknown as Record<string, unknown>
-          setFormRol({ codigo_rol: (nuevo as Rol).codigo_rol, nombre: (nuevo as Rol).nombre, alias_de_rol: (nuevo as Rol).alias_de_rol || '', descripcion: (nuevo as Rol).descripcion || '', url_inicio: (nuevo as Rol).url_inicio || '', funcion_por_defecto: (nuevo as Rol).funcion_por_defecto || '', codigo_aplicacion_origen: (nuevo as Rol).codigo_aplicacion_origen || '', tipo: normalizarTipo((nuevo as Rol).tipo), prompt_insert: r2.prompt_insert as string || '', prompt_update: r2.prompt_update as string || '', system_prompt: r2.system_prompt as string || '', python_insert: r2.python_insert as string || '', python_update: r2.python_update as string || '', javascript: r2.javascript as string || '', python_editado_manual: (r2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (r2.javascript_editado_manual as boolean) ?? false, inicial: (nuevo as Rol).inicial ?? false })
+          setFormRol({
+            codigo_rol: (nuevo as Rol).codigo_rol,
+            nombre: (nuevo as Rol).nombre,
+            alias_de_rol: (nuevo as Rol).alias_de_rol || '',
+            descripcion: (nuevo as Rol).descripcion || '',
+            url_inicio: (nuevo as Rol).url_inicio || '',
+            funcion_por_defecto: (nuevo as Rol).funcion_por_defecto || '',
+            codigo_aplicacion_origen: (nuevo as Rol).codigo_aplicacion_origen || '',
+            tipo: normalizarTipo((nuevo as Rol).tipo),
+            prompt_insert: r2.prompt_insert as string || '',
+            prompt_update: r2.prompt_update as string || '',
+            system_prompt: r2.system_prompt as string || '',
+            python_insert: r2.python_insert as string || '',
+            python_update: r2.python_update as string || '',
+            javascript: r2.javascript as string || '',
+            python_editado_manual: (r2.python_editado_manual as boolean) ?? false,
+            javascript_editado_manual: (r2.javascript_editado_manual as boolean) ?? false,
+            inicial: (nuevo as Rol).inicial ?? false,
+            inicial_admin_grupo: (r2.inicial_admin_grupo as boolean) ?? false,
+            inicial_admin_general: (r2.inicial_admin_general as boolean) ?? false,
+            md: r2.md as string || '',
+          })
           cargarFuncionesRol((nuevo as Rol).id_rol)
         }
       }
@@ -273,7 +326,7 @@ export default function PaginaRoles() {
     }
   }
 
-  // Mapa codigo_aplicacion → nombre, para mostrar y ordenar por aplicación origen
+  // Mapa codigo_aplicacion → nombre
   const mapaAppNombre = Object.fromEntries(todasApps.map((a) => [a.codigo_aplicacion, a.nombre]))
   const nombreApp = (codigo?: string | null) => (codigo ? (mapaAppNombre[codigo] || codigo) : '')
   const compararPorAppYNombre = <T extends { codigo_aplicacion_origen?: string | null; nombre: string }>(a: T, b: T) => {
@@ -284,7 +337,6 @@ export default function PaginaRoles() {
     return a.nombre.localeCompare(b.nombre)
   }
 
-  // ── Reordenar roles ───────────────────────────────────────────────────────
   const moverRol = async (index: number, direccion: 'arriba' | 'abajo') => {
     const lista = [...roles].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
     const swap = direccion === 'arriba' ? index - 1 : index + 1
@@ -302,18 +354,22 @@ export default function PaginaRoles() {
     }
   }
 
-  // Listas filtradas: por orden cuando no hay búsqueda, por app+nombre cuando hay búsqueda
   const rolesFiltrados = roles
     .filter((r) =>
-      r.nombre.toLowerCase().includes(busquedaRoles.toLowerCase()) || r.codigo_rol.toLowerCase().includes(busquedaRoles.toLowerCase()) || (r.alias_de_rol || '').toLowerCase().includes(busquedaRoles.toLowerCase())
+      r.nombre.toLowerCase().includes(busquedaRoles.toLowerCase()) ||
+      r.codigo_rol.toLowerCase().includes(busquedaRoles.toLowerCase()) ||
+      (r.alias_de_rol || '').toLowerCase().includes(busquedaRoles.toLowerCase())
     )
     .sort(busquedaRoles ? compararPorAppYNombre : (a, b) => (a.orden ?? 0) - (b.orden ?? 0))
 
   const funcionesFiltradas = funciones
-    .filter((f) => f.nombre.toLowerCase().includes(busquedaFunciones.toLowerCase()) || f.codigo_funcion.toLowerCase().includes(busquedaFunciones.toLowerCase()) || (f.alias_de_funcion || '').toLowerCase().includes(busquedaFunciones.toLowerCase()))
+    .filter((f) =>
+      f.nombre.toLowerCase().includes(busquedaFunciones.toLowerCase()) ||
+      f.codigo_funcion.toLowerCase().includes(busquedaFunciones.toLowerCase()) ||
+      (f.alias_de_funcion || '').toLowerCase().includes(busquedaFunciones.toLowerCase())
+    )
     .sort(compararPorAppYNombre)
 
-  // Funciones disponibles para asignar (excluir ya asignadas y filtrar por tipo de rol)
   const funcionesDisponibles = (() => {
     const sinAsignar = funciones.filter((f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
     if (!rolEditando) return sinAsignar
@@ -321,7 +377,6 @@ export default function PaginaRoles() {
     return sinAsignar.filter((f) => normalizarTipo(f.tipo) === tipoRol)
   })()
 
-  // Filtro de búsqueda para el selector de funciones del rol
   const funcionesRolFiltradas = funcionesDisponibles.filter((f) =>
     busquedaFuncionRol.length === 0 ||
     f.nombre.toLowerCase().includes(busquedaFuncionRol.toLowerCase()) ||
@@ -505,18 +560,15 @@ export default function PaginaRoles() {
                 <TablaTh>{t('colAlias')}</TablaTh>
                 <TablaTh>{t('colNombre')}</TablaTh>
                 <TablaTh>{t('colUrlInicio')}</TablaTh>
-                <TablaTh className="text-center">{t('colInicial')}</TablaTh>
-                <TablaTh className="text-center">Ini. Admin Grupo</TablaTh>
-                <TablaTh className="text-center">Ini. Admin General</TablaTh>
                 <TablaTh>{t('colCodigo')}</TablaTh>
                 <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr>
             </TablaCabecera>
             <TablaCuerpo>
               {cargando ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={10 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{tc('cargando')}</TablaTd></TablaFila>
               ) : rolesFiltrados.length === 0 ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={10 as never}>{tc('sinResultados')}</TablaTd></TablaFila>
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{tc('sinResultados')}</TablaTd></TablaFila>
               ) : rolesFiltrados.map((r, idx) => (
                 <TablaFila key={r.id_rol}>
                   <TablaTd>
@@ -536,33 +588,6 @@ export default function PaginaRoles() {
                       <a href={r.url_inicio} className="text-primario hover:underline font-mono" title={r.url_inicio}>{r.url_inicio}</a>
                     ) : <span className="text-texto-muted">—</span>}
                   </TablaTd>
-                  <TablaTd className="text-center">
-                    <input
-                      type="checkbox"
-                      checked={getInlineVal(r, 'inicial')}
-                      onChange={(e) => handleInlineCheck(r, 'inicial', e.target.checked)}
-                      className="w-4 h-4 rounded accent-primario cursor-pointer"
-                      title="Rol inicial"
-                    />
-                  </TablaTd>
-                  <TablaTd className="text-center">
-                    <input
-                      type="checkbox"
-                      checked={getInlineVal(r, 'inicial_admin_grupo')}
-                      onChange={(e) => handleInlineCheck(r, 'inicial_admin_grupo', e.target.checked)}
-                      className="w-4 h-4 rounded accent-primario cursor-pointer"
-                      title="Inicial Admin Grupo"
-                    />
-                  </TablaTd>
-                  <TablaTd className="text-center">
-                    <input
-                      type="checkbox"
-                      checked={getInlineVal(r, 'inicial_admin_general')}
-                      onChange={(e) => handleInlineCheck(r, 'inicial_admin_general', e.target.checked)}
-                      className="w-4 h-4 rounded accent-primario cursor-pointer"
-                      title="Inicial Admin General"
-                    />
-                  </TablaTd>
                   <TablaTd>
                     <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_rol}</code>
                     {r.codigo_grupo == null && <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">Global</span>}
@@ -571,14 +596,6 @@ export default function PaginaRoles() {
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => abrirEditarRol(r, 'programacion_insert')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
                       <button onClick={() => abrirEditarRol(r)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                      <button
-                        onClick={() => guardarInline(r.id_rol)}
-                        disabled={guardandoInline.has(r.id_rol)}
-                        className={`p-1.5 rounded-lg transition-colors ${inlineChanges.has(r.id_rol) ? 'text-primario hover:bg-primario-muy-claro' : 'text-texto-muted hover:bg-primario-muy-claro hover:text-primario'} disabled:opacity-40 disabled:cursor-not-allowed`}
-                        title="Guardar cambios"
-                      >
-                        <Save size={14} />
-                      </button>
                       <button onClick={() => confirmarEliminarRol(r)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
                     </div>
                   </TablaTd>
@@ -673,6 +690,7 @@ export default function PaginaRoles() {
                 { key: 'system_prompt', label: 'System Prompt' },
                 { key: 'programacion_insert', label: 'Prog. Insert' },
                 { key: 'programacion_update', label: 'Prog. Update' },
+                { key: 'md', label: '.md' },
               ] as { key: typeof tabModalRol; label: string }[]).map((tab) => (
                 <button
                   key={tab.key}
@@ -685,13 +703,12 @@ export default function PaginaRoles() {
             </div>
           )}
 
-          {/* Tab Datos — grid de 2 columnas */}
+          {/* Tab Datos */}
           {tabModalRol === 'datos' && (
             <>
               <div className="grid grid-cols-2 gap-x-4 gap-y-3">
                 <Input etiqueta={t('etiquetaNombre')} value={formRol.nombre} onChange={(e) => setFormRol({ ...formRol, nombre: e.target.value })} placeholder={t('placeholderNombreRol')} />
                 <Input etiqueta={t('etiquetaAlias')} value={formRol.alias_de_rol} onChange={(e) => setFormRol({ ...formRol, alias_de_rol: e.target.value.substring(0, 40) })} placeholder={t('placeholderAliasRol')} />
-                {/* Código: visible en edición (disabled) o cuando super-admin crea global */}
                 {rolEditando ? (
                   <Input etiqueta={t('colCodigo')} value={formRol.codigo_rol} disabled readOnly />
                 ) : grupoActivo === 'ADMIN' ? (
@@ -719,16 +736,34 @@ export default function PaginaRoles() {
                 <Input etiqueta={t('etiquetaDescripcion')} value={formRol.descripcion} onChange={(e) => setFormRol({ ...formRol, descripcion: e.target.value })} placeholder={t('placeholderDescripcion')} />
                 <Input etiqueta={t('etiquetaUrlInicio')} value={formRol.url_inicio} onChange={(e) => setFormRol({ ...formRol, url_inicio: e.target.value })} placeholder={t('placeholderUrlInicio')} />
               </div>
-              <div className="flex items-center gap-3 py-1">
-                <input
-                  type="checkbox"
-                  id="chk-inicial"
-                  checked={formRol.inicial}
-                  onChange={(e) => setFormRol({ ...formRol, inicial: e.target.checked })}
-                  className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
-                />
-                <label htmlFor="chk-inicial" className="text-sm text-texto cursor-pointer select-none">
-                  {t('etiquetaInicial')}
+              {/* Tres checkboxes en una sola línea */}
+              <div className="flex items-center gap-6 py-1">
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formRol.inicial}
+                    onChange={(e) => setFormRol({ ...formRol, inicial: e.target.checked })}
+                    className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
+                  />
+                  <span className="text-sm text-texto">Rol inicial</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formRol.inicial_admin_grupo}
+                    onChange={(e) => setFormRol({ ...formRol, inicial_admin_grupo: e.target.checked })}
+                    className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
+                  />
+                  <span className="text-sm text-texto">Ini. Admin Grupo</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    checked={formRol.inicial_admin_general}
+                    onChange={(e) => setFormRol({ ...formRol, inicial_admin_general: e.target.checked })}
+                    className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
+                  />
+                  <span className="text-sm text-texto">Ini. Admin General</span>
                 </label>
               </div>
               {rolEditando && (
@@ -757,7 +792,6 @@ export default function PaginaRoles() {
           {/* Tab Funciones asignadas */}
           {tabModalRol === 'funciones' && rolEditando && (
             <div className="flex flex-col gap-4">
-              {/* Aviso filtro por tipo de rol */}
               {(() => {
                 const tipoRol = normalizarTipo(rolEditando.tipo)
                 if (tipoRol === 'SISTEMA') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo funciones de tipo <strong>Sistema</strong> pueden asignarse a este rol.</div>
@@ -765,7 +799,6 @@ export default function PaginaRoles() {
                 if (tipoRol === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo funciones de tipo <strong>Usuario</strong> pueden asignarse a este rol.</div>
                 return null
               })()}
-              {/* Asignar nueva función */}
               <div className="flex gap-2">
                 <div className="flex-1 relative" ref={dropdownFuncionRolRef}>
                   <div className="relative">
@@ -800,85 +833,45 @@ export default function PaginaRoles() {
                     </div>
                   )}
                 </div>
-                <Boton
-                  variante="primario"
-                  onClick={asignarFuncion}
-                  cargando={asignandoFuncion}
-                  disabled={!funcionNueva}
-                >
+                <Boton variante="primario" onClick={asignarFuncion} cargando={asignandoFuncion} disabled={!funcionNueva}>
                   <Plus size={14} />
                   {t('asignar')}
                 </Boton>
               </div>
 
-              {/* Lista de funciones asignadas */}
               {cargandoFunciones ? (
                 <div className="flex flex-col gap-2">
-                  {[1, 2].map((i) => (
-                    <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />
-                  ))}
+                  {[1, 2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}
                 </div>
               ) : funcionesRol.length === 0 ? (
-                <p className="text-sm text-texto-muted text-center py-4">
-                  No tiene funciones asignadas
-                </p>
+                <p className="text-sm text-texto-muted text-center py-4">No tiene funciones asignadas</p>
               ) : (
                 <div className="flex flex-col gap-2">
                   {funcionesRol.map((fa, idx) => (
-                    <div
-                      key={fa.codigo_funcion}
-                      className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface"
-                    >
+                    <div key={fa.codigo_funcion} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
                       <div className="flex flex-col">
-                        <button
-                          onClick={() => moverFuncion(idx, 'arriba')}
-                          disabled={idx === 0}
-                          className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Subir"
-                        >
-                          <ChevronUp size={14} />
-                        </button>
-                        <button
-                          onClick={() => moverFuncion(idx, 'abajo')}
-                          disabled={idx === funcionesRol.length - 1}
-                          className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                          title="Bajar"
-                        >
-                          <ChevronDown size={14} />
-                        </button>
+                        <button onClick={() => moverFuncion(idx, 'arriba')} disabled={idx === 0} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title="Subir"><ChevronUp size={14} /></button>
+                        <button onClick={() => moverFuncion(idx, 'abajo')} disabled={idx === funcionesRol.length - 1} className="p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-30 disabled:cursor-not-allowed" title="Bajar"><ChevronDown size={14} /></button>
                       </div>
                       <span className="text-xs text-texto-muted w-5 text-center">{fa.orden}</span>
                       <div className="flex-1 min-w-0">
-                        <span className="text-sm font-medium text-texto">
-                          {fa.funciones?.nombre_funcion || fa.codigo_funcion}
-                        </span>
+                        <span className="text-sm font-medium text-texto">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</span>
                         <span className="ml-2 text-xs text-texto-muted">{fa.codigo_funcion}</span>
                       </div>
-                      <button
-                        onClick={() => quitarFuncion(fa.codigo_funcion)}
-                        className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
-                        title="Quitar función"
-                      >
-                        <X size={14} />
-                      </button>
+                      <button onClick={() => quitarFuncion(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar función"><X size={14} /></button>
                     </div>
                   ))}
                 </div>
               )}
 
-              {error && (
-                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-                  <p className="text-sm text-error">{error}</p>
-                </div>
-              )}
-
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <div className="flex justify-end pt-2">
                 <Boton variante="contorno" onClick={() => setModalRol(false)}>Salir</Boton>
               </div>
             </div>
           )}
 
-          {/* Tab System Prompt — rol */}
+          {/* Tab System Prompt — sin botones Generar ni Sincronizar */}
           {tabModalRol === 'system_prompt' && rolEditando && (
             <div className="flex flex-col gap-3">
               <TabPrompts
@@ -910,20 +903,11 @@ export default function PaginaRoles() {
                 onGuardarYSalir={() => guardarRol(true)}
                 onCerrar={() => setModalRol(false)}
                 cargando={guardando}
-                botonesIzquierda={rolEditando ? (
-                  <PieBotonesPrompts
-                    tabla="roles"
-                    pkColumna="id_rol"
-                    pkValor={String(rolEditando.id_rol)}
-                    promptInsert={formRol.prompt_insert ?? undefined}
-                    promptUpdate={formRol.prompt_update ?? undefined}
-                  />
-                ) : undefined}
               />
             </div>
           )}
 
-          {/* Tab Programación Insert — rol */}
+          {/* Tab Programación Insert — solo Sincronizar, sin Generar */}
           {tabModalRol === 'programacion_insert' && rolEditando && (
             <div className="flex flex-col gap-3">
               <TabPrompts
@@ -960,12 +944,15 @@ export default function PaginaRoles() {
                     pkValor={String(rolEditando.id_rol)}
                     promptInsert={formRol.prompt_insert ?? undefined}
                     promptUpdate={formRol.prompt_update ?? undefined}
+                    mostrarGenerar={false}
+                    mostrarSincronizar={true}
                   />
                 ) : undefined}
               />
             </div>
           )}
-          {/* Tab Programación Update — rol */}
+
+          {/* Tab Programación Update — solo Sincronizar, sin Generar */}
           {tabModalRol === 'programacion_update' && rolEditando && (
             <div className="flex flex-col gap-3">
               <TabPrompts
@@ -1002,8 +989,45 @@ export default function PaginaRoles() {
                     pkValor={String(rolEditando.id_rol)}
                     promptInsert={formRol.prompt_insert ?? undefined}
                     promptUpdate={formRol.prompt_update ?? undefined}
+                    mostrarGenerar={false}
+                    mostrarSincronizar={true}
                   />
                 ) : undefined}
+              />
+            </div>
+          )}
+
+          {/* Tab .md — con Generar y Sincronizar */}
+          {tabModalRol === 'md' && rolEditando && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Documento Markdown</label>
+                <textarea
+                  value={formRol.md}
+                  onChange={(e) => setFormRol({ ...formRol, md: e.target.value })}
+                  rows={16}
+                  placeholder="Documentación del rol en formato Markdown..."
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primario"
+                />
+              </div>
+              {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
+              <PieBotonesModal
+                editando={!!rolEditando}
+                onGuardar={() => guardarRol(false)}
+                onGuardarYSalir={() => guardarRol(true)}
+                onCerrar={() => setModalRol(false)}
+                cargando={guardando}
+                botonesIzquierda={
+                  <PieBotonesPrompts
+                    tabla="roles"
+                    pkColumna="id_rol"
+                    pkValor={String(rolEditando.id_rol)}
+                    promptInsert={formRol.prompt_insert ?? undefined}
+                    promptUpdate={formRol.prompt_update ?? undefined}
+                    mostrarGenerar={true}
+                    mostrarSincronizar={true}
+                  />
+                }
               />
             </div>
           )}
@@ -1013,7 +1037,6 @@ export default function PaginaRoles() {
       {/* Modal Función */}
       <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? t('editarFuncionTitulo', { nombre: funcionEditando.nombre }) : t('nuevaFuncionTitulo')} className="max-w-2xl">
         <div className="flex flex-col gap-4">
-          {/* Tabs (solo en edición) */}
           {funcionEditando && (
             <div className="flex border-b border-borde -mx-1">
               <button onClick={() => setTabModalFuncion('datos')} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalFuncion === 'datos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>{t('tabDatos')}</button>
@@ -1022,7 +1045,6 @@ export default function PaginaRoles() {
             </div>
           )}
 
-          {/* Tab Datos */}
           {tabModalFuncion === 'datos' && (
             <>
               <Input etiqueta={t('etiquetaNombre')} value={formFuncion.nombre} onChange={(e) => setFormFuncion({ ...formFuncion, nombre: e.target.value })} placeholder={t('placeholderNombreFuncion')} />
@@ -1044,15 +1066,12 @@ export default function PaginaRoles() {
               <Input etiqueta={t('etiquetaIcono')} value={formFuncion.icono_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, icono_de_funcion: e.target.value })} placeholder={t('placeholderIcono')} />
               <Input etiqueta={t('etiquetaDescripcion')} value={formFuncion.descripcion} onChange={(e) => setFormFuncion({ ...formFuncion, descripcion: e.target.value })} />
               <Input etiqueta={t('etiquetaUrlFuncion')} value={formFuncion.url_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, url_funcion: e.target.value })} placeholder={t('placeholderUrlFuncion')} />
-              {funcionEditando && (
-                <Input etiqueta="Código" value={formFuncion.codigo_funcion} disabled readOnly />
-              )}
+              {funcionEditando && <Input etiqueta="Código" value={formFuncion.codigo_funcion} disabled readOnly />}
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <PieBotonesModal editando={!!funcionEditando} onGuardar={() => guardarFuncion(false)} onGuardarYSalir={() => guardarFuncion(true)} onCerrar={() => setModalFuncion(false)} cargando={guardando} />
             </>
           )}
 
-          {/* Tab Aplicaciones */}
           {tabModalFuncion === 'aplicaciones' && funcionEditando && (
             <div className="flex flex-col gap-4">
               <div className="flex gap-2">
@@ -1088,7 +1107,6 @@ export default function PaginaRoles() {
             </div>
           )}
 
-          {/* Tab LLM (configuración del modelo de IA para esta función) */}
           {tabModalFuncion === 'llm' && funcionEditando && (
             <div className="flex flex-col gap-4">
               <div className="bg-primario/5 border border-primario/20 rounded-lg p-3 text-xs text-texto-muted">
