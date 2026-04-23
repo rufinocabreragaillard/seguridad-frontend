@@ -435,7 +435,7 @@
     "nuevoTipo": "Nuevo tipo",
     "sinTipos": "No se encontraron tipos",
     "seleccioneCategoria": "Seleccione una categoría para ver sus tipos",
-    "editarCategoriaTitulo": "Editar categoría: {nombre}",
+    "editarCategoriaTitulo": "Editar categoría Documento: {nombre}",
     "nuevaCategoriaTitulo": "Nueva categoría",
     "etiquetaNombre": "Nombre *",
     "placeholderNombre": "Nombre de la categoría",

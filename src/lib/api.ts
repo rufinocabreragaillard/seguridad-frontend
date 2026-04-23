@@ -821,6 +821,8 @@ export const categoriasCaractDocsApi = {
   desactivar: (codigo: string) => api.delete(`/categorias-caracteristica-docs/${codigo}`),
   reordenar: (orden: { codigo: string; orden: number }[]) =>
     api.put('/categorias-caracteristica-docs/orden', orden),
+  generarMd: (codigo: string) =>
+    api.post<{ md: string }>(`/categorias-caracteristica-docs/${codigo}/generar-md`).then((r) => r.data),
   // Tipos
   listarTipos: (codigo: string) =>
     api.get<TipoCaractDocs[]>(`/categorias-caracteristica-docs/${codigo}/tipos`).then((r) => r.data),

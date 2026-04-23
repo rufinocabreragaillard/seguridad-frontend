@@ -354,7 +354,7 @@
     "nuevoTipo": "New type",
     "sinTipos": "No types found",
     "seleccioneCategoria": "Select a category to view its types",
-    "editarCategoriaTitulo": "Edit category: {nombre}",
+    "editarCategoriaTitulo": "Edit Document category: {nombre}",
     "nuevaCategoriaTitulo": "New category",
     "etiquetaNombre": "Name *",
     "placeholderNombre": "Category name",

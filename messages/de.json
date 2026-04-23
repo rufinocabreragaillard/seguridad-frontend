@@ -425,7 +425,7 @@
     "nuevoTipo": "Neuer Typ",
     "sinTipos": "Keine Typen gefunden",
     "seleccioneCategoria": "Wählen Sie eine Kategorie, um deren Typen anzuzeigen",
-    "editarCategoriaTitulo": "Kategorie bearbeiten: {nombre}",
+    "editarCategoriaTitulo": "Dokumentkategorie bearbeiten: {nombre}",
     "nuevaCategoriaTitulo": "Neue Kategorie",
     "etiquetaNombre": "Name *",
     "placeholderNombre": "Kategoriename",
