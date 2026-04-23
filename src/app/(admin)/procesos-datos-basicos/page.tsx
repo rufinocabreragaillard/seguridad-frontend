@@ -9,14 +9,24 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
-import { procesosDatosBasicosApi, tareasDatosBasicosApi, funcionesApi } from '@/lib/api'
+import { procesosDatosBasicosApi, tareasDatosBasicosApi, funcionesApi, promptsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { CategoriaProceso, TipoProceso, EstadoProceso, EstadoCanonicalProceso, Funcion } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { TabPrompts } from '@/components/ui/tab-prompts'
+import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 type TabId = 'categorias' | 'tipos' | 'estados' | 'canonicos'
-type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'
+type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
+
+const TABS_MODAL_LABELS: Record<TabModal, string> = {
+  datos: 'Datos',
+  system_prompt: 'System Prompt',
+  programacion_insert: 'Prog. Insert',
+  programacion_update: 'Prog. Update',
+  md: '.md',
+}
 
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaProceso }
@@ -37,9 +47,15 @@ export default function PaginaProcesosDatosBasicos() {
   const [formCat, setFormCat] = useState({
     codigo_categoria_proceso: '', nombre_categoria_proceso: '', descripcion_categoria_proceso: '', alias: '',
     prompt_insert: '', prompt_update: '', system_prompt: '',
+    python_insert: '', python_update: '', javascript: '',
+    python_editado_manual: false, javascript_editado_manual: false,
+    md: '',
   })
   const [guardandoCat, setGuardandoCat] = useState(false)
   const [errorCat, setErrorCat] = useState('')
+  const [generandoMdCat, setGenerandoMdCat] = useState(false)
+  const [sincronizandoMdCat, setSincronizandoMdCat] = useState(false)
+  const [mensajeMdCat, setMensajeMdCat] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
 
   // ── Tipos ──────────────────────────────────────────────────────────────────
   const [tipos, setTipos] = useState<TipoProceso[]>([])
@@ -50,12 +66,17 @@ export default function PaginaProcesosDatosBasicos() {
   const [formTipo, setFormTipo] = useState({
     codigo_categoria_proceso: '', codigo_tipo_proceso: '', nombre_tipo_proceso: '', descripcion_tipo_proceso: '', alias: '',
     prompt_insert: '', prompt_update: '', system_prompt: '',
-    orden: '', codigo_funcion: '', ayuda: '', traducir: true, tipo: 'USUARIO',
-    n_parallel: '', n_parallel_inicial: '', batch_size: '', batch_timeout_seg: '',
+    python_insert: '', python_update: '', javascript: '',
+    python_editado_manual: false, javascript_editado_manual: false,
+    orden: '', ayuda: '', traducir: true, tipo: 'USUARIO',
+    md: '',
     created_at: '', updated_at: '',
   })
   const [guardandoTipo, setGuardandoTipo] = useState(false)
   const [errorTipo, setErrorTipo] = useState('')
+  const [generandoMdTipo, setGenerandoMdTipo] = useState(false)
+  const [sincronizandoMdTipo, setSincronizandoMdTipo] = useState(false)
+  const [mensajeMdTipo, setMensajeMdTipo] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [filtroTipo, setFiltroTipo] = useState('')
   const [busquedaCat, setBusquedaCat] = useState('')
@@ -78,16 +99,28 @@ export default function PaginaProcesosDatosBasicos() {
     prompt_insert: string
     prompt_update: string
     system_prompt: string
+    python_insert: string
+    python_update: string
+    javascript: string
+    python_editado_manual: boolean
+    javascript_editado_manual: boolean
     ayuda: string
     traducir: boolean
+    md: string
   }>({
     codigo_categoria_proceso: '', codigo_tipo_proceso: '', codigo_estado_proceso: '',
     nombre_estado: '', secuencia: 0,
     prompt_insert: '', prompt_update: '', system_prompt: '',
+    python_insert: '', python_update: '', javascript: '',
+    python_editado_manual: false, javascript_editado_manual: false,
     ayuda: '', traducir: false,
+    md: '',
   })
   const [guardandoEst, setGuardandoEst] = useState(false)
   const [errorEst, setErrorEst] = useState('')
+  const [generandoMdEst, setGenerandoMdEst] = useState(false)
+  const [sincronizandoMdEst, setSincronizandoMdEst] = useState(false)
+  const [mensajeMdEst, setMensajeMdEst] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [funciones, setFunciones] = useState<Funcion[]>([])
 
   // ── Canónicos ──────────────────────────────────────────────────────────────
@@ -138,13 +171,21 @@ export default function PaginaProcesosDatosBasicos() {
   // ── CRUD Categorías ────────────────────────────────────────────────────────
   const abrirNuevaCat = () => {
     setCatEditando(null)
-    setFormCat({ codigo_categoria_proceso: '', nombre_categoria_proceso: '', descripcion_categoria_proceso: '', alias: '', prompt_insert: '', prompt_update: '', system_prompt: '' })
+    setFormCat({
+      codigo_categoria_proceso: '', nombre_categoria_proceso: '', descripcion_categoria_proceso: '', alias: '',
+      prompt_insert: '', prompt_update: '', system_prompt: '',
+      python_insert: '', python_update: '', javascript: '',
+      python_editado_manual: false, javascript_editado_manual: false,
+      md: '',
+    })
     setTabModalCat('datos')
     setErrorCat('')
+    setMensajeMdCat(null)
     setModalCat(true)
   }
 
   const abrirEditarCat = (c: CategoriaProceso) => {
+    const c2 = c as unknown as Record<string, unknown>
     setCatEditando(c)
     setFormCat({
       codigo_categoria_proceso: c.codigo_categoria_proceso,
@@ -154,9 +195,16 @@ export default function PaginaProcesosDatosBasicos() {
       prompt_insert: c.prompt_insert || '',
       prompt_update: c.prompt_update || '',
       system_prompt: c.system_prompt || '',
+      python_insert: (c2.python_insert as string) || '',
+      python_update: (c2.python_update as string) || '',
+      javascript: (c2.javascript as string) || '',
+      python_editado_manual: (c2.python_editado_manual as boolean) || false,
+      javascript_editado_manual: (c2.javascript_editado_manual as boolean) || false,
+      md: (c2.md as string) || '',
     })
     setTabModalCat('datos')
     setErrorCat('')
+    setMensajeMdCat(null)
     setModalCat(true)
   }
 
@@ -198,16 +246,20 @@ export default function PaginaProcesosDatosBasicos() {
       codigo_categoria_proceso: filtroCategoria || '',
       codigo_tipo_proceso: '', nombre_tipo_proceso: '', descripcion_tipo_proceso: '', alias: '',
       prompt_insert: '', prompt_update: '', system_prompt: '',
-      orden: '', codigo_funcion: '', ayuda: '', traducir: true, tipo: 'USUARIO',
-      n_parallel: '', n_parallel_inicial: '', batch_size: '', batch_timeout_seg: '',
+      python_insert: '', python_update: '', javascript: '',
+      python_editado_manual: false, javascript_editado_manual: false,
+      orden: '', ayuda: '', traducir: true, tipo: 'USUARIO',
+      md: '',
       created_at: '', updated_at: '',
     })
     setTabModalTipo('datos')
     setErrorTipo('')
+    setMensajeMdTipo(null)
     setModalTipo(true)
   }
 
   const abrirEditarTipo = (t: TipoProceso) => {
+    const t2 = t as unknown as Record<string, unknown>
     setTipoEditando(t)
     setFormTipo({
       codigo_categoria_proceso: t.codigo_categoria_proceso,
@@ -218,20 +270,22 @@ export default function PaginaProcesosDatosBasicos() {
       prompt_insert: t.prompt_insert || '',
       prompt_update: t.prompt_update || '',
       system_prompt: t.system_prompt || '',
+      python_insert: (t2.python_insert as string) || '',
+      python_update: (t2.python_update as string) || '',
+      javascript: (t2.javascript as string) || '',
+      python_editado_manual: (t2.python_editado_manual as boolean) || false,
+      javascript_editado_manual: (t2.javascript_editado_manual as boolean) || false,
       orden: t.orden != null ? String(t.orden) : '',
-      codigo_funcion: t.codigo_funcion || '',
       ayuda: t.ayuda || '',
       traducir: t.traducir ?? true,
       tipo: t.tipo || 'USUARIO',
-      n_parallel: t.n_parallel != null ? String(t.n_parallel) : '',
-      n_parallel_inicial: t.n_parallel_inicial != null ? String(t.n_parallel_inicial) : '',
-      batch_size: t.batch_size != null ? String(t.batch_size) : '',
-      batch_timeout_seg: t.batch_timeout_seg != null ? String(t.batch_timeout_seg) : '',
+      md: (t2.md as string) || '',
       created_at: t.created_at || '',
       updated_at: t.updated_at || '',
     })
     setTabModalTipo('datos')
     setErrorTipo('')
+    setMensajeMdTipo(null)
     setModalTipo(true)
   }
 
@@ -328,6 +382,10 @@ export default function PaginaProcesosDatosBasicos() {
           codigo_categoria_proceso: formTipo.codigo_categoria_proceso,
           codigo_tipo_proceso: '', nombre_tipo_proceso: '', descripcion_tipo_proceso: '',
           alias: '', prompt_insert: '', prompt_update: '', system_prompt: '',
+          python_insert: '', python_update: '', javascript: '',
+          python_editado_manual: false, javascript_editado_manual: false,
+          orden: '', ayuda: '', traducir: true, tipo: 'USUARIO',
+          md: '', created_at: '', updated_at: '',
         })
       }
       cargarTipos()
@@ -345,14 +403,19 @@ export default function PaginaProcesosDatosBasicos() {
       codigo_estado_proceso: '',
       nombre_estado: '', secuencia: 0,
       prompt_insert: '', prompt_update: '', system_prompt: '',
+      python_insert: '', python_update: '', javascript: '',
+      python_editado_manual: false, javascript_editado_manual: false,
       ayuda: '', traducir: false,
+      md: '',
     })
     setTabModalEst('datos')
     setErrorEst('')
+    setMensajeMdEst(null)
     setModalEst(true)
   }
 
   const abrirEditarEst = (e: EstadoProceso) => {
+    const e2 = e as unknown as Record<string, unknown>
     setEstEditando(e)
     setFormEst({
       codigo_categoria_proceso: e.codigo_categoria_proceso,
@@ -363,11 +426,18 @@ export default function PaginaProcesosDatosBasicos() {
       prompt_insert: e.prompt_insert || '',
       prompt_update: e.prompt_update || '',
       system_prompt: e.system_prompt || '',
+      python_insert: (e2.python_insert as string) || '',
+      python_update: (e2.python_update as string) || '',
+      javascript: (e2.javascript as string) || '',
+      python_editado_manual: (e2.python_editado_manual as boolean) || false,
+      javascript_editado_manual: (e2.javascript_editado_manual as boolean) || false,
+      md: (e2.md as string) || '',
       ayuda: e.ayuda || '',
       traducir: e.traducir,
     })
     setTabModalEst('datos')
     setErrorEst('')
+    setMensajeMdEst(null)
     setModalEst(true)
   }
 
@@ -528,7 +598,6 @@ export default function PaginaProcesosDatosBasicos() {
     `px-5 py-2.5 text-sm font-medium transition-colors ${tabActiva === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
   const tabModalCls = (activa: string, id: string) =>
     `flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${activa === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
-  const TABS_MODAL_LABELS: Record<TabModal, string> = { datos: 'Datos', system_prompt: 'System Prompt', programacion_insert: 'Prog. Insert', programacion_update: 'Prog. Update' }
   const textareaCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
 
   return (
@@ -925,7 +994,10 @@ export default function PaginaProcesosDatosBasicos() {
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[]).map((tab) => (
+            {(catEditando
+              ? (['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as TabModal[])
+              : (['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[])
+            ).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)} className={tabModalCls(tabModalCat, tab)}>
                 {TABS_MODAL_LABELS[tab]}
               </button>
@@ -940,15 +1012,22 @@ export default function PaginaProcesosDatosBasicos() {
                   onChange={(e) => setFormCat({ ...formCat, codigo_categoria_proceso: e.target.value })}
                   placeholder="GESTION_PREDIOS" />
               )}
-              <Input etiqueta="Nombre *" value={formCat.nombre_categoria_proceso}
-                onChange={(e) => setFormCat({ ...formCat, nombre_categoria_proceso: e.target.value })}
-                placeholder="Gestión de Predios" />
-              <Input etiqueta="Descripción" value={formCat.descripcion_categoria_proceso}
-                onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_proceso: e.target.value })}
-                placeholder="Descripción opcional" />
-              <Input etiqueta="Alias" value={formCat.alias}
-                onChange={(e) => setFormCat({ ...formCat, alias: e.target.value })}
-                placeholder="Alias breve" />
+              <div className="grid grid-cols-2 gap-3">
+                <Input etiqueta="Nombre *" value={formCat.nombre_categoria_proceso}
+                  onChange={(e) => setFormCat({ ...formCat, nombre_categoria_proceso: e.target.value })}
+                  placeholder="Gestión de Predios" />
+                <Input etiqueta="Alias" value={formCat.alias}
+                  onChange={(e) => setFormCat({ ...formCat, alias: e.target.value })}
+                  placeholder="Alias breve" />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Descripción</label>
+                <textarea value={formCat.descripcion_categoria_proceso}
+                  onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_proceso: e.target.value })}
+                  rows={6}
+                  placeholder="Descripción opcional"
+                  className={textareaCls} />
+              </div>
             </div>
           )}
 
@@ -958,47 +1037,146 @@ export default function PaginaProcesosDatosBasicos() {
               <label className="text-sm font-medium text-texto">System prompt</label>
               <textarea value={formCat.system_prompt}
                 onChange={(e) => setFormCat({ ...formCat, system_prompt: e.target.value })}
-                rows={14}
+                rows={11}
                 placeholder="Instrucciones system para el LLM"
                 className={textareaCls + ' font-mono'} />
             </div>
           )}
 
           {/* Tab Programación Insert */}
-          {tabModalCat === 'programacion_insert' && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Prompt insert</label>
-                <textarea value={formCat.prompt_insert}
-                  onChange={(e) => setFormCat({ ...formCat, prompt_insert: e.target.value })}
-                  rows={12}
-                  placeholder="Prompt para INSERT"
-                  className={textareaCls} />
-              </div>
+          {tabModalCat === 'programacion_insert' && catEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="categorias_proceso"
+                pkColumna="codigo_categoria_proceso"
+                pkValor={catEditando.codigo_categoria_proceso}
+                campos={{
+                  prompt_insert: formCat.prompt_insert,
+                  prompt_update: formCat.prompt_update,
+                  system_prompt: formCat.system_prompt,
+                  python_insert: formCat.python_insert,
+                  python_update: formCat.python_update,
+                  javascript: formCat.javascript,
+                  python_editado_manual: formCat.python_editado_manual,
+                  javascript_editado_manual: formCat.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormCat((p) => ({ ...p, [c]: v }))}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
+              />
+            </div>
+          )}
+          {tabModalCat === 'programacion_insert' && !catEditando && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Prompt insert</label>
+              <textarea value={formCat.prompt_insert}
+                onChange={(e) => setFormCat({ ...formCat, prompt_insert: e.target.value })}
+                rows={12}
+                placeholder="Prompt para INSERT"
+                className={textareaCls} />
             </div>
           )}
           {/* Tab Programación Update */}
-          {tabModalCat === 'programacion_update' && (
-            <div className="flex flex-col gap-4">
+          {tabModalCat === 'programacion_update' && catEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="categorias_proceso"
+                pkColumna="codigo_categoria_proceso"
+                pkValor={catEditando.codigo_categoria_proceso}
+                campos={{
+                  prompt_insert: formCat.prompt_insert,
+                  prompt_update: formCat.prompt_update,
+                  system_prompt: formCat.system_prompt,
+                  python_insert: formCat.python_insert,
+                  python_update: formCat.python_update,
+                  javascript: formCat.javascript,
+                  python_editado_manual: formCat.python_editado_manual,
+                  javascript_editado_manual: formCat.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormCat((p) => ({ ...p, [c]: v }))}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
+              />
+            </div>
+          )}
+          {tabModalCat === 'programacion_update' && !catEditando && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Prompt update</label>
+              <textarea value={formCat.prompt_update}
+                onChange={(e) => setFormCat({ ...formCat, prompt_update: e.target.value })}
+                rows={12}
+                placeholder="Prompt para UPDATE"
+                className={textareaCls} />
+            </div>
+          )}
+
+          {/* Tab .md */}
+          {tabModalCat === 'md' && catEditando && (
+            <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Prompt update</label>
-                <textarea value={formCat.prompt_update}
-                  onChange={(e) => setFormCat({ ...formCat, prompt_update: e.target.value })}
-                  rows={12}
-                  placeholder="Prompt para UPDATE"
-                  className={textareaCls} />
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea value={formCat.md || ''} readOnly rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
+              </div>
+              {mensajeMdCat && (
+                <p className={`text-xs px-1 ${mensajeMdCat.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdCat.texto}</p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <Boton
+                  onClick={async () => {
+                    setGenerandoMdCat(true); setMensajeMdCat(null)
+                    try {
+                      const r = await procesosDatosBasicosApi.generarMdCategoria(catEditando.codigo_categoria_proceso)
+                      setFormCat((p) => ({ ...p, md: r.md }))
+                      setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado.' })
+                    } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                    finally { setGenerandoMdCat(false) }
+                  }}
+                  cargando={generandoMdCat}
+                  disabled={generandoMdCat || sincronizandoMdCat}
+                >Generar</Boton>
+                <Boton
+                  variante="secundario"
+                  onClick={async () => {
+                    setSincronizandoMdCat(true); setMensajeMdCat(null)
+                    try {
+                      const r = await promptsApi.sincronizarFila('categorias_proceso', 'codigo_categoria_proceso', catEditando.codigo_categoria_proceso)
+                      setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
+                    } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                    finally { setSincronizandoMdCat(false) }
+                  }}
+                  cargando={sincronizandoMdCat}
+                  disabled={generandoMdCat || sincronizandoMdCat || !formCat.md}
+                >Sincronizar</Boton>
               </div>
             </div>
           )}
 
           {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
-          <PieBotonesModal
-            editando={!!catEditando}
-            onGuardar={() => guardarCategoria(false)}
-            onGuardarYSalir={() => guardarCategoria(true)}
-            onCerrar={() => setModalCat(false)}
-            cargando={guardandoCat}
-          />
+          {tabModalCat !== 'md' && (
+            <PieBotonesModal
+              editando={!!catEditando}
+              onGuardar={() => guardarCategoria(false)}
+              onGuardarYSalir={() => guardarCategoria(true)}
+              onCerrar={() => setModalCat(false)}
+              cargando={guardandoCat}
+              botonesIzquierda={catEditando && (tabModalCat === 'programacion_insert' || tabModalCat === 'programacion_update') ? (
+                <PieBotonesPrompts
+                  tabla="categorias_proceso"
+                  pkColumna="codigo_categoria_proceso"
+                  pkValor={catEditando.codigo_categoria_proceso}
+                  promptInsert={formCat.prompt_insert || undefined}
+                  promptUpdate={formCat.prompt_update || undefined}
+                  mostrarSincronizar={false}
+                />
+              ) : undefined}
+            />
+          )}
         </div>
       </Modal>
 
@@ -1007,7 +1185,10 @@ export default function PaginaProcesosDatosBasicos() {
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[]).map((tab) => (
+            {(tipoEditando
+              ? (['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as TabModal[])
+              : (['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[])
+            ).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)} className={tabModalCls(tabModalTipo, tab)}>
                 {TABS_MODAL_LABELS[tab]}
               </button>
@@ -1050,47 +1231,146 @@ export default function PaginaProcesosDatosBasicos() {
               <label className="text-sm font-medium text-texto">System prompt</label>
               <textarea value={formTipo.system_prompt}
                 onChange={(e) => setFormTipo({ ...formTipo, system_prompt: e.target.value })}
-                rows={14}
+                rows={11}
                 placeholder="Instrucciones system para el LLM"
                 className={textareaCls + ' font-mono'} />
             </div>
           )}
 
           {/* Tab Programación Insert */}
-          {tabModalTipo === 'programacion_insert' && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Prompt insert</label>
-                <textarea value={formTipo.prompt_insert}
-                  onChange={(e) => setFormTipo({ ...formTipo, prompt_insert: e.target.value })}
-                  rows={12}
-                  placeholder="Prompt para INSERT"
-                  className={textareaCls} />
-              </div>
+          {tabModalTipo === 'programacion_insert' && tipoEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="tipos_proceso"
+                pkColumna="codigo_tipo_proceso"
+                pkValor={tipoEditando.codigo_tipo_proceso}
+                campos={{
+                  prompt_insert: formTipo.prompt_insert,
+                  prompt_update: formTipo.prompt_update,
+                  system_prompt: formTipo.system_prompt,
+                  python_insert: formTipo.python_insert,
+                  python_update: formTipo.python_update,
+                  javascript: formTipo.javascript,
+                  python_editado_manual: formTipo.python_editado_manual,
+                  javascript_editado_manual: formTipo.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormTipo((p) => ({ ...p, [c]: v }))}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
+              />
+            </div>
+          )}
+          {tabModalTipo === 'programacion_insert' && !tipoEditando && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Prompt insert</label>
+              <textarea value={formTipo.prompt_insert}
+                onChange={(e) => setFormTipo({ ...formTipo, prompt_insert: e.target.value })}
+                rows={12}
+                placeholder="Prompt para INSERT"
+                className={textareaCls} />
             </div>
           )}
           {/* Tab Programación Update */}
-          {tabModalTipo === 'programacion_update' && (
-            <div className="flex flex-col gap-4">
+          {tabModalTipo === 'programacion_update' && tipoEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="tipos_proceso"
+                pkColumna="codigo_tipo_proceso"
+                pkValor={tipoEditando.codigo_tipo_proceso}
+                campos={{
+                  prompt_insert: formTipo.prompt_insert,
+                  prompt_update: formTipo.prompt_update,
+                  system_prompt: formTipo.system_prompt,
+                  python_insert: formTipo.python_insert,
+                  python_update: formTipo.python_update,
+                  javascript: formTipo.javascript,
+                  python_editado_manual: formTipo.python_editado_manual,
+                  javascript_editado_manual: formTipo.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormTipo((p) => ({ ...p, [c]: v }))}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
+              />
+            </div>
+          )}
+          {tabModalTipo === 'programacion_update' && !tipoEditando && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Prompt update</label>
+              <textarea value={formTipo.prompt_update}
+                onChange={(e) => setFormTipo({ ...formTipo, prompt_update: e.target.value })}
+                rows={12}
+                placeholder="Prompt para UPDATE"
+                className={textareaCls} />
+            </div>
+          )}
+
+          {/* Tab .md */}
+          {tabModalTipo === 'md' && tipoEditando && (
+            <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Prompt update</label>
-                <textarea value={formTipo.prompt_update}
-                  onChange={(e) => setFormTipo({ ...formTipo, prompt_update: e.target.value })}
-                  rows={12}
-                  placeholder="Prompt para UPDATE"
-                  className={textareaCls} />
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea value={formTipo.md || ''} readOnly rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
+              </div>
+              {mensajeMdTipo && (
+                <p className={`text-xs px-1 ${mensajeMdTipo.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdTipo.texto}</p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <Boton
+                  onClick={async () => {
+                    setGenerandoMdTipo(true); setMensajeMdTipo(null)
+                    try {
+                      const r = await procesosDatosBasicosApi.generarMdTipo(tipoEditando.codigo_categoria_proceso, tipoEditando.codigo_tipo_proceso)
+                      setFormTipo((p) => ({ ...p, md: r.md }))
+                      setMensajeMdTipo({ tipo: 'ok', texto: 'Markdown generado.' })
+                    } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                    finally { setGenerandoMdTipo(false) }
+                  }}
+                  cargando={generandoMdTipo}
+                  disabled={generandoMdTipo || sincronizandoMdTipo}
+                >Generar</Boton>
+                <Boton
+                  variante="secundario"
+                  onClick={async () => {
+                    setSincronizandoMdTipo(true); setMensajeMdTipo(null)
+                    try {
+                      const r = await promptsApi.sincronizarFila('tipos_proceso', 'codigo_tipo_proceso', tipoEditando.codigo_tipo_proceso)
+                      setMensajeMdTipo({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
+                    } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                    finally { setSincronizandoMdTipo(false) }
+                  }}
+                  cargando={sincronizandoMdTipo}
+                  disabled={generandoMdTipo || sincronizandoMdTipo || !formTipo.md}
+                >Sincronizar</Boton>
               </div>
             </div>
           )}
 
           {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}
-          <PieBotonesModal
-            editando={!!tipoEditando}
-            onGuardar={() => guardarTipo(false)}
-            onGuardarYSalir={() => guardarTipo(true)}
-            onCerrar={() => setModalTipo(false)}
-            cargando={guardandoTipo}
-          />
+          {tabModalTipo !== 'md' && (
+            <PieBotonesModal
+              editando={!!tipoEditando}
+              onGuardar={() => guardarTipo(false)}
+              onGuardarYSalir={() => guardarTipo(true)}
+              onCerrar={() => setModalTipo(false)}
+              cargando={guardandoTipo}
+              botonesIzquierda={tipoEditando && (tabModalTipo === 'programacion_insert' || tabModalTipo === 'programacion_update') ? (
+                <PieBotonesPrompts
+                  tabla="tipos_proceso"
+                  pkColumna="codigo_tipo_proceso"
+                  pkValor={tipoEditando.codigo_tipo_proceso}
+                  promptInsert={formTipo.prompt_insert || undefined}
+                  promptUpdate={formTipo.prompt_update || undefined}
+                  mostrarSincronizar={false}
+                />
+              ) : undefined}
+            />
+          )}
         </div>
       </Modal>
 
@@ -1099,7 +1379,10 @@ export default function PaginaProcesosDatosBasicos() {
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
-            {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[]).map((tab) => (
+            {(estEditando
+              ? (['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as TabModal[])
+              : (['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[])
+            ).map((tab) => (
               <button key={tab} onClick={() => setTabModalEst(tab)} className={tabModalCls(tabModalEst, tab)}>
                 {TABS_MODAL_LABELS[tab]}
               </button>
@@ -1179,47 +1462,146 @@ export default function PaginaProcesosDatosBasicos() {
               <label className="text-sm font-medium text-texto">System prompt</label>
               <textarea value={formEst.system_prompt}
                 onChange={(e) => setFormEst({ ...formEst, system_prompt: e.target.value })}
-                rows={14}
+                rows={11}
                 placeholder="Instrucciones system para el LLM"
                 className={textareaCls + ' font-mono'} />
             </div>
           )}
 
           {/* Tab Programación Insert */}
-          {tabModalEst === 'programacion_insert' && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Prompt insert</label>
-                <textarea value={formEst.prompt_insert}
-                  onChange={(e) => setFormEst({ ...formEst, prompt_insert: e.target.value })}
-                  rows={12}
-                  placeholder="Prompt específico del estado (INSERT)"
-                  className={textareaCls} />
-              </div>
+          {tabModalEst === 'programacion_insert' && estEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="estados_procesos"
+                pkColumna="codigo_estado_proceso"
+                pkValor={estEditando.codigo_estado_proceso}
+                campos={{
+                  prompt_insert: formEst.prompt_insert,
+                  prompt_update: formEst.prompt_update,
+                  system_prompt: formEst.system_prompt,
+                  python_insert: formEst.python_insert,
+                  python_update: formEst.python_update,
+                  javascript: formEst.javascript,
+                  python_editado_manual: formEst.python_editado_manual,
+                  javascript_editado_manual: formEst.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormEst((p) => ({ ...p, [c]: v }))}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonUpdate={false}
+              />
+            </div>
+          )}
+          {tabModalEst === 'programacion_insert' && !estEditando && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Prompt insert</label>
+              <textarea value={formEst.prompt_insert}
+                onChange={(e) => setFormEst({ ...formEst, prompt_insert: e.target.value })}
+                rows={12}
+                placeholder="Prompt específico del estado (INSERT)"
+                className={textareaCls} />
             </div>
           )}
           {/* Tab Programación Update */}
-          {tabModalEst === 'programacion_update' && (
-            <div className="flex flex-col gap-4">
+          {tabModalEst === 'programacion_update' && estEditando && (
+            <div className="flex flex-col gap-3">
+              <TabPrompts
+                tabla="estados_procesos"
+                pkColumna="codigo_estado_proceso"
+                pkValor={estEditando.codigo_estado_proceso}
+                campos={{
+                  prompt_insert: formEst.prompt_insert,
+                  prompt_update: formEst.prompt_update,
+                  system_prompt: formEst.system_prompt,
+                  python_insert: formEst.python_insert,
+                  python_update: formEst.python_update,
+                  javascript: formEst.javascript,
+                  python_editado_manual: formEst.python_editado_manual,
+                  javascript_editado_manual: formEst.javascript_editado_manual,
+                }}
+                onCampoCambiado={(c, v) => setFormEst((p) => ({ ...p, [c]: v }))}
+                mostrarSystemPrompt={false}
+                mostrarJavaScript={false}
+                mostrarPromptInsert={false}
+                mostrarPythonInsert={false}
+              />
+            </div>
+          )}
+          {tabModalEst === 'programacion_update' && !estEditando && (
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">Prompt update</label>
+              <textarea value={formEst.prompt_update}
+                onChange={(e) => setFormEst({ ...formEst, prompt_update: e.target.value })}
+                rows={12}
+                placeholder="Prompt específico del estado (UPDATE)"
+                className={textareaCls} />
+            </div>
+          )}
+
+          {/* Tab .md */}
+          {tabModalEst === 'md' && estEditando && (
+            <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Prompt update</label>
-                <textarea value={formEst.prompt_update}
-                  onChange={(e) => setFormEst({ ...formEst, prompt_update: e.target.value })}
-                  rows={12}
-                  placeholder="Prompt específico del estado (UPDATE)"
-                  className={textareaCls} />
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea value={formEst.md || ''} readOnly rows={13}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
+              </div>
+              {mensajeMdEst && (
+                <p className={`text-xs px-1 ${mensajeMdEst.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdEst.texto}</p>
+              )}
+              <div className="flex gap-2 pt-2">
+                <Boton
+                  onClick={async () => {
+                    setGenerandoMdEst(true); setMensajeMdEst(null)
+                    try {
+                      const r = await procesosDatosBasicosApi.generarMdEstado(estEditando.codigo_categoria_proceso, estEditando.codigo_tipo_proceso, estEditando.codigo_estado_proceso)
+                      setFormEst((p) => ({ ...p, md: r.md }))
+                      setMensajeMdEst({ tipo: 'ok', texto: 'Markdown generado.' })
+                    } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                    finally { setGenerandoMdEst(false) }
+                  }}
+                  cargando={generandoMdEst}
+                  disabled={generandoMdEst || sincronizandoMdEst}
+                >Generar</Boton>
+                <Boton
+                  variante="secundario"
+                  onClick={async () => {
+                    setSincronizandoMdEst(true); setMensajeMdEst(null)
+                    try {
+                      const r = await promptsApi.sincronizarFila('estados_procesos', 'codigo_estado_proceso', estEditando.codigo_estado_proceso)
+                      setMensajeMdEst({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
+                    } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                    finally { setSincronizandoMdEst(false) }
+                  }}
+                  cargando={sincronizandoMdEst}
+                  disabled={generandoMdEst || sincronizandoMdEst || !formEst.md}
+                >Sincronizar</Boton>
               </div>
             </div>
           )}
 
           {errorEst && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorEst}</p></div>}
-          <PieBotonesModal
-            editando={!!estEditando}
-            onGuardar={() => guardarEstado(false)}
-            onGuardarYSalir={() => guardarEstado(true)}
-            onCerrar={() => setModalEst(false)}
-            cargando={guardandoEst}
-          />
+          {tabModalEst !== 'md' && (
+            <PieBotonesModal
+              editando={!!estEditando}
+              onGuardar={() => guardarEstado(false)}
+              onGuardarYSalir={() => guardarEstado(true)}
+              onCerrar={() => setModalEst(false)}
+              cargando={guardandoEst}
+              botonesIzquierda={estEditando && (tabModalEst === 'programacion_insert' || tabModalEst === 'programacion_update') ? (
+                <PieBotonesPrompts
+                  tabla="estados_procesos"
+                  pkColumna="codigo_estado_proceso"
+                  pkValor={estEditando.codigo_estado_proceso}
+                  promptInsert={formEst.prompt_insert || undefined}
+                  promptUpdate={formEst.prompt_update || undefined}
+                  mostrarSincronizar={false}
+                />
+              ) : undefined}
+            />
+          )}
         </div>
       </Modal>
 

@@ -12,6 +12,7 @@ interface PieBotonesPromptsProps {
   tienePrompt?: boolean  // si no se pasa, se auto-computa desde promptInsert/promptUpdate
   promptInsert?: string | null
   promptUpdate?: string | null
+  mostrarGenerar?: boolean
   mostrarSincronizar?: boolean
   onCodigoGenerado?: (r: { python_insert?: string | null; python_update?: string | null; javascript?: string | null }) => void
   onSincronizado?: (r: { codigo_documento: number; accion: string }) => void
@@ -30,6 +31,7 @@ export function PieBotonesPrompts({
   tienePrompt,
   promptInsert,
   promptUpdate,
+  mostrarGenerar = true,
   mostrarSincronizar = true,
   onCodigoGenerado,
   onSincronizado,
@@ -104,14 +106,16 @@ export function PieBotonesPrompts({
         </p>
       )}
       <div className="flex gap-2">
-        <Boton
-          className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
-          onClick={ejecutarGenerar}
-          disabled={generando || sincronizando || !_tienePrompt}
-          cargando={generando}
-        >
-          <RefreshCw className="w-4 h-4" /> Generar
-        </Boton>
+        {mostrarGenerar && (
+          <Boton
+            className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+            onClick={ejecutarGenerar}
+            disabled={generando || sincronizando || !_tienePrompt}
+            cargando={generando}
+          >
+            <RefreshCw className="w-4 h-4" /> Generar
+          </Boton>
+        )}
         {mostrarSincronizar && (
           <Boton
             className="bg-primario-light hover:bg-primario text-white focus:ring-primario"

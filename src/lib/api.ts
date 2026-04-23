@@ -1090,6 +1090,13 @@ export const procesosDatosBasicosApi = {
     api.delete(`/procesos-datos-basicos/estados/${categoria}/${tipo}/${codigo}`),
   reordenarEstados: (items: { codigo_categoria_proceso: string; codigo_tipo_proceso: string; codigo_estado_proceso: string; orden: number }[]) =>
     api.put('/procesos-datos-basicos/estados/reordenar', items).then((r) => r.data),
+
+  generarMdCategoria: (codigo: string) =>
+    api.post<{ md: string }>(`/procesos-datos-basicos/categorias/${codigo}/generar-md`).then((r) => r.data),
+  generarMdTipo: (categoria: string, codigo: string) =>
+    api.post<{ md: string }>(`/procesos-datos-basicos/tipos/${categoria}/${codigo}/generar-md`).then((r) => r.data),
+  generarMdEstado: (categoria: string, tipo: string, codigo: string) =>
+    api.post<{ md: string }>(`/procesos-datos-basicos/estados/${categoria}/${tipo}/${codigo}/generar-md`).then((r) => r.data),
 }
 
 // ─── Tareas: Operación ───────────────────────────────────────────────────────

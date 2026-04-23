@@ -437,7 +437,11 @@ export interface CategoriaProceso {
   prompt_update?: string | null
   python_insert?: string | null
   python_update?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
   system_prompt?: string | null
+  md?: string | null
 }
 
 export interface TipoProceso {
@@ -447,19 +451,18 @@ export interface TipoProceso {
   descripcion_tipo_proceso?: string
   alias?: string
   orden?: number
-  codigo_funcion?: string | null
   ayuda?: string | null
   traducir?: boolean
   tipo?: string
-  n_parallel?: number | null
-  n_parallel_inicial?: number | null
-  batch_size?: number | null
-  batch_timeout_seg?: number | null
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
   python_update?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
   system_prompt?: string | null
+  md?: string | null
   created_at?: string
   updated_at?: string
 }
@@ -475,13 +478,13 @@ export interface EstadoProceso {
   prompt_update?: string | null
   python_insert?: string | null
   python_update?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
   system_prompt?: string | null
-  codigo_funcion?: string | null
-  n_parallel?: number | null
   ayuda?: string | null
   traducir: boolean
-  batch_size?: number | null
-  batch_timeout_seg?: number | null
+  md?: string | null
 }
 
 export interface EstadoTarea {
