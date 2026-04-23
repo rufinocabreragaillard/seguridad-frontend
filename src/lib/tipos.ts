@@ -580,11 +580,6 @@ export interface Tarea {
   fecha_esperada?: string
   fecha_cierre?: string
   json?: unknown | null
-  prompt_insert?: string | null
-  prompt_update?: string | null
-  python_insert?: string | null
-  python_update?: string | null
-  system_prompt?: string | null
   javascript?: string | null
   python_editado_manual?: boolean
   javascript_editado_manual?: boolean
