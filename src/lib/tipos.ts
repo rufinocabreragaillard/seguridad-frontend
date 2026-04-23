@@ -223,6 +223,8 @@ export interface Funcion {
   system_prompt?: string | null  // instrucciones extra al LLM
   md?: string | null
   orden?: number
+  python_editado_manual?: boolean
+  javascript_editado_manual?: boolean
   perm_select?: boolean
   perm_insert?: boolean
   perm_update?: boolean

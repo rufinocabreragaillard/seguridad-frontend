@@ -1491,6 +1491,14 @@ export const traduccionesApi = {
   // Resetea el estado GENERANDO (para desatascar una generación fallida)
   cancelar: () =>
     api.post<{ status: string; mensaje: string }>('/traducciones/cancelar').then((r) => r.data),
+
+  // Traduce los archivos messages/*.json del frontend. El frontend envía es_json con el contenido de es.json.
+  generarMensajesUi: (es_json: Record<string, unknown>, idiomas?: string[]) =>
+    api.post<Record<string, Record<string, unknown>>>(
+      '/traducciones/generar-mensajes',
+      { es_json, idiomas },
+      { timeout: 300_000 },  // 5 minutos — puede tardar con muchos idiomas
+    ).then((r) => r.data),
 }
 
 // ─── Espacios de Trabajo ─────────────────────────────────────────────────────
@@ -1529,7 +1537,7 @@ export interface CompilarPromptRequest {
   tabla: string
   pk_columna: string
   pk_valor: string
-  lenguaje?: 'python' | 'javascript' | 'ambos'
+  lenguaje?: 'python' | 'javascript' | 'ambos' | 'python_insert' | 'python_update'
   forzar?: boolean
   prompt_insert_content?: string
   prompt_update_content?: string
