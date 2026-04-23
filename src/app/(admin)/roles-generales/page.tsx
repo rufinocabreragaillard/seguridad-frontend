@@ -644,43 +644,21 @@ function TabRolesGlobales() {
 
           {tabModal === 'system_prompt' && editando && (
             <div className="flex flex-col gap-3">
-              <TabPrompts
-                tabla="roles"
-                pkColumna="id_rol"
-                pkValor={String(editando.id_rol)}
-                campos={{
-                  prompt_insert: form.prompt_insert,
-                  prompt_update: form.prompt_update,
-                  system_prompt: form.system_prompt,
-                  python_insert: form.python_insert,
-                  python_update: form.python_update,
-                  javascript: form.javascript,
-                  python_editado_manual: form.python_editado_manual,
-                  javascript_editado_manual: form.javascript_editado_manual,
-                }}
-                onCampoCambiado={(c, v) => setForm({ ...form, [c]: v })}
-                mostrarPromptInsert={false}
-                mostrarPromptUpdate={false}
-                mostrarSystemPrompt={true}
-                mostrarPythonInsert={false}
-                mostrarPythonUpdate={false}
-                mostrarJavaScript={false}
-              />
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">System Prompt (instrucción base LLM)</label>
+                <textarea
+                  value={form.system_prompt}
+                  onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
+                  placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono min-h-[200px] resize-y focus:outline-none focus:ring-2 focus:ring-primario"
+                />
+              </div>
               <PieBotonesModal
                 editando={!!editando}
                 onGuardar={() => guardar(false)}
                 onGuardarYSalir={() => guardar(true)}
                 onCerrar={() => setModalAbierto(false)}
                 cargando={guardando}
-                botonesIzquierda={editando ? (
-                  <PieBotonesPrompts
-                    tabla="roles"
-                    pkColumna="id_rol"
-                    pkValor={String(editando.id_rol)}
-                    promptInsert={form.prompt_insert || undefined}
-                    promptUpdate={form.prompt_update || undefined}
-                  />
-                ) : undefined}
               />
             </div>
           )}
@@ -779,7 +757,16 @@ function TabRolesGlobales() {
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
-              <div className="flex justify-end pt-2">
+              <div className="flex justify-between items-center pt-2">
+                <PieBotonesPrompts
+                  tabla="roles"
+                  pkColumna="id_rol"
+                  pkValor={String(editando.id_rol)}
+                  promptInsert={form.prompt_insert || undefined}
+                  promptUpdate={form.prompt_update || undefined}
+                  mostrarGenerar={true}
+                  mostrarSincronizar={false}
+                />
                 <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cerrar')}</Boton>
               </div>
             </div>
