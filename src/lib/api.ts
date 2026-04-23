@@ -1384,6 +1384,25 @@ export const cargosApi = {
     api.put(`/cargos/${codigo_cargo}/roles/reordenar`, orden).then((r) => r.data),
 }
 
+// ─── Cargos Admin (SISTEMA, codigo_grupo IS NULL) ─────────────────────────────
+
+export const cargosAdminApi = {
+  listar: () => api.get<Cargo[]>('/cargos-admin').then((r) => r.data),
+  crear: (datos: { codigo_cargo?: string; nombre_cargo: string; alias?: string; descripcion?: string; prompt_insert?: string; prompt_update?: string; system_prompt?: string; python_insert?: string; python_update?: string; python_editado_manual?: boolean; javascript?: string; javascript_editado_manual?: boolean }) =>
+    api.post<Cargo>('/cargos-admin', datos).then((r) => r.data),
+  actualizar: (codigo_cargo: string, datos: Record<string, unknown>) =>
+    api.put<Cargo>(`/cargos-admin/${codigo_cargo}`, datos).then((r) => r.data),
+  eliminar: (codigo_cargo: string) => api.delete(`/cargos-admin/${codigo_cargo}`),
+  listarRoles: (codigo_cargo: string) =>
+    api.get<RolCargo[]>(`/cargos-admin/${codigo_cargo}/roles`).then((r) => r.data),
+  asignarRol: (codigo_cargo: string, id_rol: number) =>
+    api.post(`/cargos-admin/${codigo_cargo}/roles/${id_rol}`).then((r) => r.data),
+  quitarRol: (codigo_cargo: string, id_rol: number) =>
+    api.delete(`/cargos-admin/${codigo_cargo}/roles/${id_rol}`).then((r) => r.data),
+  reordenarRoles: (codigo_cargo: string, orden: { id_rol: number; orden: number }[]) =>
+    api.put(`/cargos-admin/${codigo_cargo}/roles/reordenar`, orden).then((r) => r.data),
+}
+
 // ─── Traducciones ─────────────────────────────────────────────────────────────
 
 export const traduccionesApi = {
