@@ -213,6 +213,7 @@ export interface Funcion {
   python_insert?: string | null
   python_update?: string | null
   system_prompt?: string | null  // instrucciones extra al LLM
+  md?: string | null
   orden?: number
   perm_select?: boolean
   perm_insert?: boolean

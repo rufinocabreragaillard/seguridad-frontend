@@ -22,6 +22,7 @@ import { abrirArchivoPorRuta } from '@/lib/extraer-texto'
 import { getDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { descargarDocumento } from '@/lib/abrir-documento'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { TextoCifrado } from '@/components/ui/texto-cifrado'
 
 type TabModal = 'datos' | 'caracteristicas' | 'texto' | 'chunks'
 
@@ -733,9 +734,7 @@ export default function PaginaDocumentos() {
                       <span>Extraído: <b className="text-texto">{new Date(textoData.fecha_extraccion).toLocaleString()}</b></span>
                     ) : null}
                   </div>
-                  <pre className="whitespace-pre-wrap text-sm font-mono bg-fondo border border-borde rounded p-3 max-h-[60vh] overflow-auto">
-                    {textoData.texto_fuente}
-                  </pre>
+                  <TextoCifrado payload={textoData.texto_fuente} />
                 </>
               )}
             </div>
@@ -805,10 +804,25 @@ export default function PaginaDocumentos() {
               ) : (
                 <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1">
                   {chunksData.chunks.map((chunk) => {
-                    const texto = chunk.texto
                     const mi = chunk.match_inicio
                     const mf = chunk.match_fin
                     const tieneMatch = mi >= 0 && mf > mi
+
+                    const renderTexto = (texto: string) => (
+                      <p className="text-xs text-texto leading-relaxed whitespace-pre-wrap break-words">
+                        {tieneMatch ? (
+                          <>
+                            {texto.slice(0, mi)}
+                            <mark className="bg-yellow-200 text-yellow-900 rounded px-0.5">
+                              {texto.slice(mi, mf)}
+                            </mark>
+                            {texto.slice(mf)}
+                          </>
+                        ) : (
+                          texto.length > 400 ? texto.slice(0, 400) + '…' : texto
+                        )}
+                      </p>
+                    )
 
                     return (
                       <div key={chunk.id_chunk} className="rounded-lg border border-borde bg-fondo px-3 py-2">
@@ -818,19 +832,7 @@ export default function PaginaDocumentos() {
                           </span>
                           <span className="text-xs text-texto-muted">{chunk.n_chars.toLocaleString()} chars</span>
                         </div>
-                        <p className="text-xs text-texto leading-relaxed whitespace-pre-wrap break-words">
-                          {tieneMatch ? (
-                            <>
-                              {texto.slice(0, mi)}
-                              <mark className="bg-yellow-200 text-yellow-900 rounded px-0.5">
-                                {texto.slice(mi, mf)}
-                              </mark>
-                              {texto.slice(mf)}
-                            </>
-                          ) : (
-                            texto.length > 400 ? texto.slice(0, 400) + '…' : texto
-                          )}
-                        </p>
+                        <TextoCifrado payload={chunk.texto} render={renderTexto} />
                       </div>
                     )
                   })}

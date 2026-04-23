@@ -12,6 +12,7 @@ interface PieBotonesPromptsProps {
   tienePrompt?: boolean  // si no se pasa, se auto-computa desde promptInsert/promptUpdate
   promptInsert?: string | null
   promptUpdate?: string | null
+  mostrarSincronizar?: boolean
   onCodigoGenerado?: (r: { python_insert?: string | null; python_update?: string | null; javascript?: string | null }) => void
   onSincronizado?: (r: { codigo_documento: number; accion: string }) => void
   onMensaje?: (m: { tipo: 'ok' | 'error'; texto: string }) => void
@@ -29,6 +30,7 @@ export function PieBotonesPrompts({
   tienePrompt,
   promptInsert,
   promptUpdate,
+  mostrarSincronizar = true,
   onCodigoGenerado,
   onSincronizado,
   onMensaje,
@@ -110,14 +112,16 @@ export function PieBotonesPrompts({
         >
           <RefreshCw className="w-4 h-4" /> Generar
         </Boton>
-        <Boton
-          className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
-          onClick={ejecutarSincronizar}
-          disabled={generando || sincronizando || !yaGuardado}
-          cargando={sincronizando}
-        >
-          <Upload className="w-4 h-4" /> Sincronizar
-        </Boton>
+        {mostrarSincronizar && (
+          <Boton
+            className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+            onClick={ejecutarSincronizar}
+            disabled={generando || sincronizando || !yaGuardado}
+            cargando={sincronizando}
+          >
+            <Upload className="w-4 h-4" /> Sincronizar
+          </Boton>
+        )}
       </div>
     </div>
   )

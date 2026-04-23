@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, X, Download, Search, RefreshCw, Languages, Brain } from 'lucide-react'
-import { SortableDndContext, SortableRow, SortableListItem } from '@/components/ui/sortable'
+import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -13,8 +13,7 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { aplicacionesApi, funcionesApi, procesosApi, registroLLMApi } from '@/lib/api'
-import type { Proceso } from '@/lib/api'
+import { aplicacionesApi, funcionesApi, registroLLMApi, promptsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Aplicacion, Funcion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -54,6 +53,7 @@ export default function PaginaFunciones() {
     tipo: TipoFuncion
     id_modelo: string
     system_prompt: string
+    md: string
     prompt_insert: string
     prompt_update: string
     python_insert: string
@@ -69,12 +69,15 @@ export default function PaginaFunciones() {
   }>({
     codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
     alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: '',
-    tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt_insert: '', prompt_update: '',
+    tipo: 'USUARIO', id_modelo: '', system_prompt: '', md: '', prompt_insert: '', prompt_update: '',
     python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
+  const [generandoMd, setGenerandoMd] = useState(false)
+  const [sincronizandoMd, setSincronizandoMd] = useState(false)
+  const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [guardandoFuncion, setGuardandoFuncion] = useState(false)
   const [errorFuncion, setErrorFuncion] = useState('')
 
@@ -83,10 +86,6 @@ export default function PaginaFunciones() {
   const [cargandoAppsFuncion, setCargandoAppsFuncion] = useState(false)
   const [appNuevaFuncion, setAppNuevaFuncion] = useState('')
   const [asignandoAppFuncion, setAsignandoAppFuncion] = useState(false)
-
-  // Procesos de la función
-  const [procesosDeFuncion, setProcesosDeFuncion] = useState<Proceso[]>([])
-  const [cargandoProcesos, setCargandoProcesos] = useState(false)
 
   // Confirmar eliminacion
   const [confirmacion, setConfirmacion] = useState<Funcion | null>(null)
@@ -121,27 +120,14 @@ export default function PaginaFunciones() {
       codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
       alias_de_funcion: '', icono_de_funcion: '',
       codigo_aplicacion_origen: aplicacionActiva || '',
-      tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt_insert: '', prompt_update: '',
+      tipo: 'USUARIO', id_modelo: '', system_prompt: '', md: '', prompt_insert: '', prompt_update: '',
       python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
       perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
       traducir: true,
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
-  const cargarProcesosDeFuncion = useCallback(async (c: string) => {
-    setCargandoProcesos(true)
-    try { setProcesosDeFuncion(await procesosApi.listar()) } catch { setProcesosDeFuncion([]) }
-    finally { setCargandoProcesos(false) }
-  }, [])
-
-  const reordenarProcesos = async (nuevos: Proceso[]) => {
-    setProcesosDeFuncion(nuevos)
-    try {
-      await procesosApi.reordenar(nuevos.map((p) => ({ codigo_proceso: p.codigo_proceso, orden: p.orden ?? 0 })))
-    } catch { cargarProcesosDeFuncion(funcionEditando!.codigo_funcion) }
-  }
-
-  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'procesos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
+  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
     setFuncionEditando(f)
     setFormFuncion({
       codigo_funcion: f.codigo_funcion,
@@ -155,6 +141,7 @@ export default function PaginaFunciones() {
       tipo: normalizarTipo(f.tipo),
       id_modelo: f.id_modelo ? String(f.id_modelo) : '',
       system_prompt: (f as Funcion & { system_prompt?: string }).system_prompt || '',
+      md: (f as Funcion & { md?: string }).md || '',
       prompt_insert: (f as Funcion & { prompt_insert?: string }).prompt_insert || '',
       prompt_update: (f as Funcion & { prompt_update?: string }).prompt_update || '',
       python_insert: (f as Funcion & { python_insert?: string }).python_insert || '',
@@ -169,9 +156,9 @@ export default function PaginaFunciones() {
       traducir: f.traducir ?? true,
     })
     setErrorFuncion('')
+    setMensajeMd(null)
     setTabModalFuncion(tabInicial)
     cargarAppsDeFuncion(f.codigo_funcion)
-    cargarProcesosDeFuncion(f.codigo_funcion)
     setModalFuncion(true)
   }
   const guardarFuncion = async (cerrar: boolean) => {
@@ -285,10 +272,10 @@ export default function PaginaFunciones() {
     { key: 'otros', label: 'Otros Datos' },
     ...(funcionEditando ? [
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
-      { key: 'procesos', label: `Procesos de Función (${procesosDeFuncion.length})` },
       { key: 'system_prompt', label: 'System Prompt' },
       { key: 'programacion_insert', label: 'Prog. Insert' },
       { key: 'programacion_update', label: 'Prog. Update' },
+      { key: 'md', label: '.md' },
       { key: 'llm', label: 'LLM' },
     ] : []),
   ] as { key: typeof tabModalFuncion; label: string }[]
@@ -346,7 +333,7 @@ export default function PaginaFunciones() {
       </SortableDndContext>
 
       {/* ── MODAL FUNCION ── */}
-      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[900px] max-w-[95vw]">
+      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar función: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[900px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -409,60 +396,59 @@ export default function PaginaFunciones() {
 
           {/* Tab Otros Datos */}
           {tabModalFuncion === 'otros' && (<>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-              <div className="col-span-2">
-                <label className="text-sm font-medium text-texto">Aplicación origen</label>
-                <select value={formFuncion.codigo_aplicacion_origen} onChange={(e) => setFormFuncion({ ...formFuncion, codigo_aplicacion_origen: e.target.value })} className={selectClass}>
-                  <option value="">— sin asignar —</option>
-                  {[...aplicaciones].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((a) => (
-                    <option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre}</option>
-                  ))}
-                </select>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+              {/* Columna izquierda */}
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="text-sm font-medium text-texto">Aplicación origen</label>
+                  <select value={formFuncion.codigo_aplicacion_origen} onChange={(e) => setFormFuncion({ ...formFuncion, codigo_aplicacion_origen: e.target.value })} className={selectClass}>
+                    <option value="">— sin asignar —</option>
+                    {[...aplicaciones].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((a) => (
+                      <option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-texto">Descripción</label>
+                  <textarea value={formFuncion.descripcion} onChange={(e) => setFormFuncion({ ...formFuncion, descripcion: e.target.value })} rows={3} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none" />
+                </div>
+                <div>
+                  <label className="flex items-center gap-2 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={formFuncion.traducir}
+                      onChange={(e) => setFormFuncion({ ...formFuncion, traducir: e.target.checked })}
+                      className="w-4 h-4 rounded accent-primario"
+                    />
+                    <span className="text-sm font-medium text-texto">Traducir</span>
+                    <span className="text-xs text-texto-muted">— sistema de traducción automática</span>
+                  </label>
+                </div>
               </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium text-texto">Descripción</label>
-                <textarea value={formFuncion.descripcion} onChange={(e) => setFormFuncion({ ...formFuncion, descripcion: e.target.value })} rows={2} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none" />
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium text-texto">Ayuda para el usuario</label>
-                <textarea value={formFuncion.ayuda_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, ayuda_de_funcion: e.target.value })} rows={2} placeholder="Texto descriptivo visible para el usuario final bajo el ícono de la función" className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none placeholder:text-texto-muted" />
-              </div>
-              <div className="col-span-2">
-                <label className="flex items-center gap-2 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={formFuncion.traducir}
-                    onChange={(e) => setFormFuncion({ ...formFuncion, traducir: e.target.checked })}
-                    className="w-4 h-4 rounded accent-primario"
-                  />
-                  <span className="text-sm font-medium text-texto">Traducir</span>
-                  <span className="text-xs text-texto-muted">— incluir en el sistema de traducción automática</span>
-                </label>
-              </div>
-              <div className="col-span-2">
-                <label className="text-sm font-medium text-texto mb-2 block">Permisos de operación</label>
-                <div className="grid grid-cols-2 gap-2 p-3 bg-fondo rounded-lg border border-borde">
-                  {([
-                    { key: 'perm_select', label: 'Consultar (SELECT)', disabled: false },
-                    { key: 'perm_insert', label: 'Crear (INSERT)', disabled: false },
-                    { key: 'perm_update', label: 'Modificar (UPDATE)', disabled: false },
-                    { key: 'perm_delete', label: 'Eliminar (DELETE)', disabled: true },
-                  ] as { key: 'perm_select' | 'perm_insert' | 'perm_update' | 'perm_delete'; label: string; disabled: boolean }[]).map(({ key, label, disabled }) => (
-                    <label
-                      key={key}
-                      className={`flex items-center gap-2 text-sm ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formFuncion[key]}
-                        disabled={disabled}
-                        onChange={disabled ? undefined : (e) => setFormFuncion({ ...formFuncion, [key]: e.target.checked })}
-                        className="w-4 h-4 rounded accent-primario disabled:cursor-not-allowed"
-                      />
-                      <span className={disabled ? 'text-texto-muted' : 'text-texto'}>{label}</span>
-                      {disabled && <span className="text-xs text-texto-muted">(solo BD)</span>}
-                    </label>
-                  ))}
+              {/* Columna derecha */}
+              <div className="flex flex-col gap-3">
+                <div>
+                  <label className="text-sm font-medium text-texto">Ayuda para el usuario</label>
+                  <textarea value={formFuncion.ayuda_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, ayuda_de_funcion: e.target.value })} rows={3} placeholder="Texto descriptivo visible para el usuario final bajo el ícono de la función" className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none placeholder:text-texto-muted" />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-texto mb-2 block">Permisos de operación</label>
+                  <div className="grid grid-cols-2 gap-2 p-3 bg-fondo rounded-lg border border-borde">
+                    {([
+                      { key: 'perm_select', label: 'Consultar (SELECT)', disabled: false },
+                      { key: 'perm_insert', label: 'Crear (INSERT)', disabled: false },
+                      { key: 'perm_update', label: 'Modificar (UPDATE)', disabled: false },
+                      { key: 'perm_delete', label: 'Eliminar (DELETE)', disabled: true },
+                    ] as { key: 'perm_select' | 'perm_insert' | 'perm_update' | 'perm_delete'; label: string; disabled: boolean }[]).map(({ key, label, disabled }) => (
+                      <label key={key} className={`flex items-center gap-2 text-sm ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+                        <input type="checkbox" checked={formFuncion[key]} disabled={disabled}
+                          onChange={disabled ? undefined : (e) => setFormFuncion({ ...formFuncion, [key]: e.target.checked })}
+                          className="w-4 h-4 rounded accent-primario disabled:cursor-not-allowed" />
+                        <span className={disabled ? 'text-texto-muted' : 'text-texto'}>{label}</span>
+                        {disabled && <span className="text-xs text-texto-muted">(solo BD)</span>}
+                      </label>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -484,43 +470,6 @@ export default function PaginaFunciones() {
               : appsDeFuncion.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene aplicaciones asignadas</p>
               : <div className="flex flex-col gap-2">{appsDeFuncion.map((af) => (<div key={af.codigo_aplicacion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{af.aplicaciones?.nombre_aplicacion || af.codigo_aplicacion}</span><span className="ml-2 text-xs text-texto-muted">{af.codigo_aplicacion}</span></div><button onClick={() => quitarAppDeFuncion(af.codigo_aplicacion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
-            </div>
-          )}
-
-          {/* Tab Procesos de Función */}
-          {tabModalFuncion === 'procesos' && funcionEditando && (
-            <div className="flex flex-col gap-3">
-              <p className="text-sm text-texto-muted">Procesos asociados a esta función, en el orden en que se ejecutan.</p>
-              {cargandoProcesos ? (
-                <div className="flex flex-col gap-2">{[1,2,3].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-              ) : procesosDeFuncion.length === 0 ? (
-                <div className="flex flex-col items-center gap-2 py-8 text-texto-muted">
-                  <RefreshCw size={24} className="opacity-30" />
-                  <p className="text-sm">No hay procesos asignados a esta función</p>
-                  <p className="text-xs">Asigna procesos desde el mantenedor de Procesos</p>
-                </div>
-              ) : (
-                <SortableDndContext items={procesosDeFuncion as unknown as Record<string, unknown>[]} getId={(p) => (p as Proceso).codigo_proceso} onReorder={(n) => reordenarProcesos(n as unknown as Proceso[])}>
-                  <div className="flex flex-col gap-1">
-                    {procesosDeFuncion.map((p) => (
-                      <SortableListItem key={p.codigo_proceso} id={p.codigo_proceso} className="flex items-center gap-3 px-3 py-2 rounded-lg border border-borde bg-surface">
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-medium text-texto">{p.nombre_proceso}</span>
-                          <span className="ml-2 text-xs text-texto-muted">{p.codigo_proceso}</span>
-                        </div>
-                        {p.estado_destino && (
-                          <span className="text-xs text-texto-muted shrink-0">
-                            {p.estado_origen || '—'} → {p.estado_destino}
-                          </span>
-                        )}
-                      </SortableListItem>
-                    ))}
-                  </div>
-                </SortableDndContext>
-              )}
-              <div className="flex justify-end pt-2">
-                <Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton>
-              </div>
             </div>
           )}
 
@@ -585,6 +534,7 @@ export default function PaginaFunciones() {
                     pkValor={funcionEditando.codigo_funcion}
                     promptInsert={formFuncion.prompt_insert ?? undefined}
                     promptUpdate={formFuncion.prompt_update ?? undefined}
+                    mostrarSincronizar={false}
                   />
                 ) : undefined}
               />
@@ -627,9 +577,69 @@ export default function PaginaFunciones() {
                     pkValor={funcionEditando.codigo_funcion}
                     promptInsert={formFuncion.prompt_insert ?? undefined}
                     promptUpdate={formFuncion.prompt_update ?? undefined}
+                    mostrarSincronizar={false}
                   />
                 ) : undefined}
               />
+            </div>
+          )}
+
+          {/* Tab .md */}
+          {tabModalFuncion === 'md' && funcionEditando && (
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <textarea
+                  value={formFuncion.md || ''}
+                  readOnly
+                  rows={16}
+                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
+                />
+              </div>
+              {mensajeMd && (
+                <p className={`text-xs px-1 ${mensajeMd.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
+                  {mensajeMd.texto}
+                </p>
+              )}
+              <div className="flex justify-between items-center pt-2">
+                <div className="flex gap-2">
+                  <Boton
+                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setGenerandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await funcionesApi.generarMd(funcionEditando.codigo_funcion)
+                        setFormFuncion((prev) => ({ ...prev, md: r.md }))
+                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                      } finally { setGenerandoMd(false) }
+                    }}
+                    cargando={generandoMd}
+                    disabled={generandoMd || sincronizandoMd}
+                  >
+                    Generar
+                  </Boton>
+                  <Boton
+                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    onClick={async () => {
+                      setSincronizandoMd(true); setMensajeMd(null)
+                      try {
+                        const r = await promptsApi.sincronizarFila('funciones', 'codigo_funcion', funcionEditando.codigo_funcion)
+                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                      } catch (e) {
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                      } finally { setSincronizandoMd(false) }
+                    }}
+                    cargando={sincronizandoMd}
+                    disabled={generandoMd || sincronizandoMd || !formFuncion.md}
+                  >
+                    Sincronizar
+                  </Boton>
+                </div>
+                <Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton>
+              </div>
             </div>
           )}
 

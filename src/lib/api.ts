@@ -336,6 +336,8 @@ export const funcionesApi = {
     api.post<{ generadas: number; idiomas: string[]; campos_traducidos?: string[]; mensaje?: string }>(
       '/traducciones/registro', { tabla: 'funciones', pk: codigo }
     ).then((r) => r.data),
+  generarMd: (codigo: string) =>
+    api.post<{ md: string }>(`/funciones/${codigo}/generar-md`).then((r) => r.data),
 }
 
 // ─── Aplicaciones ─────────────────────────────────────────────────────────────
@@ -603,7 +605,7 @@ export const documentosApi = {
       codigo_estado_doc: string | null
       detalle_estado: string | null
       tiene_texto: boolean
-      texto_fuente: string | null
+      texto_fuente: { cifrado: boolean; iv: string; texto_cifrado: string; nivel_clave: string } | null
       caracteres: number
       paginas: number | null
       fecha_extraccion: string | null
@@ -620,7 +622,7 @@ export const documentosApi = {
       chunks: {
         id_chunk: number
         nro_chunk: number
-        texto: string
+        texto: { cifrado: boolean; iv: string; texto_cifrado: string; nivel_clave: string }
         n_chars: number
         n_tokens_aprox: number
         metadata: Record<string, unknown>
