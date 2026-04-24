@@ -232,6 +232,19 @@ export interface Funcion {
   traducir?: boolean
 }
 
+// ─── API Endpoints ───────────────────────────────────────────────────────────
+
+export interface ApiEndpoint {
+  id_api: number
+  nombre_api: string
+  metodo_http: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  ruta_api: string
+  tipo: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
+  descripcion?: string | null
+  parametros_entrada?: Record<string, unknown> | null
+  parametros_salida?: Record<string, unknown> | null
+}
+
 // ─── Chat con LLM ───────────────────────────────────────────────────────────
 
 export interface ChatConversacion {

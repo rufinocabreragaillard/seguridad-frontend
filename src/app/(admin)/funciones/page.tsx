@@ -15,7 +15,7 @@ import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { aplicacionesApi, funcionesApi, registroLLMApi, promptsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Aplicacion, Funcion, RegistroLLM } from '@/lib/tipos'
+import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { TIPOS_ELEMENTO, ETIQUETA_TIPO, etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
@@ -74,7 +74,7 @@ export default function PaginaFunciones() {
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
   const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
@@ -86,6 +86,10 @@ export default function PaginaFunciones() {
   const [cargandoAppsFuncion, setCargandoAppsFuncion] = useState(false)
   const [appNuevaFuncion, setAppNuevaFuncion] = useState('')
   const [asignandoAppFuncion, setAsignandoAppFuncion] = useState(false)
+
+  // APIs de la funcion
+  const [apisDeFuncion, setApisDeFuncion] = useState<ApiEndpoint[]>([])
+  const [cargandoApisFuncion, setCargandoApisFuncion] = useState(false)
 
   // Confirmar eliminacion
   const [confirmacion, setConfirmacion] = useState<Funcion | null>(null)
@@ -128,7 +132,7 @@ export default function PaginaFunciones() {
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
-  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
+  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
     setFuncionEditando(f)
     setFormFuncion({
       codigo_funcion: f.codigo_funcion,
@@ -160,6 +164,7 @@ export default function PaginaFunciones() {
     setMensajeMd(null)
     setTabModalFuncion(tabInicial)
     cargarAppsDeFuncion(f.codigo_funcion)
+    cargarApisDeFuncion(f.codigo_funcion)
     setModalFuncion(true)
   }
   const guardarFuncion = async (cerrar: boolean) => {
@@ -210,6 +215,12 @@ export default function PaginaFunciones() {
     setCargandoAppsFuncion(true)
     try { setAppsDeFuncion(await funcionesApi.listarAplicaciones(c)) } catch { setAppsDeFuncion([]) }
     finally { setCargandoAppsFuncion(false) }
+  }, [])
+
+  const cargarApisDeFuncion = useCallback(async (c: string) => {
+    setCargandoApisFuncion(true)
+    try { setApisDeFuncion(await funcionesApi.listarApis(c)) } catch { setApisDeFuncion([]) }
+    finally { setCargandoApisFuncion(false) }
   }, [])
 
   const asignarAppAFuncion = async () => {
@@ -274,6 +285,7 @@ export default function PaginaFunciones() {
     { key: 'otros', label: 'Otros Datos' },
     ...(funcionEditando ? [
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
+      { key: 'apis', label: `APIs (${apisDeFuncion.length})` },
       ...(esAdmin ? [
         { key: 'system_prompt', label: 'System Prompt' },
         { key: 'programacion_insert', label: 'Prog. Insert' },
@@ -476,6 +488,67 @@ export default function PaginaFunciones() {
               : appsDeFuncion.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene aplicaciones asignadas</p>
               : <div className="flex flex-col gap-2">{appsDeFuncion.map((af) => (<div key={af.codigo_aplicacion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{af.aplicaciones?.nombre_aplicacion || af.codigo_aplicacion}</span><span className="ml-2 text-xs text-texto-muted">{af.codigo_aplicacion}</span></div><button onClick={() => quitarAppDeFuncion(af.codigo_aplicacion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
+            </div>
+          )}
+
+          {/* Tab APIs */}
+          {tabModalFuncion === 'apis' && funcionEditando && (
+            <div className="flex flex-col gap-3">
+              {cargandoApisFuncion ? (
+                <div className="flex flex-col gap-2">{[1,2,3].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+              ) : apisDeFuncion.length === 0 ? (
+                <p className="text-sm text-texto-muted text-center py-8">No hay endpoints API asociados a esta función</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-borde">
+                        <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted w-20">Método</th>
+                        <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted w-24">Tipo</th>
+                        <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted">Ruta</th>
+                        <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted">Nombre</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {apisDeFuncion.map((api) => {
+                        const colorMetodo: Record<string, string> = {
+                          GET: 'bg-blue-100 text-blue-700',
+                          POST: 'bg-green-100 text-green-700',
+                          PUT: 'bg-yellow-100 text-yellow-700',
+                          PATCH: 'bg-orange-100 text-orange-700',
+                          DELETE: 'bg-red-100 text-red-700',
+                        }
+                        const colorTipo: Record<string, string> = {
+                          USUARIO: 'bg-green-50 text-green-700',
+                          ADMINISTRADOR: 'bg-yellow-50 text-yellow-700',
+                          SISTEMA: 'bg-red-50 text-red-700',
+                        }
+                        return (
+                          <tr key={api.id_api} className="border-b border-borde/50 hover:bg-fondo transition-colors">
+                            <td className="px-3 py-2">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-mono font-bold ${colorMetodo[api.metodo_http] || 'bg-surface text-texto'}`}>
+                                {api.metodo_http}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${colorTipo[api.tipo] || 'bg-surface text-texto'}`}>
+                                {api.tipo}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2">
+                              <code className="text-xs text-texto font-mono">{api.ruta_api}</code>
+                            </td>
+                            <td className="px-3 py-2 text-xs text-texto-muted">{api.nombre_api}</td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <div className="flex justify-end pt-2">
+                <Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton>
+              </div>
             </div>
           )}
 

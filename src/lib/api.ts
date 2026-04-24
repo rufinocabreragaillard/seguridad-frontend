@@ -342,6 +342,8 @@ export const funcionesApi = {
     ).then((r) => r.data),
   generarMd: (codigo: string) =>
     api.post<{ md: string }>(`/funciones/${codigo}/generar-md`).then((r) => r.data),
+  listarApis: (codigo: string) =>
+    api.get<import('./tipos').ApiEndpoint[]>(`/funciones/${codigo}/apis`).then((r) => r.data),
 }
 
 // ─── Aplicaciones ─────────────────────────────────────────────────────────────
