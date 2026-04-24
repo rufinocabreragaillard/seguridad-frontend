@@ -403,6 +403,8 @@ export const entidadesApi = {
     api.put(`/entidades/${idEntidad}/parametros`, datos),
   eliminarParametro: (idEntidad: string, categoria: string, tipo: string) =>
     api.delete(`/entidades/${idEntidad}/parametros/${categoria}/${tipo}`),
+  reordenarParametros: (idEntidad: string, items: { categoria_parametro: string; tipo_parametro: string; orden: number }[]) =>
+    api.put(`/entidades/${idEntidad}/parametros/reordenar`, items),
   desactivar: (id: string) => api.delete(`/entidades/${id}`),
   listarUsuarios: (id: string, codigoGrupo?: string) =>
     api.get<{ codigo_usuario: string; usuarios: { nombre_usuario: string; activo: boolean } }[]>(
@@ -458,12 +460,16 @@ export const parametrosApi = {
     api.put('/parametros/generales', datos),
   eliminarGeneral: (categoria: string, tipo: string) =>
     api.delete(`/parametros/generales/${categoria}/${tipo}`),
+  reordenarGenerales: (items: { categoria_parametro: string; tipo_parametro: string; orden: number }[]) =>
+    api.put('/parametros/generales/reordenar', items),
   listarGrupo: () =>
     api.get('/parametros/grupo').then((r) => r.data),
   upsertGrupo: (datos: { categoria_parametro: string; tipo_parametro: string; valor_parametro: string }) =>
     api.put('/parametros/grupo', datos),
   eliminarGrupo: (categoria: string, tipo: string) =>
     api.delete(`/parametros/grupo/${categoria}/${tipo}`),
+  reordenarGrupo: (items: { categoria_parametro: string; tipo_parametro: string; orden: number }[]) =>
+    api.put('/parametros/grupo/reordenar', items),
   listarUsuario: () =>
     api.get<ParametroUsuario[]>('/parametros/usuario').then((r) => r.data),
   actualizarUsuario: (codigo: string, valor: string) =>
@@ -472,6 +478,8 @@ export const parametrosApi = {
     api.put('/parametros/usuario', datos),
   eliminarUsuario: (categoria: string, tipo: string) =>
     api.delete(`/parametros/usuario/${categoria}/${tipo}`),
+  reordenarUsuario: (items: { categoria_parametro: string; tipo_parametro: string; orden: number }[]) =>
+    api.put('/parametros/usuario/reordenar', items),
 }
 
 // ─── Auditoría ────────────────────────────────────────────────────────────────
