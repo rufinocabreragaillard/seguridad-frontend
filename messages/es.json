@@ -32,7 +32,8 @@
     "subir": "Subir",
     "bajar": "Bajar",
     "nuevo": "Nuevo",
-    "codigo": "Código"
+    "codigo": "Código",
+    "global": "Global"
   },
   "layout": {
     "cargando": "Cargando...",

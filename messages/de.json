@@ -28,7 +28,8 @@
     "exportarExcel": "Excel exportieren",
     "actualizar": "Aktualisieren",
     "activo": "Aktiv",
-    "inactivo": "Inaktiv"
+    "inactivo": "Inaktiv",
+    "global": "Global"
   },
   "layout": {
     "cargando": "Lädt...",

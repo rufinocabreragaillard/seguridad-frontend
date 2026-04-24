@@ -32,7 +32,8 @@
     "subir": "Move up",
     "bajar": "Move down",
     "nuevo": "New",
-    "codigo": "Code"
+    "codigo": "Code",
+    "global": "Global"
   },
   "layout": {
     "cargando": "Loading...",
