@@ -7,11 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { Paginador } from '@/components/ui/paginador'
 import { Insignia } from '@/components/ui/insignia'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { parametrosApi } from '@/lib/api'
+import { usePaginacion } from '@/hooks/usePaginacion'
 import type { ParametroGeneral } from '@/lib/tipos'
 
 const inputCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
@@ -57,10 +59,9 @@ const FORM_VACIO: FormData = {
 }
 
 export default function PaginaValoresParametrosGenerales() {
-  const [parametros, setParametros] = useState<ParametroGeneral[]>([])
-  const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
+  const [categorias, setCategorias] = useState<string[]>([])
 
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState<ParametroGeneral | null>(null)
@@ -71,29 +72,28 @@ export default function PaginaValoresParametrosGenerales() {
   const [aEliminar, setAEliminar] = useState<ParametroGeneral | null>(null)
   const [eliminando, setEliminando] = useState(false)
 
-  const cargar = useCallback(async () => {
-    setCargando(true)
+  const { items, total, page, limit, cargando, setPage, setLimit, refetch } = usePaginacion<
+    ParametroGeneral,
+    { q: string; categoria: string }
+  >({
+    fetcher: ({ page, limit, q, categoria }) =>
+      parametrosApi.listarGeneralesPaginado({ page, limit, q: q || undefined, categoria: categoria || undefined }),
+    filtros: { q: busqueda, categoria: filtroCategoria },
+    limitInicial: 50,
+  })
+
+  // Carga las categorías disponibles (para el filtro) usando el endpoint existente sin paginar
+  const cargarCategorias = useCallback(async () => {
     try {
-      setParametros(await parametrosApi.listarGenerales())
-    } finally {
-      setCargando(false)
+      const todos = await parametrosApi.listarGenerales()
+      const cats = Array.from(new Set(todos.map((p) => p.categoria_parametro))).sort()
+      setCategorias(cats)
+    } catch {
+      // silencioso
     }
   }, [])
 
-  useEffect(() => { cargar() }, [cargar])
-
-  const categorias = Array.from(new Set(parametros.map((p) => p.categoria_parametro))).sort()
-
-  const filtrados = parametros.filter((p) => {
-    const matchCat = !filtroCategoria || p.categoria_parametro === filtroCategoria
-    const q = busqueda.toLowerCase()
-    const matchQ = !q ||
-      p.categoria_parametro.toLowerCase().includes(q) ||
-      p.tipo_parametro.toLowerCase().includes(q) ||
-      (p.valor_parametro || '').toLowerCase().includes(q) ||
-      (p.descripcion || '').toLowerCase().includes(q)
-    return matchCat && matchQ
-  })
+  useEffect(() => { cargarCategorias() }, [cargarCategorias])
 
   const abrirNuevo = () => {
     setEditando(null)
@@ -156,7 +156,8 @@ export default function PaginaValoresParametrosGenerales() {
           editable_usuario: form.editable_usuario,
         })
       }
-      cargar()
+      refetch()
+      cargarCategorias()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al guardar')
     } finally {
@@ -170,7 +171,8 @@ export default function PaginaValoresParametrosGenerales() {
     try {
       await parametrosApi.eliminarGeneral(aEliminar.categoria_parametro, aEliminar.tipo_parametro)
       setAEliminar(null)
-      cargar()
+      refetch()
+      cargarCategorias()
     } catch (e) {
       console.error(e)
     } finally {
@@ -212,10 +214,10 @@ export default function PaginaValoresParametrosGenerales() {
           <Boton
             variante="contorno"
             tamano="sm"
-            disabled={filtrados.length === 0}
+            disabled={items.length === 0}
             onClick={() =>
               exportarExcel(
-                filtrados as unknown as Record<string, unknown>[],
+                items as unknown as Record<string, unknown>[],
                 [
                   { titulo: 'Categoría', campo: 'categoria_parametro' },
                   { titulo: 'Tipo', campo: 'tipo_parametro' },
@@ -265,14 +267,14 @@ export default function PaginaValoresParametrosGenerales() {
             </tr>
           </TablaCabecera>
           <TablaCuerpo>
-            {filtrados.length === 0 ? (
+            {items.length === 0 ? (
               <tr>
                 <TablaTd className="text-center text-texto-muted py-8" colSpan={11 as never}>
                   {busqueda || filtroCategoria ? 'No se encontraron parámetros' : 'No hay parámetros registrados'}
                 </TablaTd>
               </tr>
             ) : (
-              filtrados.map((p) => (
+              items.map((p) => (
                 <tr
                   key={`${p.categoria_parametro}/${p.tipo_parametro}`}
                   className="border-b border-borde hover:bg-fondo transition-colors"
@@ -329,10 +331,17 @@ export default function PaginaValoresParametrosGenerales() {
         </Tabla>
       )}
 
+      {/* Paginador */}
       {!cargando && (
-        <p className="text-xs text-texto-muted text-right">
-          {filtrados.length} de {parametros.length} parámetros
-        </p>
+        <Paginador
+          page={page}
+          limit={limit}
+          total={total}
+          onChangePage={setPage}
+          onChangeLimit={setLimit}
+          cargando={cargando}
+          opcionesLimit={[25, 50, 100]}
+        />
       )}
 
       {/* ── Modal crear/editar ── */}

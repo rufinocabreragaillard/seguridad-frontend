@@ -442,6 +442,8 @@ export const parametrosApi = {
     api.get<{ valor: string | null; nivel: string | null }>(`/parametros/valor/${categoria}/${tipo}`).then((r) => r.data),
   listarGenerales: () =>
     api.get<ParametroGeneral[]>('/parametros/generales').then((r) => r.data),
+  listarGeneralesPaginado: (params: { page: number; limit: number; q?: string; categoria?: string }) =>
+    api.get<{ items: ParametroGeneral[]; total: number; page: number; limit: number }>('/parametros/generales/paginado', { params }).then((r) => r.data),
   actualizarGeneral: (codigo: string, valor: string) =>
     api.put(`/parametros/generales/${codigo}`, { valor }),
   upsertGenerales: (datos: {
