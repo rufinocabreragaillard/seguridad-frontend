@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { Plus, Pencil, Trash2, Search, Download } from 'lucide-react'
+import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -80,6 +81,7 @@ export default function PaginaValoresParametrosGenerales() {
 
   const [aEliminar, setAEliminar] = useState<ParametroGeneral | null>(null)
   const [eliminando, setEliminando] = useState(false)
+  const [itemsLocales, setItemsLocales] = useState<ParametroGeneral[]>([])
 
   const { items, total, page, limit, cargando, setPage, setLimit, refetch } = usePaginacion<
     ParametroGeneral,
@@ -87,7 +89,7 @@ export default function PaginaValoresParametrosGenerales() {
   >({
     fetcher: fetcherParametros,
     filtros: { q: busqueda, categoria: filtroCategoria },
-    limitInicial: 50,
+    limitInicial: 15,
   })
 
   // Carga las categorías disponibles (para el filtro) usando el endpoint existente sin paginar
@@ -102,6 +104,26 @@ export default function PaginaValoresParametrosGenerales() {
   }, [])
 
   useEffect(() => { cargarCategorias() }, [cargarCategorias])
+
+  // Sincronizar items locales cuando llegan del servidor
+  useEffect(() => { setItemsLocales(items) }, [items])
+
+  // Reordenar por drag & drop (solo dentro de la página actual)
+  const reordenar = async (nuevos: ParametroGeneral[]) => {
+    setItemsLocales(nuevos)
+    const offset = (page - 1) * limit
+    try {
+      await parametrosApi.reordenarGenerales(
+        nuevos.map((p, i) => ({
+          categoria_parametro: p.categoria_parametro,
+          tipo_parametro: p.tipo_parametro,
+          orden: offset + i + 1,
+        }))
+      )
+    } catch {
+      setItemsLocales(items) // rollback
+    }
+  }
 
   const abrirNuevo = () => {
     setEditando(null)
@@ -258,85 +280,92 @@ export default function PaginaValoresParametrosGenerales() {
           ))}
         </div>
       ) : (
-        <Tabla>
-          <TablaCabecera>
-            <tr>
-              <TablaTh>Categoría</TablaTh>
-              <TablaTh>Tipo</TablaTh>
-              <TablaTh>Valor</TablaTh>
-              <TablaTh>Descripción</TablaTh>
-              <TablaTh className="text-center" title="Replica al grupo al inicializar">Rep.Grupo</TablaTh>
-              <TablaTh className="text-center" title="Visible para el grupo">Vis.Grupo</TablaTh>
-              <TablaTh className="text-center" title="Editable por el grupo">Ed.Grupo</TablaTh>
-              <TablaTh className="text-center" title="Replica al usuario al inicializar">Rep.Usu.</TablaTh>
-              <TablaTh className="text-center" title="Visible para el usuario">Vis.Usu.</TablaTh>
-              <TablaTh className="text-center" title="Editable por el usuario">Ed.Usu.</TablaTh>
-              <TablaTh className="text-right">Acciones</TablaTh>
-            </tr>
-          </TablaCabecera>
-          <TablaCuerpo>
-            {items.length === 0 ? (
+        <SortableDndContext
+          items={itemsLocales as unknown as Record<string, unknown>[]}
+          getId={(p) => `${(p as ParametroGeneral).categoria_parametro}/${(p as ParametroGeneral).tipo_parametro}`}
+          onReorder={(n) => reordenar(n as unknown as ParametroGeneral[])}
+        >
+          <Tabla>
+            <TablaCabecera>
               <tr>
-                <TablaTd className="text-center text-texto-muted py-8" colSpan={11 as never}>
-                  {busqueda || filtroCategoria ? 'No se encontraron parámetros' : 'No hay parámetros registrados'}
-                </TablaTd>
+                <TablaTh className="w-8" />
+                <TablaTh>Categoría</TablaTh>
+                <TablaTh>Tipo</TablaTh>
+                <TablaTh>Valor</TablaTh>
+                <TablaTh>Descripción</TablaTh>
+                <TablaTh className="text-center" title="Replica al grupo al inicializar">Rep.Grupo</TablaTh>
+                <TablaTh className="text-center" title="Visible para el grupo">Vis.Grupo</TablaTh>
+                <TablaTh className="text-center" title="Editable por el grupo">Ed.Grupo</TablaTh>
+                <TablaTh className="text-center" title="Replica al usuario al inicializar">Rep.Usu.</TablaTh>
+                <TablaTh className="text-center" title="Visible para el usuario">Vis.Usu.</TablaTh>
+                <TablaTh className="text-center" title="Editable por el usuario">Ed.Usu.</TablaTh>
+                <TablaTh className="text-right">Acciones</TablaTh>
               </tr>
-            ) : (
-              items.map((p) => (
-                <tr
-                  key={`${p.categoria_parametro}/${p.tipo_parametro}`}
-                  className="border-b border-borde hover:bg-fondo transition-colors"
-                  onDoubleClick={() => abrirEditar(p)}
-                >
-                  <TablaTd>
-                    <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">
-                      {p.categoria_parametro}
-                    </code>
-                  </TablaTd>
-                  <TablaTd>
-                    <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">
-                      {p.tipo_parametro}
-                    </code>
-                  </TablaTd>
-                  <TablaTd className="max-w-[180px]">
-                    <span className="block truncate text-sm font-mono" title={p.valor_parametro}>
-                      {p.valor_parametro || <span className="text-texto-light italic">sin valor</span>}
-                    </span>
-                  </TablaTd>
-                  <TablaTd className="text-texto-muted text-sm max-w-[220px]">
-                    <span className="block truncate" title={p.descripcion}>
-                      {p.descripcion || <span className="text-texto-light">—</span>}
-                    </span>
-                  </TablaTd>
-                  <TablaTd className="text-center"><BoolBadge value={p.replica_grupo} /></TablaTd>
-                  <TablaTd className="text-center"><BoolBadge value={p.visible_grupo} /></TablaTd>
-                  <TablaTd className="text-center"><BoolBadge value={p.editable_grupo} /></TablaTd>
-                  <TablaTd className="text-center"><BoolBadge value={p.replica_usuario} /></TablaTd>
-                  <TablaTd className="text-center"><BoolBadge value={p.visible_usuario} /></TablaTd>
-                  <TablaTd className="text-center"><BoolBadge value={p.editable_usuario} /></TablaTd>
-                  <TablaTd>
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => abrirEditar(p)}
-                        className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
-                        title="Editar"
-                      >
-                        <Pencil size={14} />
-                      </button>
-                      <button
-                        onClick={() => setAEliminar(p)}
-                        className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
+            </TablaCabecera>
+            <TablaCuerpo>
+              {itemsLocales.length === 0 ? (
+                <tr>
+                  <TablaTd className="text-center text-texto-muted py-8" colSpan={12 as never}>
+                    {busqueda || filtroCategoria ? 'No se encontraron parámetros' : 'No hay parámetros registrados'}
                   </TablaTd>
                 </tr>
-              ))
-            )}
-          </TablaCuerpo>
-        </Tabla>
+              ) : (
+                itemsLocales.map((p) => (
+                  <SortableRow
+                    key={`${p.categoria_parametro}/${p.tipo_parametro}`}
+                    id={`${p.categoria_parametro}/${p.tipo_parametro}`}
+                    onDoubleClick={() => abrirEditar(p)}
+                  >
+                    <TablaTd>
+                      <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">
+                        {p.categoria_parametro}
+                      </code>
+                    </TablaTd>
+                    <TablaTd>
+                      <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">
+                        {p.tipo_parametro}
+                      </code>
+                    </TablaTd>
+                    <TablaTd className="max-w-[180px]">
+                      <span className="block truncate text-sm font-mono" title={p.valor_parametro}>
+                        {p.valor_parametro || <span className="text-texto-light italic">sin valor</span>}
+                      </span>
+                    </TablaTd>
+                    <TablaTd className="text-texto-muted text-sm max-w-[220px]">
+                      <span className="block truncate" title={p.descripcion}>
+                        {p.descripcion || <span className="text-texto-light">—</span>}
+                      </span>
+                    </TablaTd>
+                    <TablaTd className="text-center"><BoolBadge value={p.replica_grupo} /></TablaTd>
+                    <TablaTd className="text-center"><BoolBadge value={p.visible_grupo} /></TablaTd>
+                    <TablaTd className="text-center"><BoolBadge value={p.editable_grupo} /></TablaTd>
+                    <TablaTd className="text-center"><BoolBadge value={p.replica_usuario} /></TablaTd>
+                    <TablaTd className="text-center"><BoolBadge value={p.visible_usuario} /></TablaTd>
+                    <TablaTd className="text-center"><BoolBadge value={p.editable_usuario} /></TablaTd>
+                    <TablaTd>
+                      <div className="flex items-center justify-end gap-1">
+                        <button
+                          onClick={() => abrirEditar(p)}
+                          className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
+                          title="Editar"
+                        >
+                          <Pencil size={14} />
+                        </button>
+                        <button
+                          onClick={() => setAEliminar(p)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                          title="Eliminar"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    </TablaTd>
+                  </SortableRow>
+                ))
+              )}
+            </TablaCuerpo>
+          </Tabla>
+        </SortableDndContext>
       )}
 
       {/* Paginador */}
@@ -348,7 +377,7 @@ export default function PaginaValoresParametrosGenerales() {
           onChangePage={setPage}
           onChangeLimit={setLimit}
           cargando={cargando}
-          opcionesLimit={[25, 50, 100]}
+          opcionesLimit={[15, 25, 50, 100]}
         />
       )}
 
