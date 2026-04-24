@@ -366,62 +366,57 @@ export default function PaginaParametros() {
   const checkboxCls = 'h-3.5 w-3.5 rounded border-borde text-primario cursor-pointer'
   const labelFlagCls = 'flex items-center gap-1.5 text-xs text-texto-muted cursor-pointer select-none'
 
-  // Componente inline para los 6 flags de un parámetro general
+  // Componente inline para los 6 flags de un parámetro general — una sola línea
   const FlagsGenerales = ({ p }: { p: ParametroRow }) => {
     const key = `${p.categoria_parametro}/${p.tipo_parametro}`
     const saving = (flag: string) => guardandoFlags === `${key}/${flag}`
     return (
-      <div className="mt-2 pt-2 border-t border-borde/60 flex flex-col gap-1.5">
-        {/* Fila Grupo */}
-        <div className="flex items-center gap-4">
-          <span className="text-xs font-medium text-texto-muted w-16 shrink-0">Grupos:</span>
-          <label className={labelFlagCls}>
-            <input type="checkbox" className={checkboxCls}
-              checked={p.replica_grupo ?? false}
-              disabled={saving('replica_grupo')}
-              onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'replica_grupo', e.target.checked)} />
-            Replicar
-          </label>
-          <label className={labelFlagCls}>
-            <input type="checkbox" className={checkboxCls}
-              checked={p.visible_grupo ?? true}
-              disabled={saving('visible_grupo')}
-              onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'visible_grupo', e.target.checked)} />
-            Visible
-          </label>
-          <label className={labelFlagCls}>
-            <input type="checkbox" className={checkboxCls}
-              checked={p.editable_grupo ?? true}
-              disabled={saving('editable_grupo')}
-              onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'editable_grupo', e.target.checked)} />
-            Editable
-          </label>
-        </div>
-        {/* Fila Usuario */}
-        <div className="flex items-center gap-4">
-          <span className="text-xs font-medium text-texto-muted w-16 shrink-0">Usuarios:</span>
-          <label className={labelFlagCls}>
-            <input type="checkbox" className={checkboxCls}
-              checked={p.replica_usuario ?? false}
-              disabled={saving('replica_usuario')}
-              onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'replica_usuario', e.target.checked)} />
-            Replicar
-          </label>
-          <label className={labelFlagCls}>
-            <input type="checkbox" className={checkboxCls}
-              checked={p.visible_usuario ?? true}
-              disabled={saving('visible_usuario')}
-              onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'visible_usuario', e.target.checked)} />
-            Visible
-          </label>
-          <label className={labelFlagCls}>
-            <input type="checkbox" className={checkboxCls}
-              checked={p.editable_usuario ?? true}
-              disabled={saving('editable_usuario')}
-              onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'editable_usuario', e.target.checked)} />
-            Editable
-          </label>
-        </div>
+      <div className="mt-2 pt-2 border-t border-borde/60 flex items-center gap-3 flex-wrap">
+        <span className="text-xs font-medium text-texto-muted shrink-0">Grupos:</span>
+        <label className={labelFlagCls}>
+          <input type="checkbox" className={checkboxCls}
+            checked={p.replica_grupo ?? false}
+            disabled={saving('replica_grupo')}
+            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'replica_grupo', e.target.checked)} />
+          Replicar
+        </label>
+        <label className={labelFlagCls}>
+          <input type="checkbox" className={checkboxCls}
+            checked={p.visible_grupo ?? true}
+            disabled={saving('visible_grupo')}
+            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'visible_grupo', e.target.checked)} />
+          Visible
+        </label>
+        <label className={labelFlagCls}>
+          <input type="checkbox" className={checkboxCls}
+            checked={p.editable_grupo ?? true}
+            disabled={saving('editable_grupo')}
+            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'editable_grupo', e.target.checked)} />
+          Editable
+        </label>
+        <span className="text-texto-light/40 select-none">|</span>
+        <span className="text-xs font-medium text-texto-muted shrink-0">Usuarios:</span>
+        <label className={labelFlagCls}>
+          <input type="checkbox" className={checkboxCls}
+            checked={p.replica_usuario ?? false}
+            disabled={saving('replica_usuario')}
+            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'replica_usuario', e.target.checked)} />
+          Replicar
+        </label>
+        <label className={labelFlagCls}>
+          <input type="checkbox" className={checkboxCls}
+            checked={p.visible_usuario ?? true}
+            disabled={saving('visible_usuario')}
+            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'visible_usuario', e.target.checked)} />
+          Visible
+        </label>
+        <label className={labelFlagCls}>
+          <input type="checkbox" className={checkboxCls}
+            checked={p.editable_usuario ?? true}
+            disabled={saving('editable_usuario')}
+            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'editable_usuario', e.target.checked)} />
+          Editable
+        </label>
       </div>
     )
   }
