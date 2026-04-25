@@ -16,6 +16,7 @@ type TabModal = 'datos' | 'features' | 'system_prompt' | 'programacion_insert' |
 
 const PLAN_VACIO: Partial<Plan> = {
   codigo_plan: '',
+  codigo_plan_superior: null,
   nombre: '',
   alias: '',
   descripcion: '',
@@ -145,6 +146,7 @@ export default function PaginaPlanes() {
             <TablaFila>
               <TablaTh>Código</TablaTh>
               <TablaTh>Nombre</TablaTh>
+              <TablaTh>Superior</TablaTh>
               <TablaTh className="text-right">Tokens/mes</TablaTh>
               <TablaTh className="text-right">Docs</TablaTh>
               <TablaTh className="text-right">USD/mes</TablaTh>
@@ -159,6 +161,7 @@ export default function PaginaPlanes() {
               <TablaFila key={p.codigo_plan}>
                 <TablaTd className="font-mono text-xs">{p.codigo_plan}</TablaTd>
                 <TablaTd className="font-medium">{p.nombre}</TablaTd>
+                <TablaTd className="font-mono text-xs text-texto-muted">{p.codigo_plan_superior || '—'}</TablaTd>
                 <TablaTd className="text-right">{p.tokens_mensuales?.toLocaleString() ?? '—'}</TablaTd>
                 <TablaTd className="text-right">{p.documentos_maximos?.toLocaleString() ?? '—'}</TablaTd>
                 <TablaTd className="text-right">{p.precio_mensual_usd != null ? `$${p.precio_mensual_usd}` : '—'}</TablaTd>
@@ -217,6 +220,24 @@ export default function PaginaPlanes() {
                 <div>
                   <label className="text-sm font-medium">Alias</label>
                   <Input value={form.alias || ''} onChange={(e) => setForm({ ...form, alias: e.target.value })} />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Plan superior</label>
+                  <select
+                    className="w-full border border-borde rounded px-3 py-2 text-sm bg-fondo"
+                    value={form.codigo_plan_superior ?? ''}
+                    onChange={(e) => setForm({ ...form, codigo_plan_superior: e.target.value || null })}
+                  >
+                    <option value="">— Sin superior (plan raíz) —</option>
+                    {planes
+                      .filter((p) => !editando || p.codigo_plan !== editando.codigo_plan)
+                      .map((p) => (
+                        <option key={p.codigo_plan} value={p.codigo_plan}>
+                          {p.nombre} ({p.codigo_plan})
+                        </option>
+                      ))}
+                  </select>
+                  <p className="text-xs text-texto-muted mt-1">El plan al que escala este plan. Jerarquía: Prueba → Personal → Team → Business → Enterprise → Corporate.</p>
                 </div>
                 <div>
                   <label className="text-sm font-medium">Descripción</label>
