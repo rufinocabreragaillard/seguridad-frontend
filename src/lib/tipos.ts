@@ -914,3 +914,10 @@ export interface EspacioTrabajo {
   fecha_termino?: string | null
   total_documentos?: number
 }
+
+// ─── Tipos de Acceso ──────────────────────────────────────────────────────────
+export interface TipoAcceso {
+  codigo_tipo_acceso: string
+  nombre_tipo_acceso: string
+  tipo_acceso_superior?: string | null
+}

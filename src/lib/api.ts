@@ -53,6 +53,7 @@ import type {
   LocaleSoportado,
   EstadoTraducciones,
   EspacioTrabajo,
+  TipoAcceso,
 } from './tipos'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -1656,6 +1657,14 @@ export const promptsApi = {
 
   patchFila: (tabla: string, pk_columna: string, pk_valor: string, campos: Record<string, unknown>) =>
     api.patch<{ ok: boolean; actualizado: number }>('/prompts/fila', { tabla, pk_columna, pk_valor, campos }).then((r) => r.data),
+}
+
+export const tiposAccesoApi = {
+  listar: () => api.get<TipoAcceso[]>('/tipos-acceso').then((r) => r.data),
+  crear: (data: Partial<TipoAcceso>) => api.post<TipoAcceso>('/tipos-acceso', data).then((r) => r.data),
+  actualizar: (codigo: string, data: Partial<TipoAcceso>) =>
+    api.put<TipoAcceso>(`/tipos-acceso/${codigo}`, data).then((r) => r.data),
+  eliminar: (codigo: string) => api.delete(`/tipos-acceso/${codigo}`),
 }
 
 export default api
