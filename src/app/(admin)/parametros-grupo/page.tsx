@@ -70,6 +70,12 @@ export default function PaginaParametrosGrupo() {
     datosBasicosApi.listarTipos(nuevoVal.categoria_parametro).then(setTiposPorCat).catch(() => {})
   }, [nuevoVal.categoria_parametro])
 
+  useEffect(() => {
+    if (filtroCategoria) {
+      setNuevoVal((prev) => ({ ...prev, categoria_parametro: filtroCategoria, tipo_parametro: '' }))
+    }
+  }, [filtroCategoria])
+
   // ── Guardar valor inline ───────────────────────────────────────────────────
   const guardarInline = async (cat: string, tipo: string, valor: string) => {
     const key = `${cat}/${tipo}`
@@ -187,23 +193,13 @@ export default function PaginaParametrosGrupo() {
       {/* ── Tab: Valores ── */}
       {tabActiva === 'valores' && (
         <>
-          {filtroCategoria ? (
-            <div className="flex items-center gap-2">
-              <span className="text-sm text-texto-muted">Categoría:</span>
-              <span className="text-sm font-medium text-texto">
-                {categorias.find((c) => c.categoria_parametro === filtroCategoria)?.nombre ?? filtroCategoria}
-              </span>
-              <button onClick={() => setFiltroCategoria('')} className="text-xs text-primario hover:underline">Ver todas</button>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-texto-muted">Filtrar por categoría:</p>
-              <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
-                <option value="">Todas</option>
-                {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
-              </select>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <p className="text-sm text-texto-muted">Filtrar por categoría:</p>
+            <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
+              <option value="">Todas</option>
+              {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
+            </select>
+          </div>
 
           {cargandoVal ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
@@ -252,16 +248,18 @@ export default function PaginaParametrosGrupo() {
           <div className="border-t border-borde pt-4 mt-2">
             <p className="text-xs font-semibold text-texto-muted uppercase tracking-wider mb-3">Agregar parámetro</p>
             <div className="flex flex-col gap-2">
-              <div className="grid grid-cols-2 gap-2">
-                <select value={nuevoVal.categoria_parametro}
-                  onChange={(e) => setNuevoVal({ categoria_parametro: e.target.value, tipo_parametro: '', valor_parametro: nuevoVal.valor_parametro })}
-                  className={selectCls}>
-                  <option value="">Selecciona categoría</option>
-                  {categorias.filter((c) => c.activo).map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
-                </select>
+              <div className={`gap-2 ${filtroCategoria ? 'flex' : 'grid grid-cols-2'}`}>
+                {!filtroCategoria && (
+                  <select value={nuevoVal.categoria_parametro}
+                    onChange={(e) => setNuevoVal({ categoria_parametro: e.target.value, tipo_parametro: '', valor_parametro: nuevoVal.valor_parametro })}
+                    className={selectCls}>
+                    <option value="">Selecciona categoría</option>
+                    {categorias.filter((c) => c.activo).map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
+                  </select>
+                )}
                 <select value={nuevoVal.tipo_parametro}
                   onChange={(e) => setNuevoVal({ ...nuevoVal, tipo_parametro: e.target.value })}
-                  disabled={!nuevoVal.categoria_parametro} className={selectCls}>
+                  disabled={!nuevoVal.categoria_parametro && !filtroCategoria} className={`${selectCls} flex-1`}>
                   <option value="">Selecciona tipo</option>
                   {tiposDisponibles.map((t) => <option key={t.tipo_parametro} value={t.tipo_parametro}>{t.nombre}</option>)}
                 </select>
