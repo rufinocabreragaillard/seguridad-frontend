@@ -298,12 +298,6 @@ export interface ParametroGeneral {
   tipo_parametro: string
   valor_parametro: string
   descripcion?: string
-  replica_grupo?: boolean
-  visible_grupo?: boolean
-  editable_grupo?: boolean
-  replica_usuario?: boolean
-  visible_usuario?: boolean
-  editable_usuario?: boolean
 }
 
 export interface ParametroGrupo {
@@ -332,6 +326,12 @@ export interface CategoriaParametro {
   activo: boolean
   orden?: number
   fecha_creacion?: string
+  replica_grupo?: boolean
+  visible_grupo?: boolean
+  editable_grupo?: boolean
+  replica_usuario?: boolean
+  visible_usuario?: boolean
+  editable_usuario?: boolean
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null

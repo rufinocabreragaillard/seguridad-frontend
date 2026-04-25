@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Eye, Search, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Search, Download, Check, Minus } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -36,7 +36,11 @@ export default function PaginaParametrosGenerales() {
   const [cargandoCat, setCargandoCat] = useState(true)
   const [modalCat, setModalCat] = useState(false)
   const [catEditando, setCatEditando] = useState<CategoriaParametro | null>(null)
-  const [formCat, setFormCat] = useState({ categoria_parametro: '', nombre: '', descripcion: '', activo: true })
+  const [formCat, setFormCat] = useState({
+    categoria_parametro: '', nombre: '', descripcion: '', activo: true,
+    replica_grupo: false, visible_grupo: true, editable_grupo: true,
+    replica_usuario: false, visible_usuario: true, editable_usuario: true,
+  })
   const [promptsCat, setPromptsCat] = useState<CamposPrompt>({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
   const [mdCat, setMdCat] = useState<string>('')
   const [generandoMdCat, setGenerandoMdCat] = useState(false)
@@ -109,18 +113,56 @@ export default function PaginaParametrosGenerales() {
   useEffect(() => { cargarCategorias(); cargarTipos() }, [cargarCategorias, cargarTipos])
 
   // ── Categorías: guardar ────────────────────────────────────────────────────
-  const abrirNuevaCat = () => { setCatEditando(null); setFormCat({ categoria_parametro: '', nombre: '', descripcion: '', activo: true }); setPromptsCat({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false }); setMdCat(''); setMensajeMdCat(null); setTabModalCat('datos'); setErrorCat(''); setModalCat(true) }
-  const abrirEditarCat = (c: CategoriaParametro) => { const c2 = c as unknown as Record<string, unknown>; setCatEditando(c); setFormCat({ categoria_parametro: c.categoria_parametro, nombre: c.nombre, descripcion: c.descripcion || '', activo: c.activo }); setPromptsCat({ prompt_insert: c2.prompt_insert as string ?? null, prompt_update: c2.prompt_update as string ?? null, system_prompt: c2.system_prompt as string ?? null, python_insert: c2.python_insert as string ?? null, python_update: c2.python_update as string ?? null, javascript: c2.javascript as string ?? null, python_editado_manual: c2.python_editado_manual as boolean ?? false, javascript_editado_manual: c2.javascript_editado_manual as boolean ?? false }); setMdCat((c2.md as string) || ''); setMensajeMdCat(null); setTabModalCat('datos'); setErrorCat(''); setModalCat(true) }
+  const abrirNuevaCat = () => {
+    setCatEditando(null)
+    setFormCat({
+      categoria_parametro: '', nombre: '', descripcion: '', activo: true,
+      replica_grupo: false, visible_grupo: true, editable_grupo: true,
+      replica_usuario: false, visible_usuario: true, editable_usuario: true,
+    })
+    setPromptsCat({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
+    setMdCat(''); setMensajeMdCat(null); setTabModalCat('datos'); setErrorCat(''); setModalCat(true)
+  }
+  const abrirEditarCat = (c: CategoriaParametro) => {
+    const c2 = c as unknown as Record<string, unknown>
+    setCatEditando(c)
+    setFormCat({
+      categoria_parametro: c.categoria_parametro,
+      nombre: c.nombre,
+      descripcion: c.descripcion || '',
+      activo: c.activo,
+      replica_grupo: c.replica_grupo ?? false,
+      visible_grupo: c.visible_grupo ?? true,
+      editable_grupo: c.editable_grupo ?? true,
+      replica_usuario: c.replica_usuario ?? false,
+      visible_usuario: c.visible_usuario ?? true,
+      editable_usuario: c.editable_usuario ?? true,
+    })
+    setPromptsCat({ prompt_insert: c2.prompt_insert as string ?? null, prompt_update: c2.prompt_update as string ?? null, system_prompt: c2.system_prompt as string ?? null, python_insert: c2.python_insert as string ?? null, python_update: c2.python_update as string ?? null, javascript: c2.javascript as string ?? null, python_editado_manual: c2.python_editado_manual as boolean ?? false, javascript_editado_manual: c2.javascript_editado_manual as boolean ?? false })
+    setMdCat((c2.md as string) || ''); setMensajeMdCat(null); setTabModalCat('datos'); setErrorCat(''); setModalCat(true)
+  }
 
   const guardarCat = async (cerrar: boolean) => {
     if (!formCat.categoria_parametro.trim() || !formCat.nombre.trim()) { setErrorCat('Código y nombre son obligatorios'); return }
     setGuardandoCat(true); setErrorCat('')
     try {
       if (catEditando) {
-        const actualizado = await datosBasicosApi.actualizarCategoria(catEditando.categoria_parametro, { nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo, prompt_insert: promptsCat.prompt_insert, prompt_update: promptsCat.prompt_update, system_prompt: promptsCat.system_prompt, python_insert: promptsCat.python_insert, python_update: promptsCat.python_update, javascript: promptsCat.javascript, python_editado_manual: promptsCat.python_editado_manual, javascript_editado_manual: promptsCat.javascript_editado_manual })
+        const actualizado = await datosBasicosApi.actualizarCategoria(catEditando.categoria_parametro, {
+          nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo,
+          replica_grupo: formCat.replica_grupo, visible_grupo: formCat.visible_grupo, editable_grupo: formCat.editable_grupo,
+          replica_usuario: formCat.replica_usuario, visible_usuario: formCat.visible_usuario, editable_usuario: formCat.editable_usuario,
+          prompt_insert: promptsCat.prompt_insert, prompt_update: promptsCat.prompt_update, system_prompt: promptsCat.system_prompt,
+          python_insert: promptsCat.python_insert, python_update: promptsCat.python_update, javascript: promptsCat.javascript,
+          python_editado_manual: promptsCat.python_editado_manual, javascript_editado_manual: promptsCat.javascript_editado_manual,
+        })
         setCatEditando(actualizado)
       } else {
-        const creada = await datosBasicosApi.crearCategoria({ categoria_parametro: formCat.categoria_parametro.toUpperCase(), nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo })
+        const creada = await datosBasicosApi.crearCategoria({
+          categoria_parametro: formCat.categoria_parametro.toUpperCase(),
+          nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo,
+          replica_grupo: formCat.replica_grupo, visible_grupo: formCat.visible_grupo, editable_grupo: formCat.editable_grupo,
+          replica_usuario: formCat.replica_usuario, visible_usuario: formCat.visible_usuario, editable_usuario: formCat.editable_usuario,
+        })
         if (!cerrar) setCatEditando(creada)
       }
       if (cerrar) setModalCat(false)
@@ -210,7 +252,12 @@ export default function PaginaParametrosGenerales() {
                 onClick={() => exportarExcel(catsFiltradas as unknown as Record<string, unknown>[], [
                   { titulo: 'Código', campo: 'categoria_parametro' },
                   { titulo: 'Nombre', campo: 'nombre' },
-                  { titulo: 'Descripción', campo: 'descripcion' },
+                  { titulo: 'Rep G', campo: 'replica_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
+                  { titulo: 'Vis G', campo: 'visible_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
+                  { titulo: 'Edit G', campo: 'editable_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
+                  { titulo: 'Rep U', campo: 'replica_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
+                  { titulo: 'Vis U', campo: 'visible_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
+                  { titulo: 'Edit U', campo: 'editable_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
                   { titulo: 'Estado', campo: 'activo', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
                 ], 'categorias-parametro')}>
                 <Download size={15} />Excel
@@ -226,12 +273,20 @@ export default function PaginaParametrosGenerales() {
               <TablaCabecera><tr>
                 <TablaTh className="w-8"></TablaTh>
                 <TablaTh className="w-10">#</TablaTh>
-                <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh><TablaTh>Estado</TablaTh>
+                <TablaTh>Código</TablaTh>
+                <TablaTh>Nombre</TablaTh>
+                <TablaTh className="text-center">Rep G</TablaTh>
+                <TablaTh className="text-center">Vis G</TablaTh>
+                <TablaTh className="text-center">Edit G</TablaTh>
+                <TablaTh className="text-center">Rep U</TablaTh>
+                <TablaTh className="text-center">Vis U</TablaTh>
+                <TablaTh className="text-center">Edit U</TablaTh>
+                <TablaTh>Estado</TablaTh>
                 <TablaTh className="text-right">Acciones</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
                 {catsFiltradas.length === 0 ? (
-                  <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={7 as never}>{busquedaCat ? 'No se encontraron categorías' : 'No hay categorías registradas'}</TablaTd></tr>
+                  <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={12 as never}>{busquedaCat ? 'No se encontraron categorías' : 'No hay categorías registradas'}</TablaTd></tr>
                 ) : (
                   <SortableDndContext
                     items={catsFiltradas as unknown as Record<string, unknown>[]}
@@ -246,7 +301,12 @@ export default function PaginaParametrosGenerales() {
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{c.orden ?? idx + 1}</TablaTd>
                         <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
                         <TablaTd className="font-medium">{c.nombre}</TablaTd>
-                        <TablaTd className="text-texto-muted text-sm">{c.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
+                        <TablaTd className="text-center">{c.replica_grupo ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
+                        <TablaTd className="text-center">{c.visible_grupo ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
+                        <TablaTd className="text-center">{c.editable_grupo ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
+                        <TablaTd className="text-center">{c.replica_usuario ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
+                        <TablaTd className="text-center">{c.visible_usuario ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
+                        <TablaTd className="text-center">{c.editable_usuario ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
                         <TablaTd>
                           <Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? 'Activo' : 'Inactivo'}</Insignia>
                         </TablaTd>
@@ -369,6 +429,41 @@ export default function PaginaParametrosGenerales() {
                 <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
                 <textarea className={inputCls} rows={2} placeholder="Descripción opcional" value={formCat.descripcion}
                   onChange={(e) => setFormCat({ ...formCat, descripcion: e.target.value })} />
+              </div>
+              <div className="border border-borde rounded-lg p-3">
+                <p className="text-sm font-medium text-texto mb-2">Políticas de propagación y acceso</p>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs text-texto-muted font-medium uppercase">Grupo</p>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formCat.replica_grupo} onChange={(e) => setFormCat({ ...formCat, replica_grupo: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
+                      Replica a grupo
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formCat.visible_grupo} onChange={(e) => setFormCat({ ...formCat, visible_grupo: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
+                      Visible para grupo
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formCat.editable_grupo} onChange={(e) => setFormCat({ ...formCat, editable_grupo: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
+                      Editable por grupo
+                    </label>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <p className="text-xs text-texto-muted font-medium uppercase">Usuario</p>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formCat.replica_usuario} onChange={(e) => setFormCat({ ...formCat, replica_usuario: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
+                      Replica a usuario
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formCat.visible_usuario} onChange={(e) => setFormCat({ ...formCat, visible_usuario: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
+                      Visible para usuario
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={formCat.editable_usuario} onChange={(e) => setFormCat({ ...formCat, editable_usuario: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
+                      Editable por usuario
+                    </label>
+                  </div>
+                </div>
               </div>
               {catEditando && (
                 <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">

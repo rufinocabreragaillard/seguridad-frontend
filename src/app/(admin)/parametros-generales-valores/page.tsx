@@ -9,7 +9,6 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Paginador } from '@/components/ui/paginador'
-import { Insignia } from '@/components/ui/insignia'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -28,31 +27,11 @@ const fetcherParametros = (params: { page: number; limit: number; q: string; cat
     categoria: params.categoria || undefined,
   })
 
-const BoolCheck = ({ value, onChange }: { value: boolean; onChange: (v: boolean) => void }) => (
-  <input
-    type="checkbox"
-    checked={value}
-    onChange={(e) => onChange(e.target.checked)}
-    className="rounded border-borde text-primario h-4 w-4 cursor-pointer"
-  />
-)
-
-const BoolBadge = ({ value }: { value: boolean | undefined }) =>
-  value === undefined ? <span className="text-texto-light">—</span> : (
-    <Insignia variante={value ? 'exito' : 'error'}>{value ? 'Sí' : 'No'}</Insignia>
-  )
-
 type FormData = {
   categoria_parametro: string
   tipo_parametro: string
   valor_parametro: string
   descripcion: string
-  replica_grupo: boolean
-  visible_grupo: boolean
-  editable_grupo: boolean
-  replica_usuario: boolean
-  visible_usuario: boolean
-  editable_usuario: boolean
 }
 
 const FORM_VACIO: FormData = {
@@ -60,12 +39,6 @@ const FORM_VACIO: FormData = {
   tipo_parametro: '',
   valor_parametro: '',
   descripcion: '',
-  replica_grupo: false,
-  visible_grupo: true,
-  editable_grupo: true,
-  replica_usuario: false,
-  visible_usuario: false,
-  editable_usuario: false,
 }
 
 export default function PaginaValoresParametrosGenerales() {
@@ -139,12 +112,6 @@ export default function PaginaValoresParametrosGenerales() {
       tipo_parametro: p.tipo_parametro,
       valor_parametro: p.valor_parametro || '',
       descripcion: p.descripcion || '',
-      replica_grupo: p.replica_grupo ?? false,
-      visible_grupo: p.visible_grupo ?? true,
-      editable_grupo: p.editable_grupo ?? true,
-      replica_usuario: p.replica_usuario ?? false,
-      visible_usuario: p.visible_usuario ?? false,
-      editable_usuario: p.editable_usuario ?? false,
     })
     setError('')
     setModal(true)
@@ -163,12 +130,6 @@ export default function PaginaValoresParametrosGenerales() {
         tipo_parametro: form.tipo_parametro.toUpperCase().trim(),
         valor_parametro: form.valor_parametro,
         descripcion: form.descripcion || undefined,
-        replica_grupo: form.replica_grupo,
-        visible_grupo: form.visible_grupo,
-        editable_grupo: form.editable_grupo,
-        replica_usuario: form.replica_usuario,
-        visible_usuario: form.visible_usuario,
-        editable_usuario: form.editable_usuario,
       })
       if (cerrar) {
         setModal(false)
@@ -178,12 +139,6 @@ export default function PaginaValoresParametrosGenerales() {
           tipo_parametro: form.tipo_parametro.toUpperCase().trim(),
           valor_parametro: form.valor_parametro,
           descripcion: form.descripcion || undefined,
-          replica_grupo: form.replica_grupo,
-          visible_grupo: form.visible_grupo,
-          editable_grupo: form.editable_grupo,
-          replica_usuario: form.replica_usuario,
-          visible_usuario: form.visible_usuario,
-          editable_usuario: form.editable_usuario,
         })
       }
       refetch()
@@ -253,12 +208,6 @@ export default function PaginaValoresParametrosGenerales() {
                   { titulo: 'Tipo', campo: 'tipo_parametro' },
                   { titulo: 'Valor', campo: 'valor_parametro' },
                   { titulo: 'Descripción', campo: 'descripcion' },
-                  { titulo: 'Replica Grupo', campo: 'replica_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Visible Grupo', campo: 'visible_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Editable Grupo', campo: 'editable_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Replica Usuario', campo: 'replica_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Visible Usuario', campo: 'visible_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Editable Usuario', campo: 'editable_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
                 ],
                 'valores-parametros-generales'
               )
@@ -282,7 +231,7 @@ export default function PaginaValoresParametrosGenerales() {
       ) : (
         <SortableDndContext
           items={itemsLocales as unknown as Record<string, unknown>[]}
-          getId={(p) => `${(p as ParametroGeneral).categoria_parametro}/${(p as ParametroGeneral).tipo_parametro}`}
+          getId={(p) => `${(p as unknown as ParametroGeneral).categoria_parametro}/${(p as unknown as ParametroGeneral).tipo_parametro}`}
           onReorder={(n) => reordenar(n as unknown as ParametroGeneral[])}
         >
           <Tabla>
@@ -292,20 +241,13 @@ export default function PaginaValoresParametrosGenerales() {
                 <TablaTh>Categoría</TablaTh>
                 <TablaTh>Tipo</TablaTh>
                 <TablaTh>Valor</TablaTh>
-                <TablaTh>Descripción</TablaTh>
-                <TablaTh className="text-center" title="Replica al grupo al inicializar">Rep.Grupo</TablaTh>
-                <TablaTh className="text-center" title="Visible para el grupo">Vis.Grupo</TablaTh>
-                <TablaTh className="text-center" title="Editable por el grupo">Ed.Grupo</TablaTh>
-                <TablaTh className="text-center" title="Replica al usuario al inicializar">Rep.Usu.</TablaTh>
-                <TablaTh className="text-center" title="Visible para el usuario">Vis.Usu.</TablaTh>
-                <TablaTh className="text-center" title="Editable por el usuario">Ed.Usu.</TablaTh>
                 <TablaTh className="text-right">Acciones</TablaTh>
               </tr>
             </TablaCabecera>
             <TablaCuerpo>
               {itemsLocales.length === 0 ? (
                 <tr>
-                  <TablaTd className="text-center text-texto-muted py-8" colSpan={12 as never}>
+                  <TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>
                     {busqueda || filtroCategoria ? 'No se encontraron parámetros' : 'No hay parámetros registrados'}
                   </TablaTd>
                 </tr>
@@ -326,22 +268,11 @@ export default function PaginaValoresParametrosGenerales() {
                         {p.tipo_parametro}
                       </code>
                     </TablaTd>
-                    <TablaTd className="max-w-[180px]">
+                    <TablaTd className="max-w-[280px]">
                       <span className="block truncate text-sm font-mono" title={p.valor_parametro}>
                         {p.valor_parametro || <span className="text-texto-light italic">sin valor</span>}
                       </span>
                     </TablaTd>
-                    <TablaTd className="text-texto-muted text-sm max-w-[220px]">
-                      <span className="block truncate" title={p.descripcion}>
-                        {p.descripcion || <span className="text-texto-light">—</span>}
-                      </span>
-                    </TablaTd>
-                    <TablaTd className="text-center"><BoolBadge value={p.replica_grupo} /></TablaTd>
-                    <TablaTd className="text-center"><BoolBadge value={p.visible_grupo} /></TablaTd>
-                    <TablaTd className="text-center"><BoolBadge value={p.editable_grupo} /></TablaTd>
-                    <TablaTd className="text-center"><BoolBadge value={p.replica_usuario} /></TablaTd>
-                    <TablaTd className="text-center"><BoolBadge value={p.visible_usuario} /></TablaTd>
-                    <TablaTd className="text-center"><BoolBadge value={p.editable_usuario} /></TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
                         <button
@@ -433,42 +364,6 @@ export default function PaginaValoresParametrosGenerales() {
               value={form.descripcion}
               onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
             />
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-texto mb-2">Comportamiento en grupos</p>
-            <div className="grid grid-cols-3 gap-3 bg-fondo rounded-lg border border-borde p-3">
-              <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                <BoolCheck value={form.replica_grupo} onChange={(v) => setForm({ ...form, replica_grupo: v })} />
-                <span>Replica al grupo</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                <BoolCheck value={form.visible_grupo} onChange={(v) => setForm({ ...form, visible_grupo: v })} />
-                <span>Visible para grupo</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                <BoolCheck value={form.editable_grupo} onChange={(v) => setForm({ ...form, editable_grupo: v })} />
-                <span>Editable por grupo</span>
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <p className="text-sm font-medium text-texto mb-2">Comportamiento en usuarios</p>
-            <div className="grid grid-cols-3 gap-3 bg-fondo rounded-lg border border-borde p-3">
-              <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                <BoolCheck value={form.replica_usuario} onChange={(v) => setForm({ ...form, replica_usuario: v })} />
-                <span>Replica al usuario</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                <BoolCheck value={form.visible_usuario} onChange={(v) => setForm({ ...form, visible_usuario: v })} />
-                <span>Visible para usuario</span>
-              </label>
-              <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                <BoolCheck value={form.editable_usuario} onChange={(v) => setForm({ ...form, editable_usuario: v })} />
-                <span>Editable por usuario</span>
-              </label>
-            </div>
           </div>
 
           {error && <p className="text-sm text-error">{error}</p>}

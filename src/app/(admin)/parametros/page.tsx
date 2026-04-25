@@ -21,13 +21,6 @@ interface ParametroRow {
   valor_parametro: string
   descripcion?: string
   orden?: number
-  // flags generales
-  replica_grupo?: boolean
-  visible_grupo?: boolean
-  editable_grupo?: boolean
-  replica_usuario?: boolean
-  visible_usuario?: boolean
-  editable_usuario?: boolean
   // flags grupo/usuario
   visible?: boolean
   editable?: boolean
@@ -44,7 +37,6 @@ export default function PaginaParametros() {
   // Generales
   const [paramsGenerales, setParamsGenerales] = useState<ParametroRow[]>([])
   const [cargandoGenerales, setCargandoGenerales] = useState(false)
-  const [guardandoFlags, setGuardandoFlags] = useState<string | null>(null)
 
   // Grupo
   const [paramsGrupo, setParamsGrupo] = useState<ParametroRow[]>([])
@@ -106,12 +98,6 @@ export default function PaginaParametros() {
         valor_parametro: p.valor_parametro,
         descripcion: p.descripcion,
         orden: (p as ParametroGeneral & { orden?: number }).orden ?? 0,
-        replica_grupo: p.replica_grupo ?? false,
-        visible_grupo: p.visible_grupo ?? true,
-        editable_grupo: p.editable_grupo ?? true,
-        replica_usuario: p.replica_usuario ?? false,
-        visible_usuario: p.visible_usuario ?? true,
-        editable_usuario: p.editable_usuario ?? true,
       })))
     } catch { setParamsGenerales([]) }
     finally { setCargandoGenerales(false) }
@@ -247,32 +233,6 @@ export default function PaginaParametros() {
     }
   }
 
-  // ── Guardar flags de parámetro general ───────────────────────────────────
-  const guardarFlagGeneral = async (cat: string, tipo: string, flag: string, valor: boolean) => {
-    const key = `${cat}/${tipo}/${flag}`
-    setGuardandoFlags(key)
-    const param = paramsGenerales.find(p => p.categoria_parametro === cat && p.tipo_parametro === tipo)
-    if (!param) return
-    setParamsGenerales(prev => prev.map(p =>
-      p.categoria_parametro === cat && p.tipo_parametro === tipo ? { ...p, [flag]: valor } : p
-    ))
-    try {
-      await parametrosApi.upsertGenerales({
-        categoria_parametro: cat,
-        tipo_parametro: tipo,
-        valor_parametro: param.valor_parametro,
-        [flag]: valor,
-      })
-    } catch {
-      setParamsGenerales(prev => prev.map(p =>
-        p.categoria_parametro === cat && p.tipo_parametro === tipo ? { ...p, [flag]: !valor } : p
-      ))
-      setError('Error al guardar el flag')
-    } finally {
-      setGuardandoFlags(null)
-    }
-  }
-
   // ── Eliminar parámetro ────────────────────────────────────────────────────
   const [paramAEliminar, setParamAEliminar] = useState<{ cat: string; tipo: string } | null>(null)
   const [eliminandoParam, setEliminandoParam] = useState(false)
@@ -363,63 +323,6 @@ export default function PaginaParametros() {
   }, [allParams, page])
 
   const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50'
-  const checkboxCls = 'h-3.5 w-3.5 rounded border-borde text-primario cursor-pointer'
-  const labelFlagCls = 'flex items-center gap-1.5 text-xs text-texto-muted cursor-pointer select-none'
-
-  // Componente inline para los 6 flags de un parámetro general — una sola línea
-  const FlagsGenerales = ({ p }: { p: ParametroRow }) => {
-    const key = `${p.categoria_parametro}/${p.tipo_parametro}`
-    const saving = (flag: string) => guardandoFlags === `${key}/${flag}`
-    return (
-      <div className="mt-2 pt-2 border-t border-borde/60 flex items-center gap-3 flex-wrap">
-        <span className="text-xs font-medium text-texto-muted shrink-0">Grupos:</span>
-        <label className={labelFlagCls}>
-          <input type="checkbox" className={checkboxCls}
-            checked={p.replica_grupo ?? false}
-            disabled={saving('replica_grupo')}
-            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'replica_grupo', e.target.checked)} />
-          Replicar
-        </label>
-        <label className={labelFlagCls}>
-          <input type="checkbox" className={checkboxCls}
-            checked={p.visible_grupo ?? true}
-            disabled={saving('visible_grupo')}
-            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'visible_grupo', e.target.checked)} />
-          Visible
-        </label>
-        <label className={labelFlagCls}>
-          <input type="checkbox" className={checkboxCls}
-            checked={p.editable_grupo ?? true}
-            disabled={saving('editable_grupo')}
-            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'editable_grupo', e.target.checked)} />
-          Editable
-        </label>
-        <span className="text-texto-light/40 select-none">|</span>
-        <span className="text-xs font-medium text-texto-muted shrink-0">Usuarios:</span>
-        <label className={labelFlagCls}>
-          <input type="checkbox" className={checkboxCls}
-            checked={p.replica_usuario ?? false}
-            disabled={saving('replica_usuario')}
-            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'replica_usuario', e.target.checked)} />
-          Replicar
-        </label>
-        <label className={labelFlagCls}>
-          <input type="checkbox" className={checkboxCls}
-            checked={p.visible_usuario ?? true}
-            disabled={saving('visible_usuario')}
-            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'visible_usuario', e.target.checked)} />
-          Visible
-        </label>
-        <label className={labelFlagCls}>
-          <input type="checkbox" className={checkboxCls}
-            checked={p.editable_usuario ?? true}
-            disabled={saving('editable_usuario')}
-            onChange={e => guardarFlagGeneral(p.categoria_parametro, p.tipo_parametro, 'editable_usuario', e.target.checked)} />
-          Editable
-        </label>
-      </div>
-    )
-  }
 
   // Indicadores de estado para grupo/usuario
   const BadgesParam = ({ p }: { p: ParametroRow }) => {
@@ -496,7 +399,7 @@ export default function PaginaParametros() {
             <>
               <SortableDndContext
                 items={pagedParams as unknown as Record<string, unknown>[]}
-                getId={(p) => `${(p as ParametroRow).categoria_parametro}/${(p as ParametroRow).tipo_parametro}`}
+                getId={(p) => `${(p as unknown as ParametroRow).categoria_parametro}/${(p as unknown as ParametroRow).tipo_parametro}`}
                 onReorder={(nuevos) => reordenar(nuevos as unknown as ParametroRow[])}
               >
                 <div className="flex flex-col gap-3">
@@ -556,8 +459,6 @@ export default function PaginaParametros() {
                               <Trash2 size={14} />
                             </button>
                           </div>
-                          {/* Flags (solo tab generales) */}
-                          {tabActiva === 'generales' && <FlagsGenerales p={p} />}
                         </div>
                       </SortableListItem>
                     )

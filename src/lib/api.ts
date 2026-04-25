@@ -454,8 +454,7 @@ export const parametrosApi = {
     api.put(`/parametros/generales/${codigo}`, { valor }),
   upsertGenerales: (datos: {
     categoria_parametro: string; tipo_parametro: string; valor_parametro: string;
-    replica_grupo?: boolean; visible_grupo?: boolean; editable_grupo?: boolean;
-    replica_usuario?: boolean; visible_usuario?: boolean; editable_usuario?: boolean;
+    descripcion?: string;
   }) =>
     api.put('/parametros/generales', datos),
   eliminarGeneral: (categoria: string, tipo: string) =>
