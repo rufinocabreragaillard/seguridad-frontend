@@ -367,6 +367,16 @@ export const funcionesApi = {
       docs_virtuales: string
       mensaje: string
     }>('/funciones/sincronizar-todas').then((r) => r.data),
+
+  // Dependencias (arcos del grafo)
+  listarDependenciasSalientes: (codigo: string) =>
+    api.get<import('./tipos').FuncionDependencia[]>(`/funciones/${codigo}/dependencias/salientes`).then((r) => r.data),
+  listarDependenciasEntrantes: (codigo: string) =>
+    api.get<import('./tipos').FuncionDependencia[]>(`/funciones/${codigo}/dependencias/entrantes`).then((r) => r.data),
+  agregarDependencia: (codigo: string, codigoRequerida: string, motivo?: string) =>
+    api.post(`/funciones/${codigo}/dependencias`, { codigo_funcion_requerida: codigoRequerida, motivo: motivo || '' }).then((r) => r.data),
+  eliminarDependencia: (codigo: string, codigoRequerida: string) =>
+    api.delete(`/funciones/${codigo}/dependencias/${codigoRequerida}`).then((r) => r.data),
 }
 
 // ─── Aplicaciones ─────────────────────────────────────────────────────────────

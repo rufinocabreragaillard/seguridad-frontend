@@ -15,7 +15,7 @@ import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { aplicacionesApi, funcionesApi, registroLLMApi, promptsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM } from '@/lib/tipos'
+import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM, FuncionDependencia } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { TIPOS_ELEMENTO, ETIQUETA_TIPO, etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
@@ -76,7 +76,7 @@ export default function PaginaFunciones() {
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' | 'requeridas' | 'dependientes'>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
   const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
@@ -95,6 +95,15 @@ export default function PaginaFunciones() {
   // APIs de la funcion
   const [apisDeFuncion, setApisDeFuncion] = useState<ApiEndpoint[]>([])
   const [cargandoApisFuncion, setCargandoApisFuncion] = useState(false)
+
+  // Dependencias (arcos del grafo)
+  const [depSalientes, setDepSalientes] = useState<FuncionDependencia[]>([])
+  const [depEntrantes, setDepEntrantes] = useState<FuncionDependencia[]>([])
+  const [cargandoDep, setCargandoDep] = useState(false)
+  const [nuevaDepRequerida, setNuevaDepRequerida] = useState('')
+  const [nuevaDepMotivo, setNuevaDepMotivo] = useState('')
+  const [agregandoDep, setAgregandoDep] = useState(false)
+  const [errorDep, setErrorDep] = useState('')
 
   // Confirmar eliminacion
   const [confirmacion, setConfirmacion] = useState<Funcion | null>(null)
@@ -137,7 +146,7 @@ export default function PaginaFunciones() {
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
-  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
+  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' | 'requeridas' | 'dependientes' = 'datos') => {
     setFuncionEditando(f)
     setFormFuncion({
       codigo_funcion: f.codigo_funcion,
@@ -169,9 +178,12 @@ export default function PaginaFunciones() {
     })
     setErrorFuncion('')
     setMensajeMd(null)
+    setErrorDep('')
+    setNuevaDepRequerida(''); setNuevaDepMotivo('')
     setTabModalFuncion(tabInicial)
     cargarAppsDeFuncion(f.codigo_funcion)
     cargarApisDeFuncion(f.codigo_funcion)
+    cargarDependencias(f.codigo_funcion)
     setModalFuncion(true)
   }
   const guardarFuncion = async (cerrar: boolean) => {
@@ -231,6 +243,39 @@ export default function PaginaFunciones() {
     try { setApisDeFuncion(await funcionesApi.listarApis(c)) } catch { setApisDeFuncion([]) }
     finally { setCargandoApisFuncion(false) }
   }, [])
+
+  const cargarDependencias = useCallback(async (c: string) => {
+    setCargandoDep(true)
+    try {
+      const [sal, ent] = await Promise.all([
+        funcionesApi.listarDependenciasSalientes(c),
+        funcionesApi.listarDependenciasEntrantes(c),
+      ])
+      setDepSalientes(sal)
+      setDepEntrantes(ent)
+    } catch {
+      setDepSalientes([]); setDepEntrantes([])
+    } finally { setCargandoDep(false) }
+  }, [])
+
+  const agregarDepRequerida = async () => {
+    if (!funcionEditando || !nuevaDepRequerida) return
+    setAgregandoDep(true); setErrorDep('')
+    try {
+      await funcionesApi.agregarDependencia(funcionEditando.codigo_funcion, nuevaDepRequerida, nuevaDepMotivo)
+      setNuevaDepRequerida(''); setNuevaDepMotivo('')
+      cargarDependencias(funcionEditando.codigo_funcion)
+    } catch (e) { setErrorDep(e instanceof Error ? e.message : 'Error al agregar') }
+    finally { setAgregandoDep(false) }
+  }
+
+  const eliminarDepRequerida = async (requerida: string) => {
+    if (!funcionEditando) return
+    try {
+      await funcionesApi.eliminarDependencia(funcionEditando.codigo_funcion, requerida)
+      cargarDependencias(funcionEditando.codigo_funcion)
+    } catch (e) { setErrorDep(e instanceof Error ? e.message : 'Error al eliminar') }
+  }
 
   const asignarAppAFuncion = async () => {
     if (!appNuevaFuncion || !funcionEditando) return; setAsignandoAppFuncion(true)
@@ -309,6 +354,8 @@ export default function PaginaFunciones() {
     ...(funcionEditando ? [
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
       { key: 'apis', label: `APIs (${apisDeFuncion.length})` },
+      { key: 'requeridas', label: `Func. Requeridas (${depSalientes.length})` },
+      { key: 'dependientes', label: `Func. Dependientes (${depEntrantes.length})` },
       ...(esAdmin ? [
         { key: 'system_prompt', label: 'System Prompt' },
         { key: 'vista', label: 'Vista' },
@@ -862,6 +909,94 @@ export default function PaginaFunciones() {
                 onCerrar={() => setModalFuncion(false)}
                 cargando={guardandoFuncion}
               />
+            </div>
+          )}
+
+          {/* Tab Funciones Requeridas (arcos salientes: esta función requiere a...) */}
+          {tabModalFuncion === 'requeridas' && funcionEditando && (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-texto-muted">Funciones que <strong>{funcionEditando.nombre}</strong> requiere para poder ejecutarse (arcos salientes del grafo).</p>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <select
+                    value={nuevaDepRequerida}
+                    onChange={(e) => setNuevaDepRequerida(e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">Seleccionar función requerida...</option>
+                    {funciones
+                      .filter((f) => f.codigo_funcion !== funcionEditando.codigo_funcion && !depSalientes.some((d) => d.codigo_funcion_requerida === f.codigo_funcion))
+                      .map((f) => (
+                        <option key={f.codigo_funcion} value={f.codigo_funcion}>{f.nombre} ({f.codigo_funcion})</option>
+                      ))}
+                  </select>
+                </div>
+                <Boton variante="primario" onClick={agregarDepRequerida} cargando={agregandoDep} disabled={!nuevaDepRequerida}>
+                  <Plus size={14} />Agregar
+                </Boton>
+              </div>
+              {nuevaDepRequerida && (
+                <input
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario"
+                  placeholder="Motivo / descripción del arco (opcional)"
+                  value={nuevaDepMotivo}
+                  onChange={(e) => setNuevaDepMotivo(e.target.value)}
+                />
+              )}
+              {errorDep && <p className="text-sm text-error">{errorDep}</p>}
+              {cargandoDep ? (
+                <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+              ) : depSalientes.length === 0 ? (
+                <p className="text-sm text-texto-muted text-center py-4">No tiene funciones requeridas</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {depSalientes.map((d) => (
+                    <div key={d.codigo_funcion_requerida} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface" onDoubleClick={() => {
+                      const f = funciones.find((fn) => fn.codigo_funcion === d.codigo_funcion_requerida)
+                      if (f) abrirEditarFuncion(f)
+                    }}>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-texto">{d.funciones?.nombre_funcion || d.codigo_funcion_requerida}</span>
+                        {d.motivo && <span className="text-xs text-texto-muted">{d.motivo}</span>}
+                        <code className="text-xs text-texto-muted font-mono">{d.codigo_funcion_requerida}</code>
+                      </div>
+                      <button onClick={() => eliminarDepRequerida(d.codigo_funcion_requerida!)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar">
+                        <X size={14} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
+            </div>
+          )}
+
+          {/* Tab Funciones Dependientes (arcos entrantes: funciones que dependen de esta) */}
+          {tabModalFuncion === 'dependientes' && funcionEditando && (
+            <div className="flex flex-col gap-4">
+              <p className="text-sm text-texto-muted">Funciones que <strong>dependen</strong> de <strong>{funcionEditando.nombre}</strong> (arcos entrantes del grafo). Solo lectura — se gestionan desde la función dependiente.</p>
+              {cargandoDep ? (
+                <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+              ) : depEntrantes.length === 0 ? (
+                <p className="text-sm text-texto-muted text-center py-4">Ninguna función depende de esta</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {depEntrantes.map((d) => (
+                    <div key={d.codigo_funcion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface cursor-pointer hover:bg-fondo transition-colors" onDoubleClick={() => {
+                      const f = funciones.find((fn) => fn.codigo_funcion === d.codigo_funcion)
+                      if (f) abrirEditarFuncion(f)
+                    }}>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-texto">{d.funciones?.nombre_funcion || d.codigo_funcion}</span>
+                        {d.motivo && <span className="text-xs text-texto-muted">{d.motivo}</span>}
+                        <code className="text-xs text-texto-muted font-mono">{d.codigo_funcion}</code>
+                      </div>
+                      <span className="text-xs text-texto-muted">doble clic para abrir</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
             </div>
           )}
         </div>
