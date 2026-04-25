@@ -106,6 +106,10 @@ export default function PaginaTiposAcceso() {
             <span className="text-xs text-texto-muted ml-2">({item.codigo_tipo_acceso})</span>
           </div>
 
+          <span className="text-xs text-texto-muted shrink-0 w-16 text-right pr-2">
+            Nivel {nivel + 1}
+          </span>
+
           <div className="flex items-center gap-0.5 shrink-0">
             <button
               onClick={() => crud.abrirEditar(item)}
