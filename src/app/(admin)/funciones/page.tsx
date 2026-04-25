@@ -76,7 +76,7 @@ export default function PaginaFunciones() {
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' | 'requeridas' | 'dependientes'>('datos')
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' | 'requeridas'>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
   const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
@@ -353,9 +353,7 @@ export default function PaginaFunciones() {
     { key: 'otros', label: 'Otros Datos' },
     ...(funcionEditando ? [
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
-      { key: 'apis', label: `APIs (${apisDeFuncion.length})` },
       { key: 'requeridas', label: `Func. Requeridas (${depSalientes.length})` },
-      { key: 'dependientes', label: `Func. Dependientes (${depEntrantes.length})` },
       ...(esAdmin ? [
         { key: 'system_prompt', label: 'System Prompt' },
         { key: 'vista', label: 'Vista' },
@@ -432,7 +430,7 @@ export default function PaginaFunciones() {
       </SortableDndContext>
 
       {/* ── MODAL FUNCION ── */}
-      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar función: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[900px] max-w-[95vw]">
+      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar función: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[1200px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
