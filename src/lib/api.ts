@@ -349,6 +349,24 @@ export const funcionesApi = {
     api.post<{ sql_view: string }>(`/funciones/${codigo}/generar-vista`).then((r) => r.data),
   sincronizarVista: (codigo: string) =>
     api.post<{ mensaje: string; codigo_funcion: string }>(`/funciones/${codigo}/sincronizar-vista`).then((r) => r.data),
+  // Sincroniza una funcion (grafo + doc virtual + APIs huerfanas). Reporte minimalista.
+  sincronizar: (codigo: string) =>
+    api.post<{
+      codigo_funcion: string
+      arcos_totales: number
+      arcos_nuevos: number
+      doc_virtual: string
+      apis_huerfanas: number
+      mensaje: string
+    }>(`/funciones/${codigo}/sincronizar`).then((r) => r.data),
+  // Full rebuild: refresca grafo de TODAS las funciones + sync masivo doc virtual en background.
+  sincronizarTodas: () =>
+    api.post<{
+      arcos_totales: number
+      arcos_nuevos: number
+      docs_virtuales: string
+      mensaje: string
+    }>('/funciones/sincronizar-todas').then((r) => r.data),
 }
 
 // ─── Aplicaciones ─────────────────────────────────────────────────────────────

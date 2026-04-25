@@ -254,6 +254,20 @@ export default function PaginaFunciones() {
   }
 
   // ── Traducir fila individual ───────────────────────────────────────────────
+  const [sincronizando, setSincronizando] = useState<string | null>(null)
+  const sincronizarFuncion = async (f: Funcion) => {
+    if (sincronizando) return
+    setSincronizando(f.codigo_funcion)
+    try {
+      const res = await funcionesApi.sincronizar(f.codigo_funcion)
+      alert(res.mensaje)
+    } catch (e) {
+      alert(`Error sincronizando: ${e instanceof Error ? e.message : 'desconocido'}`)
+    } finally {
+      setSincronizando(null)
+    }
+  }
+
   const traducirFuncion = async (f: Funcion) => {
     if (traduciendo) return
     if (f.traducir === false) {
@@ -349,6 +363,16 @@ export default function PaginaFunciones() {
                     </button>
                     {grupoActivo === 'ADMIN' && (
                       <button onClick={() => abrirEditarFuncion(f, 'programacion_insert')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
+                    )}
+                    {grupoActivo === 'ADMIN' && (
+                      <button
+                        onClick={() => sincronizarFuncion(f)}
+                        disabled={sincronizando === f.codigo_funcion}
+                        className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                        title="Sincronizar (refrescar grafo de dependencias + doc virtual + APIs)"
+                      >
+                        {sincronizando === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
+                      </button>
                     )}
                     <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
                     <button onClick={() => setConfirmacion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Brain, RefreshCw, Upload, Zap, Languages, Globe,
   AlertCircle, CheckCircle2, Code2, FileText, Play, ChevronDown, ChevronUp, Search,
-  Network,
+  Network, Workflow,
 } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import {
@@ -14,7 +14,7 @@ import {
 import type { EstadoTraducciones, Funcion } from '@/lib/tipos'
 import ES_MESSAGES from '../../../../messages/es.json'
 
-type Tab = 'prompts' | 'codigo' | 'mensajes' | 'traducciones' | 'apis' | 'jerarquias'
+type Tab = 'prompts' | 'codigo' | 'mensajes' | 'traducciones' | 'apis' | 'jerarquias' | 'grafo'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'prompts',      label: 'Prompts',      icon: <Brain className="w-4 h-4" /> },
@@ -23,6 +23,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'traducciones', label: 'Traducciones', icon: <Languages className="w-4 h-4" /> },
   { id: 'apis',         label: 'APIs',         icon: <Globe className="w-4 h-4" /> },
   { id: 'jerarquias',   label: 'Jerarquías',   icon: <Network className="w-4 h-4" /> },
+  { id: 'grafo',        label: 'Grafo Funciones', icon: <Workflow className="w-4 h-4" /> },
 ]
 
 // Componente reutilizable para la barra filtro + acciones
@@ -647,6 +648,82 @@ export default function PaginaPrompts() {
           </p>
         </div>
       )}
+
+      {tab === 'grafo' && <TabGrafoFunciones />}
+    </div>
+  )
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Tab Grafo Funciones — sincronización masiva del grafo de dependencias entre funciones
+// ─────────────────────────────────────────────────────────────────────────────
+function TabGrafoFunciones() {
+  const [sincronizando, setSincronizando] = useState(false)
+  const [resultado, setResultado] = useState<{
+    arcos_totales: number
+    arcos_nuevos: number
+    docs_virtuales: string
+    mensaje: string
+  } | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  const sincronizarTodas = async () => {
+    if (sincronizando) return
+    setSincronizando(true)
+    setError(null)
+    setResultado(null)
+    try {
+      const res = await funcionesApi.sincronizarTodas()
+      setResultado(res)
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error desconocido')
+    } finally {
+      setSincronizando(false)
+    }
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1">
+          <p className="text-sm text-texto-muted">
+            Recomputa los arcos de <code>rel_funcion_dependencia</code> de TODAS las funciones desde
+            <code> api_endpoints.tabla_asociada</code> cruzado con FKs. No sobreescribe arcos con código manual
+            (preserva <code>python_*</code>, <code>prompt_*</code>, <code>orden</code>). Además dispara la
+            regeneración de los documentos virtuales del RAG en background. Solo super-admin.
+          </p>
+        </div>
+        <Boton variante="primario" tamano="sm" onClick={sincronizarTodas} disabled={sincronizando}>
+          {sincronizando
+            ? <><RefreshCw className="w-4 h-4 animate-spin" /> Sincronizando…</>
+            : <><Workflow className="w-4 h-4" /> Sincronizar todas</>}
+        </Boton>
+      </div>
+
+      {error && (
+        <div className="p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 text-error mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-error">{error}</p>
+        </div>
+      )}
+
+      {resultado && (
+        <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-2">
+          <CheckCircle2 className="w-4 h-4 text-emerald-600 mt-0.5 flex-shrink-0" />
+          <div className="text-sm">
+            <p className="font-medium text-emerald-800">{resultado.mensaje}</p>
+            <p className="text-emerald-700 mt-1">
+              Arcos totales: <strong>{resultado.arcos_totales}</strong> · Nuevos: <strong>{resultado.arcos_nuevos}</strong>
+              {' · '}Docs virtuales: <em>{resultado.docs_virtuales}</em>
+            </p>
+          </div>
+        </div>
+      )}
+
+      <div className="text-xs text-texto-muted border-t border-borde pt-3">
+        Para sincronizar UNA sola función, usa el botón <RefreshCw className="w-3 h-3 inline" /> en la tabla de <a className="text-primario hover:underline" href="/funciones">/funciones</a>,
+        o el skill <code>/serverlm-actualizar-funcion CODIGO</code> conversando con Claude.
+      </div>
     </div>
   )
 }
