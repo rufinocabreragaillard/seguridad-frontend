@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
-import { Plus, Pencil, Trash2, Eye, Search, Download, Check, Minus } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Search, Download } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -301,12 +301,12 @@ export default function PaginaParametrosGenerales() {
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{c.orden ?? idx + 1}</TablaTd>
                         <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
                         <TablaTd className="font-medium">{c.nombre}</TablaTd>
-                        <TablaTd className="text-center">{c.replica_grupo ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
-                        <TablaTd className="text-center">{c.visible_grupo ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
-                        <TablaTd className="text-center">{c.editable_grupo ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
-                        <TablaTd className="text-center">{c.replica_usuario ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
-                        <TablaTd className="text-center">{c.visible_usuario ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
-                        <TablaTd className="text-center">{c.editable_usuario ? <Check size={14} className="inline text-exito" /> : <Minus size={14} className="inline text-texto-light" />}</TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.replica_grupo ? 'exito' : 'error'}>{c.replica_grupo ? 'Sí' : 'No'}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.visible_grupo ? 'exito' : 'error'}>{c.visible_grupo ? 'Sí' : 'No'}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.editable_grupo ? 'exito' : 'error'}>{c.editable_grupo ? 'Sí' : 'No'}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.replica_usuario ? 'exito' : 'error'}>{c.replica_usuario ? 'Sí' : 'No'}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.visible_usuario ? 'exito' : 'error'}>{c.visible_usuario ? 'Sí' : 'No'}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.editable_usuario ? 'exito' : 'error'}>{c.editable_usuario ? 'Sí' : 'No'}</Insignia></TablaTd>
                         <TablaTd>
                           <Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? 'Activo' : 'Inactivo'}</Insignia>
                         </TablaTd>
