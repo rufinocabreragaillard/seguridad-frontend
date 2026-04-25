@@ -735,7 +735,7 @@ export interface ProcesoGrupo {
   codigo_proceso_grupo: string
   nombre_proceso_grupo: string
   descripcion: string | null
-  tipo: string
+  tipo_acceso: string
   orden: number
   alias: string | null
   prompt: string | null
@@ -764,7 +764,7 @@ export interface TareaGrupo {
   codigo_tarea_grupo: string
   nombre_tarea_grupo: string
   descripcion: string | null
-  tipo: string
+  tipo_acceso: string
   orden: number
   alias: string | null
   prompt: string | null
@@ -1556,6 +1556,7 @@ export interface CompilarPromptResponse {
 
 export interface Plan {
   codigo_plan: string
+  codigo_plan_superior?: string | null
   nombre: string
   alias?: string | null
   descripcion?: string | null

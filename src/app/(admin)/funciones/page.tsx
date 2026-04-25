@@ -50,7 +50,7 @@ export default function PaginaFunciones() {
     alias_de_funcion: string
     icono_de_funcion: string
     codigo_aplicacion_origen: string
-    tipo: TipoFuncion
+    tipo_acceso: TipoFuncion
     id_modelo: string
     system_prompt: string
     prompt_view: string
@@ -71,7 +71,7 @@ export default function PaginaFunciones() {
   }>({
     codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
     alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: '',
-    tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt_view: '', sql_view: '', md: '', prompt_insert: '', prompt_update: '',
+    tipo_acceso: 'USUARIO', id_modelo: '', system_prompt: '', prompt_view: '', sql_view: '', md: '', prompt_insert: '', prompt_update: '',
     python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
@@ -130,7 +130,7 @@ export default function PaginaFunciones() {
       codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
       alias_de_funcion: '', icono_de_funcion: '',
       codigo_aplicacion_origen: aplicacionActiva || '',
-      tipo: 'USUARIO', id_modelo: '', system_prompt: '', prompt_view: '', sql_view: '', md: '', prompt_insert: '', prompt_update: '',
+      tipo_acceso: 'USUARIO', id_modelo: '', system_prompt: '', prompt_view: '', sql_view: '', md: '', prompt_insert: '', prompt_update: '',
       python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
       perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
       traducir: true,
@@ -148,7 +148,7 @@ export default function PaginaFunciones() {
       alias_de_funcion: f.alias_de_funcion || '',
       icono_de_funcion: f.icono_de_funcion || '',
       codigo_aplicacion_origen: f.codigo_aplicacion_origen || '',
-      tipo: normalizarTipo(f.tipo),
+      tipo_acceso: normalizarTipo(f.tipo_acceso),
       id_modelo: f.id_modelo ? String(f.id_modelo) : '',
       system_prompt: (f as Funcion & { system_prompt?: string }).system_prompt || '',
       prompt_view: (f as Funcion & { prompt_view?: string }).prompt_view || '',
@@ -332,7 +332,7 @@ export default function PaginaFunciones() {
             ) : funcionesFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron funciones</TablaTd></TablaFila>
             ) : funcionesFiltradas.map((f) => (
               <SortableRow key={f.codigo_funcion} id={f.codigo_funcion}>
-                <TablaTd>{badgeTipo(f.tipo)}</TablaTd>
+                <TablaTd>{badgeTipo(f.tipo_acceso)}</TablaTd>
                 <TablaTd className="text-sm">{f.alias_de_funcion || '—'}</TablaTd>
                 <TablaTd className="font-medium">{f.nombre}</TablaTd>
                 <TablaTd className="text-xs">{f.url_funcion ? <a href={f.url_funcion} target="_blank" rel="noopener noreferrer" className="text-primario hover:underline">{f.url_funcion}</a> : <span className="text-texto-muted">—</span>}</TablaTd>
@@ -393,7 +393,7 @@ export default function PaginaFunciones() {
               </div>
               <div>
                 <label className="text-sm font-medium text-texto">Tipo</label>
-                <select value={formFuncion.tipo} onChange={(e) => setFormFuncion({ ...formFuncion, tipo: e.target.value as TipoFuncion })} className={selectClass}>
+                <select value={formFuncion.tipo_acceso} onChange={(e) => setFormFuncion({ ...formFuncion, tipo_acceso: e.target.value as TipoFuncion })} className={selectClass}>
                   {TIPOS_ELEMENTO.map((t) => (
                     <option key={t} value={t}>{ETIQUETA_TIPO[t]}</option>
                   ))}
@@ -541,8 +541,8 @@ export default function PaginaFunciones() {
                               </span>
                             </td>
                             <td className="px-3 py-2">
-                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${colorTipo[api.tipo] || 'bg-surface text-texto'}`}>
-                                {api.tipo}
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium ${colorTipo[api.tipo_acceso] || 'bg-surface text-texto'}`}>
+                                {api.tipo_acceso}
                               </span>
                             </td>
                             <td className="px-3 py-2">

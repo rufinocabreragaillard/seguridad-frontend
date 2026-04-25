@@ -92,7 +92,7 @@ export default function PaginaUsuariosSemilla() {
     alias: '',
     telefono: '',
     descripcion: '',
-    tipo: 'ADMINISTRADOR',
+    tipo_acceso: 'ADMINISTRADOR',
     grupo_por_defecto: '',
     entidad_por_defecto: '',
     codigo_area: '',
@@ -214,7 +214,7 @@ export default function PaginaUsuariosSemilla() {
 
   // ── Abrir modal ────────────────────────────────────────────────────────────
   // ── Form simplificado para creación (Nuevo Usuario Semilla) ────────────
-  const [formNuevo, setFormNuevo] = useState({ correo: '', nombre: '', empresa: '', tipo: 'ADMINISTRADOR' })
+  const [formNuevo, setFormNuevo] = useState({ correo: '', nombre: '', empresa: '', tipo_acceso: 'ADMINISTRADOR' })
   const [creandoSemilla, setCreandoSemilla] = useState(false)
   // Selector grupo existente en creación
   const [modoGrupo, setModoGrupo] = useState<'nuevo' | 'existente'>('nuevo')
@@ -225,12 +225,12 @@ export default function PaginaUsuariosSemilla() {
 
   const abrirNuevo = () => {
     setUsuarioEditando(null)
-    setFormNuevo({ correo: '', nombre: '', empresa: '', tipo: 'ADMINISTRADOR' })
+    setFormNuevo({ correo: '', nombre: '', empresa: '', tipo_acceso: 'ADMINISTRADOR' })
     setModoGrupo('nuevo')
     setGrupoExistente('')
     setBusquedaGrupoNuevo('')
     setForm({ codigo_usuario: '', nombre: '', alias: '', telefono: '', descripcion: '',
-      tipo: 'ADMINISTRADOR',
+      tipo_acceso: 'ADMINISTRADOR',
       grupo_por_defecto: '', entidad_por_defecto: '', codigo_area: '',
       id_rol_principal: '', aplicacion_por_defecto: '', invitar: true, sidebar_colapsado: false,
       fecha_inicial: '', fecha_final: '' })
@@ -289,7 +289,7 @@ export default function PaginaUsuariosSemilla() {
         codigo_usuario: formNuevo.correo.toLowerCase(),
         nombre: formNuevo.nombre,
         alias: formNuevo.nombre,
-        tipo: formNuevo.tipo,
+        tipo_acceso: formNuevo.tipo_acceso,
         grupo_por_defecto: codigoGrupo,
         entidad_por_defecto: codigoEntidad,
         aplicacion_por_defecto: appActiva,
@@ -300,7 +300,7 @@ export default function PaginaUsuariosSemilla() {
       // 5. Asignar roles con inicial=true + todos los del mismo tipo del usuario
       const rolesDelGrupo = await rolesApi.listar(codigoGrupo, true)
       const rolesAAsignar = rolesDelGrupo.filter(
-        (r: Rol) => r.inicial === true || normalizarTipo(r.tipo) === normalizarTipo(formNuevo.tipo)
+        (r: Rol) => r.inicial === true || normalizarTipo(r.tipo_acceso) === normalizarTipo(formNuevo.tipo_acceso)
       )
       for (const rol of rolesAAsignar) {
         try { await usuariosApi.asignarRol(nuevoUsuario.codigo_usuario, rol.id_rol, codigoGrupo) } catch { /* continuar */ }
@@ -325,7 +325,7 @@ export default function PaginaUsuariosSemilla() {
       alias: u.alias || '',
       telefono: u.telefono || '',
       descripcion: u.descripcion || '',
-      tipo: u.tipo || 'ADMINISTRADOR',
+      tipo_acceso: u.tipo_acceso || 'ADMINISTRADOR',
       grupo_por_defecto: u.grupo_por_defecto || '',
       entidad_por_defecto: u.entidad_por_defecto || '',
       codigo_area: u.codigo_area || '',
@@ -362,7 +362,7 @@ export default function PaginaUsuariosSemilla() {
         alias: form.alias || undefined,
         telefono: form.telefono || undefined,
         descripcion: form.descripcion || undefined,
-        tipo: form.tipo || undefined,
+        tipo_acceso: form.tipo_acceso || undefined,
         grupo_por_defecto: form.grupo_por_defecto || undefined,
         entidad_por_defecto: form.entidad_por_defecto || undefined,
         codigo_area: form.codigo_area || undefined,
@@ -515,13 +515,13 @@ export default function PaginaUsuariosSemilla() {
   // Grupo SISTEMA → solo roles SISTEMA; Grupo NORMAL → solo roles NORMAL
   const grupoForm = form.grupo_por_defecto
   const mapaAppNombre = Object.fromEntries(aplicaciones.map((a) => [a.codigo_aplicacion, a.nombre]))
-  const tipoGrupoForm = normalizarTipo(grupos.find((g) => g.codigo_grupo === grupoForm)?.tipo)
-  const tipoUsuarioSemilla = normalizarTipo(usuarioEditando?.tipo)
+  const tipoGrupoForm = normalizarTipo(grupos.find((g) => g.codigo_grupo === grupoForm)?.tipo_acceso)
+  const tipoUsuarioSemilla = normalizarTipo(usuarioEditando?.tipo_acceso)
   const rolesDisponibles = rolesGrupo
     .filter((r) => {
       if (!(r.codigo_grupo === grupoForm || r.codigo_grupo == null)) return false
       if (rolesUsuario.some((ra) => ra.codigo_grupo === grupoForm && ra.id_rol === r.id_rol)) return false
-      const tipoRol = normalizarTipo(r.tipo)
+      const tipoRol = normalizarTipo(r.tipo_acceso)
       return tipoRol === tipoUsuarioSemilla
     })
     .sort((a, b) => {
@@ -613,12 +613,12 @@ export default function PaginaUsuariosSemilla() {
                 <TablaTd>{u.grupo_por_defecto ? <span className="text-sm">{nombreGrupo(u.grupo_por_defecto)}</span> : <span className="text-texto-muted">—</span>}</TablaTd>
                 <TablaTd>
                   {grupoInfo
-                    ? <Insignia variante={varianteTipo(grupoInfo.tipo)}>{etiquetaTipo(grupoInfo.tipo)}</Insignia>
+                    ? <Insignia variante={varianteTipo(grupoInfo.tipo_acceso)}>{etiquetaTipo(grupoInfo.tipo_acceso)}</Insignia>
                     : <span className="text-texto-muted text-sm">—</span>
                   }
                 </TablaTd>
                 <TablaTd>
-                  <Insignia variante={varianteTipo(u.tipo)}>{etiquetaTipo(u.tipo)}</Insignia>
+                  <Insignia variante={varianteTipo(u.tipo_acceso)}>{etiquetaTipo(u.tipo_acceso)}</Insignia>
                 </TablaTd>
                 <TablaTd className="text-texto-muted text-xs">{u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL') : '—'}</TablaTd>
                 <TablaTd className="text-texto-muted text-xs">{u.fecha_final ? new Date(u.fecha_final).toLocaleDateString('es-CL') : '—'}</TablaTd>
@@ -759,8 +759,8 @@ export default function PaginaUsuariosSemilla() {
                 <div className="flex flex-col gap-1">
                   <label className="text-sm font-medium text-texto">Tipo de usuario *</label>
                   <select
-                    value={formNuevo.tipo}
-                    onChange={(e) => setFormNuevo({ ...formNuevo, tipo: e.target.value })}
+                    value={formNuevo.tipo_acceso}
+                    onChange={(e) => setFormNuevo({ ...formNuevo, tipo_acceso: e.target.value })}
                     className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
                   >
                     <option value="ADMINISTRADOR">Administrador</option>
@@ -812,8 +812,8 @@ export default function PaginaUsuariosSemilla() {
           <div className="flex flex-col gap-1">
             <label className="text-sm font-medium text-texto">Tipo de usuario</label>
             <select
-              value={form.tipo}
-              onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+              value={form.tipo_acceso}
+              onChange={(e) => setForm({ ...form, tipo_acceso: e.target.value })}
               className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
             >
               <option value="ADMINISTRADOR">Administrador</option>
@@ -985,9 +985,9 @@ export default function PaginaUsuariosSemilla() {
                         className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
                       {dropdownAppFormAbierto && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {[{ codigo_aplicacion: '', nombre: '— Sin aplicación —', tipo: tipoGrupoForm } as Aplicacion,
+                          {[{ codigo_aplicacion: '', nombre: '— Sin aplicación —', tipo_acceso: tipoGrupoForm } as Aplicacion,
                             ...(appsGrupo.length > 0 ? appsGrupo : aplicaciones).filter((a) => {
-                              const at = normalizarTipo(a.tipo)
+                              const at = normalizarTipo(a.tipo_acceso)
                               if (at === tipoGrupoForm) return true
                               if ((tipoGrupoForm === 'SISTEMA' || tipoGrupoForm === 'ADMINISTRADOR') && at === 'USUARIO') return true
                               return false

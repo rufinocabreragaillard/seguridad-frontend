@@ -35,7 +35,7 @@ export default function PaginaAplicaciones() {
   // ── Modal Aplicacion ──────────────────────────────────────────────────────
   const [modalApp, setModalApp] = useState(false)
   const [appEditando, setAppEditando] = useState<Aplicacion | null>(null)
-  const [formApp, setFormApp] = useState<{ codigo_aplicacion: string; nombre: string; alias: string; descripcion: string; tipo: TipoElemento; sidebar_ancho: boolean; prompt_insert: string; prompt_update: string; system_prompt: string; python_insert: string; python_update: string; javascript: string; python_editado_manual: boolean; javascript_editado_manual: boolean; md: string }>({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
+  const [formApp, setFormApp] = useState<{ codigo_aplicacion: string; nombre: string; alias: string; descripcion: string; tipo_acceso: TipoElemento; sidebar_ancho: boolean; prompt_insert: string; prompt_update: string; system_prompt: string; python_insert: string; python_update: string; javascript: string; python_editado_manual: boolean; javascript_editado_manual: boolean; md: string }>({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo_acceso: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
   const [tabModalApp, setTabModalApp] = useState<'datos' | 'funciones' | 'grupos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
   const [guardandoApp, setGuardandoApp] = useState(false)
   const [errorApp, setErrorApp] = useState('')
@@ -104,13 +104,13 @@ export default function PaginaAplicaciones() {
 
   // ── Aplicacion: CRUD ──────────────────────────────────────────────────────
   const abrirNuevaApp = () => {
-    setAppEditando(null); setFormApp({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
+    setAppEditando(null); setFormApp({ codigo_aplicacion: '', nombre: '', alias: '', descripcion: '', tipo_acceso: 'USUARIO', sidebar_ancho: true, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
     setErrorApp(''); setMensajeMd(null); setTabModalApp('datos'); setModalApp(true)
   }
   const abrirEditarApp = (a: Aplicacion, tabInicial: 'datos' | 'funciones' | 'grupos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md' = 'datos') => {
     setAppEditando(a); setFormApp({
       codigo_aplicacion: a.codigo_aplicacion, nombre: a.nombre, alias: a.alias || '', descripcion: a.descripcion || '',
-      tipo: normalizarTipo(a.tipo), sidebar_ancho: a.sidebar_ancho !== false,
+      tipo_acceso: normalizarTipo(a.tipo_acceso), sidebar_ancho: a.sidebar_ancho !== false,
       prompt_insert: (a as Record<string, unknown>).prompt_insert as string || '',
       prompt_update: (a as Record<string, unknown>).prompt_update as string || '',
       system_prompt: (a as Record<string, unknown>).system_prompt as string || '',
@@ -127,7 +127,7 @@ export default function PaginaAplicaciones() {
     if (!formApp.codigo_aplicacion || !formApp.nombre) { setErrorApp('Codigo y nombre son obligatorios'); return }
     setGuardandoApp(true)
     try {
-      if (appEditando) { await aplicacionesApi.actualizar(appEditando.codigo_aplicacion, { nombre: formApp.nombre, alias: formApp.alias || undefined, descripcion: formApp.descripcion || undefined, tipo: formApp.tipo, sidebar_ancho: formApp.sidebar_ancho, prompt_insert: formApp.prompt_insert || undefined, prompt_update: formApp.prompt_update || undefined, system_prompt: formApp.system_prompt || undefined, python_insert: formApp.python_insert || undefined, python_update: formApp.python_update || undefined, javascript: formApp.javascript || undefined, python_editado_manual: formApp.python_editado_manual, javascript_editado_manual: formApp.javascript_editado_manual } as Record<string, unknown>) }
+      if (appEditando) { await aplicacionesApi.actualizar(appEditando.codigo_aplicacion, { nombre: formApp.nombre, alias: formApp.alias || undefined, descripcion: formApp.descripcion || undefined, tipo_acceso: formApp.tipo_acceso, sidebar_ancho: formApp.sidebar_ancho, prompt_insert: formApp.prompt_insert || undefined, prompt_update: formApp.prompt_update || undefined, system_prompt: formApp.system_prompt || undefined, python_insert: formApp.python_insert || undefined, python_update: formApp.python_update || undefined, javascript: formApp.javascript || undefined, python_editado_manual: formApp.python_editado_manual, javascript_editado_manual: formApp.javascript_editado_manual } as Record<string, unknown>) }
       else {
         const nuevo = await aplicacionesApi.crear(formApp)
         if (!cerrar) {
@@ -145,7 +145,7 @@ export default function PaginaAplicaciones() {
   // ── Aplicacion: funciones ─────────────────────────────────────────────────
   const funcionesDisponiblesApp = funciones.filter((f) =>
     !funcionesApp.some((fa) => fa.codigo_funcion === f.codigo_funcion) &&
-    normalizarTipo(f.tipo) === normalizarTipo(appEditando?.tipo)
+    normalizarTipo(f.tipo_acceso) === normalizarTipo(appEditando?.tipo_acceso)
   )
   const funcionesAppFiltradas = funcionesDisponiblesApp.filter((f) =>
     busquedaFuncionApp.length === 0 ||
@@ -234,7 +234,7 @@ export default function PaginaAplicaciones() {
               <SortableRow key={a.codigo_aplicacion} id={a.codigo_aplicacion}>
                 <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{a.codigo_aplicacion}</code></TablaTd>
                 <TablaTd className="font-medium">{a.nombre}</TablaTd>
-                <TablaTd><Insignia variante={varianteTipo(a.tipo)}>{etiquetaTipo(a.tipo)}</Insignia></TablaTd>
+                <TablaTd><Insignia variante={varianteTipo(a.tipo_acceso)}>{etiquetaTipo(a.tipo_acceso)}</Insignia></TablaTd>
                 <TablaTd className="text-texto-muted text-sm">{a.descripcion || '—'}</TablaTd>
                 <TablaTd>
                   <div className="flex items-center justify-end gap-1">
@@ -275,7 +275,7 @@ export default function PaginaAplicaciones() {
             <Input etiqueta="Alias (nombre corto para la barra superior)" value={formApp.alias} onChange={(e) => setFormApp({ ...formApp, alias: e.target.value })} placeholder="Ej: Documentos" />
             <div>
               <label className="block text-sm font-medium text-texto mb-1">Tipo *</label>
-              <select value={formApp.tipo} onChange={(e) => setFormApp({ ...formApp, tipo: e.target.value as TipoElemento })} className={selectClass}>
+              <select value={formApp.tipo_acceso} onChange={(e) => setFormApp({ ...formApp, tipo_acceso: e.target.value as TipoElemento })} className={selectClass}>
                 {TIPOS_ELEMENTO.map((t) => (
                   <option key={t} value={t}>{DESCRIPCION_TIPO[t]}</option>
                 ))}
@@ -291,7 +291,7 @@ export default function PaginaAplicaciones() {
           </>)}
           {tabModalApp === 'funciones' && appEditando && (
             <div className="flex flex-col gap-4">
-              <p className="text-xs text-texto-muted">Solo se muestran funciones de tipo <span className="font-medium">{ETIQUETA_TIPO[normalizarTipo(appEditando.tipo)]}</span> — una aplicación solo admite funciones de su mismo tipo.</p>
+              <p className="text-xs text-texto-muted">Solo se muestran funciones de tipo <span className="font-medium">{ETIQUETA_TIPO[normalizarTipo(appEditando.tipo_acceso)]}</span> — una aplicación solo admite funciones de su mismo tipo.</p>
               <div className="flex gap-2">
                 <div className="flex-1 relative" ref={dropdownFuncionAppRef}>
                   <div className="relative">

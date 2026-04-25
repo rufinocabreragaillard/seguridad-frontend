@@ -20,7 +20,7 @@ export default function CambiarGrupoPage() {
 
   // Solo accesible para usuarios tipo SISTEMA
   useEffect(() => {
-    if (usuario && usuario.tipo !== 'SISTEMA') {
+    if (usuario && usuario.tipo_acceso !== 'SISTEMA') {
       router.replace('/dashboard')
     }
   }, [usuario, router])

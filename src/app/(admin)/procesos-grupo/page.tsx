@@ -27,7 +27,7 @@ const selectClass =
 type FormProceso = {
   nombre_proceso_grupo: string
   descripcion: string
-  tipo: string
+  tipo_acceso: string
   alias: string
   ayuda: string
 }
@@ -42,7 +42,7 @@ export default function PaginaProcesosGrupo() {
       procesosGrupoApi.crear({
         nombre_proceso_grupo: f.nombre_proceso_grupo.trim(),
         descripcion: f.descripcion?.trim() || undefined,
-        tipo: f.tipo,
+        tipo_acceso: f.tipo_acceso,
         alias: f.alias?.trim() || undefined,
         ayuda: f.ayuda?.trim() || undefined,
       } as Partial<ProcesoGrupo>),
@@ -50,18 +50,18 @@ export default function PaginaProcesosGrupo() {
       procesosGrupoApi.actualizar(Number(id), {
         nombre_proceso_grupo: f.nombre_proceso_grupo?.trim(),
         descripcion: f.descripcion?.trim() || undefined,
-        tipo: f.tipo,
+        tipo_acceso: f.tipo_acceso,
         alias: f.alias?.trim() || undefined,
         ayuda: f.ayuda?.trim() || undefined,
       } as Partial<ProcesoGrupo>),
     eliminarFn: (id) => procesosGrupoApi.eliminar(Number(id)).then(() => {}),
     getId: (p) => String(p.id_proceso_grupo),
-    camposBusqueda: (p) => [p.codigo_proceso_grupo, p.nombre_proceso_grupo, p.descripcion ?? '', p.tipo],
-    formInicial: { nombre_proceso_grupo: '', descripcion: '', tipo: 'USUARIO', alias: '', ayuda: '' },
+    camposBusqueda: (p) => [p.codigo_proceso_grupo, p.nombre_proceso_grupo, p.descripcion ?? '', p.tipo_acceso],
+    formInicial: { nombre_proceso_grupo: '', descripcion: '', tipo_acceso: 'USUARIO', alias: '', ayuda: '' },
     itemToForm: (p) => ({
       nombre_proceso_grupo: p.nombre_proceso_grupo,
       descripcion: p.descripcion ?? '',
-      tipo: p.tipo ?? 'USUARIO',
+      tipo_acceso: p.tipo_acceso ?? 'USUARIO',
       alias: p.alias ?? '',
       ayuda: p.ayuda ?? '',
     }),
@@ -99,7 +99,7 @@ export default function PaginaProcesosGrupo() {
         excelColumnas={[
           { titulo: t('colCodigo'), campo: 'codigo_proceso_grupo' },
           { titulo: t('colNombre'), campo: 'nombre_proceso_grupo' },
-          { titulo: t('colTipo'), campo: 'tipo' },
+          { titulo: t('colTipo'), campo: 'tipo_acceso' },
           { titulo: t('colOrden'), campo: 'orden' },
           { titulo: t('colDescripcion'), campo: 'descripcion' },
         ]}
@@ -112,7 +112,7 @@ export default function PaginaProcesosGrupo() {
           {
             titulo: t('colTipo'),
             render: (p: ProcesoGrupo) => (
-              <Insignia variante={varianteTipo(p.tipo)}>{etiquetaTipo(p.tipo)}</Insignia>
+              <Insignia variante={varianteTipo(p.tipo_acceso)}>{etiquetaTipo(p.tipo_acceso)}</Insignia>
             ),
           },
           {
@@ -183,8 +183,8 @@ export default function PaginaProcesosGrupo() {
             <label className="text-sm font-medium text-texto">{t('etiquetaTipo')}</label>
             <select
               className={selectClass}
-              value={crud.form.tipo}
-              onChange={(e) => crud.updateForm('tipo', e.target.value)}
+              value={crud.form.tipo_acceso}
+              onChange={(e) => crud.updateForm('tipo_acceso', e.target.value)}
             >
               {TIPOS_ELEMENTO_SIN_SISTEMA.map((tp) => (
                 <option key={tp} value={tp}>{etiquetaTipo(tp)}</option>

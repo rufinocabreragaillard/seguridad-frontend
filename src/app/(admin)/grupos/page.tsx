@@ -52,7 +52,7 @@ export default function PaginaGrupos() {
 
   const [modalGrupo, setModalGrupo] = useState(false)
   const [grupoEditando, setGrupoEditando] = useState<Grupo | null>(null)
-  const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO' as TipoElemento, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
+  const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', descripcion: '', tipo_acceso: 'USUARIO' as TipoElemento, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
   const [tabModalGrupo, setTabModalGrupo] = useState<'datos' | 'usuarios' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
   const [usuariosModalGrupo, setUsuariosModalGrupo] = useState<UsuarioGrupo[]>([])
   const [cargandoUsuariosModal, setCargandoUsuariosModal] = useState(false)
@@ -160,7 +160,7 @@ export default function PaginaGrupos() {
   // ── Funciones Tab Grupos ──
   const abrirNuevoGrupo = () => {
     setGrupoEditando(null)
-    setFormGrupo({ codigo_grupo: '', nombre: '', descripcion: '', tipo: 'USUARIO', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
+    setFormGrupo({ codigo_grupo: '', nombre: '', descripcion: '', tipo_acceso: 'USUARIO', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
     setTabModalGrupo('datos')
     setError('')
     setMensajeMdGrupo(null)
@@ -170,7 +170,7 @@ export default function PaginaGrupos() {
   const abrirEditarGrupo = async (g: Grupo) => {
     setGrupoEditando(g)
     const g2 = g as unknown as Record<string, unknown>
-    setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, descripcion: g.descripcion || '', tipo: normalizarTipo(g.tipo), prompt_insert: g2.prompt_insert as string || '', prompt_update: g2.prompt_update as string || '', system_prompt: g.system_prompt || '', python_insert: g2.python_insert as string || '', python_update: g2.python_update as string || '', javascript: g2.javascript as string || '', python_editado_manual: (g2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (g2.javascript_editado_manual as boolean) ?? false, md: g2.md as string || '' })
+    setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, descripcion: g.descripcion || '', tipo_acceso: normalizarTipo(g.tipo_acceso), prompt_insert: g2.prompt_insert as string || '', prompt_update: g2.prompt_update as string || '', system_prompt: g.system_prompt || '', python_insert: g2.python_insert as string || '', python_update: g2.python_update as string || '', javascript: g2.javascript as string || '', python_editado_manual: (g2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (g2.javascript_editado_manual as boolean) ?? false, md: g2.md as string || '' })
     setTabModalGrupo('datos')
     setError('')
     setMensajeMdGrupo(null)
@@ -199,7 +199,7 @@ export default function PaginaGrupos() {
         } else {
           setGrupoEditando(nuevo)
           const n2 = nuevo as unknown as Record<string, unknown>
-          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, descripcion: nuevo.descripcion || '', tipo: normalizarTipo(nuevo.tipo), prompt_insert: n2.prompt_insert as string || '', prompt_update: n2.prompt_update as string || '', system_prompt: nuevo.system_prompt || '', python_insert: n2.python_insert as string || '', python_update: n2.python_update as string || '', javascript: n2.javascript as string || '', python_editado_manual: (n2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (n2.javascript_editado_manual as boolean) ?? false, md: n2.md as string || '' })
+          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, descripcion: nuevo.descripcion || '', tipo_acceso: normalizarTipo(nuevo.tipo_acceso), prompt_insert: n2.prompt_insert as string || '', prompt_update: n2.prompt_update as string || '', system_prompt: nuevo.system_prompt || '', python_insert: n2.python_insert as string || '', python_update: n2.python_update as string || '', javascript: n2.javascript as string || '', python_editado_manual: (n2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (n2.javascript_editado_manual as boolean) ?? false, md: n2.md as string || '' })
         }
       }
       cargar()
@@ -456,7 +456,7 @@ export default function PaginaGrupos() {
 
   // ── Funciones Tab Borrar Grupo ──
   const gruposBorrarFiltrados = grupos
-    .filter((g) => g.tipo !== 'SISTEMA' && g.codigo_grupo !== 'ADMIN')
+    .filter((g) => g.tipo_acceso !== 'SISTEMA' && g.codigo_grupo !== 'ADMIN')
     .filter((g) =>
       busquedaBorrar.length === 0 ||
       g.nombre.toLowerCase().includes(busquedaBorrar.toLowerCase()) ||
@@ -591,7 +591,7 @@ export default function PaginaGrupos() {
                       <SortableRow key={g.codigo_grupo} id={g.codigo_grupo}>
                         <TablaTd><button className={`text-sm font-medium text-left w-full${grupoSeleccionado?.codigo_grupo === g.codigo_grupo ? ' text-primario' : ' text-texto'}`} onClick={() => setGrupoSeleccionado(g)}>{g.nombre}</button></TablaTd>
                         <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{g.codigo_grupo}</code></TablaTd>
-                        <TablaTd><Insignia variante={varianteTipo(g.tipo)}>{etiquetaTipo(g.tipo)}</Insignia></TablaTd>
+                        <TablaTd><Insignia variante={varianteTipo(g.tipo_acceso)}>{etiquetaTipo(g.tipo_acceso)}</Insignia></TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver entidades"><Eye size={14} /></button>
@@ -832,7 +832,7 @@ export default function PaginaGrupos() {
                           <p className="text-sm font-medium text-texto truncate">{g.nombre}</p>
                           <div className="flex items-center gap-2">
                             <p className="text-xs text-texto-muted">{g.codigo_grupo}</p>
-                            <Insignia variante={varianteTipo(g.tipo)}>{etiquetaTipo(g.tipo)}</Insignia>
+                            <Insignia variante={varianteTipo(g.tipo_acceso)}>{etiquetaTipo(g.tipo_acceso)}</Insignia>
                           </div>
                         </div>
                         <Trash2 size={16} className="text-red-400 shrink-0" />
@@ -921,7 +921,7 @@ export default function PaginaGrupos() {
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-texto">Tipo</label>
                 <div className="flex items-center gap-2 py-1">
-                  <Insignia variante={varianteTipo(formGrupo.tipo)}>{etiquetaTipo(formGrupo.tipo)}</Insignia>
+                  <Insignia variante={varianteTipo(formGrupo.tipo_acceso)}>{etiquetaTipo(formGrupo.tipo_acceso)}</Insignia>
                   <span className="text-xs text-texto-muted">Solo modificable desde la base de datos</span>
                 </div>
               </div>

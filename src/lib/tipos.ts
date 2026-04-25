@@ -9,7 +9,7 @@ export interface Grupo {
   codigo_grupo: string
   nombre: string
   descripcion?: string
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
+  tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   orden?: number
   prompt_insert?: string | null
   prompt_update?: string | null
@@ -59,7 +59,7 @@ export interface UsuarioContexto {
   alias?: string | null
   locale?: string          // Locale preferido (es, en, fr-CA, etc.)
   activo: boolean
-  tipo?: 'ADMINISTRADOR' | 'USUARIO' | 'TEST' | 'SISTEMA' | null
+  tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA' | null
   grupo_activo: string
   nombre_grupo?: string
   grupos: GrupoResumen[]
@@ -136,7 +136,7 @@ export interface Usuario {
   nombre: string
   alias?: string
   locale?: string          // Locale preferido (es, en, fr-CA, etc.)
-  tipo?: 'ADMINISTRADOR' | 'USUARIO' | 'TEST' | 'SISTEMA' | null
+  tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA' | null
   telefono?: string
   fono_verificado?: boolean
   descripcion?: string
@@ -162,7 +162,7 @@ export interface Usuario {
 export interface CrearUsuarioRequest {
   codigo_usuario: string
   nombre: string
-  tipo?: string
+  tipo_acceso?: string
   alias?: string
   password?: string
   telefono?: string
@@ -191,7 +191,7 @@ export interface Rol {
   funcion_por_defecto?: string
   codigo_aplicacion_origen?: string | null  // FK a aplicaciones, agrupa para ordenar/filtrar
   orden?: number
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
+  tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
@@ -214,7 +214,7 @@ export interface Funcion {
   alias_de_funcion?: string
   icono_de_funcion?: string
   codigo_aplicacion_origen?: string | null  // FK a aplicaciones, agrupa para ordenar/filtrar
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
+  tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   id_modelo?: number | null  // FK a registro_llm. NULL = sin LLM
   prompt_insert?: string | null
   prompt_update?: string | null
@@ -241,7 +241,7 @@ export interface ApiEndpoint {
   nombre_api: string
   metodo_http: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   ruta_api: string
-  tipo: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
+  tipo_acceso: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   descripcion?: string | null
   parametros_entrada?: Record<string, unknown> | null
   parametros_salida?: Record<string, unknown> | null
@@ -281,7 +281,7 @@ export interface Aplicacion {
   nombre: string
   alias?: string | null
   descripcion?: string
-  tipo?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
+  tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   sidebar_ancho?: boolean
   orden?: number
   prompt_insert?: string | null

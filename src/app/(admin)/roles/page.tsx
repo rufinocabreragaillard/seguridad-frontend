@@ -37,7 +37,7 @@ export default function PaginaRoles() {
   const [rolEditando, setRolEditando] = useState<Rol | null>(null)
   const [formRol, setFormRol] = useState({
     codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '',
-    funcion_por_defecto: '', codigo_aplicacion_origen: '', tipo: 'USUARIO' as TipoElemento,
+    funcion_por_defecto: '', codigo_aplicacion_origen: '', tipo_acceso: 'USUARIO' as TipoElemento,
     prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '',
     javascript: '', python_editado_manual: false, javascript_editado_manual: false,
     inicial: false, inicial_admin_grupo: false, inicial_admin_general: false,
@@ -129,7 +129,7 @@ export default function PaginaRoles() {
     setRolEditando(null)
     setFormRol({
       codigo_rol: '', nombre: '', alias_de_rol: '', descripcion: '', url_inicio: '',
-      funcion_por_defecto: '', codigo_aplicacion_origen: aplicacionActiva || '', tipo: 'USUARIO',
+      funcion_por_defecto: '', codigo_aplicacion_origen: aplicacionActiva || '', tipo_acceso: 'USUARIO',
       prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '',
       javascript: '', python_editado_manual: false, javascript_editado_manual: false,
       inicial: false, inicial_admin_grupo: false, inicial_admin_general: false,
@@ -151,7 +151,7 @@ export default function PaginaRoles() {
       url_inicio: r.url_inicio || '',
       funcion_por_defecto: r.funcion_por_defecto || '',
       codigo_aplicacion_origen: r.codigo_aplicacion_origen || '',
-      tipo: normalizarTipo(r.tipo),
+      tipo_acceso: normalizarTipo(r.tipo_acceso),
       prompt_insert: r2.prompt_insert as string || '',
       prompt_update: r2.prompt_update as string || '',
       system_prompt: r2.system_prompt as string || '',
@@ -215,7 +215,7 @@ export default function PaginaRoles() {
           inicial: formRol.inicial,
           inicial_admin_grupo: formRol.inicial_admin_grupo,
           inicial_admin_general: formRol.inicial_admin_general,
-          tipo: formRol.tipo,
+          tipo_acceso: formRol.tipo_acceso,
         }
         if (esGlobalCreate && formRol.codigo_rol) payload.codigo_rol = formRol.codigo_rol
         const nuevo = await rolesApi.crear(payload as Parameters<typeof rolesApi.crear>[0])
@@ -230,7 +230,7 @@ export default function PaginaRoles() {
             url_inicio: (nuevo as Rol).url_inicio || '',
             funcion_por_defecto: (nuevo as Rol).funcion_por_defecto || '',
             codigo_aplicacion_origen: (nuevo as Rol).codigo_aplicacion_origen || '',
-            tipo: normalizarTipo((nuevo as Rol).tipo),
+            tipo_acceso: normalizarTipo((nuevo as Rol).tipo_acceso),
             prompt_insert: r2.prompt_insert as string || '',
             prompt_update: r2.prompt_update as string || '',
             system_prompt: r2.system_prompt as string || '',
@@ -373,10 +373,10 @@ export default function PaginaRoles() {
   const funcionesDisponibles = (() => {
     const sinAsignar = funciones.filter((f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
     if (!rolEditando) return sinAsignar
-    const tipoRol = normalizarTipo(rolEditando.tipo)
+    const tipoRol = normalizarTipo(rolEditando.tipo_acceso)
     // SISTEMA puede asignar funciones de cualquier tipo (administra todo el sistema)
     if (tipoRol === 'SISTEMA') return sinAsignar
-    return sinAsignar.filter((f) => normalizarTipo(f.tipo) === tipoRol)
+    return sinAsignar.filter((f) => normalizarTipo(f.tipo_acceso) === tipoRol)
   })()
 
   const funcionesRolFiltradas = funcionesDisponibles.filter((f) =>
@@ -582,7 +582,7 @@ export default function PaginaRoles() {
                       <span className="text-xs text-texto-muted w-4 text-center">{r.orden}</span>
                     </div>
                   </TablaTd>
-                  <TablaTd><Insignia variante={varianteTipo(r.tipo)}>{etiquetaTipo(r.tipo)}</Insignia></TablaTd>
+                  <TablaTd><Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia></TablaTd>
                   <TablaTd className="text-sm">{r.alias_de_rol || '—'}</TablaTd>
                   <TablaTd className="font-medium">{r.nombre}</TablaTd>
                   <TablaTd className="text-xs">
@@ -661,7 +661,7 @@ export default function PaginaRoles() {
               ) : funcionesFiltradas.map((f) => (
                 <TablaFila key={f.codigo_funcion}>
                   <TablaTd className="text-xs text-texto-muted">{nombreApp(f.codigo_aplicacion_origen) || '—'}</TablaTd>
-                  <TablaTd><Insignia variante={varianteTipo(f.tipo)}>{etiquetaTipo(f.tipo)}</Insignia></TablaTd>
+                  <TablaTd><Insignia variante={varianteTipo(f.tipo_acceso)}>{etiquetaTipo(f.tipo_acceso)}</Insignia></TablaTd>
                   <TablaTd className="text-sm">{f.alias_de_funcion || '—'}</TablaTd>
                   <TablaTd className="font-medium">{f.nombre}</TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{f.icono_de_funcion || '—'}</TablaTd>
@@ -720,13 +720,13 @@ export default function PaginaRoles() {
                   <label className="text-sm font-medium text-texto">Tipo</label>
                   {rolEditando ? (
                     <div className="flex items-center gap-2 py-1">
-                      <Insignia variante={varianteTipo(formRol.tipo)}>{etiquetaTipo(formRol.tipo)}</Insignia>
+                      <Insignia variante={varianteTipo(formRol.tipo_acceso)}>{etiquetaTipo(formRol.tipo_acceso)}</Insignia>
                       <span className="text-xs text-texto-muted">Solo modificable desde la base de datos</span>
                     </div>
                   ) : (
                     <select
-                      value={formRol.tipo}
-                      onChange={(e) => setFormRol({ ...formRol, tipo: e.target.value as TipoElemento })}
+                      value={formRol.tipo_acceso}
+                      onChange={(e) => setFormRol({ ...formRol, tipo_acceso: e.target.value as TipoElemento })}
                       className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
                     >
                       <option value="SISTEMA">Sistema</option>
@@ -795,7 +795,7 @@ export default function PaginaRoles() {
           {tabModalRol === 'funciones' && rolEditando && (
             <div className="flex flex-col gap-4">
               {(() => {
-                const tipoRol = normalizarTipo(rolEditando.tipo)
+                const tipoRol = normalizarTipo(rolEditando.tipo_acceso)
                 if (tipoRol === 'SISTEMA') return <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-xs text-purple-700">Los roles de tipo <strong>Sistema</strong> pueden asignar funciones de cualquier tipo.</div>
                 if (tipoRol === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Funciones de tipo <strong>Sistema</strong> no pueden asignarse a roles de Administración.</div>
                 if (tipoRol === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo funciones de tipo <strong>Usuario</strong> pueden asignarse a este rol.</div>
@@ -1056,8 +1056,8 @@ export default function PaginaRoles() {
                 <select value={formFuncion.codigo_aplicacion_origen} onChange={(e) => setFormFuncion({ ...formFuncion, codigo_aplicacion_origen: e.target.value })} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
                   <option value="">— sin asignar —</option>
                   {[...todasApps].sort((a, b) => {
-                      const ta = a.tipo === 'NORMAL' ? 0 : 1
-                      const tb = b.tipo === 'NORMAL' ? 0 : 1
+                      const ta = a.tipo_acceso === 'USUARIO' ? 0 : 1
+                      const tb = b.tipo_acceso === 'USUARIO' ? 0 : 1
                       if (ta !== tb) return ta - tb
                       return a.nombre.localeCompare(b.nombre, 'es')
                     }).map((a) => (

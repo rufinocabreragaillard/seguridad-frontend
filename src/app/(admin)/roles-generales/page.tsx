@@ -140,10 +140,10 @@ function TabRolesGlobales() {
   const funcionesDisponibles = (() => {
     const sinAsignar = todasFunciones.filter((f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
     if (!editando) return sinAsignar
-    const tipoRol = normalizarTipo(editando.tipo)
-    if (tipoRol === 'SISTEMA') return sinAsignar.filter((f) => normalizarTipo(f.tipo) === 'SISTEMA')
-    if (tipoRol === 'ADMINISTRADOR') return sinAsignar.filter((f) => normalizarTipo(f.tipo) !== 'SISTEMA')
-    if (tipoRol === 'USUARIO') return sinAsignar.filter((f) => normalizarTipo(f.tipo) === 'USUARIO')
+    const tipoRol = normalizarTipo(editando.tipo_acceso)
+    if (tipoRol === 'SISTEMA') return sinAsignar.filter((f) => normalizarTipo(f.tipo_acceso) === 'SISTEMA')
+    if (tipoRol === 'ADMINISTRADOR') return sinAsignar.filter((f) => normalizarTipo(f.tipo_acceso) !== 'SISTEMA')
+    if (tipoRol === 'USUARIO') return sinAsignar.filter((f) => normalizarTipo(f.tipo_acceso) === 'USUARIO')
     return sinAsignar
   })()
   const funcionesRolFiltradas = funcionesDisponibles.filter(
@@ -368,7 +368,7 @@ function TabRolesGlobales() {
                   return (
                   <SortableRow key={r.id_rol} id={String(r.id_rol)}>
                     <td className="py-2 pr-4">
-                      <Insignia variante={varianteTipo(r.tipo)}>{etiquetaTipo(r.tipo)}</Insignia>
+                      <Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia>
                     </td>
                     <td className="py-2 pr-4">{r.nombre}</td>
                     <td className="py-2 pr-4 text-texto-muted">{r.alias_de_rol || '—'}</td>
@@ -480,8 +480,8 @@ function TabRolesGlobales() {
                     <option value="">— sin asignar —</option>
                     {[...aplicaciones].sort((a, b) => {
                       const peso = (t?: string | null) => { const n = normalizarTipo(t); return n === 'USUARIO' ? 0 : n === 'ADMINISTRADOR' ? 1 : 2 }
-                      const ta = peso(a.tipo)
-                      const tb = peso(b.tipo)
+                      const ta = peso(a.tipo_acceso)
+                      const tb = peso(b.tipo_acceso)
                       if (ta !== tb) return ta - tb
                       return a.nombre.localeCompare(b.nombre, 'es')
                     }).map((a) => (
@@ -549,7 +549,7 @@ function TabRolesGlobales() {
             <div className="flex flex-col gap-3">
               {/* Aviso filtro por tipo de rol */}
               {(() => {
-                const tipoRol = normalizarTipo(editando.tipo)
+                const tipoRol = normalizarTipo(editando.tipo_acceso)
                 if (tipoRol === 'SISTEMA') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo funciones de tipo <strong>Sistema</strong> pueden asignarse a este rol.</div>
                 if (tipoRol === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Funciones de tipo <strong>Sistema</strong> no pueden asignarse a roles de Administración.</div>
                 if (tipoRol === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo funciones de tipo <strong>Usuario</strong> pueden asignarse a este rol.</div>

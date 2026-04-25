@@ -115,7 +115,7 @@ export default function PaginaUsuarios() {
     alias: '',
     telefono: '',
     descripcion: '',
-    tipo: 'USUARIO',
+    tipo_acceso: 'USUARIO',
     id_rol_principal: '',
     grupo_por_defecto: '',
     entidad_por_defecto: '',
@@ -232,7 +232,7 @@ export default function PaginaUsuarios() {
   // ── Abrir modal ────────────────────────────────────────────────────────────
   const abrirNuevo = () => {
     setUsuarioEditando(null)
-    setForm({ codigo_usuario: '', nombre: '', alias: '', telefono: '', descripcion: '', tipo: 'USUARIO', id_rol_principal: '',
+    setForm({ codigo_usuario: '', nombre: '', alias: '', telefono: '', descripcion: '', tipo_acceso: 'USUARIO', id_rol_principal: '',
       grupo_por_defecto: '', entidad_por_defecto: '', codigo_area: '', aplicacion_por_defecto: '', invitar: true, prompt_insert: '', prompt_update: '', fecha_inicial: '', fecha_final: '' })
     setError('')
     setGuardando(false)
@@ -252,7 +252,7 @@ export default function PaginaUsuarios() {
       alias: u.alias || '',
       telefono: u.telefono || '',
       descripcion: u.descripcion || '',
-      tipo: u.tipo || 'USUARIO',
+      tipo_acceso: u.tipo_acceso || 'USUARIO',
       id_rol_principal: u.id_rol_principal != null ? String(u.id_rol_principal) : '',
       grupo_por_defecto: u.grupo_por_defecto || '',
       entidad_por_defecto: u.entidad_por_defecto || '',
@@ -310,7 +310,7 @@ export default function PaginaUsuarios() {
         const creado = await usuariosApi.crear({
           codigo_usuario: form.codigo_usuario,
           nombre: form.nombre,
-          tipo: form.tipo || 'USUARIO',
+          tipo_acceso: form.tipo_acceso || 'USUARIO',
           invitar: form.invitar,
         })
         const nuevoUsuario: Usuario = {
@@ -448,13 +448,13 @@ export default function PaginaUsuarios() {
   const ROLES_PROTEGIDOS = new Set(['SEG_ADMIN_GRUPO', 'SISTEMA'])
   const esSuperAdmin = (usuarioActual?.grupos || []).some((g) => g.codigo_grupo === 'ADMIN')
   const mapaAppNombre = Object.fromEntries(catalogoApps.map((a) => [a.codigo_aplicacion, a.nombre]))
-  const tipoUsuarioEditando = normalizarTipo(form.tipo)
+  const tipoUsuarioEditando = normalizarTipo(form.tipo_acceso)
   const rolesDisponibles = roles
     .filter((r) => {
       if (ROLES_PROTEGIDOS.has(r.codigo_rol)) return false
       if (!(r.codigo_grupo === grupoActivo || r.codigo_grupo == null)) return false
       if (rolesUsuario.some((ra) => ra.codigo_grupo === grupoActivo && ra.id_rol === r.id_rol)) return false
-      const tipoRol = normalizarTipo(r.tipo)
+      const tipoRol = normalizarTipo(r.tipo_acceso)
       // SISTEMA puede recibir roles de cualquier tipo (administra todo el sistema)
       if (tipoUsuarioEditando === 'SISTEMA') return true
       if (tipoUsuarioEditando === 'ADMINISTRADOR') return tipoRol !== 'SISTEMA'
@@ -619,7 +619,7 @@ export default function PaginaUsuarios() {
                   <TablaTd className="text-texto-muted">{u.codigo_usuario}</TablaTd>
                   <TablaTd>{u.codigo_rol_principal || <span className="text-texto-light">—</span>}</TablaTd>
                   <TablaTd>
-                    <Insignia variante={varianteTipo(u.tipo)}>{etiquetaTipo(u.tipo)}</Insignia>
+                    <Insignia variante={varianteTipo(u.tipo_acceso)}>{etiquetaTipo(u.tipo_acceso)}</Insignia>
                   </TablaTd>
                   <TablaTd className="text-texto-muted text-xs">
                     {u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL') : '—'}
@@ -715,8 +715,8 @@ export default function PaginaUsuarios() {
                     <div className="flex flex-col gap-1.5">
                       <label className="text-sm font-medium text-texto">Tipo</label>
                       <select
-                        value={form.tipo}
-                        onChange={(e) => setForm({ ...form, tipo: e.target.value })}
+                        value={form.tipo_acceso}
+                        onChange={(e) => setForm({ ...form, tipo_acceso: e.target.value })}
                         className={selectClass}
                       >
                         <option value="USUARIO">Usuario</option>
