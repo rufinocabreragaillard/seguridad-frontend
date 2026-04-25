@@ -93,7 +93,7 @@ export default function PaginaRoles() {
       setRoles(r)
       setFunciones(f)
       setTodasApps(a)
-      setModelosLLM(llms.filter((m: RegistroLLM) => m.activo))
+      setModelosLLM(llms)
     } finally {
       setCargando(false)
     }
@@ -418,7 +418,7 @@ export default function PaginaRoles() {
   }
 
   const appsDisponiblesFuncion = todasApps.filter((a) =>
-    a.activo && !appsFuncion.some((af) => af.codigo_aplicacion === a.codigo_aplicacion)
+    !appsFuncion.some((af) => af.codigo_aplicacion === a.codigo_aplicacion)
   )
 
   const abrirNuevaFuncion = () => {
@@ -1130,7 +1130,7 @@ export default function PaginaRoles() {
                   ))}
                 </select>
                 {modelosLLM.length === 0 && (
-                  <p className="text-xs text-texto-muted">No hay modelos LLM activos. Configura modelos en Registro LLM.</p>
+                  <p className="text-xs text-texto-muted">No hay modelos LLM configurados. Configura modelos en Registro LLM.</p>
                 )}
               </div>
               <div className="flex flex-col gap-1.5">

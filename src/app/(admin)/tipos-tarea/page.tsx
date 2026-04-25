@@ -29,7 +29,6 @@ type TipoTareaLocal = {
   programa?: string
   prompt?: string
   system_prompt?: string
-  activo: boolean
   codigo_tipo_canonico?: string
 }
 
@@ -211,7 +210,7 @@ export default function PaginaTiposTarea() {
           { titulo: 'Código', campo: 'codigo_tipo_tarea' },
           { titulo: 'Nombre', campo: 'nombre_tipo_tarea' },
           { titulo: 'Descripción', campo: 'descripcion_tipo_tarea' },
-          { titulo: 'Estado', campo: 'activo' },
+          { titulo: 'Nombre', campo: 'nombre_tipo_tarea' },
         ]}
         excelNombreArchivo="tipos-tarea"
       />
@@ -231,11 +230,7 @@ export default function PaginaTiposTarea() {
           {
             titulo: 'Estado',
             render: (t: TipoTareaLocal) =>
-              t.activo ? (
-                <Insignia variante="exito">Activo</Insignia>
-              ) : (
-                <Insignia variante="neutro">Inactivo</Insignia>
-              ),
+              ,
           },
         ]}
         items={filtradosOrdenados}

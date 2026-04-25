@@ -43,11 +43,10 @@ export default function PaginaDocumentos() {
   // ── Paginación server-side ────────────────────────────────────────────────
   const filtros = useMemo(() => ({
     q: busqueda.trim() || undefined,
-    activo: true,
     codigo_estado_doc: estadoFiltro || undefined,
   }), [busqueda, estadoFiltro])
   const fetcher = useCallback(
-    (params: { page: number; limit: number; q?: string; activo?: boolean }) =>
+    (params: { page: number; limit: number; q?: string}) =>
       documentosApi.listarPaginado(params),
     [],
   )
@@ -60,7 +59,7 @@ export default function PaginaDocumentos() {
     setPage,
     setLimit,
     refetch,
-  } = usePaginacion<Documento, { q?: string; activo?: boolean }>({
+  } = usePaginacion<Documento, { q?: string}>({
     fetcher,
     filtros,
     limitInicial: 50,
@@ -613,7 +612,7 @@ export default function PaginaDocumentos() {
                     onChange={(e) => setForm({ ...form, codigo_estado_doc: e.target.value })}
                   >
                     <option value="">{t('sinEstado')}</option>
-                    {estados.filter((e) => e.activo).map((e) => (
+                    {estados.map((e) => (
                       <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
                         {e.nombre_estado}
                       </option>

@@ -120,7 +120,7 @@ export default function PaginaTiposDocumentoPersona() {
           { titulo: t('colCodigo'), campo: 'codigo_tipo_doc' },
           { titulo: t('colNombre'), campo: 'nombre' },
           { titulo: t('colDescripcion'), campo: 'descripcion' },
-          { titulo: t('colEstado'), campo: 'activo', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
+          { titulo: 'Nombre', campo: 'nombre', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
         ]}
         excelNombreArchivo="tipos-documento-persona"
       />
@@ -129,7 +129,7 @@ export default function PaginaTiposDocumentoPersona() {
         columnas={[
           columnaNombre<TipoDocumentoPersona>(t('colNombre'), (item) => item.nombre),
           columnaDescripcion<TipoDocumentoPersona>(t('colDescripcion'), (item) => item.descripcion),
-          columnaEstado<TipoDocumentoPersona>((item) => item.activo),
+          ,
           columnaCodigo<TipoDocumentoPersona>(t('colCodigo'), (item) => item.codigo_tipo_doc),
         ]}
         items={filtradosOrdenados}

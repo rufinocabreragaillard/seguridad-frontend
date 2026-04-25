@@ -26,7 +26,7 @@ export default function PaginaDocumentosDashboard() {
           documentosApi.contarPorEstado(),
           getEstadosDocs(),
           documentosApi.listarPaginado({ page: 1, limit: 1 }),
-          documentosApi.listarPaginado({ page: 1, limit: 1, activo: true }),
+          documentosApi.listarPaginado({ page: 1, limit: 1 }),
         ])
         setConteoPorEstado(conteos)
         setEstados(ests)
@@ -44,7 +44,7 @@ export default function PaginaDocumentosDashboard() {
   const activos = activosDocs
   // Documentos activos sin estado = activos menos la suma de todos los conteos
   const sinEstado = Math.max(0, activos - Object.values(conteoPorEstado).reduce((s, v) => s + v, 0))
-  const estadosOrdenados = [...estados].filter((e) => e.activo).sort((a, b) => a.orden - b.orden)
+  const estadosOrdenados = [...estados].sort((a, b) => a.orden - b.orden)
 
   // Estados del pipeline válido (orden termina en 0: 10, 20, 40, 50, 60…)
   const estadosValidos = estadosOrdenados.filter((e) => e.orden % 10 === 0)

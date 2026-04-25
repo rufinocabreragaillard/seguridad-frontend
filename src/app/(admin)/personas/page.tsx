@@ -91,8 +91,8 @@ export default function PaginaPersonas() {
         entidadesApi.listar(),
       ])
       setPersonas(p)
-      setTiposDoc(td.filter((t) => t.activo))
-      setEntidades(ent.filter((e) => e.activo))
+      setTiposDoc(td)
+      setEntidades(ent)
     } finally {
       setCargando(false)
     }
@@ -276,7 +276,7 @@ export default function PaginaPersonas() {
               { titulo: 'Tipo Doc', campo: 'codigo_tipo_doc' },
               { titulo: 'Documento', campo: 'documento_id' },
               { titulo: 'Entidad', campo: 'codigo_entidad' },
-              { titulo: 'Estado', campo: 'activo', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
+              { titulo: 'Estado', campo: 'nombre_documento', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
             ], 'personas')}>
             <Download size={15} />{tc('exportarExcel')}
           </Boton>
@@ -307,7 +307,7 @@ export default function PaginaPersonas() {
               <TablaTd className="text-sm text-texto-muted">{p.codigo_tipo_doc || '—'}</TablaTd>
               <TablaTd className="text-sm">{p.documento_id || '—'}</TablaTd>
               <TablaTd className="text-sm text-texto-muted">{p.codigo_entidad || '—'}</TablaTd>
-              <TablaTd><Insignia variante={p.activo ? 'exito' : 'error'}>{p.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
+              <TablaTd><Insignia variante='exito'>tc('activo')</Insignia></TablaTd>
               <TablaTd>
                 <div className="flex items-center justify-end gap-1">
                   <button onClick={() => abrirEditar(p)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
@@ -432,7 +432,7 @@ export default function PaginaPersonas() {
               ) : (
                 categoriasConCaract.map((cc) => {
                   const cat = cc.categoria
-                  const tiposDisponibles = (tiposPorCat[cat.codigo_cat_pers] || []).filter((t) => t.activo)
+                  const tiposDisponibles = (tiposPorCat[cat.codigo_cat_pers] || [])
                   const puedeAgregar = cat.editable_en_detalle_pers && (!cat.es_unica_pers || cc.caracteristicas.length === 0)
 
                   return (

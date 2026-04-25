@@ -201,7 +201,7 @@ export default function PaginaChatUsuario() {
   const cargarDocumentosTab = useCallback(async () => {
     setCargandoDocs(true)
     try {
-      const todos = await documentosApi.listar({ activo: true, limit: 500 })
+      const todos = await documentosApi.listar({ limit: 500 })
       setDocumentosTab(todos)
     } finally {
       setCargandoDocs(false)

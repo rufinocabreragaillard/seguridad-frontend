@@ -208,7 +208,6 @@ export default function PaginaRegistroLLM() {
     alias: 'default',
     api_key: '',
     limite_usd_mes: '' as string,
-    activo: true,
   })
   const [guardandoCredencial, setGuardandoCredencial] = useState(false)
   const [errorCredencial, setErrorCredencial] = useState('')
@@ -234,7 +233,7 @@ export default function PaginaRegistroLLM() {
 
   const abrirNuevaCredencial = () => {
     setEditandoCredencial(null)
-    setFormCredencial({ proveedor: 'anthropic', alias: 'default', api_key: '', limite_usd_mes: '', activo: true })
+    setFormCredencial({ proveedor: 'anthropic', alias: 'default', api_key: '', limite_usd_mes: '' })
     setErrorCredencial('')
     setModalCredencial(true)
   }
@@ -246,7 +245,6 @@ export default function PaginaRegistroLLM() {
       alias: c.alias,
       api_key: '',
       limite_usd_mes: c.limite_usd_mes !== null ? String(c.limite_usd_mes) : '',
-      activo: c.activo,
     })
     setErrorCredencial('')
     setModalCredencial(true)
@@ -261,7 +259,6 @@ export default function PaginaRegistroLLM() {
         await llmCredencialesApi.actualizar(editandoCredencial.proveedor, editandoCredencial.alias, {
           api_key: formCredencial.api_key || undefined,
           limite_usd_mes: limite,
-          activo: formCredencial.activo,
         })
       } else {
         if (!formCredencial.api_key) {
@@ -274,7 +271,6 @@ export default function PaginaRegistroLLM() {
           alias: formCredencial.alias || 'default',
           api_key: formCredencial.api_key,
           limite_usd_mes: limite,
-          activo: formCredencial.activo,
         })
       }
       if (cerrar) setModalCredencial(false)
@@ -339,7 +335,6 @@ export default function PaginaRegistroLLM() {
     await llmPreciosApi.upsert(editandoPrecio.proveedor, editandoPrecio.nombre_tecnico, {
       ...formPrecio,
       vigente_desde: new Date().toISOString().slice(0, 10),
-      activo: true,
     })
     if (cerrar) setEditandoPrecio(null)
     cargarPrecios()
@@ -442,7 +437,7 @@ export default function PaginaRegistroLLM() {
                   { titulo: 'Nombre Visible', campo: 'nombre_visible' },
                   { titulo: 'Descripción', campo: 'descripcion' },
                   { titulo: 'Validado', campo: 'estado_valido', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Estado', campo: 'activo', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
+                  { titulo: 'Estado', campo: 'estado_valido', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
                 ], 'registro-llm')}>
                 <Download size={15} />{tc('exportarExcel')}
               </Boton>
@@ -479,7 +474,7 @@ export default function PaginaRegistroLLM() {
                       : <span className="inline-flex items-center gap-1 text-texto-muted text-sm"><XCircle size={14} />{tc('no')}</span>
                     }
                   </TablaTd>
-                  <TablaTd><Insignia variante={m.activo ? 'exito' : 'error'}>{m.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
+                  <TablaTd><Insignia variante='exito'>Válido</Insignia></TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => abrirEditarModelo(m)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
@@ -768,7 +763,7 @@ export default function PaginaRegistroLLM() {
                           <TablaTd className="font-mono text-xs">{c.api_key_preview}</TablaTd>
                           <TablaTd>{c.limite_usd_mes !== null ? `$${c.limite_usd_mes}` : '—'}</TablaTd>
                           <TablaTd className="text-xs text-gray-500">{c.ultimo_uso_en ? new Date(c.ultimo_uso_en).toLocaleString('es-CL') : '—'}</TablaTd>
-                          <TablaTd>{c.activo ? <Insignia variante="exito">{tc('activo')}</Insignia> : <Insignia variante="neutro">{tc('inactivo')}</Insignia>}</TablaTd>
+                          <TablaTd></TablaTd>
                           <TablaTd className="text-right">
                             <div className="flex justify-end items-center gap-2">
                               {res && (
@@ -859,10 +854,6 @@ export default function PaginaRegistroLLM() {
                   <label className="block text-sm font-medium text-gray-700 mb-1">{tConfig('etiquetaLimite')}</label>
                   <Input type="number" step="0.01" value={formCredencial.limite_usd_mes} onChange={(e) => setFormCredencial({ ...formCredencial, limite_usd_mes: e.target.value })} placeholder={tConfig('placeholderLimite')} />
                   <p className="text-xs text-gray-500 mt-1">{tConfig('descLimite')}</p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <input id="activo-cred" type="checkbox" checked={formCredencial.activo} onChange={(e) => setFormCredencial({ ...formCredencial, activo: e.target.checked })} />
-                  <label htmlFor="activo-cred" className="text-sm text-gray-700">{tConfig('etiquetaActiva')}</label>
                 </div>
                 {errorCredencial && <div className="text-sm text-red-600">{errorCredencial}</div>}
                 <PieBotonesModal editando={!!editandoCredencial} onGuardar={() => guardarCredencial(false)} onGuardarYSalir={() => guardarCredencial(true)} onCerrar={() => setModalCredencial(false)} cargando={guardandoCredencial} />

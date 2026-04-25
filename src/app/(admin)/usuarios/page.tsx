@@ -26,14 +26,14 @@ type RolAsignado = {
   id_rol: number
   codigo_rol?: string
   orden: number
-  roles?: { codigo_rol: string; nombre: string; activo: boolean; codigo_grupo: string | null }
+  roles?: { codigo_rol: string; nombre: string; codigo_grupo: string | null }
 }
-type GrupoAsignado = { codigo_grupo: string; grupos_entidades: { nombre: string; activo: boolean } }
+type GrupoAsignado = { codigo_grupo: string; grupos_entidades: { nombre: string } }
 type EntidadAsignada = {
   codigo_entidad: string
   codigo_grupo: string
   codigo_area?: string
-  entidades: { nombre: string; activo: boolean }
+  entidades: { nombre: string }
 }
 
 const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50'
@@ -49,9 +49,9 @@ export default function PaginaUsuarios() {
   const [busqueda, setBusqueda] = useState('')
 
   // Paginación server-side del listado de usuarios del grupo activo.
-  const filtrosUsuarios = useMemo(() => ({ q: busqueda.trim() || undefined, activo: true }), [busqueda])
+  const filtrosUsuarios = useMemo(() => ({ q: busqueda.trim() || undefined }), [busqueda])
   const fetcherUsuarios = useCallback(
-    (params: { page: number; limit: number; q?: string; activo?: boolean }) => usuariosApi.listarPaginado(params),
+    (params: { page: number; limit: number; q?: string }) => usuariosApi.listarPaginado(params),
     [],
   )
   const {
@@ -63,7 +63,7 @@ export default function PaginaUsuarios() {
     setPage,
     setLimit,
     refetch: refetchUsuarios,
-  } = usePaginacion<Usuario, { q?: string; activo?: boolean }>({
+  } = usePaginacion<Usuario, { q?: string }>({
     fetcher: fetcherUsuarios,
     filtros: filtrosUsuarios,
     limitInicial: 10,
@@ -316,7 +316,6 @@ export default function PaginaUsuarios() {
         const nuevoUsuario: Usuario = {
           codigo_usuario: form.codigo_usuario,
           nombre: form.nombre,
-          activo: true,
           grupo_por_defecto: grupoActivo,
           ...creado,
         }
@@ -480,7 +479,6 @@ export default function PaginaUsuarios() {
   const entidadesUsuarioGrupoActivo = entidadesUsuario.filter((ea) => ea.codigo_grupo === grupoActivo)
 
   const entidadesDisponibles = entidades.filter((e) =>
-    e.activo !== false &&
     !entidadesUsuarioGrupoActivo.some((ea) => ea.codigo_entidad === e.codigo_entidad)
   )
   const entidadesDisponiblesFiltradas = entidadesDisponibles.filter((e) =>
@@ -499,7 +497,7 @@ export default function PaginaUsuarios() {
         const found = gruposUsuario.find((g) => g.codigo_grupo === ea.codigo_grupo)
         map.set(ea.codigo_grupo, found ?? {
           codigo_grupo: ea.codigo_grupo,
-          grupos_entidades: { nombre: ea.codigo_grupo, activo: true },
+          grupos_entidades: { nombre: ea.codigo_grupo },
         })
       }
     })
@@ -562,7 +560,6 @@ export default function PaginaUsuarios() {
             { titulo: 'Grupo por defecto', campo: 'grupo_por_defecto' },
             { titulo: 'Entidad por defecto', campo: 'entidad_por_defecto' },
             { titulo: 'Área por defecto', campo: 'codigo_area' },
-            { titulo: 'Estado', campo: 'activo', formato: (v) => v ? 'Activo' : 'Inactivo' },
             { titulo: 'Último acceso', campo: 'ultimo_acceso', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL') : '' },
           ], `usuarios_${grupoActivo || 'todos'}`)}
           disabled={usuariosFiltrados.length === 0}

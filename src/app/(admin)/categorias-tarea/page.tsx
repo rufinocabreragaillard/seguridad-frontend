@@ -156,7 +156,7 @@ export default function PaginaCategoriasTarea() {
           { titulo: 'Código', campo: 'codigo_categoria_tarea' },
           { titulo: 'Nombre', campo: 'nombre_categoria_tarea' },
           { titulo: 'Descripción', campo: 'descripcion_categoria_tarea' },
-          { titulo: 'Estado', campo: 'activo' },
+          { titulo: 'Nombre', campo: 'nombre_categoria_tarea' },
         ]}
         excelNombreArchivo="categorias-tarea"
       />
@@ -169,11 +169,7 @@ export default function PaginaCategoriasTarea() {
           {
             titulo: 'Estado',
             render: (c: CategoriaTarea) =>
-              c.activo ? (
-                <Insignia variante="exito">Activo</Insignia>
-              ) : (
-                <Insignia variante="neutro">Inactivo</Insignia>
-              ),
+              ,
           },
         ]}
         items={filtradosOrdenados}

@@ -419,7 +419,7 @@ export default function PaginaUbicacionesDocs() {
     for (const u of ubicacionesAct) {
       if (u.ruta_completa) {
         todasRutasBD.add(u.ruta_completa)
-        if (u.ubicacion_habilitada && u.activo) rutasHabilitadas.add(u.ruta_completa)
+        if (u.ubicacion_habilitada) rutasHabilitadas.add(u.ruta_completa)
         else rutasNoHabilitadas.add(u.ruta_completa)
       }
     }
@@ -502,7 +502,7 @@ export default function PaginaUbicacionesDocs() {
     setCdBusqueda('')
   }
 
-  const cdUbicacionesHabilitadas = ubicaciones.filter((u) => u.ubicacion_habilitada && u.activo)
+  const cdUbicacionesHabilitadas = ubicaciones.filter((u) => u.ubicacion_habilitada)
   const cdCarpetaRaiz = ubicaciones.length > 0
     ? ubicaciones.reduce((min, u) => (u.nivel ?? 99) < (min.nivel ?? 99) ? u : min, ubicaciones[0])
     : null
@@ -560,8 +560,8 @@ export default function PaginaUbicacionesDocs() {
             {u.ubicacion_habilitada ? t('habilitada') : t('inhabilitada')}
           </Insignia>
 
-          <Insignia variante={u.activo ? 'exito' : 'error'}>
-            {u.activo ? tc('activo') : tc('inactivo')}
+          <Insignia variante='exito'>
+            Activo
           </Insignia>
 
           <div className="flex items-center gap-0.5 shrink-0 transition-opacity">
@@ -660,7 +660,7 @@ export default function PaginaUbicacionesDocs() {
                   { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
                   { titulo: 'Nivel', campo: 'nivel' },
                   { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Estado', campo: 'activo', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
+                  { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
                 ],
                 'ubicaciones-docs'
               )

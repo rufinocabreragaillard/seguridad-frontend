@@ -24,10 +24,9 @@ function formatFecha(iso: string | null) {
   } catch { return iso }
 }
 
-function BadgeActivo({ activo, esBase }: { activo: boolean; esBase: boolean }) {
+function BadgeBase({ esBase }: { esBase: boolean }) {
   if (esBase) return <span className="px-2 py-0.5 rounded text-xs font-medium bg-primario-muy-claro text-primario border border-primario/30">Base</span>
-  if (activo) return <span className="px-2 py-0.5 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200">Activo</span>
-  return <span className="px-2 py-0.5 rounded text-xs font-medium bg-surface text-texto-muted border border-borde">Inactivo</span>
+  return null
 }
 
 // Barra de progreso de generación
@@ -171,14 +170,13 @@ export default function TraduccionesPage() {
     return () => detenerPolling()
   }, [cargarEstado, iniciarPolling, detenerPolling])
 
-  // ── Toggle activo ──────────────────────────────────────────────────────────
   const toggleActivo = async (locale: LocaleSoportado) => {
     if (locale.es_base) return
     try {
-      await traduccionesApi.actualizarLocale(locale.codigo, { activo: !locale.activo })
+      await traduccionesApi.eliminarLocale(locale.codigo)
       await cargarEstado()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al actualizar idioma')
+      setError(e instanceof Error ? e.message : 'Error al eliminar idioma')
     }
   }
 
@@ -229,7 +227,6 @@ export default function TraduccionesPage() {
         codigo: formNuevo.codigo.toLowerCase(),
         nombre_nativo: formNuevo.nombre_nativo,
         nombre_es: formNuevo.nombre_es,
-        activo: false,
       })
       setModalAgregar(false)
       setFormNuevo({ codigo: '', nombre_nativo: '', nombre_es: '' })
@@ -422,7 +419,7 @@ export default function TraduccionesPage() {
                     }
                   </td>
                   <td className="px-5 py-3">
-                    <BadgeActivo activo={loc.activo} esBase={loc.es_base} />
+                    <BadgeBase esBase={loc.es_base} />
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">
@@ -430,13 +427,9 @@ export default function TraduccionesPage() {
                         <button
                           onClick={() => toggleActivo(loc)}
                           disabled={enGeneracion}
-                          className={`text-xs px-2.5 py-1 rounded border transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                            loc.activo
-                              ? 'border-borde text-texto-muted hover:border-error hover:text-error'
-                              : 'border-primario/30 text-primario hover:bg-primario-muy-claro'
-                          }`}
+                          className="text-xs px-2.5 py-1 rounded border border-borde text-texto-muted hover:border-error hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          {loc.activo ? 'Desactivar' : 'Activar'}
+                          Eliminar
                         </button>
                       )}
                       {!loc.es_base && (
@@ -541,8 +534,7 @@ export default function TraduccionesPage() {
           )}
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             <p className="text-xs text-amber-700">
-              El idioma se creará como <strong>inactivo</strong>. Para activarlo y usarlo en el sistema,
-              primero deberás agregar su archivo de mensajes al proyecto y hacer deploy.
+              El idioma se creará. Para usarlo en el sistema, primero deberás agregar su archivo de mensajes al proyecto y hacer deploy.
             </p>
           </div>
           <div className="flex gap-3 justify-end pt-1">

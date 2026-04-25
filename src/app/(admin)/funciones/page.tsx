@@ -125,7 +125,7 @@ export default function PaginaFunciones() {
       ])
       setAplicaciones(a)
       setFunciones(f)
-      setModelosLLM(llms.filter((m: RegistroLLM) => m.activo))
+      setModelosLLM(llms)
     } finally { setCargando(false) }
   }, [])
 

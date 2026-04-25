@@ -37,7 +37,7 @@ export default function PaginaParametrosGenerales() {
   const [modalCat, setModalCat] = useState(false)
   const [catEditando, setCatEditando] = useState<CategoriaParametro | null>(null)
   const [formCat, setFormCat] = useState({
-    categoria_parametro: '', nombre: '', descripcion: '', activo: true,
+    categoria_parametro: '', nombre: '', descripcion: '',
     replica_grupo: false, visible_grupo: true, editable_grupo: true,
     replica_usuario: false, visible_usuario: true, editable_usuario: true,
   })
@@ -55,7 +55,7 @@ export default function PaginaParametrosGenerales() {
   const [cargandoTipo, setCargandoTipo] = useState(true)
   const [modalTipo, setModalTipo] = useState(false)
   const [tipoEditando, setTipoEditando] = useState<TipoParametro | null>(null)
-  const [formTipo, setFormTipo] = useState({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '', activo: true })
+  const [formTipo, setFormTipo] = useState({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '' })
   const [promptsTipo, setPromptsTipo] = useState<CamposPrompt>({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
   const [mdTipo, setMdTipo] = useState<string>('')
   const [generandoMdTipo, setGenerandoMdTipo] = useState(false)
@@ -116,7 +116,7 @@ export default function PaginaParametrosGenerales() {
   const abrirNuevaCat = () => {
     setCatEditando(null)
     setFormCat({
-      categoria_parametro: '', nombre: '', descripcion: '', activo: true,
+      categoria_parametro: '', nombre: '', descripcion: '',
       replica_grupo: false, visible_grupo: true, editable_grupo: true,
       replica_usuario: false, visible_usuario: true, editable_usuario: true,
     })
@@ -130,7 +130,6 @@ export default function PaginaParametrosGenerales() {
       categoria_parametro: c.categoria_parametro,
       nombre: c.nombre,
       descripcion: c.descripcion || '',
-      activo: c.activo,
       replica_grupo: c.replica_grupo ?? false,
       visible_grupo: c.visible_grupo ?? true,
       editable_grupo: c.editable_grupo ?? true,
@@ -148,7 +147,7 @@ export default function PaginaParametrosGenerales() {
     try {
       if (catEditando) {
         const actualizado = await datosBasicosApi.actualizarCategoria(catEditando.categoria_parametro, {
-          nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo,
+          nombre: formCat.nombre, descripcion: formCat.descripcion,
           replica_grupo: formCat.replica_grupo, visible_grupo: formCat.visible_grupo, editable_grupo: formCat.editable_grupo,
           replica_usuario: formCat.replica_usuario, visible_usuario: formCat.visible_usuario, editable_usuario: formCat.editable_usuario,
           prompt_insert: promptsCat.prompt_insert, prompt_update: promptsCat.prompt_update, system_prompt: promptsCat.system_prompt,
@@ -159,7 +158,7 @@ export default function PaginaParametrosGenerales() {
       } else {
         const creada = await datosBasicosApi.crearCategoria({
           categoria_parametro: formCat.categoria_parametro.toUpperCase(),
-          nombre: formCat.nombre, descripcion: formCat.descripcion, activo: formCat.activo,
+          nombre: formCat.nombre, descripcion: formCat.descripcion,
           replica_grupo: formCat.replica_grupo, visible_grupo: formCat.visible_grupo, editable_grupo: formCat.editable_grupo,
           replica_usuario: formCat.replica_usuario, visible_usuario: formCat.visible_usuario, editable_usuario: formCat.editable_usuario,
         })
@@ -172,18 +171,18 @@ export default function PaginaParametrosGenerales() {
   }
 
   // ── Tipos: guardar ─────────────────────────────────────────────────────────
-  const abrirNuevoTipo = () => { setTipoEditando(null); setFormTipo({ categoria_parametro: filtroCategoria, tipo_parametro: '', nombre: '', descripcion: '', activo: true }); setPromptsTipo({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false }); setMdTipo(''); setMensajeMdTipo(null); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
-  const abrirEditarTipo = (t: TipoParametro) => { const t2 = t as unknown as Record<string, unknown>; setTipoEditando(t); setFormTipo({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, nombre: t.nombre, descripcion: t.descripcion || '', activo: t.activo }); setPromptsTipo({ prompt_insert: t2.prompt_insert as string ?? null, prompt_update: t2.prompt_update as string ?? null, system_prompt: t2.system_prompt as string ?? null, python_insert: t2.python_insert as string ?? null, python_update: t2.python_update as string ?? null, javascript: t2.javascript as string ?? null, python_editado_manual: t2.python_editado_manual as boolean ?? false, javascript_editado_manual: t2.javascript_editado_manual as boolean ?? false }); setMdTipo((t2.md as string) || ''); setMensajeMdTipo(null); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
+  const abrirNuevoTipo = () => { setTipoEditando(null); setFormTipo({ categoria_parametro: filtroCategoria, tipo_parametro: '', nombre: '', descripcion: '' }); setPromptsTipo({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false }); setMdTipo(''); setMensajeMdTipo(null); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
+  const abrirEditarTipo = (t: TipoParametro) => { const t2 = t as unknown as Record<string, unknown>; setTipoEditando(t); setFormTipo({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, nombre: t.nombre, descripcion: t.descripcion || '' }); setPromptsTipo({ prompt_insert: t2.prompt_insert as string ?? null, prompt_update: t2.prompt_update as string ?? null, system_prompt: t2.system_prompt as string ?? null, python_insert: t2.python_insert as string ?? null, python_update: t2.python_update as string ?? null, javascript: t2.javascript as string ?? null, python_editado_manual: t2.python_editado_manual as boolean ?? false, javascript_editado_manual: t2.javascript_editado_manual as boolean ?? false }); setMdTipo((t2.md as string) || ''); setMensajeMdTipo(null); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
 
   const guardarTipo = async (cerrar: boolean) => {
     if (!formTipo.categoria_parametro || !formTipo.tipo_parametro.trim() || !formTipo.nombre.trim()) { setErrorTipo('Categoría, código y nombre son obligatorios'); return }
     setGuardandoTipo(true); setErrorTipo('')
     try {
       if (tipoEditando) {
-        const actualizado = await datosBasicosApi.actualizarTipo(tipoEditando.categoria_parametro, tipoEditando.tipo_parametro, { nombre: formTipo.nombre, descripcion: formTipo.descripcion, activo: formTipo.activo, prompt_insert: promptsTipo.prompt_insert, prompt_update: promptsTipo.prompt_update, system_prompt: promptsTipo.system_prompt, python_insert: promptsTipo.python_insert, python_update: promptsTipo.python_update, javascript: promptsTipo.javascript, python_editado_manual: promptsTipo.python_editado_manual, javascript_editado_manual: promptsTipo.javascript_editado_manual })
+        const actualizado = await datosBasicosApi.actualizarTipo(tipoEditando.categoria_parametro, tipoEditando.tipo_parametro, { nombre: formTipo.nombre, descripcion: formTipo.descripcion, prompt_insert: promptsTipo.prompt_insert, prompt_update: promptsTipo.prompt_update, system_prompt: promptsTipo.system_prompt, python_insert: promptsTipo.python_insert, python_update: promptsTipo.python_update, javascript: promptsTipo.javascript, python_editado_manual: promptsTipo.python_editado_manual, javascript_editado_manual: promptsTipo.javascript_editado_manual })
         setTipoEditando(actualizado)
       } else {
-        const creado = await datosBasicosApi.crearTipo({ categoria_parametro: formTipo.categoria_parametro, tipo_parametro: formTipo.tipo_parametro.toUpperCase(), nombre: formTipo.nombre, descripcion: formTipo.descripcion, activo: formTipo.activo })
+        const creado = await datosBasicosApi.crearTipo({ categoria_parametro: formTipo.categoria_parametro, tipo_parametro: formTipo.tipo_parametro.toUpperCase(), nombre: formTipo.nombre, descripcion: formTipo.descripcion })
         if (!cerrar) setTipoEditando(creado)
       }
       if (cerrar) setModalTipo(false)
@@ -258,7 +257,7 @@ export default function PaginaParametrosGenerales() {
                   { titulo: 'Rep U', campo: 'replica_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
                   { titulo: 'Vis U', campo: 'visible_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
                   { titulo: 'Edit U', campo: 'editable_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Estado', campo: 'activo', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
+                  { titulo: 'Nombre', campo: 'nombre', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
                 ], 'categorias-parametro')}>
                 <Download size={15} />Excel
               </Boton>
@@ -308,7 +307,7 @@ export default function PaginaParametrosGenerales() {
                         <TablaTd className="text-center"><Insignia variante={c.visible_usuario ? 'exito' : 'error'}>{c.visible_usuario ? 'Sí' : 'No'}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.editable_usuario ? 'exito' : 'error'}>{c.editable_usuario ? 'Sí' : 'No'}</Insignia></TablaTd>
                         <TablaTd>
-                          <Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                          
                         </TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
@@ -375,7 +374,7 @@ export default function PaginaParametrosGenerales() {
                         <TablaTd className="font-medium">{t.nombre}</TablaTd>
                         <TablaTd className="text-texto-muted text-sm">{t.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                         <TablaTd>
-                          <Insignia variante={t.activo ? 'exito' : 'error'}>{t.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                          
                         </TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
@@ -465,13 +464,6 @@ export default function PaginaParametrosGenerales() {
                   </div>
                 </div>
               </div>
-              {catEditando && (
-                <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                  <input type="checkbox" checked={formCat.activo} onChange={(e) => setFormCat({ ...formCat, activo: e.target.checked })}
-                    className="rounded border-borde text-primario h-4 w-4" />
-                  Activo
-                </label>
-              )}
               {errorCat && <p className="text-sm text-error">{errorCat}</p>}
               <PieBotonesModal
                 editando={!!catEditando}
@@ -656,13 +648,6 @@ export default function PaginaParametrosGenerales() {
                 <textarea className={inputCls} rows={2} placeholder="Descripción opcional" value={formTipo.descripcion}
                   onChange={(e) => setFormTipo({ ...formTipo, descripcion: e.target.value })} />
               </div>
-              {tipoEditando && (
-                <label className="flex items-center gap-2 text-sm text-texto cursor-pointer">
-                  <input type="checkbox" checked={formTipo.activo} onChange={(e) => setFormTipo({ ...formTipo, activo: e.target.checked })}
-                    className="rounded border-borde text-primario h-4 w-4" />
-                  Activo
-                </label>
-              )}
               {errorTipo && <p className="text-sm text-error">{errorTipo}</p>}
               <PieBotonesModal
                 editando={!!tipoEditando}

@@ -497,7 +497,7 @@ export default function PaginaParametros() {
                     className={selectClass}
                   >
                     <option value="">{t('placeholderCategoria')}</option>
-                    {categorias.filter((c) => c.activo).map((c) => (
+                    {categorias.map((c) => (
                       <option key={c.categoria_parametro} value={c.categoria_parametro}>
                         {c.nombre}
                       </option>

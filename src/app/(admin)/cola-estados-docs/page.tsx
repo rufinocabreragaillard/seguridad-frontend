@@ -85,7 +85,7 @@ export default function PaginaColaEstadosDocs() {
   const cargar = refetchCola
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const estadosActivos = useMemo(() => estados.filter((e) => e.activo), [estados])
+  const estadosActivos = useMemo(() => estados, [estados])
   const nombreEstado = (codigo: string | null | undefined) =>
     codigo ? (estados.find((e) => e.codigo_estado_doc === codigo)?.nombre_estado || codigo) : '—'
 
@@ -167,7 +167,7 @@ export default function PaginaColaEstadosDocs() {
   const [busquedaDocs, setBusquedaDocs] = useState('')
   const docsFiltrados = useMemo(() =>
     documentos
-      .filter((d) => d.activo)
+      
       .filter((d) =>
         d.nombre_documento.toLowerCase().includes(busquedaDocs.toLowerCase()) ||
         String(d.codigo_documento).includes(busquedaDocs)

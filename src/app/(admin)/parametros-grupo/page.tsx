@@ -254,7 +254,7 @@ export default function PaginaParametrosGrupo() {
                     onChange={(e) => setNuevoVal({ categoria_parametro: e.target.value, tipo_parametro: '', valor_parametro: nuevoVal.valor_parametro })}
                     className={selectCls}>
                     <option value="">Selecciona categoría</option>
-                    {categorias.filter((c) => c.activo).map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
+                    {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
                   </select>
                 )}
                 <select value={nuevoVal.tipo_parametro}

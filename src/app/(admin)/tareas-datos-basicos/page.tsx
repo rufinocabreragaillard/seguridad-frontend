@@ -392,7 +392,7 @@ export default function PaginaTareasDatosBasicos() {
   const toggleActivoTipo = async (t: TipoTarea) => {
     try {
       await tareasDatosBasicosApi.actualizarTipoTar(
-        t.codigo_categoria_tarea, t.codigo_tipo_tarea, { activo: !t.activo }
+        t.codigo_categoria_tarea, t.codigo_tipo_tarea, 
       )
       cargarTipos()
     } catch (err) {
@@ -445,7 +445,7 @@ export default function PaginaTareasDatosBasicos() {
   const toggleActivoEst = async (e: EstadoTarea) => {
     try {
       await tareasDatosBasicosApi.actualizarEstadoTar(
-        e.codigo_categoria_tarea, e.codigo_tipo_tarea, e.codigo_estado_tarea, { activo: !e.activo }
+        e.codigo_categoria_tarea, e.codigo_tipo_tarea, e.codigo_estado_tarea, 
       )
       cargarEstados()
     } catch (err) {
@@ -525,7 +525,7 @@ export default function PaginaTareasDatosBasicos() {
                   { titulo: 'Código', campo: 'codigo_categoria_tarea' },
                   { titulo: 'Nombre', campo: 'nombre_categoria_tarea' },
                   { titulo: 'Descripción', campo: 'descripcion_categoria_tarea' },
-                  { titulo: 'Activo', campo: 'activo', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Sí' : 'No' },
                 ], 'categorias_tarea')}
                 disabled={categorias.length === 0}>
                 <Download size={15} /> Excel
@@ -561,7 +561,7 @@ export default function PaginaTareasDatosBasicos() {
                       <TablaTd className="font-medium">{c.nombre_categoria_tarea}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm">{c.descripcion_categoria_tarea || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd>
-                        <Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                        
                       </TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_tarea}</code></TablaTd>
                       <TablaTd>
@@ -598,7 +598,7 @@ export default function PaginaTareasDatosBasicos() {
                   { titulo: 'Código tipo', campo: 'codigo_tipo_tarea' },
                   { titulo: 'Nombre', campo: 'nombre_tipo_tarea' },
                   { titulo: 'Tipo canónico', campo: 'codigo_tipo_canonico' },
-                  { titulo: 'Activo', campo: 'activo', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Sí' : 'No' },
                 ], 'tipos_tarea')}
                 disabled={tiposFiltrados.length === 0}>
                 <Download size={15} /> Excel
@@ -637,7 +637,7 @@ export default function PaginaTareasDatosBasicos() {
                       <TablaTd className="text-texto-muted text-sm">{t.codigo_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd>
                         <button onClick={() => toggleActivoTipo(t)} title="Cambiar estado">
-                          <Insignia variante={t.activo ? 'exito' : 'error'}>{t.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                          
                         </button>
                       </TablaTd>
                       <TablaTd>
@@ -684,7 +684,7 @@ export default function PaginaTareasDatosBasicos() {
                   { titulo: 'Nombre', campo: 'nombre_estado_tarea' },
                   { titulo: 'Canónico', campo: 'codigo_estado_canonico' },
                   { titulo: 'Orden', campo: 'orden' },
-                  { titulo: 'Activo', campo: 'activo', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Sí' : 'No' },
                 ], 'estados_tarea')}
                 disabled={estadosFiltrados.length === 0}>
                 <Download size={15} /> Excel
@@ -722,7 +722,7 @@ export default function PaginaTareasDatosBasicos() {
                       <TablaTd className="text-texto-muted text-sm">{e.codigo_estado_canonico}</TablaTd>
                       <TablaTd>
                         <button onClick={() => toggleActivoEst(e)} title="Cambiar estado">
-                          <Insignia variante={e.activo ? 'exito' : 'error'}>{e.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                          
                         </button>
                       </TablaTd>
                       <TablaTd>
@@ -751,7 +751,7 @@ export default function PaginaTareasDatosBasicos() {
                   { titulo: 'Código', campo: 'codigo_tipo_canonico' },
                   { titulo: 'Nombre', campo: 'nombre_tipo_canonico' },
                   { titulo: 'Descripción', campo: 'descripcion_tipo_canonico' },
-                  { titulo: 'Activo', campo: 'activo', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Sí' : 'No' },
                 ], 'tipos_canonicos_tarea')}
                 disabled={tiposCanonicos.length === 0}>
                 <Download size={15} /> Excel
@@ -777,7 +777,7 @@ export default function PaginaTareasDatosBasicos() {
                     <TablaTd className="font-medium">{tc.nombre_tipo_canonico}</TablaTd>
                     <TablaTd className="text-texto-muted text-sm">{tc.descripcion_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                     <TablaTd>
-                      <Insignia variante={tc.activo ? 'exito' : 'error'}>{tc.activo ? 'Activo' : 'Inactivo'}</Insignia>
+                      
                     </TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">

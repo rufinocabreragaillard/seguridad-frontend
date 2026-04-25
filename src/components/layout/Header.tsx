@@ -444,7 +444,7 @@ export function Header({ titulo }: { titulo?: string }) {
               <div className="flex items-center gap-3 pt-1">
                 <span className="text-xs font-medium text-texto-muted uppercase tracking-wide">{t('idioma')}:</span>
                 <div className="flex gap-1 flex-wrap">
-                  {(localesDinamicos.length > 0 ? localesDinamicos : localesFallback.map((codigo) => ({ codigo, nombre_nativo: codigo, nombre_es: codigo, activo: true, es_base: codigo === 'es', orden: 0 }))).map((loc) => {
+                  {(localesDinamicos.length > 0 ? localesDinamicos : localesFallback.map((codigo) => ({ codigo, nombre_nativo: codigo, nombre_es: codigo, es_base: codigo === 'es', orden: 0 }))).map((loc) => {
                     const codigo = typeof loc === 'string' ? loc : loc.codigo
                     const localeActivo = usuario?.locale ?? 'es'
                     const activo = codigo === localeActivo

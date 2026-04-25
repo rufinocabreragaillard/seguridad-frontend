@@ -172,7 +172,7 @@ export default function PaginaEstadosDocs() {
           { titulo: t('colCodigo'), campo: 'codigo_estado_doc' },
           { titulo: t('colNombre'), campo: 'nombre_estado' },
           { titulo: t('colDescripcion'), campo: 'descripcion' },
-          { titulo: t('colEstado'), campo: 'activo', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
+          { titulo: 'Nombre', campo: 'nombre_estado', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
         ]}
         excelNombreArchivo="estados-docs"
       />
@@ -182,7 +182,7 @@ export default function PaginaEstadosDocs() {
           columnaCodigo<EstadoDoc>(t('colCodigo'), (e) => e.codigo_estado_doc),
           columnaNombre<EstadoDoc>(t('colNombre'), (e) => e.nombre_estado),
           columnaDescripcion<EstadoDoc>(t('colDescripcion'), (e) => e.descripcion),
-          columnaEstado<EstadoDoc>((e) => e.activo),
+          ,
         ]}
         items={filtradosOrdenados}
         cargando={crud.cargando}

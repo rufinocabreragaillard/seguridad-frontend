@@ -334,7 +334,7 @@ function PaginaProcesarDocumentosInterna() {
 
       setUbicaciones(
         (u as UbicacionOption[])
-          .filter((x: UbicacionOption) => (x as UbicacionOption & { activo?: boolean }).activo !== false)
+          .filter((x: UbicacionOption) => x)
           .sort((a: UbicacionOption, b: UbicacionOption) => (a.ruta_completa || '').localeCompare(b.ruta_completa || ''))
       )
     } catch {
@@ -398,16 +398,16 @@ function PaginaProcesarDocumentosInterna() {
         let todos: Documento[]
         if (esRestablecer) {
           const [a, b] = await Promise.all([
-            documentosApi.listar({ codigo_estado_doc: 'NO_ESCANEABLE', activo: true, q: qBackend }),
-            documentosApi.listar({ codigo_estado_doc: 'NO_ENCONTRADO', activo: true, q: qBackend }),
+            documentosApi.listar({ codigo_estado_doc: 'NO_ESCANEABLE', q: qBackend }),
+            documentosApi.listar({ codigo_estado_doc: 'NO_ENCONTRADO', q: qBackend }),
           ])
           todos = [...a, ...b]
         } else if (esResetearCargado) {
-          todos = await documentosApi.listar({ activo: true, q: qBackend })
+          todos = await documentosApi.listar({ q: qBackend })
         } else {
           // EXTRAER
           const estadoOrigen = pasoActual?.estado_origen || 'CARGADO'
-          todos = await documentosApi.listar({ codigo_estado_doc: estadoOrigen, activo: true, q: qBackend })
+          todos = await documentosApi.listar({ codigo_estado_doc: estadoOrigen, q: qBackend })
         }
         if (rutaPrefijo) {
           todos = todos.filter((d) => d.ubicacion_documento?.startsWith(rutaPrefijo))
@@ -423,7 +423,6 @@ function PaginaProcesarDocumentosInterna() {
           page: pagina,
           limit: DOCS_POR_PAGINA_DEFAULT,
           codigo_estado_doc: estadoOrigen,
-          activo: true,
           q: qBackend,
           ruta_prefijo: rutaPrefijo,
         })
@@ -581,7 +580,6 @@ function PaginaProcesarDocumentosInterna() {
       codigo_grupo: grupoActivo || '',
       nombre_documento: c.nombre_documento,
       ubicacion_documento: c.ubicacion_documento ?? null,
-      activo: true,
     } as Documento
   }, [documentos, grupoActivo])
 

@@ -58,7 +58,7 @@ export interface UsuarioContexto {
   nombre: string
   alias?: string | null
   locale?: string          // Locale preferido (es, en, fr-CA, etc.)
-  activo: boolean
+  fecha_baja?: string | null
   tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA' | null
   grupo_activo: string
   nombre_grupo?: string
@@ -102,7 +102,6 @@ export interface Entidad {
   nombre: string
   codigo_grupo?: string
   descripcion?: string
-  activo: boolean
   orden?: number
   fecha_creacion?: string
   prompt_insert?: string | null
@@ -125,7 +124,6 @@ export interface Area {
   usuario_responsable?: string
   codigo_area_superior?: string
   tipo_ubicacion?: 'AREA' | 'CONTENIDO' | 'VIRTUAL'
-  activo: boolean
   nivel?: number
 }
 
@@ -140,7 +138,7 @@ export interface Usuario {
   telefono?: string
   fono_verificado?: boolean
   descripcion?: string
-  activo: boolean
+  fecha_baja?: string | null
   id_rol_principal?: number | null
   codigo_rol_principal?: string | null  // conveniencia: codigo_rol asociado
   entidad_por_defecto?: string
@@ -270,7 +268,6 @@ export interface ChatConversacion {
   id_modelo?: number | null
   nombre_modelo?: string | null
   titulo: string
-  activo: boolean
   fecha_creacion: string
   fecha_actualizacion: string
 }
@@ -336,7 +333,6 @@ export interface CategoriaParametro {
   categoria_parametro: string
   nombre: string
   descripcion?: string
-  activo: boolean
   orden?: number
   fecha_creacion?: string
   replica_grupo?: boolean
@@ -360,7 +356,6 @@ export interface TipoParametro {
   tipo_parametro: string
   nombre: string
   descripcion?: string
-  activo: boolean
   orden?: number
   fecha_creacion?: string
   categorias_parametro?: { nombre: string }
@@ -395,7 +390,6 @@ export interface EstadoCanonicoTarea {
   codigo_estado_canonico: string
   nombre_estado_canonico: string
   descripcion_estado_canonico?: string
-  activo: boolean
 }
 
 export interface EstadoCanonicalProceso {
@@ -409,7 +403,6 @@ export interface CategoriaTarea {
   codigo_categoria_tarea: string
   nombre_categoria_tarea: string
   descripcion_categoria_tarea?: string
-  activo: boolean
   orden?: number
   prompt_insert?: string | null
   prompt_update?: string | null
@@ -425,7 +418,6 @@ export interface TipoCanonicoTarea {
   codigo_tipo_canonico: string
   nombre_tipo_canonico: string
   descripcion_tipo_canonico?: string
-  activo: boolean
 }
 
 export interface TipoConversacion {
@@ -433,7 +425,6 @@ export interface TipoConversacion {
   codigo_tipo_conversacion: string
   nombre: string
   descripcion?: string
-  activo: boolean
 }
 
 export interface TipoTarea {
@@ -443,7 +434,6 @@ export interface TipoTarea {
   codigo_tipo_canonico?: string
   nombre_tipo_tarea: string
   descripcion_tipo_tarea?: string
-  activo: boolean
   orden?: number
   prompt_insert?: string | null
   prompt_update?: string | null
@@ -462,7 +452,6 @@ export interface EstadoConversacion {
   nombre: string
   codigo_estado_canonico: string
   orden: number
-  activo: boolean
 }
 
 export interface CategoriaProceso {
@@ -533,7 +522,6 @@ export interface EstadoTarea {
   descripcion_estado_tarea?: string
   codigo_estado_canonico: string
   orden: number
-  activo: boolean
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
@@ -627,7 +615,6 @@ export interface Documento {
   tamano_kb?: number | null
   codigo_estado_doc?: string | null
   detalle_estado?: string | null
-  activo: boolean
 }
 
 // ─── Personas ───────────────────────────────────────────────────────────────
@@ -637,7 +624,6 @@ export interface TipoDocumentoPersona {
   codigo_tipo_doc: string
   nombre: string
   descripcion?: string | null
-  activo: boolean
 }
 
 export interface Persona {
@@ -647,7 +633,6 @@ export interface Persona {
   nombre: string
   codigo_tipo_doc?: string | null
   documento_id?: string | null
-  activo: boolean
 }
 
 export interface CategoriaCaractPers {
@@ -658,7 +643,6 @@ export interface CategoriaCaractPers {
   es_unica_pers: boolean
   editable_en_detalle_pers: boolean
   orden?: number
-  activo: boolean
 }
 
 export interface TipoCaractPers {
@@ -666,7 +650,6 @@ export interface TipoCaractPers {
   codigo_cat_pers: string
   codigo_tipo_pers: string
   nombre_tipo_pers: string
-  activo: boolean
 }
 
 export interface CaracteristicaPersona {
@@ -706,7 +689,6 @@ export interface CategoriaCaractDocs {
   editable_en_detalle_docs: boolean
   orden?: number
   id_modelo?: number | null
-  activo: boolean
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
@@ -721,7 +703,6 @@ export interface TipoCaractDocs {
   nombre_tipo_docs: string
   descripcion?: string | null
   orden?: number
-  activo: boolean
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
@@ -756,7 +737,6 @@ export interface RegistroLLM {
   descripcion?: string | null
   estado_valido: boolean
   fecha_validacion?: string | null
-  activo: boolean
 }
 
 // ─── Estados Docs ──────────────────────────────────────────────────────────
@@ -766,7 +746,6 @@ export interface EstadoDoc {
   nombre_estado: string
   descripcion?: string | null
   orden: number
-  activo: boolean
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
@@ -830,7 +809,6 @@ export interface UbicacionDoc {
   ruta_completa?: string | null
   nivel: number
   orden: number
-  activo: boolean
   ubicacion_habilitada: boolean
   tipo_ubicacion: 'AREA' | 'CONTENIDO'
   prompt_insert?: string | null
@@ -876,7 +854,6 @@ export interface LocaleSoportado {
   codigo: string
   nombre_nativo: string
   nombre_es: string
-  activo: boolean
   es_base: boolean
   orden: number
 }

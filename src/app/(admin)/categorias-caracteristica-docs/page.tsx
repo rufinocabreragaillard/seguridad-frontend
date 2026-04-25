@@ -83,7 +83,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   useEffect(() => { cargarCategorias() }, [cargarCategorias])
 
   useEffect(() => {
-    registroLLMApi.listar().then((m) => setModelosLLM(m.filter((x) => x.activo))).catch(() => {})
+    registroLLMApi.listar().then((m) => setModelosLLM(m)).catch(() => {})
   }, [])
 
   // ── Carga tipos ───────────────────────────────────────────────────────────
@@ -322,7 +322,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         }}
       >
         <option value="">{t('selectorPlaceholder')}</option>
-        {categorias.filter((c) => c.activo).map((c) => (
+        {categorias.map((c) => (
           <option key={c.codigo_cat_docs} value={c.codigo_cat_docs}>{c.nombre_cat_docs}</option>
         ))}
       </select>
@@ -371,7 +371,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                   { titulo: t('colNombre'), campo: 'nombre_cat_docs' },
                   { titulo: t('colUnica'), campo: 'es_unica_docs', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
                   { titulo: t('colEditable'), campo: 'editable_en_detalle_docs', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
-                  { titulo: t('colEstado'), campo: 'activo', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
+                  { titulo: 'Nombre', campo: 'nombre_cat_docs', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
                 ], 'categorias-docs')}>
                 <Download size={15} />Excel
               </Boton>
@@ -392,7 +392,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                   <TablaTh>{t('colNombre')}</TablaTh>
                   <TablaTh>{t('colUnica')}</TablaTh>
                   <TablaTh>{t('colEditable')}</TablaTh>
-                  <TablaTh>{tc('activo')}</TablaTh>
+                  
                   <TablaTh>{t('colCodigo')}</TablaTh>
                   <TablaTh className="text-right">{tc('acciones')}</TablaTh>
                 </tr>
@@ -407,7 +407,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     <TablaTd className="font-medium">{c.nombre_cat_docs}</TablaTd>
                     <TablaTd><Insignia variante={c.es_unica_docs ? 'advertencia' : 'neutro'}>{c.es_unica_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd><Insignia variante={c.editable_en_detalle_docs ? 'exito' : 'neutro'}>{c.editable_en_detalle_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
-                    <TablaTd><Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
+                    <TablaTd></TablaTd>
                     <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_docs}</code></TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
@@ -437,7 +437,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                 <TablaCabecera>
                   <tr>
                     <TablaTh>{t('colNombre')}</TablaTh>
-                    <TablaTh>{tc('activo')}</TablaTh>
+                    
                     <TablaTh>{t('colCodigo')}</TablaTh>
                     <TablaTh className="text-right">{tc('acciones')}</TablaTh>
                   </tr>
@@ -450,7 +450,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                   ) : tipos.map((tipo) => (
                     <TablaFila key={tipo.codigo_tipo_docs}>
                       <TablaTd className="font-medium">{tipo.nombre_tipo_docs}</TablaTd>
-                      <TablaTd><Insignia variante={tipo.activo ? 'exito' : 'error'}>{tipo.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
+                      <TablaTd></TablaTd>
                       <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tipo.codigo_tipo_docs}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">

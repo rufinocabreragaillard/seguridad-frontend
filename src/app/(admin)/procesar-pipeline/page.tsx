@@ -274,7 +274,7 @@ export default function PaginaCargaDocsUsuario() {
           </span>
           <Insignia variante={u.tipo_ubicacion === 'AREA' ? 'primario' : 'advertencia'}>{u.tipo_ubicacion}</Insignia>
           <Insignia variante={u.ubicacion_habilitada ? 'exito' : 'advertencia'}>{u.ubicacion_habilitada ? 'Habilitada' : 'Inhabilitada'}</Insignia>
-          <Insignia variante={u.activo ? 'exito' : 'error'}>{u.activo ? 'Activo' : 'Inactivo'}</Insignia>
+          <Insignia variante='exito'>Activo</Insignia>
           <div className="flex items-center gap-0.5 shrink-0 transition-opacity">
             <button onClick={() => toggleHabilitada(u)} className={`p-1.5 rounded-lg transition-colors ${u.ubicacion_habilitada ? 'hover:bg-amber-50 text-texto-muted hover:text-amber-600' : 'hover:bg-green-50 text-texto-muted hover:text-green-600'}`} title={u.ubicacion_habilitada ? 'Inhabilitar (incluye hijos)' : 'Habilitar (incluye hijos)'}>
               {u.ubicacion_habilitada ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
@@ -365,7 +365,7 @@ export default function PaginaCargaDocsUsuario() {
   const cargarDocsLista = useCallback(async (pagina: number, estadoDoc: string) => {
     setCargandoDocsLista(true)
     try {
-      const res = await documentosApi.listarPaginado({ page: pagina, limit: 20, codigo_estado_doc: estadoDoc, activo: true })
+      const res = await documentosApi.listarPaginado({ page: pagina, limit: 20, codigo_estado_doc: estadoDoc })
       // Filtrar por ubicación si hay una seleccionada (client-side, la API no tiene ese param)
       const ubic = ubicacionDocSel ? ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel) : null
       const rutaUbic = ubic?.ruta_completa ?? null
@@ -388,7 +388,7 @@ export default function PaginaCargaDocsUsuario() {
     setProgresos((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
 
   const ejecutarExtraer = async (): Promise<boolean> => {
-    const docs = await documentosApi.listar({ codigo_estado_doc: 'CARGADO', activo: true })
+    const docs = await documentosApi.listar({ codigo_estado_doc: 'CARGADO' })
     if (!docs.length) { setPaso('EXTRAER', { estado: 'listo' }); return true }
 
     // Solo pedimos handle cuando hay docs CARGADO que necesitan lectura física
@@ -471,7 +471,7 @@ export default function PaginaCargaDocsUsuario() {
   }
 
   const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string): Promise<boolean> => {
-    const docs = await documentosApi.listar({ codigo_estado_doc: estadoOrigen, activo: true })
+    const docs = await documentosApi.listar({ codigo_estado_doc: estadoOrigen })
     if (!docs.length) { setPaso(key, { estado: 'listo' }); return true }
     setPaso(key, { total: docs.length, completados: 0, estado: 'activo' })
     const items = docs.map((d) => ({ codigo_documento: d.codigo_documento, codigo_estado_doc_destino: estadoDestino }))
@@ -657,7 +657,7 @@ export default function PaginaCargaDocsUsuario() {
                       { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
                       { titulo: 'Nivel', campo: 'nivel' },
                       { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                      { titulo: 'Estado', campo: 'activo', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
+                      { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
                     ],
                     'ubicaciones-docs'
                   )

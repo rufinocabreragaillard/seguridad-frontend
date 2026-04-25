@@ -160,7 +160,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     setProgresos((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
 
   const ejecutarExtraer = async (): Promise<boolean> => {
-    const params: Record<string, unknown> = { codigo_estado_doc: 'CARGADO', activo: true }
+    const params: Record<string, unknown> = { codigo_estado_doc: 'CARGADO' }
     if (ubicacionSel) params.codigo_ubicacion = ubicacionSel
     if (filtroLibre.trim()) params.q = filtroLibre.trim()
     const topeNum = tope ? parseInt(tope) : 0
@@ -250,7 +250,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   }
 
   const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string): Promise<boolean> => {
-    const params: Record<string, unknown> = { codigo_estado_doc: estadoOrigen, activo: true }
+    const params: Record<string, unknown> = { codigo_estado_doc: estadoOrigen }
     if (ubicacionSel) params.codigo_ubicacion = ubicacionSel
     if (filtroLibre.trim()) params.q = filtroLibre.trim()
     const topeNum = tope ? parseInt(tope) : 0
@@ -319,7 +319,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     setTiempoTranscurrido(0)
     setProgresoRevertir({ total: 0, revertidos: 0, estado: 'activo' })
     try {
-      const filtrosBase: Record<string, unknown> = { activo: true }
+      const filtrosBase: Record<string, unknown> = {}
       if (ubicacionSel) filtrosBase.codigo_ubicacion = ubicacionSel
       if (filtroLibre.trim()) filtrosBase.q = filtroLibre.trim()
       const topeNum = tope ? parseInt(tope) : 0

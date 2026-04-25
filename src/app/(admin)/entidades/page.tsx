@@ -250,7 +250,7 @@ export default function PaginaEntidades() {
                   { titulo: 'Código', campo: 'codigo_entidad' },
                   { titulo: 'Nombre', campo: 'nombre' },
                   { titulo: 'Descripción', campo: 'descripcion' },
-                  { titulo: 'Estado', campo: 'activo', formato: (v) => v ? 'Activo' : 'Inactivo' },
+                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Activo' : 'Inactivo' },
                   { titulo: 'Fecha creación', campo: 'fecha_creacion', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL') : '' },
                 ], `entidades_${grupoActivo || 'todos'}`)}
                 disabled={entidadesFiltradas.length === 0}

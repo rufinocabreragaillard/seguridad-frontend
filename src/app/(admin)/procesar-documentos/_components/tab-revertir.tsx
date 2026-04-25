@@ -76,7 +76,7 @@ export function TabRevertir() {
       setProcesos((procsRaw || []).sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0)))
       setUbicaciones(
         (u as UbicacionOption[])
-          .filter((x) => (x as UbicacionOption & { activo?: boolean }).activo !== false)
+          .filter((x) => x)
           .sort((a, b) => (a.ruta_completa || '').localeCompare(b.ruta_completa || ''))
       )
     } catch {
@@ -115,7 +115,7 @@ export function TabRevertir() {
         page: pagina,
         limit: DOCS_POR_PAGINA,
         codigo_estado_doc: pasoActual?.estado_origen || undefined,
-        activo: true,
+        ,
         q: filtroLibre || undefined,
         ruta_prefijo: rutaUbicacion,
       })
@@ -141,7 +141,7 @@ export function TabRevertir() {
         page: 1,
         limit: DOCS_POR_PAGINA,
         codigo_estado_doc: pasoActual?.estado_origen || undefined,
-        activo: true,
+        ,
         q: filtroLibre || undefined,
         ruta_prefijo: rutaUbicacion,
       })

@@ -181,7 +181,7 @@ export default function PaginaEstadosTarea() {
           { titulo: 'Nombre', campo: 'nombre_estado_tarea' },
           { titulo: 'Canónico', campo: 'codigo_estado_canonico' },
           { titulo: 'Orden', campo: 'orden' },
-          { titulo: 'Estado', campo: 'activo' },
+          { titulo: 'Nombre', campo: 'nombre_estado_tarea' },
         ]}
         excelNombreArchivo="estados-tarea"
       />
@@ -217,11 +217,7 @@ export default function PaginaEstadosTarea() {
           {
             titulo: 'Estado',
             render: (e: EstadoTarea) =>
-              e.activo ? (
-                <Insignia variante="exito">Activo</Insignia>
-              ) : (
-                <Insignia variante="neutro">Inactivo</Insignia>
-              ),
+              ,
           },
         ]}
         items={filtradosOrdenados}

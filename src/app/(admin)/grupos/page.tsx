@@ -22,7 +22,7 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
-type UsuarioGrupo = { codigo_usuario: string; fecha_alta?: string; usuarios?: { nombre: string; activo: boolean } }
+type UsuarioGrupo = { codigo_usuario: string; fecha_alta?: string; usuarios?: { nombre: string } }
 
 const PAGE_SIZE = 10
 
@@ -83,7 +83,7 @@ export default function PaginaGrupos() {
   const [textoBorrar, setTextoBorrar] = useState('')
   const [borrandoGrupo, setBorrandoGrupo] = useState(false)
 
-  type UsuarioEntidad = { codigo_usuario: string; usuarios: { nombre_usuario: string; activo: boolean } }
+  type UsuarioEntidad = { codigo_usuario: string; usuarios: { nombre_usuario: string} }
   const [usuariosEntidad, setUsuariosEntidad] = useState<UsuarioEntidad[]>([])
   const [cargandoUsuariosEntidad, setCargandoUsuariosEntidad] = useState(false)
   const [usuarioNuevoEnt, setUsuarioNuevoEnt] = useState('')
@@ -384,7 +384,6 @@ export default function PaginaGrupos() {
   }
 
   const usuariosDisponiblesEnt = todosUsuarios.filter((u) =>
-    u.activo &&
     !usuariosEntidad.some((ue) => ue.codigo_usuario === u.codigo_usuario) &&
     usuariosGrupo.some((ug) => ug.codigo_usuario === u.codigo_usuario)
   )
@@ -394,7 +393,7 @@ export default function PaginaGrupos() {
     u.codigo_usuario.toLowerCase().includes(busquedaUsuarioEnt.toLowerCase())
   )
   const usuariosDisponibles = todosUsuarios.filter((u) =>
-    u.activo && !usuariosGrupo.some((ug) => ug.codigo_usuario === u.codigo_usuario)
+    !usuariosGrupo.some((ug) => ug.codigo_usuario === u.codigo_usuario)
   )
   const usuariosFiltrados = usuariosDisponibles.filter((u) =>
     busquedaUsuario.length === 0 ||
@@ -652,8 +651,8 @@ export default function PaginaGrupos() {
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_entidad}</code></TablaTd>
                       <TablaTd className="font-medium">{e.nombre}</TablaTd>
                       <TablaTd>
-                        <Insignia variante={(e as unknown as Record<string, unknown>).activo !== false ? 'exito' : 'error'}>
-                          {(e as unknown as Record<string, unknown>).activo !== false ? 'Activo' : 'Inactivo'}
+                        <Insignia variante='exito'>
+                          Activo
                         </Insignia>
                       </TablaTd>
                       <TablaTd>

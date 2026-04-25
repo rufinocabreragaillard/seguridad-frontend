@@ -116,7 +116,7 @@ export default function PaginaCategoriasCaracteristica() {
         rolesApi.listar(),
       ])
       setRolesCategoria(rc)
-      setRolesDisponibles(allRoles.filter((r) => r.activo))
+      setRolesDisponibles(allRoles)
     } finally {
       setCargandoRoles(false)
     }
@@ -337,7 +337,7 @@ export default function PaginaCategoriasCaracteristica() {
         }}
       >
         <option value="">{t('selectorPlaceholder')}</option>
-        {categorias.filter((c) => c.activo).map((c) => (
+        {categorias.map((c) => (
           <option key={c.codigo_cat_pers} value={c.codigo_cat_pers}>{c.nombre_cat_pers}</option>
         ))}
       </select>
@@ -390,7 +390,7 @@ export default function PaginaCategoriasCaracteristica() {
                   { titulo: t('colNombre'), campo: 'nombre_cat_pers' },
                   { titulo: t('colUnica'), campo: 'es_unica_pers', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
                   { titulo: t('colEditable'), campo: 'editable_en_detalle_pers', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
-                  { titulo: t('colEstado'), campo: 'activo', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
+                  { titulo: 'Nombre', campo: 'nombre_cat_pers', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
                 ], 'categorias-caracteristica')}>
                 <Download size={15} />Excel
               </Boton>
@@ -406,7 +406,7 @@ export default function PaginaCategoriasCaracteristica() {
                   <TablaTh>{t('colNombre')}</TablaTh>
                   <TablaTh>{t('colUnica')}</TablaTh>
                   <TablaTh>{t('colEditable')}</TablaTh>
-                  <TablaTh>{tc('activo')}</TablaTh>
+                  
                   <TablaTh>{t('colCodigo')}</TablaTh>
                   <TablaTh className="text-right">{tc('acciones')}</TablaTh>
                 </tr>
@@ -421,7 +421,7 @@ export default function PaginaCategoriasCaracteristica() {
                     <TablaTd className="font-medium">{c.nombre_cat_pers}</TablaTd>
                     <TablaTd><Insignia variante={c.es_unica_pers ? 'advertencia' : 'neutro'}>{c.es_unica_pers ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd><Insignia variante={c.editable_en_detalle_pers ? 'exito' : 'neutro'}>{c.editable_en_detalle_pers ? tc('si') : tc('no')}</Insignia></TablaTd>
-                    <TablaTd><Insignia variante={c.activo ? 'exito' : 'error'}>{c.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
+                    <TablaTd></TablaTd>
                     <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_pers}</code></TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
@@ -451,7 +451,7 @@ export default function PaginaCategoriasCaracteristica() {
                 <TablaCabecera>
                   <tr>
                     <TablaTh>{t('colNombre')}</TablaTh>
-                    <TablaTh>{tc('activo')}</TablaTh>
+                    
                     <TablaTh>{t('colCodigo')}</TablaTh>
                     <TablaTh className="text-right">{tc('acciones')}</TablaTh>
                   </tr>
@@ -464,7 +464,7 @@ export default function PaginaCategoriasCaracteristica() {
                   ) : tipos.map((tipo) => (
                     <TablaFila key={tipo.codigo_tipo_pers}>
                       <TablaTd className="font-medium">{tipo.nombre_tipo_pers}</TablaTd>
-                      <TablaTd><Insignia variante={tipo.activo ? 'exito' : 'error'}>{tipo.activo ? tc('activo') : tc('inactivo')}</Insignia></TablaTd>
+                      <TablaTd></TablaTd>
                       <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tipo.codigo_tipo_pers}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">

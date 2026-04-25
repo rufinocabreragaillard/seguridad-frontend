@@ -237,11 +237,11 @@ export const authApi = {
 
 export const usuariosApi = {
   listar: () => api.get<Usuario[]>('/usuarios').then((r) => r.data),
-  listarTodos: (params?: { activo?: boolean; q?: string }) =>
+  listarTodos: (params?: { q?: string }) =>
     api.get<Usuario[]>('/usuarios/todos', { params }).then((r) => r.data),
-  listarPaginado: (params: { page: number; limit: number; activo?: boolean; q?: string }) =>
+  listarPaginado: (params: { page: number; limit: number; q?: string }) =>
     api.get<RespuestaPaginadaApi<Usuario>>('/usuarios/paginado', { params }).then((r) => r.data),
-  listarTodosPaginado: (params: { page: number; limit: number; activo?: boolean; q?: string }) =>
+  listarTodosPaginado: (params: { page: number; limit: number; q?: string }) =>
     api.get<RespuestaPaginadaApi<Usuario>>('/usuarios/todos/paginado', { params }).then((r) => r.data),
   obtener: (id: string) => api.get<Usuario>(`/usuarios/${id}`).then((r) => r.data),
   crear: (datos: CrearUsuarioRequest) => api.post<Usuario>('/usuarios', datos).then((r) => r.data),
@@ -259,7 +259,7 @@ export const usuariosApi = {
   quitarRol: (id: string, idRol: number, codigoGrupo?: string) =>
     api.delete(`/usuarios/${id}/roles/${idRol}${codigoGrupo ? `?codigo_grupo=${encodeURIComponent(codigoGrupo)}` : ''}`),
   listarEntidades: (id: string) =>
-    api.get<{ codigo_entidad: string; codigo_grupo: string; codigo_area?: string; entidades: { nombre: string; activo: boolean } }[]>(
+    api.get<{ codigo_entidad: string; codigo_grupo: string; codigo_area?: string; entidades: { nombre: string } }[]>(
       `/usuarios/${id}/entidades`
     ).then((r) => r.data),
   asignarEntidad: (id: string, codigoEntidad: string, codigoGrupo: string, codigoArea?: string) =>
@@ -436,7 +436,7 @@ export const entidadesApi = {
     api.put(`/entidades/${idEntidad}/parametros/reordenar`, items),
   desactivar: (id: string) => api.delete(`/entidades/${id}`),
   listarUsuarios: (id: string, codigoGrupo?: string) =>
-    api.get<{ codigo_usuario: string; usuarios: { nombre_usuario: string; activo: boolean } }[]>(
+    api.get<{ codigo_usuario: string; usuarios: { nombre_usuario: string } }[]>(
       `/entidades/${id}/usuarios`, { params: codigoGrupo ? { codigo_grupo: codigoGrupo } : {} }
     ).then((r) => r.data),
   reordenar: (items: { codigo_grupo: string; codigo_entidad: string; orden: number }[]) =>
@@ -559,9 +559,9 @@ export interface RespuestaPaginadaApi<T> {
 }
 
 export const documentosApi = {
-  listar: (params?: { codigo_estado_doc?: string; activo?: boolean; q?: string; limit?: number }) =>
+  listar: (params?: { codigo_estado_doc?: string; q?: string; limit?: number }) =>
     api.get<Documento[]>('/documentos', { params }).then((r) => r.data),
-  listarPaginado: (params: { page: number; limit: number; codigo_estado_doc?: string; activo?: boolean; q?: string; ruta_prefijo?: string }) =>
+  listarPaginado: (params: { page: number; limit: number; codigo_estado_doc?: string; q?: string; ruta_prefijo?: string }) =>
     api.get<RespuestaPaginadaApi<Documento>>('/documentos/paginado', { params }).then((r) => r.data),
   contarPorEstado: () =>
     api.get<Record<string, number>>('/documentos/contar-por-estado').then((r) => r.data),
@@ -705,7 +705,6 @@ export interface PasoProceso {
   estado_destino: string
   id_modelo: number | null
   descripcion_paso: string | null
-  activo: boolean
   prompt?: string | null
   system_prompt?: string | null
 }
@@ -906,7 +905,6 @@ export interface LLMCredencial {
   proveedor: 'anthropic' | 'google'
   alias: string
   api_key_preview: string
-  activo: boolean
   limite_usd_mes: number | null
   ultimo_uso_en: string | null
   creado_por: string | null
@@ -921,7 +919,6 @@ export interface LLMPrecio {
   precio_cache_read_1m: number
   precio_cache_write_1m: number
   vigente_desde: string
-  activo: boolean
 }
 
 export const llmCredencialesApi = {
@@ -931,12 +928,11 @@ export const llmCredencialesApi = {
     alias?: string
     api_key: string
     limite_usd_mes?: number | null
-    activo?: boolean
   }) => api.post<LLMCredencial>('/llm-credenciales', datos).then((r) => r.data),
   actualizar: (
     proveedor: string,
     alias: string,
-    datos: { api_key?: string; limite_usd_mes?: number | null; activo?: boolean },
+    datos: { api_key?: string; limite_usd_mes?: number | null },
   ) => api.put<LLMCredencial>(`/llm-credenciales/${proveedor}/${alias}`, datos).then((r) => r.data),
   eliminar: (proveedor: string, alias: string) =>
     api.delete(`/llm-credenciales/${proveedor}/${alias}`),
@@ -1499,12 +1495,12 @@ export const traduccionesApi = {
     api.get<LocaleSoportado[]>('/traducciones/locales').then((r) => r.data),
 
   listarLocalesActivos: () =>
-    api.get<LocaleSoportado[]>('/traducciones/locales', { params: { solo_activos: true } }).then((r) => r.data),
+    api.get<LocaleSoportado[]>('/traducciones/locales').then((r) => r.data),
 
-  actualizarLocale: (codigo: string, datos: Partial<Pick<LocaleSoportado, 'activo' | 'nombre_nativo' | 'nombre_es' | 'orden'>>) =>
+  actualizarLocale: (codigo: string, datos: Partial<Pick<LocaleSoportado, 'nombre_nativo' | 'nombre_es' | 'orden'>>) =>
     api.patch<LocaleSoportado>(`/traducciones/locales/${codigo}`, datos).then((r) => r.data),
 
-  crearLocale: (datos: { codigo: string; nombre_nativo: string; nombre_es: string; activo?: boolean; orden?: number }) =>
+  crearLocale: (datos: { codigo: string; nombre_nativo: string; nombre_es: string; orden?: number }) =>
     api.post<LocaleSoportado>('/traducciones/locales', datos).then((r) => r.data),
 
   eliminarLocale: (codigo: string) =>
