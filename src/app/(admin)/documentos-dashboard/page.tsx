@@ -5,8 +5,8 @@ import { useTranslations } from 'next-intl'
 import { useRouter } from 'next/navigation'
 import { FileText, Cpu, Tags, FolderTree, AlertTriangle, CheckCircle, Clock, ArrowRight } from 'lucide-react'
 import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
-import { documentosApi } from '@/lib/api'
-import { getEstadosDocs } from '@/lib/catalogos'
+import { documentosApi, estadosDocsApi } from '@/lib/api'
+import { getEstadosDocs, invalidarCatalogo } from '@/lib/catalogos'
 import type { EstadoDoc } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
 
@@ -29,7 +29,12 @@ export default function PaginaDocumentosDashboard() {
           documentosApi.listarPaginado({ page: 1, limit: 1 }),
         ])
         setConteoPorEstado(conteos)
-        setEstados(ests)
+        // Si el cache retornó vacío, forzar fetch directo
+        const estadosFinal = ests.length > 0 ? ests : await estadosDocsApi.listar().catch(() => {
+          invalidarCatalogo('estadosDocs')
+          return [] as EstadoDoc[]
+        })
+        setEstados(estadosFinal)
         setTotalDocs(paginadoTotal.total)
         setActivosDocs(paginadoActivos.total)
       } finally {
