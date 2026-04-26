@@ -258,19 +258,6 @@ export interface ApiEndpoint {
   parametros_salida?: Record<string, unknown> | null
 }
 
-export interface FuncionDependencia {
-  codigo_funcion_requerida?: string
-  codigo_funcion?: string
-  motivo?: string | null
-  orden: number
-  funciones?: {
-    nombre_funcion: string
-    alias_de_funcion?: string | null
-    url_funcion?: string | null
-    tipo_acceso?: string | null
-  } | null
-}
-
 // ─── Chat con LLM ───────────────────────────────────────────────────────────
 
 export interface ChatConversacion {
