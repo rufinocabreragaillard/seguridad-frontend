@@ -570,7 +570,7 @@ export default function PaginaFunciones() {
                           .filter((f) =>
                             f.codigo_funcion !== funcionSeleccionada.codigo_funcion &&
                             !depSalientes.some((d) => d.codigo_funcion_requerida === f.codigo_funcion) &&
-                            (candidatasDepCodigos.size === 0 || candidatasDepCodigos.has(f.codigo_funcion)) &&
+                            candidatasDepCodigos.has(f.codigo_funcion) &&
                             (busquedaDep === '' || f.nombre.toLowerCase().includes(busquedaDep.toLowerCase()) || f.codigo_funcion.toLowerCase().includes(busquedaDep.toLowerCase()))
                           )
                           .slice(0, 20)
@@ -587,10 +587,14 @@ export default function PaginaFunciones() {
                         {funciones.filter((f) =>
                           f.codigo_funcion !== funcionSeleccionada.codigo_funcion &&
                           !depSalientes.some((d) => d.codigo_funcion_requerida === f.codigo_funcion) &&
-                          (candidatasDepCodigos.size === 0 || candidatasDepCodigos.has(f.codigo_funcion)) &&
+                          candidatasDepCodigos.has(f.codigo_funcion) &&
                           (busquedaDep === '' || f.nombre.toLowerCase().includes(busquedaDep.toLowerCase()) || f.codigo_funcion.toLowerCase().includes(busquedaDep.toLowerCase()))
                         ).length === 0 && (
-                          <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron funciones</div>
+                          <div className="px-3 py-2 text-sm text-texto-muted">
+                            {candidatasDepCodigos.size === 0
+                              ? 'Esta función no tiene candidatas inferibles por FK (sus APIs no escriben en tablas con foreign keys hacia otras funciones).'
+                              : 'No se encontraron funciones'}
+                          </div>
                         )}
                       </div>
                     )}
@@ -1159,7 +1163,7 @@ export default function PaginaFunciones() {
                         .filter((f) =>
                           f.codigo_funcion !== funcionEditando.codigo_funcion &&
                           !depSalientes.some((d) => d.codigo_funcion_requerida === f.codigo_funcion) &&
-                          (candidatasDepCodigos.size === 0 || candidatasDepCodigos.has(f.codigo_funcion)) &&
+                          candidatasDepCodigos.has(f.codigo_funcion) &&
                           (busquedaDep === '' || f.nombre.toLowerCase().includes(busquedaDep.toLowerCase()) || f.codigo_funcion.toLowerCase().includes(busquedaDep.toLowerCase()))
                         )
                         .slice(0, 20)
@@ -1176,7 +1180,7 @@ export default function PaginaFunciones() {
                       {funciones.filter((f) =>
                         f.codigo_funcion !== funcionEditando.codigo_funcion &&
                         !depSalientes.some((d) => d.codigo_funcion_requerida === f.codigo_funcion) &&
-                        (candidatasDepCodigos.size === 0 || candidatasDepCodigos.has(f.codigo_funcion)) &&
+                        candidatasDepCodigos.has(f.codigo_funcion) &&
                         (busquedaDep === '' || f.nombre.toLowerCase().includes(busquedaDep.toLowerCase()) || f.codigo_funcion.toLowerCase().includes(busquedaDep.toLowerCase()))
                       ).length === 0 && (
                         <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron funciones</div>
