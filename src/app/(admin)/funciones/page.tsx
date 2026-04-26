@@ -105,6 +105,10 @@ export default function PaginaFunciones() {
   const [agregandoDep, setAgregandoDep] = useState(false)
   const [errorDep, setErrorDep] = useState('')
 
+  // Tab principal de la página
+  const [tabPrincipal, setTabPrincipal] = useState<'funciones' | 'requeridas'>('funciones')
+  const [funcionSeleccionada, setFuncionSeleccionada] = useState<Funcion | null>(null)
+
   // Confirmar eliminacion
   const [confirmacion, setConfirmacion] = useState<Funcion | null>(null)
   const [eliminando, setEliminando] = useState(false)
@@ -353,7 +357,6 @@ export default function PaginaFunciones() {
     { key: 'otros', label: 'Otros Datos' },
     ...(funcionEditando ? [
       { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
-      { key: 'requeridas', label: `Func. Requeridas (${depSalientes.length})` },
       ...(esAdmin ? [
         { key: 'system_prompt', label: 'System Prompt' },
         { key: 'vista', label: 'Vista' },
@@ -373,6 +376,24 @@ export default function PaginaFunciones() {
         <p className="text-sm text-texto-muted mt-1">Gestiona las funciones del sistema y sus relaciones con aplicaciones</p>
       </div>
 
+      {/* Tabs principales */}
+      <div className="flex border-b border-borde -mt-2">
+        <button
+          onClick={() => setTabPrincipal('funciones')}
+          className={`px-5 py-2.5 text-sm font-medium transition-colors ${tabPrincipal === 'funciones' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}
+        >
+          Funciones
+        </button>
+        <button
+          onClick={() => setTabPrincipal('requeridas')}
+          className={`px-5 py-2.5 text-sm font-medium transition-colors ${tabPrincipal === 'requeridas' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}
+        >
+          Func. Requeridas{funcionSeleccionada ? ` — ${funcionSeleccionada.nombre}` : ''}
+        </button>
+      </div>
+
+      {/* ═══════════════════ TAB: FUNCIONES ═══════════════════ */}
+      {tabPrincipal === 'funciones' && (<>
       <div className="flex items-center gap-3">
         <div className="max-w-sm flex-1">
           <Input placeholder={t('buscarPlaceholder')} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} icono={<Search size={15} />} />
@@ -383,6 +404,8 @@ export default function PaginaFunciones() {
         </div>
       </div>
 
+      <p className="text-xs text-texto-muted -mt-3">Doble clic en una función para ver sus funciones requeridas.</p>
+
       <SortableDndContext items={funcionesFiltradas as unknown as Record<string, unknown>[]} getId={(f) => (f as Funcion).codigo_funcion} onReorder={(n) => reordenarFunciones(n as unknown as Funcion[])} disabled={!!busqueda}>
         <Tabla>
           <TablaCabecera><tr><TablaTh className="w-8" /><TablaTh className="w-28">{t('colTipo')}</TablaTh><TablaTh className="w-32">{t('colAlias')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh className="w-40">{t('colUrl')}</TablaTh><TablaTh className="w-40">{t('colCodigo')}</TablaTh><TablaTh className="text-right w-28">{tc('acciones')}</TablaTh></tr></TablaCabecera>
@@ -390,7 +413,7 @@ export default function PaginaFunciones() {
             {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>Cargando...</TablaTd></TablaFila>
             ) : funcionesFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron funciones</TablaTd></TablaFila>
             ) : funcionesFiltradas.map((f) => (
-              <SortableRow key={f.codigo_funcion} id={f.codigo_funcion}>
+              <SortableRow key={f.codigo_funcion} id={f.codigo_funcion} onDoubleClick={() => { setFuncionSeleccionada(f); cargarDependencias(f.codigo_funcion); setNuevaDepRequerida(''); setNuevaDepMotivo(''); setErrorDep(''); setTabPrincipal('requeridas') }}>
                 <TablaTd>{badgeTipo(f.tipo_acceso)}</TablaTd>
                 <TablaTd className="text-sm">{f.alias_de_funcion || '—'}</TablaTd>
                 <TablaTd className="font-medium">{f.nombre}</TablaTd>
@@ -428,6 +451,94 @@ export default function PaginaFunciones() {
           </TablaCuerpo>
         </Tabla>
       </SortableDndContext>
+      </>)}
+
+      {/* ═══════════════════ TAB: FUNCIONES REQUERIDAS ═══════════════════ */}
+      {tabPrincipal === 'requeridas' && (
+        <div className="flex flex-col gap-4 max-w-2xl">
+          {!funcionSeleccionada ? (
+            <div className="bg-primario-muy-claro/50 border border-primario/20 rounded-lg px-4 py-3">
+              <p className="text-sm text-primario-oscuro">Haz doble clic en una función de la pestaña anterior para ver y gestionar sus funciones requeridas.</p>
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-2 px-3 py-2 bg-fondo rounded-lg border border-borde">
+                <span className="text-sm text-texto-muted">Función:</span>
+                <span className="text-sm font-medium text-texto">{funcionSeleccionada.nombre}</span>
+                <code className="ml-auto text-xs text-texto-muted font-mono">{funcionSeleccionada.codigo_funcion}</code>
+              </div>
+              <p className="text-sm text-texto-muted -mt-2">Funciones que <strong>{funcionSeleccionada.nombre}</strong> requiere para ejecutarse (arcos salientes del grafo).</p>
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <select
+                    value={nuevaDepRequerida}
+                    onChange={(e) => setNuevaDepRequerida(e.target.value)}
+                    className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                  >
+                    <option value="">Seleccionar función requerida...</option>
+                    {funciones
+                      .filter((f) => f.codigo_funcion !== funcionSeleccionada.codigo_funcion && !depSalientes.some((d) => d.codigo_funcion_requerida === f.codigo_funcion))
+                      .map((f) => (
+                        <option key={f.codigo_funcion} value={f.codigo_funcion}>{f.nombre} ({f.codigo_funcion})</option>
+                      ))}
+                  </select>
+                </div>
+                <Boton variante="primario" onClick={async () => {
+                  if (!funcionSeleccionada || !nuevaDepRequerida) return
+                  setAgregandoDep(true); setErrorDep('')
+                  try {
+                    await funcionesApi.agregarDependencia(funcionSeleccionada.codigo_funcion, nuevaDepRequerida, nuevaDepMotivo)
+                    setNuevaDepRequerida(''); setNuevaDepMotivo('')
+                    cargarDependencias(funcionSeleccionada.codigo_funcion)
+                  } catch (e) { setErrorDep(e instanceof Error ? e.message : 'Error al agregar') }
+                  finally { setAgregandoDep(false) }
+                }} cargando={agregandoDep} disabled={!nuevaDepRequerida}>
+                  <Plus size={14} />Agregar
+                </Boton>
+              </div>
+              {nuevaDepRequerida && (
+                <input
+                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario"
+                  placeholder="Motivo / descripción del arco (opcional)"
+                  value={nuevaDepMotivo}
+                  onChange={(e) => setNuevaDepMotivo(e.target.value)}
+                />
+              )}
+              {errorDep && <p className="text-sm text-error">{errorDep}</p>}
+              {cargandoDep ? (
+                <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+              ) : depSalientes.length === 0 ? (
+                <p className="text-sm text-texto-muted text-center py-4">No tiene funciones requeridas</p>
+              ) : (
+                <div className="flex flex-col gap-2">
+                  {depSalientes.map((d) => (
+                    <div key={d.codigo_funcion_requerida} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface cursor-pointer hover:bg-fondo transition-colors"
+                      onDoubleClick={() => {
+                        const f = funciones.find((fn) => fn.codigo_funcion === d.codigo_funcion_requerida)
+                        if (f) { setFuncionSeleccionada(f); cargarDependencias(f.codigo_funcion); setNuevaDepRequerida(''); setNuevaDepMotivo(''); setErrorDep('') }
+                      }}>
+                      <div className="flex flex-col gap-0.5">
+                        <span className="text-sm font-medium text-texto">{d.funciones?.nombre_funcion || d.codigo_funcion_requerida}</span>
+                        {d.motivo && <span className="text-xs text-texto-muted">{d.motivo}</span>}
+                        <code className="text-xs text-texto-muted font-mono">{d.codigo_funcion_requerida}</code>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-texto-muted hidden group-hover:inline">doble clic para navegar</span>
+                        <button onClick={() => {
+                          if (!funcionSeleccionada) return
+                          funcionesApi.eliminarDependencia(funcionSeleccionada.codigo_funcion, d.codigo_funcion_requerida!).then(() => cargarDependencias(funcionSeleccionada.codigo_funcion)).catch((e) => setErrorDep(e instanceof Error ? e.message : 'Error al eliminar'))
+                        }} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar">
+                          <X size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
 
       {/* ── MODAL FUNCION ── */}
       <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar función: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[1200px] max-w-[95vw]">
