@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import {
   Brain, RefreshCw, Upload, Zap, Languages, Globe,
   AlertCircle, CheckCircle2, Code2, FileText, Play, ChevronDown, ChevronUp, Search,
-  Network, Workflow,
+  Network, Workflow, Eye,
 } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import {
@@ -14,11 +14,12 @@ import {
 import type { EstadoTraducciones, Funcion } from '@/lib/tipos'
 import ES_MESSAGES from '../../../../messages/es.json'
 
-type Tab = 'prompts' | 'codigo' | 'mensajes' | 'traducciones' | 'apis' | 'jerarquias' | 'grafo'
+type Tab = 'prompts' | 'codigo' | 'vistas' | 'mensajes' | 'traducciones' | 'apis' | 'jerarquias' | 'grafo'
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: 'prompts',      label: 'Prompts',      icon: <Brain className="w-4 h-4" /> },
   { id: 'codigo',       label: 'Código y MD',  icon: <Code2 className="w-4 h-4" /> },
+  { id: 'vistas',       label: 'Vistas chat',  icon: <Eye className="w-4 h-4" /> },
   { id: 'mensajes',     label: 'Mensajes UI',  icon: <Languages className="w-4 h-4" /> },
   { id: 'traducciones', label: 'Traducciones', icon: <Languages className="w-4 h-4" /> },
   { id: 'apis',         label: 'APIs',         icon: <Globe className="w-4 h-4" /> },
@@ -80,6 +81,24 @@ export default function PaginaPrompts() {
   const [generandoMensajes, setGenerandoMensajes] = useState(false)
   const [mensajesUiResultado, setMensajesUiResultado] = useState<Record<string, Record<string, unknown>> | null>(null)
 
+  // Vistas del chat (sección masiva)
+  const [resumenVistas, setResumenVistas] = useState<{
+    total: number
+    con_prompt_view: number
+    con_sql_view: number
+    pendientes_sync: number
+  } | null>(null)
+  const [cargandoVistas, setCargandoVistas] = useState(false)
+  const [filtroVistas, setFiltroVistas] = useState('')
+  const [genVistasProgress, setGenVistasProgress] = useState<{
+    modo: 'gen' | 'sync' | null
+    actual: number
+    total: number
+    errores: { codigo: string; error: string }[]
+    terminado: boolean
+  }>({ modo: null, actual: 0, total: 0, errores: [], terminado: false })
+  const abortVistasRef = useRef(false)
+
   // Filtros por pestaña
   const [filtroTabla, setFiltroTabla] = useState('')
   const [filtroCodigo, setFiltroCodigo] = useState('')
@@ -134,6 +153,18 @@ export default function PaginaPrompts() {
   useEffect(() => {
     if (tab === 'jerarquias' && grafos.length === 0) cargarGrafos()
   }, [tab, grafos.length, cargarGrafos])
+
+  const cargarResumenVistas = useCallback(async () => {
+    setCargandoVistas(true)
+    try {
+      setResumenVistas(await funcionesApi.resumenVistas())
+    } catch { setResumenVistas(null) }
+    finally { setCargandoVistas(false) }
+  }, [])
+
+  useEffect(() => {
+    if (tab === 'vistas' && resumenVistas === null) cargarResumenVistas()
+  }, [tab, resumenVistas, cargarResumenVistas])
 
   const grafosFiltrados = grafos.filter((g) =>
     filtroJerarquias === '' ||
@@ -253,6 +284,49 @@ export default function PaginaPrompts() {
 
   function detenerGeneracion() {
     abortGenRef.current = true
+  }
+
+  async function vistasMasivo(modo: 'gen' | 'sync') {
+    abortVistasRef.current = false
+    setMensaje(null)
+    let lista: { codigo_funcion: string }[] = []
+    try {
+      const filtro = modo === 'gen' ? 'con_prompt_view' : 'pendientes_sync'
+      const r = await funcionesApi.listarCodigosVistas(filtro)
+      lista = r.codigos.filter((c) =>
+        filtroVistas === '' || c.codigo_funcion.toLowerCase().includes(filtroVistas.toLowerCase()),
+      )
+    } catch (e: unknown) {
+      const err = e as { message?: string; response?: { data?: { detail?: string } } }
+      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error obteniendo lista' })
+      return
+    }
+    setGenVistasProgress({ modo, actual: 0, total: lista.length, errores: [], terminado: false })
+    let ok = 0
+    const errores: { codigo: string; error: string }[] = []
+    for (let i = 0; i < lista.length; i++) {
+      if (abortVistasRef.current) break
+      const f = lista[i]
+      setGenVistasProgress((p) => ({ ...p, actual: i + 1 }))
+      try {
+        if (modo === 'gen') await funcionesApi.generarVista(f.codigo_funcion)
+        else await funcionesApi.sincronizarVista(f.codigo_funcion)
+        ok++
+      } catch (e: unknown) {
+        const err = e as { message?: string; response?: { data?: { detail?: string } } }
+        errores.push({ codigo: f.codigo_funcion, error: err?.response?.data?.detail || err?.message || 'Error' })
+      }
+    }
+    setGenVistasProgress((p) => ({ ...p, terminado: true, errores }))
+    setMensaje({
+      tipo: errores.length === 0 ? 'ok' : 'error',
+      texto: `${modo === 'gen' ? 'Generar vistas' : 'Sincronizar vistas'}: ${ok} ok, ${errores.length} errores.`,
+    })
+    cargarResumenVistas()
+  }
+
+  function detenerVistas() {
+    abortVistasRef.current = true
   }
 
   async function generarMensajesUi() {
@@ -481,6 +555,114 @@ export default function PaginaPrompts() {
           </p>
         </div>
       )}
+
+      {/* ── Tab: Vistas chat ── */}
+      {tab === 'vistas' && (() => {
+        const generandoVistas = genVistasProgress.modo !== null && !genVistasProgress.terminado
+        return (
+          <div>
+            <BarraHerramientas
+              filtro={filtroVistas}
+              onFiltro={setFiltroVistas}
+              placeholder="Filtrar función…"
+              acciones={
+                <>
+                  <Boton variante="contorno" tamano="sm" onClick={cargarResumenVistas} disabled={cargandoVistas || generandoVistas}>
+                    <RefreshCw className={`w-4 h-4 ${cargandoVistas ? 'animate-spin' : ''}`} /> Refrescar
+                  </Boton>
+                  <Boton
+                    variante="contorno"
+                    tamano="sm"
+                    onClick={() => vistasMasivo('gen')}
+                    disabled={generandoVistas || cargandoVistas || (resumenVistas?.con_prompt_view ?? 0) === 0}
+                  >
+                    <Play className="w-4 h-4 text-green-600" /> Generar SQL ({resumenVistas?.con_prompt_view ?? 0})
+                  </Boton>
+                  <Boton
+                    variante="primario"
+                    tamano="sm"
+                    onClick={() => vistasMasivo('sync')}
+                    disabled={generandoVistas || cargandoVistas || (resumenVistas?.pendientes_sync ?? 0) === 0}
+                  >
+                    <Upload className="w-4 h-4" /> Sincronizar pendientes ({resumenVistas?.pendientes_sync ?? 0})
+                  </Boton>
+                  {generandoVistas && (
+                    <Boton variante="contorno" tamano="sm" onClick={detenerVistas}>
+                      Detener
+                    </Boton>
+                  )}
+                </>
+              }
+            />
+
+            {generandoVistas && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-blue-800">
+                    {genVistasProgress.modo === 'gen' ? 'Generando SQL de vistas' : 'Sincronizando vistas en BD'}{' '}
+                    — {genVistasProgress.actual} / {genVistasProgress.total}
+                  </span>
+                </div>
+                <div className="w-full bg-blue-200 rounded-full h-2">
+                  <div
+                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${genVistasProgress.total > 0 ? (genVistasProgress.actual / genVistasProgress.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {genVistasProgress.terminado && genVistasProgress.errores.length > 0 && (
+              <ErroresGeneracion errores={genVistasProgress.errores} />
+            )}
+
+            {cargandoVistas && <p className="text-sm text-texto-muted">Cargando estado de vistas…</p>}
+
+            {!cargandoVistas && resumenVistas && (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="border-b border-borde">
+                    <tr>
+                      <th className="text-left py-2 px-2">Indicador</th>
+                      <th className="text-right py-2 px-2">Cantidad</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr className="border-b border-borde/50">
+                      <td className="py-2 px-2">Funciones totales</td>
+                      <td className="py-2 px-2 text-right">{resumenVistas.total}</td>
+                    </tr>
+                    <tr className="border-b border-borde/50">
+                      <td className="py-2 px-2">Con <code>prompt_view</code> (elegibles para Generar)</td>
+                      <td className="py-2 px-2 text-right">{resumenVistas.con_prompt_view}</td>
+                    </tr>
+                    <tr className="border-b border-borde/50">
+                      <td className="py-2 px-2">Con <code>sql_view</code> (generadas)</td>
+                      <td className="py-2 px-2 text-right">{resumenVistas.con_sql_view}</td>
+                    </tr>
+                    <tr className="border-b border-borde/50">
+                      <td className="py-2 px-2">Pendientes de sincronizar a la BD</td>
+                      <td className="py-2 px-2 text-right">
+                        {resumenVistas.pendientes_sync > 0 ? (
+                          <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-xs font-medium">
+                            {resumenVistas.pendientes_sync}
+                          </span>
+                        ) : (
+                          <span className="text-texto-muted">0</span>
+                        )}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                <p className="text-xs text-texto-muted mt-2">
+                  <strong>Generar SQL</strong>: ejecuta el LLM sobre cada <code>prompt_view</code> y guarda el SQL.
+                  {' '}<strong>Sincronizar</strong>: aplica el SQL en BD (DROP VIEW IF EXISTS CASCADE + CREATE VIEW + GRANT chat_readonly).
+                </p>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* ── Tab: Mensajes UI ── */}
       {tab === 'mensajes' && (

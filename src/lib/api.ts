@@ -53,6 +53,9 @@ import type {
   LocaleSoportado,
   EstadoTraducciones,
   EspacioTrabajo,
+  EspacioTrabajoCrear,
+  RefrescoEspacioRespuesta,
+  PromocionEspacioRespuesta,
   TipoAcceso,
 } from './tipos'
 
@@ -348,7 +351,27 @@ export const funcionesApi = {
   generarVista: (codigo: string) =>
     api.post<{ sql_view: string }>(`/funciones/${codigo}/generar-vista`).then((r) => r.data),
   sincronizarVista: (codigo: string) =>
-    api.post<{ mensaje: string; codigo_funcion: string }>(`/funciones/${codigo}/sincronizar-vista`).then((r) => r.data),
+    api.post<{ mensaje: string; codigo_funcion: string; nombre_vista?: string }>(`/funciones/${codigo}/sincronizar-vista`).then((r) => r.data),
+  // Resumen de vistas del chat (contadores) — para sección masiva de /prompts
+  resumenVistas: () =>
+    api.get<{
+      total: number
+      con_prompt_view: number
+      con_sql_view: number
+      pendientes_sync: number
+    }>('/funciones/vistas/resumen').then((r) => r.data),
+  // Listado de funciones para iterar masivamente desde el frontend
+  // filtro: 'con_prompt_view' | 'con_sql_view' | 'pendientes_sync' | 'todas'
+  listarCodigosVistas: (filtro: 'con_prompt_view' | 'con_sql_view' | 'pendientes_sync' | 'todas' = 'todas') =>
+    api.get<{
+      codigos: Array<{
+        codigo_funcion: string
+        nombre_funcion: string | null
+        tiene_prompt_view: boolean
+        tiene_sql_view: boolean
+        vista_pendiente_sync: boolean
+      }>
+    }>(`/funciones/vistas/codigos`, { params: { filtro } }).then((r) => r.data),
   // Sincroniza una funcion (grafo + doc virtual + APIs huerfanas). Reporte minimalista.
   sincronizar: (codigo: string) =>
     api.post<{
@@ -1536,18 +1559,20 @@ export const traduccionesApi = {
 export const espaciosTrabajoApi = {
   listarPaginado: (params: { page: number; limit: number; q?: string }) =>
     api.get<RespuestaPaginadaApi<EspacioTrabajo>>('/espacios-trabajo/paginado', { params }).then((r) => r.data),
-  crear: (datos: { nombre_espacio?: string; tipo_espacio?: 'GUARDADO' | 'TEMPORAL'; ids_documentos: number[] }) =>
+  crear: (datos: EspacioTrabajoCrear) =>
     api.post<EspacioTrabajo>('/espacios-trabajo', datos).then((r) => r.data),
-  actualizar: (id: number, datos: { nombre_espacio?: string; tipo_espacio?: string }) =>
+  actualizar: (id: number, datos: { nombre_espacio?: string; fecha_termino?: string }) =>
     api.put<EspacioTrabajo>(`/espacios-trabajo/${id}`, datos).then((r) => r.data),
+  actualizarCriterio: (id: number, criterio_texto: string) =>
+    api.put<EspacioTrabajo>(`/espacios-trabajo/${id}/criterio`, { criterio_texto }).then((r) => r.data),
+  refrescar: (id: number) =>
+    api.post<RefrescoEspacioRespuesta>(`/espacios-trabajo/${id}/refrescar`).then((r) => r.data),
+  promover: (id: number) =>
+    api.post<PromocionEspacioRespuesta>(`/espacios-trabajo/${id}/promover`).then((r) => r.data),
   eliminar: (id: number) =>
     api.delete(`/espacios-trabajo/${id}`),
   listarDocumentos: (id: number, params: { page: number; limit: number; q?: string; codigo_estado_doc?: string }) =>
     api.get<RespuestaPaginadaApi<Documento>>(`/espacios-trabajo/${id}/documentos/paginado`, { params }).then((r) => r.data),
-  agregarDocumentos: (id: number, ids_documentos: number[]) =>
-    api.post<{ documentos: number }>(`/espacios-trabajo/${id}/documentos`, { ids_documentos }).then((r) => r.data),
-  quitarDocumento: (id: number, codigo_documento: number) =>
-    api.delete(`/espacios-trabajo/${id}/documentos/${codigo_documento}`),
 }
 
 // ─── Sistema "Todo por Prompts" ───────────────────────────────────────────
