@@ -587,7 +587,7 @@ export default function PaginaGrupos() {
                     onReorder={(items) => reordenarGrupos(items as unknown as Grupo[])}
                   >
                     {gruposFiltrados.map((g) => (
-                      <SortableRow key={g.codigo_grupo} id={g.codigo_grupo}>
+                      <SortableRow key={g.codigo_grupo} id={g.codigo_grupo} onDoubleClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }}>
                         <TablaTd><button className={`text-sm font-medium text-left w-full${grupoSeleccionado?.codigo_grupo === g.codigo_grupo ? ' text-primario' : ' text-texto'}`} onClick={() => setGrupoSeleccionado(g)}>{g.nombre}</button></TablaTd>
                         <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{g.codigo_grupo}</code></TablaTd>
                         <TablaTd><Insignia variante={varianteTipo(g.tipo_acceso)}>{etiquetaTipo(g.tipo_acceso)}</Insignia></TablaTd>

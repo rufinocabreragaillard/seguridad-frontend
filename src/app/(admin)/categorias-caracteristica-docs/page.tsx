@@ -403,7 +403,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                 ) : catsFiltradas.length === 0 ? (
                   <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{t('sinCategorias')}</TablaTd></TablaFila>
                 ) : catsFiltradas.map((c) => (
-                  <SortableRow key={c.codigo_cat_docs} id={c.codigo_cat_docs}>
+                  <SortableRow key={c.codigo_cat_docs} id={c.codigo_cat_docs} onDoubleClick={() => { setCatSeleccionada(c); setTabActiva('tipos') }}>
                     <TablaTd className="font-medium">{c.nombre_cat_docs}</TablaTd>
                     <TablaTd><Insignia variante={c.es_unica_docs ? 'advertencia' : 'neutro'}>{c.es_unica_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd><Insignia variante={c.editable_en_detalle_docs ? 'exito' : 'neutro'}>{c.editable_en_detalle_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
