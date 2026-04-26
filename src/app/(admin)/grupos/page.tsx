@@ -52,7 +52,7 @@ export default function PaginaGrupos() {
 
   const [modalGrupo, setModalGrupo] = useState(false)
   const [grupoEditando, setGrupoEditando] = useState<Grupo | null>(null)
-  const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', descripcion: '', tipo_acceso: 'USUARIO' as TipoElemento, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
+  const [formGrupo, setFormGrupo] = useState({ codigo_grupo: '', nombre: '', alias: '', descripcion: '', tipo_acceso: 'USUARIO' as TipoElemento, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
   const [tabModalGrupo, setTabModalGrupo] = useState<'datos' | 'usuarios' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
   const [usuariosModalGrupo, setUsuariosModalGrupo] = useState<UsuarioGrupo[]>([])
   const [cargandoUsuariosModal, setCargandoUsuariosModal] = useState(false)
@@ -160,7 +160,7 @@ export default function PaginaGrupos() {
   // ── Funciones Tab Grupos ──
   const abrirNuevoGrupo = () => {
     setGrupoEditando(null)
-    setFormGrupo({ codigo_grupo: '', nombre: '', descripcion: '', tipo_acceso: 'USUARIO', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
+    setFormGrupo({ codigo_grupo: '', nombre: '', alias: '', descripcion: '', tipo_acceso: 'USUARIO', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' })
     setTabModalGrupo('datos')
     setError('')
     setMensajeMdGrupo(null)
@@ -170,7 +170,7 @@ export default function PaginaGrupos() {
   const abrirEditarGrupo = async (g: Grupo) => {
     setGrupoEditando(g)
     const g2 = g as unknown as Record<string, unknown>
-    setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, descripcion: g.descripcion || '', tipo_acceso: normalizarTipo(g.tipo_acceso), prompt_insert: g2.prompt_insert as string || '', prompt_update: g2.prompt_update as string || '', system_prompt: g.system_prompt || '', python_insert: g2.python_insert as string || '', python_update: g2.python_update as string || '', javascript: g2.javascript as string || '', python_editado_manual: (g2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (g2.javascript_editado_manual as boolean) ?? false, md: g2.md as string || '' })
+    setFormGrupo({ codigo_grupo: g.codigo_grupo, nombre: g.nombre, alias: g.alias || '', descripcion: g.descripcion || '', tipo_acceso: normalizarTipo(g.tipo_acceso), prompt_insert: g2.prompt_insert as string || '', prompt_update: g2.prompt_update as string || '', system_prompt: g.system_prompt || '', python_insert: g2.python_insert as string || '', python_update: g2.python_update as string || '', javascript: g2.javascript as string || '', python_editado_manual: (g2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (g2.javascript_editado_manual as boolean) ?? false, md: g2.md as string || '' })
     setTabModalGrupo('datos')
     setError('')
     setMensajeMdGrupo(null)
@@ -190,16 +190,16 @@ export default function PaginaGrupos() {
     setGuardando(true)
     try {
       if (grupoEditando) {
-        await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined, prompt_insert: formGrupo.prompt_insert || undefined, prompt_update: formGrupo.prompt_update || undefined, system_prompt: formGrupo.system_prompt || undefined, python_insert: formGrupo.python_insert || undefined, python_update: formGrupo.python_update || undefined, javascript: formGrupo.javascript || undefined, python_editado_manual: formGrupo.python_editado_manual, javascript_editado_manual: formGrupo.javascript_editado_manual, md: formGrupo.md || undefined } as Record<string, unknown>)
+        await gruposApi.actualizar(grupoEditando.codigo_grupo, { nombre: formGrupo.nombre, alias: formGrupo.alias || undefined, descripcion: formGrupo.descripcion || undefined, prompt_insert: formGrupo.prompt_insert || undefined, prompt_update: formGrupo.prompt_update || undefined, system_prompt: formGrupo.system_prompt || undefined, python_insert: formGrupo.python_insert || undefined, python_update: formGrupo.python_update || undefined, javascript: formGrupo.javascript || undefined, python_editado_manual: formGrupo.python_editado_manual, javascript_editado_manual: formGrupo.javascript_editado_manual, md: formGrupo.md || undefined } as Record<string, unknown>)
         if (cerrar) setModalGrupo(false)
       } else {
-        const nuevo = await gruposApi.crear({ nombre: formGrupo.nombre, descripcion: formGrupo.descripcion || undefined })
+        const nuevo = await gruposApi.crear({ nombre: formGrupo.nombre, alias: formGrupo.alias || undefined, descripcion: formGrupo.descripcion || undefined })
         if (cerrar) {
           setModalGrupo(false)
         } else {
           setGrupoEditando(nuevo)
           const n2 = nuevo as unknown as Record<string, unknown>
-          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, descripcion: nuevo.descripcion || '', tipo_acceso: normalizarTipo(nuevo.tipo_acceso), prompt_insert: n2.prompt_insert as string || '', prompt_update: n2.prompt_update as string || '', system_prompt: nuevo.system_prompt || '', python_insert: n2.python_insert as string || '', python_update: n2.python_update as string || '', javascript: n2.javascript as string || '', python_editado_manual: (n2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (n2.javascript_editado_manual as boolean) ?? false, md: n2.md as string || '' })
+          setFormGrupo({ codigo_grupo: nuevo.codigo_grupo, nombre: nuevo.nombre, alias: nuevo.alias || '', descripcion: nuevo.descripcion || '', tipo_acceso: normalizarTipo(nuevo.tipo_acceso), prompt_insert: n2.prompt_insert as string || '', prompt_update: n2.prompt_update as string || '', system_prompt: nuevo.system_prompt || '', python_insert: n2.python_insert as string || '', python_update: n2.python_update as string || '', javascript: n2.javascript as string || '', python_editado_manual: (n2.python_editado_manual as boolean) ?? false, javascript_editado_manual: (n2.javascript_editado_manual as boolean) ?? false, md: n2.md as string || '' })
         }
       }
       cargar()
@@ -912,9 +912,10 @@ export default function PaginaGrupos() {
 
           {tabModalGrupo === 'datos' && (
             <>
-              <div className="grid grid-cols-[180px_1fr] gap-3">
+              <div className="grid grid-cols-[180px_1fr_220px] gap-3">
                 <Input etiqueta="Código" value={formGrupo.codigo_grupo} disabled readOnly placeholder="(autogenerado)" />
                 <Input etiqueta={t('etiquetaNombre')} value={formGrupo.nombre} onChange={(e) => setFormGrupo({ ...formGrupo, nombre: e.target.value })} placeholder={t('placeholderNombre')} />
+                <Input etiqueta="Alias" value={formGrupo.alias} onChange={(e) => setFormGrupo({ ...formGrupo, alias: e.target.value })} placeholder="(igual al nombre si vacío)" />
               </div>
               <Textarea etiqueta="Descripción" value={formGrupo.descripcion} onChange={(e) => setFormGrupo({ ...formGrupo, descripcion: e.target.value })} rows={3} />
               <div className="flex flex-col gap-1">

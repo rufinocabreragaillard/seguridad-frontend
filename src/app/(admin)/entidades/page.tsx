@@ -42,7 +42,7 @@ export default function PaginaEntidades() {
   const [areaEliminando, setAreaEliminando] = useState<Area | null>(null)
   const [areaEditando, setAreaEditando] = useState<Area | null>(null)
   const [entidadEditando, setEntidadEditando] = useState<Entidad | null>(null)
-  const [formEntidad, setFormEntidad] = useState({ codigo_entidad: '', nombre: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+  const [formEntidad, setFormEntidad] = useState({ codigo_entidad: '', nombre: '', alias: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
   const [tabModalEntidad, setTabModalEntidad] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'>('datos')
   const [generandoMdEnt, setGenerandoMdEnt] = useState(false)
   const [sincronizandoMdEnt, setSincronizandoMdEnt] = useState(false)
@@ -97,7 +97,7 @@ export default function PaginaEntidades() {
 
   const abrirNuevaEntidad = () => {
     setEntidadEditando(null)
-    setFormEntidad({ codigo_entidad: '', nombre: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormEntidad({ codigo_entidad: '', nombre: '', alias: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setTabModalEntidad('datos')
     setError('')
     setModalEntidad(true)
@@ -106,7 +106,7 @@ export default function PaginaEntidades() {
   const abrirEditarEntidad = (e: Entidad) => {
     setEntidadEditando(e)
     const e2 = e as unknown as Record<string, unknown>
-    setFormEntidad({ codigo_entidad: e.codigo_entidad, nombre: e.nombre, descripcion: e.descripcion || '', prompt_insert: e2.prompt_insert as string || '', prompt_update: e2.prompt_update as string || '', system_prompt: e2.system_prompt as string || '', python_insert: e2.python_insert as string || '', python_update: e2.python_update as string || '', javascript: e2.javascript as string || '', python_editado_manual: e2.python_editado_manual as boolean || false, javascript_editado_manual: e2.javascript_editado_manual as boolean || false })
+    setFormEntidad({ codigo_entidad: e.codigo_entidad, nombre: e.nombre, alias: e.alias || '', descripcion: e.descripcion || '', prompt_insert: e2.prompt_insert as string || '', prompt_update: e2.prompt_update as string || '', system_prompt: e2.system_prompt as string || '', python_insert: e2.python_insert as string || '', python_update: e2.python_update as string || '', javascript: e2.javascript as string || '', python_editado_manual: e2.python_editado_manual as boolean || false, javascript_editado_manual: e2.javascript_editado_manual as boolean || false })
     setMdEnt(e2.md as string || '')
     setMensajeMdEnt(null)
     setTabModalEntidad('datos')
@@ -119,14 +119,14 @@ export default function PaginaEntidades() {
     setGuardando(true)
     try {
       if (entidadEditando) {
-        await entidadesApi.actualizar(entidadEditando.codigo_entidad, { nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, prompt_insert: formEntidad.prompt_insert || undefined, prompt_update: formEntidad.prompt_update || undefined, system_prompt: formEntidad.system_prompt || undefined, python_insert: formEntidad.python_insert || undefined, python_update: formEntidad.python_update || undefined, javascript: formEntidad.javascript || undefined, python_editado_manual: formEntidad.python_editado_manual, javascript_editado_manual: formEntidad.javascript_editado_manual } as Record<string, unknown>)
+        await entidadesApi.actualizar(entidadEditando.codigo_entidad, { nombre: formEntidad.nombre, alias: formEntidad.alias || undefined, descripcion: formEntidad.descripcion || undefined, prompt_insert: formEntidad.prompt_insert || undefined, prompt_update: formEntidad.prompt_update || undefined, system_prompt: formEntidad.system_prompt || undefined, python_insert: formEntidad.python_insert || undefined, python_update: formEntidad.python_update || undefined, javascript: formEntidad.javascript || undefined, python_editado_manual: formEntidad.python_editado_manual, javascript_editado_manual: formEntidad.javascript_editado_manual } as Record<string, unknown>)
         if (cerrar) setModalEntidad(false)
       } else {
-        const nueva = await entidadesApi.crear({ nombre: formEntidad.nombre, descripcion: formEntidad.descripcion || undefined, codigo_grupo: grupoActivo || 'ADMIN' })
+        const nueva = await entidadesApi.crear({ nombre: formEntidad.nombre, alias: formEntidad.alias || undefined, descripcion: formEntidad.descripcion || undefined, codigo_grupo: grupoActivo || 'ADMIN' })
         if (!cerrar) {
           setEntidadEditando(nueva)
           const n2 = nueva as unknown as Record<string, unknown>
-          setFormEntidad({ codigo_entidad: nueva.codigo_entidad, nombre: nueva.nombre, descripcion: nueva.descripcion || '', prompt_insert: n2.prompt_insert as string || '', prompt_update: n2.prompt_update as string || '', system_prompt: n2.system_prompt as string || '', python_insert: n2.python_insert as string || '', python_update: n2.python_update as string || '', javascript: n2.javascript as string || '', python_editado_manual: n2.python_editado_manual as boolean || false, javascript_editado_manual: n2.javascript_editado_manual as boolean || false })
+          setFormEntidad({ codigo_entidad: nueva.codigo_entidad, nombre: nueva.nombre, alias: nueva.alias || '', descripcion: nueva.descripcion || '', prompt_insert: n2.prompt_insert as string || '', prompt_update: n2.prompt_update as string || '', system_prompt: n2.system_prompt as string || '', python_insert: n2.python_insert as string || '', python_update: n2.python_update as string || '', javascript: n2.javascript as string || '', python_editado_manual: n2.python_editado_manual as boolean || false, javascript_editado_manual: n2.javascript_editado_manual as boolean || false })
         } else {
           setModalEntidad(false)
         }
@@ -437,7 +437,10 @@ export default function PaginaEntidades() {
           {/* Tab Datos */}
           {tabModalEntidad === 'datos' && (
             <>
-              <Input etiqueta={t('etiquetaNombreEntidad')} value={formEntidad.nombre} onChange={(e) => setFormEntidad({ ...formEntidad, nombre: e.target.value })} placeholder={t('placeholderNombreEntidad')} />
+              <div className="grid grid-cols-[1fr_220px] gap-3">
+                <Input etiqueta={t('etiquetaNombreEntidad')} value={formEntidad.nombre} onChange={(e) => setFormEntidad({ ...formEntidad, nombre: e.target.value })} placeholder={t('placeholderNombreEntidad')} />
+                <Input etiqueta="Alias" value={formEntidad.alias} onChange={(e) => setFormEntidad({ ...formEntidad, alias: e.target.value })} placeholder="(igual al nombre si vacío)" />
+              </div>
               <Textarea etiqueta={t('etiquetaDescripcion')} value={formEntidad.descripcion} onChange={(e) => setFormEntidad({ ...formEntidad, descripcion: e.target.value })} rows={3} />
               {entidadEditando && (
                 <Input etiqueta="Código" value={formEntidad.codigo_entidad} disabled readOnly />

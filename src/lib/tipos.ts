@@ -3,11 +3,13 @@
 export interface GrupoResumen {
   codigo_grupo: string
   nombre_grupo: string
+  alias_grupo?: string | null
 }
 
 export interface Grupo {
   codigo_grupo: string
   nombre: string
+  alias?: string | null
   descripcion?: string
   tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA'
   orden?: number
@@ -27,6 +29,7 @@ export interface Grupo {
 export interface EntidadResumen {
   codigo_entidad: string
   nombre: string
+  alias?: string | null
   es_default: boolean
 }
 
@@ -62,6 +65,15 @@ export interface UsuarioContexto {
   tipo_acceso?: 'USUARIO' | 'ADMINISTRADOR' | 'SISTEMA' | null
   grupo_activo: string
   nombre_grupo?: string
+  alias_grupo?: string | null
+  alias_entidad?: string | null
+  codigo_cargo?: string | null
+  nombre_cargo?: string | null
+  alias_cargo?: string | null
+  codigo_area?: string | null
+  nombre_area?: string | null
+  alias_area?: string | null
+  nombre_rol_principal?: string | null
   grupos: GrupoResumen[]
   id_rol_principal: number | null
   rol_principal: string | null  // codigo_rol del id_rol_principal (conveniencia)
@@ -100,6 +112,7 @@ export interface LoginResponse {
 export interface Entidad {
   codigo_entidad: string
   nombre: string
+  alias?: string | null
   codigo_grupo?: string
   descripcion?: string
   orden?: number
