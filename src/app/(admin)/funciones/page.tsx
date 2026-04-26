@@ -111,6 +111,11 @@ export default function PaginaFunciones() {
   const dropdownDepRef = useRef<HTMLDivElement>(null)
   const [candidatasDepCodigos, setCandidatasDepCodigos] = useState<Set<string>>(new Set())
 
+  // Selector buscable de función para la pestaña Funciones Requeridas
+  const [busquedaFuncionSel, setBusquedaFuncionSel] = useState('')
+  const [dropdownFuncionSelAbierto, setDropdownFuncionSelAbierto] = useState(false)
+  const dropdownFuncionSelRef = useRef<HTMLDivElement>(null)
+
   // Tab principal de la página
   const [tabPrincipal, setTabPrincipal] = useState<'funciones' | 'requeridas'>('funciones')
   const [funcionSeleccionada, setFuncionSeleccionada] = useState<Funcion | null>(null)
@@ -153,6 +158,9 @@ export default function PaginaFunciones() {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownDepRef.current && !dropdownDepRef.current.contains(e.target as Node)) {
         setDropdownDepAbierto(false)
+      }
+      if (dropdownFuncionSelRef.current && !dropdownFuncionSelRef.current.contains(e.target as Node)) {
+        setDropdownFuncionSelAbierto(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -411,7 +419,7 @@ export default function PaginaFunciones() {
           onClick={() => setTabPrincipal('requeridas')}
           className={`px-5 py-2.5 text-sm font-medium transition-colors ${tabPrincipal === 'requeridas' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}
         >
-          Func. Requeridas{funcionSeleccionada ? ` — ${funcionSeleccionada.nombre}` : ''}
+          Funciones Requeridas
         </button>
       </div>
 
@@ -479,18 +487,49 @@ export default function PaginaFunciones() {
       {/* ═══════════════════ TAB: FUNCIONES REQUERIDAS ═══════════════════ */}
       {tabPrincipal === 'requeridas' && (
         <div className="flex flex-col gap-4 max-w-2xl">
-          {/* Barra superior: función seleccionada + botón agregar */}
+          {/* Barra superior: selector buscable de función + botón agregar */}
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-2 flex-1 min-w-0">
               <span className="text-sm text-texto-muted whitespace-nowrap">Función:</span>
-              {funcionSeleccionada ? (
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-primario-muy-claro text-primario text-sm font-medium rounded-full border border-primario/20 truncate max-w-xs">
-                  {funcionSeleccionada.nombre}
-                  <code className="text-xs font-mono opacity-70">({funcionSeleccionada.codigo_funcion})</code>
-                </span>
-              ) : (
-                <span className="text-sm text-texto-muted italic">— doble clic en una función para seleccionar —</span>
-              )}
+              <div className="flex-1 max-w-md relative" ref={dropdownFuncionSelRef}>
+                <div className="relative">
+                  <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
+                  <input
+                    type="text"
+                    placeholder="Buscar y seleccionar función..."
+                    value={dropdownFuncionSelAbierto ? busquedaFuncionSel : (funcionSeleccionada ? `${funcionSeleccionada.nombre} (${funcionSeleccionada.codigo_funcion})` : '')}
+                    onChange={(e) => { setBusquedaFuncionSel(e.target.value); setDropdownFuncionSelAbierto(true) }}
+                    onFocus={() => { setBusquedaFuncionSel(''); setDropdownFuncionSelAbierto(true) }}
+                    className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                  />
+                </div>
+                {dropdownFuncionSelAbierto && (
+                  <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                    {funciones
+                      .filter((f) => busquedaFuncionSel === '' || f.nombre.toLowerCase().includes(busquedaFuncionSel.toLowerCase()) || f.codigo_funcion.toLowerCase().includes(busquedaFuncionSel.toLowerCase()))
+                      .slice(0, 30)
+                      .map((f) => (
+                        <button
+                          key={f.codigo_funcion}
+                          onClick={() => {
+                            setFuncionSeleccionada(f)
+                            cargarDependencias(f.codigo_funcion)
+                            setNuevaDepRequerida(''); setNuevaDepMotivo(''); setBusquedaDep(''); setErrorDep('')
+                            setBusquedaFuncionSel('')
+                            setDropdownFuncionSelAbierto(false)
+                          }}
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
+                        >
+                          <span className="font-medium">{f.nombre}</span>
+                          <span className="ml-2 text-texto-muted text-xs">{f.codigo_funcion}</span>
+                        </button>
+                      ))}
+                    {funciones.filter((f) => busquedaFuncionSel === '' || f.nombre.toLowerCase().includes(busquedaFuncionSel.toLowerCase()) || f.codigo_funcion.toLowerCase().includes(busquedaFuncionSel.toLowerCase())).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-texto-muted">No se encontraron funciones</div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
             {funcionSeleccionada && (
               <Boton variante="primario" tamano="sm" onClick={() => { setNuevaDepRequerida(''); setNuevaDepMotivo(''); setBusquedaDep(''); setErrorDep('') }}>
