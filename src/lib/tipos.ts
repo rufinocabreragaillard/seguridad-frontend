@@ -904,17 +904,45 @@ export interface RespuestaAPI<T = unknown> {
 }
 
 // ─── Espacios de Trabajo ───────────────────────────────────────────────────────
+export type TipoEspacio = 'AREA' | 'ESPACIO'
+export type AlcanceEspacio = 'USUARIO' | 'AREA' | 'ENTIDAD'
+
 export interface EspacioTrabajo {
   id_espacio: number
   nombre_espacio: string
   descripcion?: string | null
-  tipo_espacio: 'GUARDADO' | 'TEMPORAL'
+  tipo_espacio: TipoEspacio
+  alcance: AlcanceEspacio
   codigo_grupo: string
   codigo_entidad: string
+  codigo_ubicacion_area?: string | null
   codigo_usuario: string
+  criterio_texto?: string | null
   fecha_creacion?: string | null
   fecha_termino?: string | null
+  fecha_ultimo_refresco?: string | null
   total_documentos?: number
+}
+
+export interface EspacioTrabajoCrear {
+  nombre_espacio?: string
+  tipo_espacio?: TipoEspacio
+  alcance?: AlcanceEspacio
+  codigo_ubicacion_area?: string | null
+  criterio_texto?: string | null
+  ids_documentos?: number[]
+}
+
+export interface RefrescoEspacioRespuesta {
+  id_espacio: number
+  documentos: number
+  fecha_ultimo_refresco: string
+}
+
+export interface PromocionEspacioRespuesta {
+  id_espacio: number
+  tipo_espacio: TipoEspacio
+  fecha_termino?: string | null
 }
 
 // ─── Tipos de Acceso ──────────────────────────────────────────────────────────
