@@ -441,7 +441,7 @@ function Mensaje({ mensaje, streaming = false }: { mensaje: ChatMensaje; streami
         className={`${tieneTabla ? 'max-w-[95%] w-full' : 'max-w-[80%]'} px-4 py-2 rounded-lg text-sm ${
           esUser
             ? 'bg-primario text-primario-texto'
-            : 'bg-fondo border border-borde text-texto'
+            : 'bg-white border border-borde text-texto'
         }`}
       >
         {esUser ? (

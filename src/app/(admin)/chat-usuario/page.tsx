@@ -513,7 +513,7 @@ function Mensaje({ mensaje, streaming = false }: { mensaje: ChatMensaje; streami
     <div className={`flex ${esUser ? 'justify-end' : 'justify-start'}`}>
       <div
         className={`${tieneTabla ? 'max-w-[95%] w-full' : 'max-w-[80%]'} px-4 py-2 rounded-lg text-sm ${
-          esUser ? 'bg-primario text-primario-texto' : 'bg-white text-texto'
+          esUser ? 'bg-primario text-primario-texto' : 'bg-white border border-borde text-texto'
         }`}
       >
         {esUser ? (
