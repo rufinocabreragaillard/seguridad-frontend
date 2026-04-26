@@ -146,12 +146,17 @@ export default function PaginaFunciones() {
 
   useEffect(() => { cargar() }, [cargar])
 
-  // Cargar candidatas del grafo una vez al montar
+  // Cargar candidatas del grafo segun la funcion activa (FKs de sus tablas).
+  // Si hay modal abierto en tab requeridas, prioriza la funcion del modal.
   useEffect(() => {
-    funcionesApi.listarCandidatasDep().then((codigos) => {
+    const activa = (modalFuncion && tabModalFuncion === 'requeridas' && funcionEditando)
+      ? funcionEditando
+      : funcionSeleccionada
+    if (!activa) { setCandidatasDepCodigos(new Set()); return }
+    funcionesApi.listarCandidatasDep(activa.codigo_funcion).then((codigos) => {
       setCandidatasDepCodigos(new Set(codigos))
-    }).catch(() => {})
-  }, [])
+    }).catch(() => setCandidatasDepCodigos(new Set()))
+  }, [funcionSeleccionada, funcionEditando, modalFuncion, tabModalFuncion])
 
   // Cerrar dropdown de dependencia al clic fuera
   useEffect(() => {
