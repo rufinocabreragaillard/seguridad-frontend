@@ -114,15 +114,23 @@ export function Sidebar() {
                   const activo = pathname === href || pathname.startsWith(href + '/')
                   const Icono = obtenerIcono(fn.icono)
                   return (
-                    <Link
-                      key={fn.codigo_funcion}
-                      href={href}
-                      className={cn(itemBase, activo ? itemActivo : itemInactivo)}
-                      title={tr('funciones', 'alias', fn.codigo_funcion, fn.alias)}
-                    >
-                      <Icono size={18} className="shrink-0" />
-                      {!colapsado && <span>{tr('funciones', 'alias', fn.codigo_funcion, fn.alias)}</span>}
-                    </Link>
+                    <div key={fn.codigo_funcion} className={colapsado ? 'relative group/tooltip' : ''}>
+                      <Link
+                        href={href}
+                        className={cn(itemBase, activo ? itemActivo : itemInactivo)}
+                      >
+                        <Icono size={18} className="shrink-0" />
+                        {!colapsado && <span>{tr('funciones', 'alias', fn.codigo_funcion, fn.alias)}</span>}
+                      </Link>
+                      {colapsado && (
+                        <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50
+                          opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-150 delay-100
+                          bg-gray-900 text-white text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
+                          {tr('funciones', 'alias', fn.codigo_funcion, fn.alias)}
+                          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+                        </div>
+                      )}
+                    </div>
                   )
                 })}
               </div>
