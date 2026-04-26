@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
+import { useSearchParams, useRouter, usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Plus, Trash2, Download, Search, Eye, ExternalLink, FileText, XCircle } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
@@ -189,6 +190,33 @@ export default function PaginaDocumentos() {
     setModal(true)
     cargarCaracteristicas(d.codigo_documento)
   }
+
+  // Auto-abrir modal cuando viene ?codigo=N (links del chat). Si trae &pagina=N
+  // ademas, se abre directo en la pestaña Chunks. Limpiamos los query params
+  // luego de abrir para que un refresh no reabra el modal.
+  const searchParams = useSearchParams()
+  const router = useRouter()
+  const pathname = usePathname()
+  const autoAbiertoRef = useRef<string | null>(null)
+  useEffect(() => {
+    const codigo = searchParams.get('codigo')
+    if (!codigo || autoAbiertoRef.current === codigo) return
+    autoAbiertoRef.current = codigo
+    const cd = parseInt(codigo, 10)
+    if (Number.isNaN(cd)) return
+    const pagina = searchParams.get('pagina')
+    documentosApi
+      .obtener(cd)
+      .then((doc) => {
+        abrirEditar(doc)
+        if (pagina) setTabModal('chunks')
+      })
+      .catch(() => {})
+      .finally(() => {
+        router.replace(pathname, { scroll: false })
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams])
 
   const guardar = async (cerrar: boolean) => {
     if (!form.nombre_documento.trim()) {
