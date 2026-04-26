@@ -214,11 +214,6 @@ export default function PaginaEstadosTarea() {
             titulo: 'Orden',
             render: (e: EstadoTarea) => <span className="text-xs">{e.orden}</span>,
           },
-          {
-            titulo: 'Estado',
-            render: (e: EstadoTarea) =>
-              ,
-          },
         ]}
         items={filtradosOrdenados}
         cargando={crud.cargando}

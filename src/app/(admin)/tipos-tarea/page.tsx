@@ -227,11 +227,6 @@ export default function PaginaTiposTarea() {
           columnaCodigo<TipoTareaLocal>('Código', (t) => t.codigo_tipo_tarea),
           columnaNombre<TipoTareaLocal>('Nombre', (t) => t.nombre_tipo_tarea),
           columnaDescripcion<TipoTareaLocal>('Descripción', (t) => t.descripcion_tipo_tarea),
-          {
-            titulo: 'Estado',
-            render: (t: TipoTareaLocal) =>
-              ,
-          },
         ]}
         items={filtradosOrdenados}
         cargando={crud.cargando}

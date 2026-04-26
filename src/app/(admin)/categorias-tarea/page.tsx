@@ -166,11 +166,6 @@ export default function PaginaCategoriasTarea() {
           columnaCodigo<CategoriaTarea>('Código', (c) => c.codigo_categoria_tarea),
           columnaNombre<CategoriaTarea>('Nombre', (c) => c.nombre_categoria_tarea),
           columnaDescripcion<CategoriaTarea>('Descripción', (c) => c.descripcion_categoria_tarea),
-          {
-            titulo: 'Estado',
-            render: (c: CategoriaTarea) =>
-              ,
-          },
         ]}
         items={filtradosOrdenados}
         cargando={crud.cargando}

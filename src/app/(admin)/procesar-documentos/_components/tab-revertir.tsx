@@ -115,7 +115,6 @@ export function TabRevertir() {
         page: pagina,
         limit: DOCS_POR_PAGINA,
         codigo_estado_doc: pasoActual?.estado_origen || undefined,
-        ,
         q: filtroLibre || undefined,
         ruta_prefijo: rutaUbicacion,
       })
@@ -141,7 +140,6 @@ export function TabRevertir() {
         page: 1,
         limit: DOCS_POR_PAGINA,
         codigo_estado_doc: pasoActual?.estado_origen || undefined,
-        ,
         q: filtroLibre || undefined,
         ruta_prefijo: rutaUbicacion,
       })
