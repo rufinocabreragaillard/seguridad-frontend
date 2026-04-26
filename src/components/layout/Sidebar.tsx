@@ -4,13 +4,32 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useCallback } from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { useTema } from '@/context/ThemeContext'
 import { obtenerIcono } from '@/lib/icon-map'
 import { tr } from '@/lib/traducir'
 import { tema as temaDefault } from '@/config/tema.config'
+
+// Tooltip portal — se renderiza en document.body para escapar del overflow del sidebar
+function TooltipPortal({ texto, rect }: { texto: string; rect: DOMRect }) {
+  const top = rect.top + rect.height / 2
+  const left = rect.right + 8
+  return createPortal(
+    <div
+      className="fixed z-[9999] pointer-events-none"
+      style={{ top, left, transform: 'translateY(-50%)' }}
+    >
+      <div className="bg-gray-900 text-white text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap shadow-lg relative">
+        {texto}
+        <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
+      </div>
+    </div>,
+    document.body
+  )
+}
 
 export function Sidebar() {
   const pathname = usePathname()
@@ -19,6 +38,22 @@ export function Sidebar() {
   // sidebar_ancho viene de aplicaciones.sidebar_ancho — true=expandido, false=colapsado
   const sidebarAnchoPorDefecto = usuario?.sidebar_ancho !== false
   const [colapsado, setColapsado] = useState(!sidebarAnchoPorDefecto)
+  const [tooltip, setTooltip] = useState<{ texto: string; rect: DOMRect } | null>(null)
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const mostrarTooltip = useCallback((e: React.MouseEvent<HTMLDivElement>, texto: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    // Leer rect ANTES del timeout (el evento React se reutiliza)
+    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
+    timerRef.current = setTimeout(() => {
+      setTooltip({ texto, rect })
+    }, 120)
+  }, [])
+
+  const ocultarTooltip = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setTooltip(null)
+  }, [])
 
   const menuFiltrado = useMemo(() => {
     if (!usuario?.menu) return []
@@ -43,6 +78,7 @@ export function Sidebar() {
   const itemInactivo = 'text-sidebar-texto-muted hover:bg-sidebar-hover hover:text-sidebar-texto'
 
   return (
+    <>
     <aside
       className={cn(
         'flex flex-col h-full transition-all duration-300 shrink-0',
@@ -113,23 +149,20 @@ export function Sidebar() {
                   const href = fn.url || '#'
                   const activo = pathname === href || pathname.startsWith(href + '/')
                   const Icono = obtenerIcono(fn.icono)
+                  const alias = tr('funciones', 'alias', fn.codigo_funcion, fn.alias)
                   return (
-                    <div key={fn.codigo_funcion} className={colapsado ? 'relative group/tooltip' : ''}>
+                    <div
+                      key={fn.codigo_funcion}
+                      onMouseEnter={colapsado ? (e) => mostrarTooltip(e, alias) : undefined}
+                      onMouseLeave={colapsado ? ocultarTooltip : undefined}
+                    >
                       <Link
                         href={href}
                         className={cn(itemBase, activo ? itemActivo : itemInactivo)}
                       >
                         <Icono size={18} className="shrink-0" />
-                        {!colapsado && <span>{tr('funciones', 'alias', fn.codigo_funcion, fn.alias)}</span>}
+                        {!colapsado && <span>{alias}</span>}
                       </Link>
-                      {colapsado && (
-                        <div className="pointer-events-none absolute left-full top-1/2 -translate-y-1/2 ml-2 z-50
-                          opacity-0 group-hover/tooltip:opacity-100 transition-opacity duration-150 delay-100
-                          bg-gray-900 text-white text-xs font-medium px-2 py-1 rounded-md whitespace-nowrap shadow-lg">
-                          {tr('funciones', 'alias', fn.codigo_funcion, fn.alias)}
-                          <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-gray-900" />
-                        </div>
-                      )}
                     </div>
                   )
                 })}
@@ -142,5 +175,8 @@ export function Sidebar() {
       {/* Pie */}
       <div className="px-2 py-4 border-t border-sidebar-texto/40" />
     </aside>
+    {/* Tooltip portal — fuera del aside para escapar del overflow */}
+    {tooltip && <TooltipPortal texto={tooltip.texto} rect={tooltip.rect} />}
+  </>
   )
 }
