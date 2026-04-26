@@ -143,22 +143,30 @@ export default function PaginaChatUsuario() {
     setMensajes((prev) => [...prev, tempUserMsg])
     setTextoInput('')
     let acumulado = ''
-    await chatApi.enviarMensajeStream(convActivaId, texto, {
-      onChunk: (chunk) => {
-        acumulado += chunk
-        setRespuestaEnCurso(acumulado)
+    await chatApi.enviarMensajeStream(
+      convActivaId,
+      texto,
+      {
+        onChunk: (chunk) => {
+          acumulado += chunk
+          setRespuestaEnCurso(acumulado)
+        },
+        onDone: async () => {
+          setRespuestaEnCurso('')
+          await cargarConversacion(convActivaId)
+          cargarLista()
+        },
+        onError: (mensaje) => {
+          setErrorConv(mensaje)
+          setRespuestaEnCurso('')
+          setMensajes((prev) => prev.filter((m) => m.id_mensaje !== tempUserMsg.id_mensaje))
+        },
       },
-      onDone: async () => {
-        setRespuestaEnCurso('')
-        await cargarConversacion(convActivaId)
-        cargarLista()
+      {
+        codigo_ubicacion_area: areaSel || null,
+        id_espacio: espacioSel,
       },
-      onError: (mensaje) => {
-        setErrorConv(mensaje)
-        setRespuestaEnCurso('')
-        setMensajes((prev) => prev.filter((m) => m.id_mensaje !== tempUserMsg.id_mensaje))
-      },
-    })
+    )
     setEnviando(false)
     inputRef.current?.focus()
   }

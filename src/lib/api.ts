@@ -1376,7 +1376,11 @@ export const chatApi = {
       onChunk: (text: string) => void
       onDone: (info: { id_mensaje_user: number | null; id_mensaje_assistant: number | null }) => void
       onError: (mensaje: string) => void
-    }
+    },
+    filtros?: {
+      codigo_ubicacion_area?: string | null
+      id_espacio?: number | null
+    },
   ): Promise<void> => {
     const token = await obtenerToken()
     if (!token) {
@@ -1393,6 +1397,13 @@ export const chatApi = {
       if (oe) overrideHeaders['X-Override-Entidad'] = oe
       if (oa) overrideHeaders['X-Override-Aplicacion'] = oa
       overrideHeaders['X-Codigo-Funcion'] = _urlToFuncion[window.location.pathname] || 'CHAT-USUARIO'
+    }
+    // Filtros del chat (área + espacio de trabajo)
+    if (filtros?.codigo_ubicacion_area) {
+      overrideHeaders['X-Filtro-Codigo-Ubicacion-Area'] = filtros.codigo_ubicacion_area
+    }
+    if (filtros?.id_espacio != null) {
+      overrideHeaders['X-Filtro-Id-Espacio'] = String(filtros.id_espacio)
     }
     let resp: Response
     try {
