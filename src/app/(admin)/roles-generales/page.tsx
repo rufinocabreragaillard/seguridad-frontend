@@ -16,6 +16,7 @@ import { rolesApi, funcionesApi, aplicacionesApi, promptsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Rol, Funcion, Aplicacion } from '@/lib/tipos'
 import { etiquetaTipo, varianteTipo, normalizarTipo } from '@/lib/tipo-elemento'
+import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { Insignia } from '@/components/ui/insignia'
 import { BotonChat } from '@/components/ui/boton-chat'
 
@@ -47,6 +48,7 @@ function TabRolesGlobales() {
   const t = useTranslations('rolesGenerales')
   const tc = useTranslations('common')
   const { aplicacionActiva } = useAuth()
+  const { esDescendiente, tiposVisibles } = useTipoAccesoGrafo()
   const [roles, setRoles] = useState<Rol[]>([])
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([])
   const [cargando, setCargando] = useState(true)
@@ -141,10 +143,7 @@ function TabRolesGlobales() {
     const sinAsignar = todasFunciones.filter((f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
     if (!editando) return sinAsignar
     const tipoRol = normalizarTipo(editando.tipo_acceso)
-    if (tipoRol === 'SISTEMA') return sinAsignar.filter((f) => normalizarTipo(f.tipo_acceso) === 'SISTEMA')
-    if (tipoRol === 'ADMINISTRADOR') return sinAsignar.filter((f) => normalizarTipo(f.tipo_acceso) !== 'SISTEMA')
-    if (tipoRol === 'USUARIO') return sinAsignar.filter((f) => normalizarTipo(f.tipo_acceso) === 'USUARIO')
-    return sinAsignar
+    return sinAsignar.filter((f) => esDescendiente(tipoRol, normalizarTipo(f.tipo_acceso)))
   })()
   const funcionesRolFiltradas = funcionesDisponibles.filter(
     (f) =>
@@ -550,10 +549,10 @@ function TabRolesGlobales() {
               {/* Aviso filtro por tipo de rol */}
               {(() => {
                 const tipoRol = normalizarTipo(editando.tipo_acceso)
-                if (tipoRol === 'SISTEMA') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo funciones de tipo <strong>Sistema</strong> pueden asignarse a este rol.</div>
-                if (tipoRol === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Funciones de tipo <strong>Sistema</strong> no pueden asignarse a roles de Administración.</div>
-                if (tipoRol === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo funciones de tipo <strong>Usuario</strong> pueden asignarse a este rol.</div>
-                return null
+                const visibles = tiposVisibles(tipoRol)
+                if (!visibles.length) return null
+                if (visibles.length > 2) return <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-xs text-purple-700">Este rol puede recibir funciones de cualquier tipo: <strong>{visibles.join(', ')}</strong>.</div>
+                return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo se pueden asignar funciones de tipo: <strong>{visibles.join(', ')}</strong>.</div>
               })()}
               {/* Asignar nueva */}
               <div>

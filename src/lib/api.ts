@@ -1714,6 +1714,8 @@ export const promptsApi = {
 
 export const tiposAccesoApi = {
   listar: () => api.get<TipoAcceso[]>('/tipos-acceso').then((r) => r.data),
+  listarGrafo: () =>
+    api.get<{ ancestro: string; descendiente: string; profundidad: number }[]>('/tipos-acceso/grafo').then((r) => r.data),
   crear: (data: Partial<TipoAcceso>) => api.post<TipoAcceso>('/tipos-acceso', data).then((r) => r.data),
   actualizar: (codigo: string, data: Partial<TipoAcceso>) =>
     api.put<TipoAcceso>(`/tipos-acceso/${codigo}`, data).then((r) => r.data),

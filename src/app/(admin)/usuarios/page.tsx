@@ -18,6 +18,7 @@ import { usuariosApi, rolesApi, entidadesApi, aplicacionesApi, gruposApi } from 
 import { useAuth } from '@/context/AuthContext'
 import type { Usuario, Rol, Entidad, Area, Aplicacion, Grupo } from '@/lib/tipos'
 import { normalizarTipo, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
+import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 
@@ -43,6 +44,7 @@ export default function PaginaUsuarios() {
   const tc = useTranslations('common')
   const { usuario: usuarioActual } = useAuth()
   const grupoActivo = usuarioActual?.grupo_activo ?? ''
+  const { esDescendiente, tiposVisibles } = useTipoAccesoGrafo()
   const grupoAnteriorRef = useRef(grupoActivo)
 
   const [roles, setRoles] = useState<Rol[]>([])
@@ -454,11 +456,7 @@ export default function PaginaUsuarios() {
       if (!(r.codigo_grupo === grupoActivo || r.codigo_grupo == null)) return false
       if (rolesUsuario.some((ra) => ra.codigo_grupo === grupoActivo && ra.id_rol === r.id_rol)) return false
       const tipoRol = normalizarTipo(r.tipo_acceso)
-      // SISTEMA puede recibir roles de cualquier tipo (administra todo el sistema)
-      if (tipoUsuarioEditando === 'SISTEMA') return true
-      if (tipoUsuarioEditando === 'ADMINISTRADOR') return tipoRol !== 'SISTEMA'
-      if (tipoUsuarioEditando === 'USUARIO') return tipoRol === 'USUARIO'
-      return true
+      return esDescendiente(tipoUsuarioEditando, tipoRol)
     })
     // Orden: nombre app origen → nombre rol. Sin app origen al final.
     .sort((a, b) => {
@@ -1033,10 +1031,11 @@ export default function PaginaUsuarios() {
               ) : (
                 <>
                 {(() => {
-                  if (tipoUsuarioEditando === 'SISTEMA') return <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-xs text-purple-700">Los usuarios de tipo <strong>Sistema</strong> pueden recibir roles de cualquier tipo.</div>
-                  if (tipoUsuarioEditando === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Roles de tipo <strong>Sistema</strong> no pueden asignarse a usuarios de Administración.</div>
-                  if (tipoUsuarioEditando === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo roles de tipo <strong>Usuario</strong> pueden asignarse a este usuario.</div>
-                  return null
+                  const visibles = tiposVisibles(tipoUsuarioEditando)
+                  if (!visibles.length) return null
+                  const todos = visibles.length > 2
+                  if (todos) return <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-xs text-purple-700">Este usuario puede recibir roles de cualquier tipo: <strong>{visibles.join(', ')}</strong>.</div>
+                  return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo se pueden asignar roles de tipo: <strong>{visibles.join(', ')}</strong>.</div>
                 })()}
               {/* Asignar nuevo rol */}
               <div className="flex gap-2">

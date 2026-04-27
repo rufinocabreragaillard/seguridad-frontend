@@ -27,6 +27,7 @@ import { usuariosApi, gruposApi, entidadesApi, rolesApi, aplicacionesApi } from 
 import { useAuth } from '@/context/AuthContext'
 import type { Usuario, Grupo, Entidad, Rol, Aplicacion, Area } from '@/lib/tipos'
 import { normalizarTipo, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
+import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { SortableDndContext, SortableListItem } from '@/components/ui/sortable'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 
@@ -42,6 +43,7 @@ export default function PaginaUsuariosSemilla() {
   const t = useTranslations('usuariosSemilla')
   const tc = useTranslations('common')
   const { usuario: usuarioActual, esSuperAdmin, aplicacionActiva } = useAuth()
+  const { esDescendiente, tiposVisibles } = useTipoAccesoGrafo()
 
   const [busqueda, setBusqueda] = useState('')
 
@@ -986,12 +988,9 @@ export default function PaginaUsuariosSemilla() {
                       {dropdownAppFormAbierto && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
                           {[{ codigo_aplicacion: '', nombre: '— Sin aplicación —', tipo_acceso: tipoGrupoForm } as Aplicacion,
-                            ...(appsGrupo.length > 0 ? appsGrupo : aplicaciones).filter((a) => {
-                              const at = normalizarTipo(a.tipo_acceso)
-                              if (at === tipoGrupoForm) return true
-                              if ((tipoGrupoForm === 'SISTEMA' || tipoGrupoForm === 'ADMINISTRADOR') && at === 'USUARIO') return true
-                              return false
-                            })]
+                            ...(appsGrupo.length > 0 ? appsGrupo : aplicaciones).filter((a) =>
+                              esDescendiente(tipoGrupoForm, normalizarTipo(a.tipo_acceso))
+                            )]
                             .filter((a) => !a.codigo_aplicacion || !busquedaAppForm || a.nombre.toLowerCase().includes(busquedaAppForm.toLowerCase()))
                             .slice(0, 21).map((a) => (
                               <button key={a.codigo_aplicacion || '__sin'} type="button"
@@ -1057,10 +1056,10 @@ export default function PaginaUsuariosSemilla() {
               ) : (
                 <>
                   {(() => {
-                    if (tipoUsuarioSemilla === 'SISTEMA') return <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2 text-xs text-red-700">Solo roles de tipo <strong>Sistema</strong> pueden asignarse a este usuario.</div>
-                    if (tipoUsuarioSemilla === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Roles de tipo <strong>Sistema</strong> no pueden asignarse a usuarios de Administración.</div>
-                    if (tipoUsuarioSemilla === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo roles de tipo <strong>Usuario</strong> pueden asignarse a este usuario.</div>
-                    return null
+                    const visibles = tiposVisibles(tipoUsuarioSemilla)
+                    if (!visibles.length) return null
+                    if (visibles.length > 2) return <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-xs text-purple-700">Este usuario puede recibir roles de cualquier tipo: <strong>{visibles.join(', ')}</strong>.</div>
+                    return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo se pueden asignar roles de tipo: <strong>{visibles.join(', ')}</strong>.</div>
                   })()}
                   {/* Asignar nuevo rol */}
                   <div className="flex gap-2">

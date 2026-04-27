@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext'
 import type { Rol, Funcion, Aplicacion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
@@ -26,6 +27,7 @@ export default function PaginaRoles() {
   const t = useTranslations('roles')
   const tc = useTranslations('common')
   const { grupoActivo, aplicacionActiva, usuario } = useAuth()
+  const { esDescendiente, tiposVisibles } = useTipoAccesoGrafo()
   const [roles, setRoles] = useState<Rol[]>([])
   const [funciones, setFunciones] = useState<Funcion[]>([])
   const [cargando, setCargando] = useState(true)
@@ -358,9 +360,7 @@ export default function PaginaRoles() {
     const sinAsignar = funciones.filter((f) => !funcionesRol.some((fa) => fa.codigo_funcion === f.codigo_funcion))
     if (!rolEditando) return sinAsignar
     const tipoRol = normalizarTipo(rolEditando.tipo_acceso)
-    // SISTEMA puede asignar funciones de cualquier tipo (administra todo el sistema)
-    if (tipoRol === 'SISTEMA') return sinAsignar
-    return sinAsignar.filter((f) => normalizarTipo(f.tipo_acceso) === tipoRol)
+    return sinAsignar.filter((f) => esDescendiente(tipoRol, normalizarTipo(f.tipo_acceso)))
   })()
 
   const funcionesRolFiltradas = funcionesDisponibles.filter((f) =>
@@ -783,10 +783,10 @@ export default function PaginaRoles() {
             <div className="flex flex-col gap-4">
               {(() => {
                 const tipoRol = normalizarTipo(rolEditando.tipo_acceso)
-                if (tipoRol === 'SISTEMA') return <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-xs text-purple-700">Los roles de tipo <strong>Sistema</strong> pueden asignar funciones de cualquier tipo.</div>
-                if (tipoRol === 'ADMINISTRADOR') return <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 text-xs text-amber-700">Funciones de tipo <strong>Sistema</strong> no pueden asignarse a roles de Administración.</div>
-                if (tipoRol === 'USUARIO') return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo funciones de tipo <strong>Usuario</strong> pueden asignarse a este rol.</div>
-                return null
+                const visibles = tiposVisibles(tipoRol)
+                if (!visibles.length) return null
+                if (visibles.length > 2) return <div className="bg-purple-50 border border-purple-200 rounded-lg px-3 py-2 text-xs text-purple-700">Este rol puede recibir funciones de cualquier tipo: <strong>{visibles.join(', ')}</strong>.</div>
+                return <div className="bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">Solo se pueden asignar funciones de tipo: <strong>{visibles.join(', ')}</strong>.</div>
               })()}
               <div className="flex gap-2">
                 <div className="flex-1 relative" ref={dropdownFuncionRolRef}>
