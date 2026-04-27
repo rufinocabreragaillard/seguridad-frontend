@@ -31,7 +31,7 @@ body {
   /* Nombre de la app en la barra superior (Header.tsx) — título principal visible en cada pantalla */
   .app-name {
     @apply text-2xl font-bold;
-    color: var(--color-text-heading);
+    color: var(--color-text-muted);
     letter-spacing: -0.025em;
   }
   /* Título principal de cada página (h1/h2) */
