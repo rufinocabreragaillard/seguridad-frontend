@@ -62,7 +62,7 @@ export default function PaginaChatSeguridad() {
     setCargandoLista(true)
     setErrorLista('')
     try {
-      const data = await chatApi.listarConversaciones()
+      const data = await chatApi.listarConversaciones({ codigo_funcion: CODIGO_FUNCION })
       setConversaciones(data)
       // Si no hay activa y existen, seleccionar la primera
       if (data.length > 0 && convActivaId == null) {

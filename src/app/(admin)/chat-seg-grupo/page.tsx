@@ -47,7 +47,7 @@ export default function PaginaChatSegGrupo() {
     setCargandoLista(true)
     setErrorLista('')
     try {
-      const data = await chatApi.listarConversaciones()
+      const data = await chatApi.listarConversaciones({ codigo_funcion: CODIGO_FUNCION })
       setConversaciones(data)
       if (data.length > 0 && convActivaId == null) {
         setConvActivaId(data[0].id_conversacion)
