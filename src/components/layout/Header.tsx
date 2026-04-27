@@ -265,42 +265,49 @@ export function Header({ titulo }: { titulo?: string }) {
 
           {/* Selector de entidad */}
           {usuario && usuario.entidades && usuario.entidades.length > 0 && (
-            <DropdownMenu.Root>
-              <DropdownMenu.Trigger asChild>
-                <button
-                  className={cn(
-                    'flex items-center gap-2 px-3 py-1.5 rounded-lg border border-borde bg-fondo',
-                    'text-sm font-medium text-texto hover:bg-primario-muy-claro hover:border-primario/30',
-                    'transition-colors focus:outline-none',
-                    cambiando && 'opacity-50 cursor-wait'
-                  )}
-                  disabled={cambiando}
-                >
-                  <Building2 size={15} className="text-primario shrink-0" />
-                  <span className="max-w-[160px] truncate">{entidadActual?.nombre ?? usuario.entidad_activa}</span>
-                  <ChevronDown size={14} className="text-texto-muted shrink-0" />
-                </button>
-              </DropdownMenu.Trigger>
-              <DropdownMenu.Portal>
-                <DropdownMenu.Content align="end" sideOffset={8} className="z-50 min-w-[200px] bg-surface rounded-xl border border-borde shadow-lg p-1">
-                  <p className="px-3 py-2 text-xs font-semibold text-texto-muted uppercase tracking-wider">{t('misEntidades')}</p>
-                  {usuario.entidades.map((entidad) => (
-                    <DropdownMenu.Item
-                      key={entidad.codigo_entidad}
-                      onSelect={() => handleCambiarEntidad(entidad.codigo_entidad)}
-                      className={cn(
-                        'flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer',
-                        'hover:bg-primario-muy-claro hover:text-primario outline-none transition-colors',
-                        entidad.codigo_entidad === usuario.entidad_activa ? 'text-primario font-medium bg-primario-muy-claro' : 'text-texto'
-                      )}
-                    >
-                      <Check size={14} className={cn('shrink-0', entidad.codigo_entidad === usuario.entidad_activa ? 'opacity-100' : 'opacity-0')} />
-                      <span className="truncate">{entidad.nombre}</span>
-                    </DropdownMenu.Item>
-                  ))}
-                </DropdownMenu.Content>
-              </DropdownMenu.Portal>
-            </DropdownMenu.Root>
+            usuario.entidades.length === 1 ? (
+              <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-borde bg-fondo text-sm font-medium text-texto">
+                <Building2 size={15} className="text-primario shrink-0" />
+                <span className="max-w-[160px] truncate">{entidadActual?.nombre ?? usuario.entidad_activa}</span>
+              </div>
+            ) : (
+              <DropdownMenu.Root>
+                <DropdownMenu.Trigger asChild>
+                  <button
+                    className={cn(
+                      'flex items-center gap-2 px-3 py-1.5 rounded-lg border border-borde bg-fondo',
+                      'text-sm font-medium text-texto hover:bg-primario-muy-claro hover:border-primario/30',
+                      'transition-colors focus:outline-none',
+                      cambiando && 'opacity-50 cursor-wait'
+                    )}
+                    disabled={cambiando}
+                  >
+                    <Building2 size={15} className="text-primario shrink-0" />
+                    <span className="max-w-[160px] truncate">{entidadActual?.nombre ?? usuario.entidad_activa}</span>
+                    <ChevronDown size={14} className="text-texto-muted shrink-0" />
+                  </button>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.Content align="end" sideOffset={8} className="z-50 min-w-[200px] bg-surface rounded-xl border border-borde shadow-lg p-1">
+                    <p className="px-3 py-2 text-xs font-semibold text-texto-muted uppercase tracking-wider">{t('misEntidades')}</p>
+                    {usuario.entidades.map((entidad) => (
+                      <DropdownMenu.Item
+                        key={entidad.codigo_entidad}
+                        onSelect={() => handleCambiarEntidad(entidad.codigo_entidad)}
+                        className={cn(
+                          'flex items-center gap-2 px-3 py-2 rounded-lg text-sm cursor-pointer',
+                          'hover:bg-primario-muy-claro hover:text-primario outline-none transition-colors',
+                          entidad.codigo_entidad === usuario.entidad_activa ? 'text-primario font-medium bg-primario-muy-claro' : 'text-texto'
+                        )}
+                      >
+                        <Check size={14} className={cn('shrink-0', entidad.codigo_entidad === usuario.entidad_activa ? 'opacity-100' : 'opacity-0')} />
+                        <span className="truncate">{entidad.nombre}</span>
+                      </DropdownMenu.Item>
+                    ))}
+                  </DropdownMenu.Content>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Root>
+            )
           )}
 
           {/* Notificaciones */}
