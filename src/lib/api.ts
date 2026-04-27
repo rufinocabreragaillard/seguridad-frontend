@@ -1347,8 +1347,8 @@ export const cargaDocumentosApi = {
 // ─── Chat con LLM ────────────────────────────────────────────────────────────
 
 export const chatApi = {
-  listarConversaciones: (params?: { codigo_funcion?: string }) =>
-    api.get<ChatConversacion[]>('/chat/conversaciones', { params }).then((r) => r.data),
+  listarConversaciones: () =>
+    api.get<ChatConversacion[]>('/chat/conversaciones').then((r) => r.data),
   obtenerConversacion: (id: number) =>
     api.get<ChatConversacionDetalle>(`/chat/conversaciones/${id}`).then((r) => r.data),
   crearConversacion: (codigoFuncion: string, titulo?: string) =>

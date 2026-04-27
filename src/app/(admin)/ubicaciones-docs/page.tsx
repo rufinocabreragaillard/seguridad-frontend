@@ -30,7 +30,6 @@ export default function PaginaUbicacionesDocs() {
   const [ubicaciones, setUbicaciones] = useState<UbicacionDoc[]>([])
   const [cargando, setCargando] = useState(true)
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
-  const [busqueda, setBusqueda] = useState('')
 
   // ── Modal CRUD ────────────────────────────────────────────────────────────
   const [modal, setModal] = useState(false)
@@ -367,31 +366,7 @@ export default function PaginaUbicacionesDocs() {
     return { nuevas, aEliminar, sinCambio, excluidas: excluidos }
   }
 
-  const filtrados = (() => {
-    const q = busqueda.trim().toLowerCase()
-    if (!q) return ubicaciones
-    // Nodos que coinciden con la búsqueda
-    const coinciden = new Set(
-      ubicaciones
-        .filter((u) =>
-          u.nombre_ubicacion.toLowerCase().includes(q) ||
-          u.codigo_ubicacion.toLowerCase().includes(q) ||
-          (u.ruta_completa || '').toLowerCase().includes(q)
-        )
-        .map((u) => u.codigo_ubicacion)
-    )
-    // Para cada coincidencia, incluir todos sus ancestros (por superior)
-    const indexPorCodigo = new Map(ubicaciones.map((u) => [u.codigo_ubicacion, u]))
-    const visibles = new Set<string>(coinciden)
-    for (const cod of coinciden) {
-      let actual = indexPorCodigo.get(cod)
-      while (actual?.codigo_ubicacion_superior) {
-        visibles.add(actual.codigo_ubicacion_superior)
-        actual = indexPorCodigo.get(actual.codigo_ubicacion_superior)
-      }
-    }
-    return ubicaciones.filter((u) => visibles.has(u.codigo_ubicacion))
-  })()
+  const filtrados = ubicaciones
 
   // ── Cargar Documentos (sección inferior) ──────────────────────────────────
   const [cdNiveles, setCdNiveles] = useState(5)
@@ -546,15 +521,7 @@ export default function PaginaUbicacionesDocs() {
     const expandido = expandidos.has(u.codigo_ubicacion)
     const indent = u.nivel * 24
     const esArea = u.tipo_ubicacion === 'AREA'
-    const q = busqueda.trim().toLowerCase()
-    const coincide = q && (
-      u.nombre_ubicacion.toLowerCase().includes(q) ||
-      u.codigo_ubicacion.toLowerCase().includes(q) ||
-      (u.ruta_completa || '').toLowerCase().includes(q)
-    )
-    const rowBg = coincide
-      ? 'bg-yellow-100 hover:bg-yellow-200'
-      : esArea ? 'bg-blue-50 hover:bg-blue-100' : 'bg-amber-50 hover:bg-amber-100'
+    const rowBg = esArea ? 'bg-blue-50 hover:bg-blue-100' : 'bg-amber-50 hover:bg-amber-100'
     const folderColor = esArea ? 'text-blue-500' : 'text-amber-500'
 
     return (
@@ -634,38 +601,13 @@ export default function PaginaUbicacionesDocs() {
         </div>
 
         {expandido &&
-          filtrados
+          ubicaciones
             .filter((h) => h.codigo_ubicacion_superior === u.codigo_ubicacion)
             .sort((a, b) => a.orden - b.orden || a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
             .map((h) => renderNodo(h))}
       </div>
     )
   }
-
-  // Auto-expandir ancestros cuando hay búsqueda activa
-  useEffect(() => {
-    if (!busqueda.trim()) return
-    const q = busqueda.trim().toLowerCase()
-    const coinciden = new Set(
-      ubicaciones
-        .filter((u) =>
-          u.nombre_ubicacion.toLowerCase().includes(q) ||
-          u.codigo_ubicacion.toLowerCase().includes(q) ||
-          (u.ruta_completa || '').toLowerCase().includes(q)
-        )
-        .map((u) => u.codigo_ubicacion)
-    )
-    const indexPorCodigo = new Map(ubicaciones.map((u) => [u.codigo_ubicacion, u]))
-    const aExpandir = new Set<string>()
-    for (const cod of coinciden) {
-      let actual = indexPorCodigo.get(cod)
-      while (actual?.codigo_ubicacion_superior) {
-        aExpandir.add(actual.codigo_ubicacion_superior)
-        actual = indexPorCodigo.get(actual.codigo_ubicacion_superior)
-      }
-    }
-    setExpandidos((prev) => new Set([...prev, ...aExpandir]))
-  }, [busqueda, ubicaciones])
 
   const raices = filtrados
     .filter((u) => !u.codigo_ubicacion_superior)
@@ -684,25 +626,6 @@ export default function PaginaUbicacionesDocs() {
 
       {/* Toolbar */}
       <div className="flex items-center gap-3 flex-wrap">
-        {/* Búsqueda */}
-        <div className="relative">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
-          <input
-            type="text"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar ubicación..."
-            className="pl-8 pr-3 py-2 text-sm rounded-lg border border-borde bg-fondo-tarjeta text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none w-56"
-          />
-          {busqueda && (
-            <button
-              onClick={() => setBusqueda('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-texto-muted hover:text-texto"
-            >
-              <XCircle size={14} />
-            </button>
-          )}
-        </div>
         <div className="flex gap-2 flex-wrap items-start">
           <div className="flex flex-col items-center">
             <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion}>
