@@ -10,14 +10,14 @@ interface BotonChatProps {
 
 /**
  * Botón de Chat para la esquina superior derecha de las páginas.
- * Navega a /chat-usuario al hacer clic.
+ * Navega a /chat al hacer clic.
  */
 export function BotonChat({ className }: BotonChatProps) {
   const router = useRouter()
   return (
     <button
       type="button"
-      onClick={() => router.push('/chat-usuario')}
+      onClick={() => router.push('/chat')}
       title="Chat"
       aria-label="Chat"
       className={cn(
