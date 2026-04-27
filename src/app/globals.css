@@ -18,9 +18,9 @@ body {
 @layer components {
   /* Nombre de la app en la barra superior (Header.tsx) */
   .app-name {
-    @apply text-sm font-semibold;
-    color: #f5f5f7;
-    letter-spacing: -0.01em;
+    @apply text-base font-semibold;
+    color: #1d1d1f;
+    letter-spacing: -0.02em;
   }
   /* Título principal de cada página (h1/h2) */
   .page-heading {
