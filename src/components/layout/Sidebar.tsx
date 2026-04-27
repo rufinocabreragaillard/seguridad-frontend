@@ -136,7 +136,7 @@ export function Sidebar() {
           menuFiltrado.map((rol) => (
             <div key={rol.id_rol}>
               {!colapsado && (
-                <span className="px-3 text-xs font-semibold uppercase tracking-wider text-sidebar-texto-muted">
+                <span className="px-3 text-xs font-medium tracking-normal text-sidebar-texto-muted opacity-60">
                   {tr('roles', 'alias', String(rol.id_rol), rol.alias)}
                 </span>
               )}

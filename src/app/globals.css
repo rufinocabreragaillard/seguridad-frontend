@@ -4,8 +4,10 @@
 
 body {
   background-color: #F4F5F8;
-  color: #1A1E2E;
+  color: #1d1d1f;
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 /* ============================================================
@@ -16,32 +18,45 @@ body {
 @layer components {
   /* Nombre de la app en la barra superior (Header.tsx) */
   .app-name {
-    @apply text-2xl font-bold text-gray-500;
+    @apply text-sm font-semibold;
+    color: #f5f5f7;
+    letter-spacing: -0.01em;
   }
   /* Título principal de cada página (h1/h2) */
   .page-heading {
-    @apply text-xl font-semibold text-texto;
-    letter-spacing: -0.02em;
+    @apply text-xl font-bold;
+    color: #1d1d1f;
+    letter-spacing: -0.025em;
   }
   /* Título de ventanas emergentes / modales (modal.tsx) */
   .modal-heading {
-    @apply text-lg font-bold text-texto;
-    letter-spacing: -0.015em;
+    @apply text-lg font-semibold;
+    color: #1d1d1f;
+    letter-spacing: -0.02em;
   }
   /* Título de sección dentro de una página (h2/h3 secundario, panel chat, tab) */
   .section-heading {
-    @apply text-base font-semibold text-texto;
+    @apply text-sm font-medium;
+    color: #86868b;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
   }
   /* Títulos en páginas de autenticación (login, reset-password) */
   .auth-heading {
-    @apply text-2xl font-bold text-texto;
+    @apply text-3xl font-bold;
+    color: #1d1d1f;
+    letter-spacing: -0.03em;
   }
   /* Número grande en cards de estadísticas (dashboard, documentos-dashboard) */
   .stat-value {
-    @apply text-[20px] font-bold;
+    @apply text-[22px] font-bold;
+    color: #1d1d1f;
+    letter-spacing: -0.02em;
   }
   /* Número mediano en cards de estadísticas y resultados de proceso */
   .stat-number {
-    @apply text-[20px] font-bold;
+    @apply text-[20px] font-semibold;
+    color: #1d1d1f;
+    letter-spacing: -0.015em;
   }
 }
