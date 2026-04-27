@@ -21,10 +21,12 @@ body {
   /* Título principal de cada página (h1/h2) */
   .page-heading {
     @apply text-xl font-semibold text-texto;
+    letter-spacing: -0.02em;
   }
   /* Título de ventanas emergentes / modales (modal.tsx) */
   .modal-heading {
     @apply text-lg font-bold text-texto;
+    letter-spacing: -0.015em;
   }
   /* Título de sección dentro de una página (h2/h3 secundario, panel chat, tab) */
   .section-heading {
