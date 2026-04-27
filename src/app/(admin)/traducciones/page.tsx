@@ -484,9 +484,9 @@ export default function TraduccionesPage() {
         titulo="Regenerar TODAS las traducciones"
         mensaje={`Se regenerarán las traducciones para todos los idiomas activos (${estado?.idiomas?.join(', ') ?? '…'}). La generación corre en background y puedes seguir navegando. ¿Continuar?`}
         textoConfirmar="Sí, regenerar todo"
-        variante="advertencia"
-        onConfirmar={generarCompleto}
-        onCancelar={() => setModalCompleto(false)}
+        variante="primario"
+        alConfirmar={generarCompleto}
+        alCerrar={() => setModalCompleto(false)}
       />
 
       {/* ── Modal eliminar idioma ──────────────────────────────────────────── */}
@@ -496,8 +496,8 @@ export default function TraduccionesPage() {
         mensaje={`Se eliminarán todas las traducciones generadas para ${localEliminar?.nombre_nativo} (${localEliminar?.codigo?.toUpperCase()}). Esta acción no se puede deshacer.`}
         textoConfirmar="Eliminar"
         variante="peligro"
-        onConfirmar={confirmarEliminar}
-        onCancelar={() => setLocalEliminar(null)}
+        alConfirmar={confirmarEliminar}
+        alCerrar={() => setLocalEliminar(null)}
       />
 
       {/* ── Modal agregar idioma ───────────────────────────────────────────── */}
