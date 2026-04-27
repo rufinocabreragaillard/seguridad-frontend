@@ -28,11 +28,11 @@ body {
    NUNCA hardcodear text-xl, font-bold, etc. en los componentes.
    ============================================================ */
 @layer components {
-  /* Nombre de la app en la barra superior (Header.tsx) */
+  /* Nombre de la app en la barra superior (Header.tsx) — título principal visible en cada pantalla */
   .app-name {
-    @apply text-base font-semibold;
-    color: var(--color-text-primary);
-    letter-spacing: -0.02em;
+    @apply text-2xl font-bold;
+    color: var(--color-text-heading);
+    letter-spacing: -0.025em;
   }
   /* Título principal de cada página (h1/h2) */
   .page-heading {
