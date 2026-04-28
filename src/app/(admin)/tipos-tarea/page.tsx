@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TabPrompts } from '@/components/ui/tab-prompts'
@@ -71,6 +72,8 @@ const FORM_INICIAL: FormTipoTarea = {
 }
 
 export default function PaginaTiposTarea() {
+  const t = useTranslations('tiposTarea')
+  const tc = useTranslations('common')
   const [tabModal, setTabModal] = useState<TabModal>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
@@ -168,19 +171,19 @@ export default function PaginaTiposTarea() {
   })
 
   const tabs: { key: TabModal; label: string }[] = [
-    { key: 'datos', label: 'Datos' },
-    { key: 'system_prompt', label: 'System Prompt' },
-    { key: 'programacion_insert', label: 'Prog. Insert' },
-    { key: 'programacion_update', label: 'Prog. Update' },
-    ...(crud.editando ? [{ key: 'md' as TabModal, label: '.md' }] : []),
+    { key: 'datos', label: t('tabDatos') },
+    { key: 'system_prompt', label: t('tabSystemPrompt') },
+    { key: 'programacion_insert', label: t('tabProgramacionInsert') },
+    { key: 'programacion_update', label: t('tabProgramacionUpdate') },
+    ...(crud.editando ? [{ key: 'md' as TabModal, label: t('tabMd') }] : []),
   ]
 
   return (
     <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">Tipos de Tarea</h2>
-        <p className="text-sm text-texto-muted mt-1">Tipos de tarea por categoría para el grupo activo</p>
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -189,7 +192,7 @@ export default function PaginaTiposTarea() {
           onChange={(e) => { setFiltroCategoria(e.target.value); crud.cargar() }}
           className="text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario"
         >
-          <option value="">Todas las categorías</option>
+          <option value="">{t('todasLasCategorias')}</option>
           {categorias.map((c) => (
             <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>
               {c.nombre_categoria_tarea}
@@ -201,16 +204,16 @@ export default function PaginaTiposTarea() {
       <BarraHerramientas
         busqueda={crud.busqueda}
         onBusqueda={crud.setBusqueda}
-        placeholderBusqueda="Buscar tipo..."
+        placeholderBusqueda={t('buscarPlaceholder')}
         onNuevo={crud.abrirNuevo}
-        textoNuevo="Nuevo Tipo"
+        textoNuevo={t('nuevoTipo')}
         excelDatos={filtradosOrdenados as unknown as Record<string, unknown>[]}
         excelColumnas={[
-          { titulo: 'Categoría', campo: 'codigo_categoria_tarea' },
-          { titulo: 'Código', campo: 'codigo_tipo_tarea' },
-          { titulo: 'Nombre', campo: 'nombre_tipo_tarea' },
-          { titulo: 'Descripción', campo: 'descripcion_tipo_tarea' },
-          { titulo: 'Nombre', campo: 'nombre_tipo_tarea' },
+          { titulo: t('colCategoria'), campo: 'codigo_categoria_tarea' },
+          { titulo: t('colCodigo'), campo: 'codigo_tipo_tarea' },
+          { titulo: t('colNombre'), campo: 'nombre_tipo_tarea' },
+          { titulo: t('colDescripcion'), campo: 'descripcion_tipo_tarea' },
+          { titulo: t('colNombre'), campo: 'nombre_tipo_tarea' },
         ]}
         excelNombreArchivo="tipos-tarea"
       />
@@ -218,29 +221,29 @@ export default function PaginaTiposTarea() {
       <TablaCrud
         columnas={[
           {
-            titulo: 'Categoría',
-            render: (t: TipoTareaLocal) => {
-              const cat = categorias.find((c) => c.codigo_categoria_tarea === t.codigo_categoria_tarea)
-              return <span className="text-xs text-texto-muted">{cat?.nombre_categoria_tarea ?? t.codigo_categoria_tarea}</span>
+            titulo: t('colCategoria'),
+            render: (tt: TipoTareaLocal) => {
+              const cat = categorias.find((c) => c.codigo_categoria_tarea === tt.codigo_categoria_tarea)
+              return <span className="text-xs text-texto-muted">{cat?.nombre_categoria_tarea ?? tt.codigo_categoria_tarea}</span>
             },
           },
-          columnaCodigo<TipoTareaLocal>('Código', (t) => t.codigo_tipo_tarea),
-          columnaNombre<TipoTareaLocal>('Nombre', (t) => t.nombre_tipo_tarea),
-          columnaDescripcion<TipoTareaLocal>('Descripción', (t) => t.descripcion_tipo_tarea),
+          columnaCodigo<TipoTareaLocal>(t('colCodigo'), (tt) => tt.codigo_tipo_tarea),
+          columnaNombre<TipoTareaLocal>(t('colNombre'), (tt) => tt.nombre_tipo_tarea),
+          columnaDescripcion<TipoTareaLocal>(t('colDescripcion'), (tt) => tt.descripcion_tipo_tarea),
         ]}
         items={filtradosOrdenados}
         cargando={crud.cargando}
-        getId={(t) => `${t.codigo_grupo}/${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`}
+        getId={(tt) => `${tt.codigo_grupo}/${tt.codigo_categoria_tarea}/${tt.codigo_tipo_tarea}`}
         onEditar={crud.abrirEditar}
         onEliminar={crud.setConfirmacion}
-        textoVacio="Sin tipos de tarea"
+        textoVacio={t('sinTipos')}
       />
 
       {/* Modal crear/editar */}
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? `Editar tipo de tarea: ${crud.editando.nombre_tipo_tarea}` : 'Nuevo Tipo de Tarea'}
+        titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_tipo_tarea }) : t('nuevoTitulo')}
         className="max-w-2xl"
       >
         <div className="flex border-b border-borde mb-4">
@@ -266,7 +269,7 @@ export default function PaginaTiposTarea() {
             <>
               <div>
                 <label className="text-sm font-medium text-texto block mb-1">
-                  Categoría <span className="text-error">*</span>
+                  {t('etiquetaCategoria')} <span className="text-error">*</span>
                 </label>
                 <select
                   value={crud.form.codigo_categoria_tarea}
@@ -274,7 +277,7 @@ export default function PaginaTiposTarea() {
                   disabled={!!crud.editando}
                   className="w-full text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-60"
                 >
-                  <option value="">Seleccionar categoría...</option>
+                  <option value="">{t('seleccionarCategoria')}</option>
                   {categorias.map((c) => (
                     <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>
                       {c.nombre_categoria_tarea}
@@ -283,44 +286,44 @@ export default function PaginaTiposTarea() {
                 </select>
               </div>
               <Input
-                etiqueta="Código"
+                etiqueta={t('etiquetaCodigo')}
                 value={crud.form.codigo_tipo_tarea}
                 onChange={(e) => crud.updateForm('codigo_tipo_tarea', e.target.value)}
-                placeholder="Se genera automáticamente"
+                placeholder={t('placeholderCodigoAuto')}
                 disabled={!!crud.editando}
               />
               <Input
-                etiqueta="Nombre"
+                etiqueta={t('etiquetaNombre')}
                 value={crud.form.nombre_tipo_tarea}
                 onChange={(e) => crud.updateForm('nombre_tipo_tarea', e.target.value)}
-                placeholder="Nombre del tipo de tarea"
+                placeholder={t('placeholderNombre')}
                 autoFocus
               />
               <Textarea
-                etiqueta="Descripción"
+                etiqueta={t('etiquetaDescripcion')}
                 value={crud.form.descripcion_tipo_tarea}
                 onChange={(e) => crud.updateForm('descripcion_tipo_tarea', e.target.value)}
-                placeholder="Descripción del tipo de tarea"
+                placeholder={t('placeholderDescripcion')}
                 rows={3}
               />
               <Textarea
-                etiqueta="Ayuda"
+                etiqueta={t('etiquetaAyuda')}
                 value={crud.form.ayuda}
                 onChange={(e) => crud.updateForm('ayuda', e.target.value)}
-                placeholder="Texto de ayuda para el usuario"
+                placeholder={t('placeholderAyuda')}
                 rows={2}
               />
               <Input
-                etiqueta="Generación"
+                etiqueta={t('etiquetaGeneracion')}
                 value={crud.form.generacion}
                 onChange={(e) => crud.updateForm('generacion', e.target.value)}
-                placeholder="Tipo de generación (ej. LLM, automatica, manual)"
+                placeholder={t('placeholderGeneracion')}
               />
               <Input
-                etiqueta="Programa"
+                etiqueta={t('etiquetaPrograma')}
                 value={crud.form.programa}
                 onChange={(e) => crud.updateForm('programa', e.target.value)}
-                placeholder="Programa o script asociado"
+                placeholder={t('placeholderPrograma')}
               />
             </>
           )}
@@ -380,7 +383,7 @@ export default function PaginaTiposTarea() {
                 rows={13}
                 value={md}
                 className="w-full text-sm font-mono rounded-lg border border-borde px-3 py-2 bg-fondo text-texto resize-none focus:outline-none"
-                placeholder="Sin contenido .md generado"
+                placeholder={t('mdSinContenido')}
               />
               {mensajeMd && (
                 <p className="text-xs text-texto-muted">{mensajeMd}</p>
@@ -398,15 +401,15 @@ export default function PaginaTiposTarea() {
                         crud.editando!.codigo_tipo_tarea,
                       )
                       setMd((res as unknown as Record<string, unknown>).md as string || '')
-                      setMensajeMd('Markdown generado correctamente')
+                      setMensajeMd(t('mdGenerarOk'))
                     } catch {
-                      setMensajeMd('Error al generar markdown')
+                      setMensajeMd(t('mdGenerarError'))
                     } finally {
                       setGenerandoMd(false)
                     }
                   }}
                 >
-                  Generar
+                  {t('mdGenerar')}
                 </Boton>
                 <Boton
                   variante="secundario"
@@ -416,15 +419,15 @@ export default function PaginaTiposTarea() {
                     setMensajeMd(null)
                     try {
                       await promptsApi.sincronizarFila('tipos_tarea', 'codigo_tipo_tarea', crud.editando!.codigo_tipo_tarea)
-                      setMensajeMd('Sincronizado correctamente')
+                      setMensajeMd(t('mdSincronizarOk'))
                     } catch {
-                      setMensajeMd('Error al sincronizar')
+                      setMensajeMd(t('mdSincronizarError'))
                     } finally {
                       setSincronizandoMd(false)
                     }
                   }}
                 >
-                  Sincronizar
+                  {t('mdSincronizar')}
                 </Boton>
               </div>
             </div>
@@ -440,13 +443,13 @@ export default function PaginaTiposTarea() {
             <PieBotonesModal
               editando={!!crud.editando}
               onGuardar={() => {
-                if (!crud.form.nombre_tipo_tarea.trim()) { crud.setError('El nombre es obligatorio'); setTabModal('datos'); return }
-                if (!crud.editando && !crud.form.codigo_categoria_tarea) { crud.setError('La categoría es obligatoria'); setTabModal('datos'); return }
+                if (!crud.form.nombre_tipo_tarea.trim()) { crud.setError(t('errorNombreObligatorio')); setTabModal('datos'); return }
+                if (!crud.editando && !crud.form.codigo_categoria_tarea) { crud.setError(t('errorCategoriaObligatoria')); setTabModal('datos'); return }
                 crud.guardar(undefined, undefined, { cerrar: false })
               }}
               onGuardarYSalir={() => {
-                if (!crud.form.nombre_tipo_tarea.trim()) { crud.setError('El nombre es obligatorio'); setTabModal('datos'); return }
-                if (!crud.editando && !crud.form.codigo_categoria_tarea) { crud.setError('La categoría es obligatoria'); setTabModal('datos'); return }
+                if (!crud.form.nombre_tipo_tarea.trim()) { crud.setError(t('errorNombreObligatorio')); setTabModal('datos'); return }
+                if (!crud.editando && !crud.form.codigo_categoria_tarea) { crud.setError(t('errorCategoriaObligatoria')); setTabModal('datos'); return }
                 crud.guardar(undefined, undefined, { cerrar: true })
               }}
               onCerrar={crud.cerrarModal}
@@ -469,9 +472,9 @@ export default function PaginaTiposTarea() {
         abierto={!!crud.confirmacion}
         alCerrar={() => crud.setConfirmacion(null)}
         alConfirmar={crud.ejecutarEliminacion}
-        titulo="Eliminar Tipo de Tarea"
-        mensaje={crud.confirmacion ? `¿Eliminar el tipo "${crud.confirmacion.nombre_tipo_tarea}"?` : ''}
-        textoConfirmar="Eliminar"
+        titulo={t('eliminarTitulo')}
+        mensaje={crud.confirmacion ? t('eliminarConfirm', { nombre: crud.confirmacion.nombre_tipo_tarea }) : ''}
+        textoConfirmar={tc('eliminar')}
         variante="peligro"
         cargando={crud.eliminando}
       />

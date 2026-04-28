@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useMemo, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Search, Eye, RefreshCw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -45,6 +46,9 @@ function varianteOperacion(op: string | null | undefined): 'exito' | 'error' | '
 }
 
 export default function PaginaSqlEjecutados() {
+  const t = useTranslations('sqlEjecutados')
+  const tc = useTranslations('common')
+
   const [busqueda, setBusqueda] = useState('')
   const [detalle, setDetalle] = useState<SqlEjecutado | null>(null)
 
@@ -75,9 +79,9 @@ export default function PaginaSqlEjecutados() {
     <div className="flex flex-col gap-6 max-w-[1400px]">
       {/* Header */}
       <div>
-        <h2 className="page-heading">Visor de SQL Ejecutados</h2>
+        <h2 className="page-heading">{t('titulo')}</h2>
         <p className="text-sm text-texto-muted mt-1">
-          Ring-buffer con las últimas ~1000 operaciones SQL capturadas por el backend.
+          {t('subtitulo')}
         </p>
       </div>
 
@@ -85,7 +89,7 @@ export default function PaginaSqlEjecutados() {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="max-w-md flex-1">
           <Input
-            placeholder="Buscar por SQL, endpoint, tabla, operación, usuario, función o error…"
+            placeholder={t('buscarPlaceholder')}
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             icono={<Search size={15} />}
@@ -93,10 +97,12 @@ export default function PaginaSqlEjecutados() {
         </div>
         <Boton variante="contorno" tamano="sm" onClick={refetch} disabled={cargando}>
           <RefreshCw size={15} />
-          Refrescar
+          {t('refrescar')}
         </Boton>
         <div className="ml-auto text-sm text-texto-muted">
-          {total.toLocaleString('es-CL')} registro{total === 1 ? '' : 's'}
+          {total === 1
+            ? t('totalSingular', { n: total.toLocaleString('es-CL') })
+            : t('totalPlural', { n: total.toLocaleString('es-CL') })}
         </div>
       </div>
 
@@ -104,29 +110,29 @@ export default function PaginaSqlEjecutados() {
       <Tabla>
         <TablaCabecera>
           <tr>
-            <TablaTh>Fecha</TablaTh>
-            <TablaTh>Duración</TablaTh>
-            <TablaTh>Operación</TablaTh>
-            <TablaTh>Tabla</TablaTh>
-            <TablaTh>Endpoint</TablaTh>
-            <TablaTh>Usuario</TablaTh>
-            <TablaTh>Función</TablaTh>
-            <TablaTh>Filas</TablaTh>
-            <TablaTh className="max-w-md">SQL</TablaTh>
-            <TablaTh className="text-right">Ver</TablaTh>
+            <TablaTh>{t('colFecha')}</TablaTh>
+            <TablaTh>{t('colDuracion')}</TablaTh>
+            <TablaTh>{t('colOperacion')}</TablaTh>
+            <TablaTh>{t('colTabla')}</TablaTh>
+            <TablaTh>{t('colEndpoint')}</TablaTh>
+            <TablaTh>{t('colUsuario')}</TablaTh>
+            <TablaTh>{t('colFuncion')}</TablaTh>
+            <TablaTh>{t('colFilas')}</TablaTh>
+            <TablaTh className="max-w-md">{t('colSql')}</TablaTh>
+            <TablaTh className="text-right">{t('colVer')}</TablaTh>
           </tr>
         </TablaCabecera>
         <TablaCuerpo>
           {cargando ? (
             <TablaFila>
               <TablaTd className="py-8 text-center text-texto-muted" colSpan={10 as never}>
-                Cargando…
+                {tc('cargando')}
               </TablaTd>
             </TablaFila>
           ) : items.length === 0 ? (
             <TablaFila>
               <TablaTd className="py-8 text-center text-texto-muted" colSpan={10 as never}>
-                No hay registros para los filtros actuales.
+                {t('sinRegistros')}
               </TablaTd>
             </TablaFila>
           ) : (
@@ -136,7 +142,7 @@ export default function PaginaSqlEjecutados() {
                   {formatearFecha(s.fecha_inicio)}
                 </TablaTd>
                 <TablaTd className="text-xs text-right whitespace-nowrap">
-                  {s.duracion_ms} ms
+                  {t('msValor', { ms: s.duracion_ms })}
                 </TablaTd>
                 <TablaTd>
                   {s.operacion ? (
@@ -173,7 +179,7 @@ export default function PaginaSqlEjecutados() {
                     <button
                       onClick={() => setDetalle(s)}
                       className="p-1.5 rounded-lg hover:bg-fondo text-texto-muted hover:text-primario transition-colors"
-                      title="Ver detalle"
+                      title={t('verDetalle')}
                     >
                       <Eye size={14} />
                     </button>
@@ -198,29 +204,29 @@ export default function PaginaSqlEjecutados() {
       <Modal
         abierto={!!detalle}
         alCerrar={() => setDetalle(null)}
-        titulo={detalle ? `SQL #${detalle.id}` : ''}
+        titulo={detalle ? t('detalleTitulo', { id: detalle.id }) : ''}
       >
         {detalle && (
           <div className="flex flex-col gap-4 min-w-[640px] max-w-[900px]">
             <div className="grid grid-cols-2 gap-3 text-sm">
               <div>
-                <div className="text-xs text-texto-muted">Fecha inicio</div>
+                <div className="text-xs text-texto-muted">{t('fechaInicio')}</div>
                 <div className="font-mono text-xs">{formatearFecha(detalle.fecha_inicio)}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Fecha término</div>
+                <div className="text-xs text-texto-muted">{t('fechaTermino')}</div>
                 <div className="font-mono text-xs">{formatearFecha(detalle.fecha_termino)}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Duración</div>
-                <div className="font-mono">{detalle.duracion_ms} ms</div>
+                <div className="text-xs text-texto-muted">{t('duracion')}</div>
+                <div className="font-mono">{t('msValor', { ms: detalle.duracion_ms })}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Filas afectadas</div>
+                <div className="text-xs text-texto-muted">{t('filasAfectadas')}</div>
                 <div className="font-mono">{detalle.filas_afectadas ?? '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Operación</div>
+                <div className="text-xs text-texto-muted">{t('colOperacion')}</div>
                 <div>
                   {detalle.operacion ? (
                     <Insignia variante={varianteOperacion(detalle.operacion)}>{detalle.operacion}</Insignia>
@@ -228,37 +234,37 @@ export default function PaginaSqlEjecutados() {
                 </div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Tabla</div>
+                <div className="text-xs text-texto-muted">{t('colTabla')}</div>
                 <div className="font-mono text-xs">{detalle.tabla || '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Endpoint</div>
+                <div className="text-xs text-texto-muted">{t('colEndpoint')}</div>
                 <div className="font-mono text-xs break-all">{detalle.endpoint || '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Usuario</div>
+                <div className="text-xs text-texto-muted">{t('colUsuario')}</div>
                 <div className="text-xs">{detalle.codigo_usuario || '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Grupo</div>
+                <div className="text-xs text-texto-muted">{t('grupo')}</div>
                 <div className="font-mono text-xs">{detalle.codigo_grupo || '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Entidad</div>
+                <div className="text-xs text-texto-muted">{t('entidad')}</div>
                 <div className="font-mono text-xs">{detalle.codigo_entidad || '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Función</div>
+                <div className="text-xs text-texto-muted">{t('colFuncion')}</div>
                 <div className="font-mono text-xs">{detalle.codigo_funcion || '—'}</div>
               </div>
               <div>
-                <div className="text-xs text-texto-muted">Hash (SHA1 del template)</div>
+                <div className="text-xs text-texto-muted">{t('hashTemplate')}</div>
                 <div className="font-mono text-[10px] break-all">{detalle.sql_hash}</div>
               </div>
             </div>
 
             <div>
-              <div className="text-xs text-texto-muted mb-1">SQL</div>
+              <div className="text-xs text-texto-muted mb-1">{t('colSql')}</div>
               <pre className="bg-fondo border border-borde rounded-lg p-3 text-xs font-mono whitespace-pre-wrap break-all max-h-[360px] overflow-auto">
                 {detalle.sql_text}
               </pre>
@@ -266,7 +272,7 @@ export default function PaginaSqlEjecutados() {
 
             {detalle.error && (
               <div>
-                <div className="text-xs text-error mb-1">Error</div>
+                <div className="text-xs text-error mb-1">{t('error')}</div>
                 <pre className="bg-red-50 border border-red-200 text-error rounded-lg p-3 text-xs font-mono whitespace-pre-wrap break-all">
                   {detalle.error}
                 </pre>
@@ -275,7 +281,7 @@ export default function PaginaSqlEjecutados() {
 
             <div className="flex justify-end">
               <Boton variante="primario" onClick={() => setDetalle(null)}>
-                Cerrar
+                {tc('cerrar')}
               </Boton>
             </div>
           </div>

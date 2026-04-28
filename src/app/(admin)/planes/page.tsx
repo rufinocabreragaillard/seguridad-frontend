@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { CreditCard, Plus, Pencil, Trash2, CheckCircle2, Circle } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -50,6 +51,8 @@ const PLAN_VACIO: Partial<Plan> = {
 }
 
 export default function PaginaPlanes() {
+  const t = useTranslations('planes')
+  const tc = useTranslations('common')
   const [planes, setPlanes] = useState<Plan[]>([])
   const [cargando, setCargando] = useState(true)
   const [modal, setModal] = useState(false)
@@ -94,7 +97,7 @@ export default function PaginaPlanes() {
   }
 
   async function guardar(cerrar: boolean) {
-    if (!form.nombre) { setError('El nombre es obligatorio'); return }
+    if (!form.nombre) { setError(t('errorNombreObligatorio')); return }
     setGuardando(true)
     try {
       if (editando) {
@@ -107,7 +110,7 @@ export default function PaginaPlanes() {
       await cargar()
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } }; message?: string }
-      setError(err?.response?.data?.detail || err?.message || 'Error')
+      setError(err?.response?.data?.detail || err?.message || tc('error'))
     } finally {
       setGuardando(false)
     }
@@ -126,34 +129,34 @@ export default function PaginaPlanes() {
   return (
     <div className="flex flex-col gap-6 max-w-6xl">
       <div>
-        <h2 className="page-heading flex items-center gap-2"><CreditCard /> Planes de Clientes</h2>
+        <h2 className="page-heading flex items-center gap-2"><CreditCard /> {t('titulo')}</h2>
         <p className="text-sm text-texto-muted mt-1">
-          Planes de suscripción con features, precios y política de duración. La lógica de activación vive en el prompt.
+          {t('subtitulo')}
         </p>
       </div>
 
       <div className="flex items-center gap-3">
         <div className="ml-auto">
-          <Boton variante="primario" onClick={abrirNuevo}><Plus size={16} /> Nuevo plan</Boton>
+          <Boton variante="primario" onClick={abrirNuevo}><Plus size={16} /> {t('nuevoPlan')}</Boton>
         </div>
       </div>
 
       {cargando ? (
-        <p className="text-sm text-texto-muted">Cargando…</p>
+        <p className="text-sm text-texto-muted">{tc('cargando')}</p>
       ) : (
         <Tabla>
           <TablaCabecera>
             <TablaFila>
-              <TablaTh>Código</TablaTh>
-              <TablaTh>Nombre</TablaTh>
-              <TablaTh>Superior</TablaTh>
-              <TablaTh className="text-right">Tokens/mes</TablaTh>
-              <TablaTh className="text-right">Docs</TablaTh>
-              <TablaTh className="text-right">USD/mes</TablaTh>
-              <TablaTh className="text-right">USD/año</TablaTh>
-              <TablaTh className="text-right">Días dur.</TablaTh>
-              <TablaTh className="text-center">Prueba</TablaTh>
-              <TablaTh className="text-right w-24">Acciones</TablaTh>
+              <TablaTh>{t('colCodigo')}</TablaTh>
+              <TablaTh>{t('colNombre')}</TablaTh>
+              <TablaTh>{t('colSuperior')}</TablaTh>
+              <TablaTh className="text-right">{t('colTokensMes')}</TablaTh>
+              <TablaTh className="text-right">{t('colDocs')}</TablaTh>
+              <TablaTh className="text-right">{t('colUsdMes')}</TablaTh>
+              <TablaTh className="text-right">{t('colUsdAnio')}</TablaTh>
+              <TablaTh className="text-right">{t('colDiasDur')}</TablaTh>
+              <TablaTh className="text-center">{t('colPrueba')}</TablaTh>
+              <TablaTh className="text-right w-24">{tc('acciones')}</TablaTh>
             </TablaFila>
           </TablaCabecera>
           <TablaCuerpo>
@@ -170,8 +173,8 @@ export default function PaginaPlanes() {
                 <TablaTd className="text-center">{p.es_plan_de_prueba ? <CheckCircle2 size={14} className="mx-auto text-green-600" /> : <Circle size={14} className="mx-auto text-texto-muted" />}</TablaTd>
                 <TablaTd className="text-right">
                   <div className="flex gap-1 justify-end">
-                    <button onClick={() => abrirEdicion(p)} className="p-1 hover:text-primario"><Pencil size={14} /></button>
-                    <button onClick={() => setConfirmacion(p)} className="p-1 hover:text-error"><Trash2 size={14} /></button>
+                    <button onClick={() => abrirEdicion(p)} className="p-1 hover:text-primario" title={tc('editar')}><Pencil size={14} /></button>
+                    <button onClick={() => setConfirmacion(p)} className="p-1 hover:text-error" title={tc('eliminar')}><Trash2 size={14} /></button>
                   </div>
                 </TablaTd>
               </TablaFila>
@@ -182,25 +185,25 @@ export default function PaginaPlanes() {
 
       {/* Modal */}
       {modal && (
-        <Modal abierto={modal} alCerrar={() => setModal(false)} titulo={editando ? `Editar plan: ${editando.nombre}` : 'Nuevo plan'} className="max-w-3xl">
+        <Modal abierto={modal} alCerrar={() => setModal(false)} titulo={editando ? t('editarTitulo', { nombre: editando.nombre }) : t('nuevoTitulo')} className="max-w-3xl">
           <div className="flex flex-col gap-4 min-h-[500px]">
             <div className="flex gap-2 border-b border-borde">
               {([
-                { key: 'datos', label: 'Datos' },
-                { key: 'features', label: 'Features' },
+                { key: 'datos', label: t('tabDatos') },
+                { key: 'features', label: t('tabFeatures') },
                 ...(editando ? [
-                  { key: 'system_prompt' as TabModal, label: 'System Prompt' },
-                  { key: 'programacion_insert' as TabModal, label: 'Prog. Insert' },
-                  { key: 'programacion_update' as TabModal, label: 'Prog. Update' },
-                  { key: 'md' as TabModal, label: '.md' },
+                  { key: 'system_prompt' as TabModal, label: t('tabSystemPrompt') },
+                  { key: 'programacion_insert' as TabModal, label: t('tabProgramacionInsert') },
+                  { key: 'programacion_update' as TabModal, label: t('tabProgramacionUpdate') },
+                  { key: 'md' as TabModal, label: t('tabMd') },
                 ] : []),
-              ] as { key: TabModal; label: string }[]).map((t) => (
+              ] as { key: TabModal; label: string }[]).map((tt) => (
                 <button
-                  key={t.key}
-                  onClick={() => setTab(t.key)}
-                  className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tab === t.key ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}
+                  key={tt.key}
+                  onClick={() => setTab(tt.key)}
+                  className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tab === tt.key ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}
                 >
-                  {t.label}
+                  {tt.label}
                 </button>
               ))}
             </div>
@@ -209,26 +212,26 @@ export default function PaginaPlanes() {
               <div className="flex flex-col gap-3">
                 {!editando && (
                   <div>
-                    <label className="text-sm font-medium">Código del plan</label>
-                    <Input value={form.codigo_plan || ''} onChange={(e) => setForm({ ...form, codigo_plan: e.target.value.toUpperCase() })} placeholder="PERSONAL, TEAM, ..." />
+                    <label className="text-sm font-medium">{t('etiquetaCodigo')}</label>
+                    <Input value={form.codigo_plan || ''} onChange={(e) => setForm({ ...form, codigo_plan: e.target.value.toUpperCase() })} placeholder={t('placeholderCodigo')} />
                   </div>
                 )}
                 <div>
-                  <label className="text-sm font-medium">Nombre</label>
+                  <label className="text-sm font-medium">{t('etiquetaNombre')}</label>
                   <Input value={form.nombre || ''} onChange={(e) => setForm({ ...form, nombre: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Alias</label>
+                  <label className="text-sm font-medium">{t('etiquetaAlias')}</label>
                   <Input value={form.alias || ''} onChange={(e) => setForm({ ...form, alias: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Plan superior</label>
+                  <label className="text-sm font-medium">{t('etiquetaPlanSuperior')}</label>
                   <select
                     className="w-full border border-borde rounded px-3 py-2 text-sm bg-fondo"
                     value={form.codigo_plan_superior ?? ''}
                     onChange={(e) => setForm({ ...form, codigo_plan_superior: e.target.value || null })}
                   >
-                    <option value="">— Sin superior (plan raíz) —</option>
+                    <option value="">{t('opcionSinSuperior')}</option>
                     {planes
                       .filter((p) => !editando || p.codigo_plan !== editando.codigo_plan)
                       .map((p) => (
@@ -237,43 +240,43 @@ export default function PaginaPlanes() {
                         </option>
                       ))}
                   </select>
-                  <p className="text-xs text-texto-muted mt-1">El plan al que escala este plan. Jerarquía: Prueba → Personal → Team → Business → Enterprise → Corporate.</p>
+                  <p className="text-xs text-texto-muted mt-1">{t('descPlanSuperior')}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Descripción</label>
+                  <label className="text-sm font-medium">{t('etiquetaDescripcion')}</label>
                   <textarea className="w-full border border-borde rounded px-3 py-2 text-sm" rows={2} value={form.descripcion || ''} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm font-medium">Precio mensual (USD)</label>
+                    <label className="text-sm font-medium">{t('etiquetaPrecioMensual')}</label>
                     <Input type="number" value={form.precio_mensual_usd ?? ''} onChange={(e) => setForm({ ...form, precio_mensual_usd: e.target.value === '' ? null : parseFloat(e.target.value) })} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Precio anual (USD)</label>
+                    <label className="text-sm font-medium">{t('etiquetaPrecioAnual')}</label>
                     <Input type="number" value={form.precio_anual_usd ?? ''} onChange={(e) => setForm({ ...form, precio_anual_usd: e.target.value === '' ? null : parseFloat(e.target.value) })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="text-sm font-medium">Tokens mensuales</label>
+                    <label className="text-sm font-medium">{t('etiquetaTokensMensuales')}</label>
                     <Input type="number" value={form.tokens_mensuales ?? ''} onChange={(e) => setForm({ ...form, tokens_mensuales: e.target.value === '' ? null : parseInt(e.target.value) })} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Documentos máximos</label>
+                    <label className="text-sm font-medium">{t('etiquetaDocumentosMaximos')}</label>
                     <Input type="number" value={form.documentos_maximos ?? ''} onChange={(e) => setForm({ ...form, documentos_maximos: e.target.value === '' ? null : parseInt(e.target.value) })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   <div>
-                    <label className="text-sm font-medium">Días duración</label>
-                    <Input type="number" value={form.dias_duracion ?? ''} onChange={(e) => setForm({ ...form, dias_duracion: e.target.value === '' ? null : parseInt(e.target.value) })} placeholder="15 para prueba" />
+                    <label className="text-sm font-medium">{t('etiquetaDiasDuracion')}</label>
+                    <Input type="number" value={form.dias_duracion ?? ''} onChange={(e) => setForm({ ...form, dias_duracion: e.target.value === '' ? null : parseInt(e.target.value) })} placeholder={t('placeholderDiasDuracion')} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Días gracia</label>
+                    <label className="text-sm font-medium">{t('etiquetaDiasGracia')}</label>
                     <Input type="number" value={form.dias_gracia_renovacion ?? 60} onChange={(e) => setForm({ ...form, dias_gracia_renovacion: parseInt(e.target.value) || 60 })} />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Orden</label>
+                    <label className="text-sm font-medium">{t('etiquetaOrden')}</label>
                     <Input type="number" value={form.orden ?? 0} onChange={(e) => setForm({ ...form, orden: parseInt(e.target.value) || 0 })} />
                   </div>
                 </div>
@@ -286,17 +289,17 @@ export default function PaginaPlanes() {
               <div className="flex flex-col gap-3">
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    ['conversacion_documentos', 'Conversación con documentos'],
-                    ['focos_lenguaje_natural', 'Focos en lenguaje natural'],
-                    ['control_por_area', 'Control por área'],
-                    ['control_por_cargo', 'Control por cargo'],
-                    ['servidor_cliente_local', 'Servidor cliente local'],
-                    ['personalizacion', 'Personalización'],
-                    ['eleccion_llms', 'Elección de LLMs'],
-                    ['multi_entidad_holdings', 'Multi-entidad (Holdings)'],
-                    ['storage_propio', 'Storage propio'],
-                    ['tokens_extras_disponibles', 'Tokens extras disponibles'],
-                    ['es_plan_de_prueba', 'Plan de prueba (expira)'],
+                    ['conversacion_documentos', t('featureConversacionDocumentos')],
+                    ['focos_lenguaje_natural', t('featureFocosLenguajeNatural')],
+                    ['control_por_area', t('featureControlPorArea')],
+                    ['control_por_cargo', t('featureControlPorCargo')],
+                    ['servidor_cliente_local', t('featureServidorClienteLocal')],
+                    ['personalizacion', t('featurePersonalizacion')],
+                    ['eleccion_llms', t('featureEleccionLlms')],
+                    ['multi_entidad_holdings', t('featureMultiEntidadHoldings')],
+                    ['storage_propio', t('featureStoragePropio')],
+                    ['tokens_extras_disponibles', t('featureTokensExtrasDisponibles')],
+                    ['es_plan_de_prueba', t('featureEsPlanDePrueba')],
                   ].map(([key, label]) => (
                     <label key={key} className="flex items-center gap-2 text-sm p-2 border border-borde rounded hover:bg-gris-fondo">
                       <input
@@ -446,12 +449,12 @@ export default function PaginaPlanes() {
             {tab === 'md' && editando && (
               <div className="flex flex-col gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                  <label className="text-sm font-medium text-texto">{t('mdEtiqueta')}</label>
                   <textarea
                     value={md}
                     readOnly
                     rows={13}
-                    placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                    placeholder={t('mdPlaceholder')}
                     className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                   />
                 </div>
@@ -469,15 +472,15 @@ export default function PaginaPlanes() {
                         try {
                           const r = await planesApi.generarMd(editando.codigo_plan)
                           setMd(r.md)
-                          setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                          setMensajeMd({ tipo: 'ok', texto: t('mdGenerarOk') })
                         } catch (e) {
-                          setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                          setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('mdGenerarError') })
                         } finally { setGenerandoMd(false) }
                       }}
                       cargando={generandoMd}
                       disabled={generandoMd || sincronizandoMd}
                     >
-                      Generar
+                      {t('mdGenerar')}
                     </Boton>
                     <Boton
                       className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -485,18 +488,18 @@ export default function PaginaPlanes() {
                         setSincronizandoMd(true); setMensajeMd(null)
                         try {
                           const r = await promptsApi.sincronizarFila('planes', 'codigo_plan', editando.codigo_plan)
-                          setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                          setMensajeMd({ tipo: 'ok', texto: t('mdSincronizarOk', { accion: r.accion, codigo: r.codigo_documento }) })
                         } catch (e) {
-                          setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                          setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('mdSincronizarError') })
                         } finally { setSincronizandoMd(false) }
                       }}
                       cargando={sincronizandoMd}
                       disabled={generandoMd || sincronizandoMd || !md}
                     >
-                      Sincronizar
+                      {t('mdSincronizar')}
                     </Boton>
                   </div>
-                  <Boton variante="contorno" onClick={() => setModal(false)}>Salir</Boton>
+                  <Boton variante="contorno" onClick={() => setModal(false)}>{tc('salir')}</Boton>
                 </div>
               </div>
             )}
@@ -507,8 +510,8 @@ export default function PaginaPlanes() {
       {confirmacion && (
         <ModalConfirmar
           abierto={!!confirmacion}
-          titulo={`Eliminar plan ${confirmacion.nombre}`}
-          mensaje={`¿Seguro que quieres eliminar el plan "${confirmacion.nombre}"? Los grupos que lo tengan asignado quedarán sin plan.`}
+          titulo={t('eliminarTitulo', { nombre: confirmacion.nombre })}
+          mensaje={t('eliminarConfirm', { nombre: confirmacion.nombre })}
           alConfirmar={eliminar}
           alCerrar={() => setConfirmacion(null)}
         />

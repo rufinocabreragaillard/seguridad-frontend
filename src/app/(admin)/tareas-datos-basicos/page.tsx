@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { Plus, Pencil, Trash2, Download, Eye } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -30,6 +31,8 @@ type ItemEliminar =
   | { tipo: 'tipocanonico'; item: TipoCanonicoTarea }
 
 export default function PaginaTareasDatosBasicos() {
+  const t = useTranslations('tareasDatosBasicos')
+  const tc = useTranslations('common')
   const [tabActiva, setTabActiva] = useState<TabId>('categorias')
 
   // ── Categorías ─────────────────────────────────────────────────────────────
@@ -162,7 +165,7 @@ export default function PaginaTareasDatosBasicos() {
   }
 
   const guardarCategoria = async (cerrar = true) => {
-    if (!formCat.nombre_categoria_tarea) { setErrorCat('El nombre es obligatorio'); return }
+    if (!formCat.nombre_categoria_tarea) { setErrorCat(t('errorNombreObligatorio')); return }
     setGuardandoCat(true); setErrorCat('')
     try {
       if (catEditando) {
@@ -188,7 +191,7 @@ export default function PaginaTareasDatosBasicos() {
       if (cerrar) setModalCat(false)
       cargarCategorias()
     } catch (e) {
-      setErrorCat(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorCat(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoCat(false) }
   }
 
@@ -222,10 +225,10 @@ export default function PaginaTareasDatosBasicos() {
 
   const guardarTipo = async (cerrar = true) => {
     if (!formTipo.codigo_categoria_tarea || !formTipo.nombre_tipo_tarea) {
-      setErrorTipo('La categoría y el nombre son obligatorios'); return
+      setErrorTipo(t('errorCategoriaNombreObligatorio')); return
     }
     if (!tipoEditando && !formTipo.codigo_tipo_tarea) {
-      setErrorTipo('El código del tipo es obligatorio'); return
+      setErrorTipo(t('errorCodigoTipoObligatorio')); return
     }
     setGuardandoTipo(true); setErrorTipo('')
     try {
@@ -258,7 +261,7 @@ export default function PaginaTareasDatosBasicos() {
       if (cerrar) setModalTipo(false)
       cargarTipos()
     } catch (e) {
-      setErrorTipo(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorTipo(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoTipo(false) }
   }
 
@@ -294,10 +297,10 @@ export default function PaginaTareasDatosBasicos() {
 
   const guardarEstado = async (cerrar = true) => {
     if (!formEst.codigo_categoria_tarea || !formEst.codigo_tipo_tarea || !formEst.nombre_estado_tarea || !formEst.codigo_estado_canonico) {
-      setErrorEst('Categoría, tipo, nombre y estado canónico son obligatorios'); return
+      setErrorEst(t('errorEstadoObligatorios')); return
     }
     if (!estEditando && !formEst.codigo_estado_tarea) {
-      setErrorEst('El código del estado es obligatorio'); return
+      setErrorEst(t('errorCodigoEstadoObligatorio')); return
     }
     setGuardandoEst(true); setErrorEst('')
     try {
@@ -333,7 +336,7 @@ export default function PaginaTareasDatosBasicos() {
       if (cerrar) setModalEst(false)
       cargarEstados()
     } catch (e) {
-      setErrorEst(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorEst(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoEst(false) }
   }
 
@@ -396,7 +399,7 @@ export default function PaginaTareasDatosBasicos() {
       )
       cargarTipos()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al cambiar estado')
+      alert(err instanceof Error ? err.message : t('errorCambiarEstado'))
     }
   }
 
@@ -420,7 +423,7 @@ export default function PaginaTareasDatosBasicos() {
   }
 
   const guardarTC = async (cerrar = true) => {
-    if (!formTC.nombre_tipo_canonico) { setErrorTC('El nombre es obligatorio'); return }
+    if (!formTC.nombre_tipo_canonico) { setErrorTC(t('errorNombreObligatorio')); return }
     setGuardandoTC(true); setErrorTC('')
     try {
       if (tcEditando) {
@@ -438,7 +441,7 @@ export default function PaginaTareasDatosBasicos() {
       if (cerrar) setModalTC(false)
       cargarTiposCanonicos()
     } catch (e) {
-      setErrorTC(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorTC(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoTC(false) }
   }
 
@@ -449,7 +452,7 @@ export default function PaginaTareasDatosBasicos() {
       )
       cargarEstados()
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Error al cambiar estado')
+      alert(err instanceof Error ? err.message : t('errorCambiarEstado'))
     }
   }
 
@@ -475,7 +478,7 @@ export default function PaginaTareasDatosBasicos() {
       }
       setItemAEliminar(null)
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error al eliminar')
+      alert(e instanceof Error ? e.message : tc('errorAlEliminar'))
       setItemAEliminar(null)
     } finally { setEliminando(false) }
   }
@@ -502,42 +505,42 @@ export default function PaginaTareasDatosBasicos() {
       <BotonChat className="top-0 right-0" />
 
       <div className="pr-28">
-        <h2 className="page-heading">Datos Básicos de Tareas</h2>
-        <p className="text-sm text-texto-muted mt-1">Configuración de categorías, tipos y estados de tarea</p>
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       {/* Pestañas */}
       <div className="flex border-b border-borde gap-1">
-        <button onClick={() => setTabActiva('categorias')} className={tabCls('categorias')}>Categorías de Tarea</button>
-        <button onClick={() => setTabActiva('tipos')} className={tabCls('tipos')}>Tipos de Tarea</button>
-        <button onClick={() => setTabActiva('estados')} className={tabCls('estados')}>Estados de Tarea</button>
-        <button onClick={() => setTabActiva('tipos-canonicos')} className={tabCls('tipos-canonicos')}>Tipos Canónicos</button>
+        <button onClick={() => setTabActiva('categorias')} className={tabCls('categorias')}>{t('tabCategorias')}</button>
+        <button onClick={() => setTabActiva('tipos')} className={tabCls('tipos')}>{t('tabTipos')}</button>
+        <button onClick={() => setTabActiva('estados')} className={tabCls('estados')}>{t('tabEstados')}</button>
+        <button onClick={() => setTabActiva('tipos-canonicos')} className={tabCls('tipos-canonicos')}>{t('tabTiposCanonicos')}</button>
       </div>
 
       {/* ── Tab: Categorías ── */}
       {tabActiva === 'categorias' && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-texto-muted">Categorías globales de tarea</p>
+            <p className="text-sm text-texto-muted">{t('catSubtitulo')}</p>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(categorias as unknown as Record<string, unknown>[], [
-                  { titulo: 'Código', campo: 'codigo_categoria_tarea' },
-                  { titulo: 'Nombre', campo: 'nombre_categoria_tarea' },
-                  { titulo: 'Descripción', campo: 'descripcion_categoria_tarea' },
-                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: t('colCodigo'), campo: 'codigo_categoria_tarea' },
+                  { titulo: t('colNombre'), campo: 'nombre_categoria_tarea' },
+                  { titulo: t('colDescripcion'), campo: 'descripcion_categoria_tarea' },
+                  { titulo: t('colNombre'), campo: 'nombre', formato: (v) => v ? tc('si') : tc('no') },
                 ], 'categorias_tarea')}
                 disabled={categorias.length === 0}>
-                <Download size={15} /> Excel
+                <Download size={15} /> {tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> Nueva categoría</Boton>
+              <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> {t('nuevaCategoria')}</Boton>
             </div>
           </div>
 
           {cargandoCat ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
           ) : categorias.length === 0 ? (
-            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">No hay categorías registradas</div>
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">{t('sinCategorias')}</div>
           ) : (
             <SortableDndContext
               items={categorias as unknown as Record<string, unknown>[]}
@@ -547,10 +550,10 @@ export default function PaginaTareasDatosBasicos() {
               <Tabla>
                 <TablaCabecera><tr>
                   <TablaTh className="w-8" />
-                  <TablaTh className="w-16 text-center">Orden</TablaTh>
-                  <TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh><TablaTh>Estado</TablaTh>
-                  <TablaTh className="w-48">Código</TablaTh>
-                  <TablaTh className="text-right w-28">Acciones</TablaTh>
+                  <TablaTh className="w-16 text-center">{t('colOrden')}</TablaTh>
+                  <TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh><TablaTh>{t('colEstado')}</TablaTh>
+                  <TablaTh className="w-48">{t('colCodigo')}</TablaTh>
+                  <TablaTh className="text-right w-28">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {categorias.map((c) => (
@@ -566,9 +569,9 @@ export default function PaginaTareasDatosBasicos() {
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_tarea}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => { setFiltroCatTipo(c.codigo_categoria_tarea); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver tipos"><Eye size={14} /></button>
-                          <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                          <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                          <button onClick={() => { setFiltroCatTipo(c.codigo_categoria_tarea); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verTipos')}><Eye size={14} /></button>
+                          <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                         </div>
                       </TablaTd>
                     </SortableRow>
@@ -585,32 +588,32 @@ export default function PaginaTareasDatosBasicos() {
         <>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <p className="text-sm text-texto-muted">Filtrar por categoría:</p>
+              <p className="text-sm text-texto-muted">{t('filtrarPorCategoria')}</p>
               <select value={filtroCatTipo} onChange={(e) => setFiltroCatTipo(e.target.value)} className={selectCls}>
-                <option value="">Todas</option>
+                <option value="">{t('filtroTodas')}</option>
                 {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
               </select>
             </div>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(tiposFiltrados as unknown as Record<string, unknown>[], [
-                  { titulo: 'Categoría', campo: 'codigo_categoria_tarea' },
-                  { titulo: 'Código tipo', campo: 'codigo_tipo_tarea' },
-                  { titulo: 'Nombre', campo: 'nombre_tipo_tarea' },
-                  { titulo: 'Tipo canónico', campo: 'codigo_tipo_canonico' },
-                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: t('colCategoria'), campo: 'codigo_categoria_tarea' },
+                  { titulo: t('colCodigoTipo'), campo: 'codigo_tipo_tarea' },
+                  { titulo: t('colNombre'), campo: 'nombre_tipo_tarea' },
+                  { titulo: t('colTipoCanonico'), campo: 'codigo_tipo_canonico' },
+                  { titulo: t('colNombre'), campo: 'nombre', formato: (v) => v ? tc('si') : tc('no') },
                 ], 'tipos_tarea')}
                 disabled={tiposFiltrados.length === 0}>
-                <Download size={15} /> Excel
+                <Download size={15} /> {tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> Nuevo tipo</Boton>
+              <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> {t('nuevoTipo')}</Boton>
             </div>
           </div>
 
           {cargandoTipo ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
           ) : tiposFiltrados.length === 0 ? (
-            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">No hay tipos registrados</div>
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">{t('sinTipos')}</div>
           ) : (
             <SortableDndContext
               items={tiposFiltrados as unknown as Record<string, unknown>[]}
@@ -620,31 +623,31 @@ export default function PaginaTareasDatosBasicos() {
               <Tabla>
                 <TablaCabecera><tr>
                   <TablaTh className="w-8" />
-                  <TablaTh className="w-16 text-center">Orden</TablaTh>
-                  <TablaTh>Categoría</TablaTh><TablaTh>Código tipo</TablaTh><TablaTh>Nombre</TablaTh>
-                  <TablaTh>Tipo canónico</TablaTh><TablaTh>Estado</TablaTh>
-                  <TablaTh className="text-right w-28">Acciones</TablaTh>
+                  <TablaTh className="w-16 text-center">{t('colOrden')}</TablaTh>
+                  <TablaTh>{t('colCategoria')}</TablaTh><TablaTh>{t('colCodigoTipo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh>
+                  <TablaTh>{t('colTipoCanonico')}</TablaTh><TablaTh>{t('colEstado')}</TablaTh>
+                  <TablaTh className="text-right w-28">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
-                  {tiposFiltrados.map((t) => (
-                    <SortableRow key={`${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`} id={`${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`}
-                      onDoubleClick={() => { setFiltroCatEst(t.codigo_categoria_tarea); setFiltroTipoEst(t.codigo_tipo_tarea); setTabActiva('estados') }}
+                  {tiposFiltrados.map((tipo) => (
+                    <SortableRow key={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`} id={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`}
+                      onDoubleClick={() => { setFiltroCatEst(tipo.codigo_categoria_tarea); setFiltroTipoEst(tipo.codigo_tipo_tarea); setTabActiva('estados') }}
                     >
-                      <TablaTd className="text-center text-texto-muted text-sm">{t.orden ?? '—'}</TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_categoria_tarea}</code></TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_tipo_tarea}</code></TablaTd>
-                      <TablaTd className="font-medium">{t.nombre_tipo_tarea}</TablaTd>
-                      <TablaTd className="text-texto-muted text-sm">{t.codigo_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd className="text-center text-texto-muted text-sm">{tipo.orden ?? '—'}</TablaTd>
+                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_categoria_tarea}</code></TablaTd>
+                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_tipo_tarea}</code></TablaTd>
+                      <TablaTd className="font-medium">{tipo.nombre_tipo_tarea}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm">{tipo.codigo_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd>
-                        <button onClick={() => toggleActivoTipo(t)} title="Cambiar estado">
-                          
+                        <button onClick={() => toggleActivoTipo(tipo)} title={t('cambiarEstado')}>
+
                         </button>
                       </TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => { setFiltroCatEst(t.codigo_categoria_tarea); setFiltroTipoEst(t.codigo_tipo_tarea); setTabActiva('estados') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver estados"><Eye size={14} /></button>
-                          <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                          <button onClick={() => setItemAEliminar({ tipo: 'tipotarea', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                          <button onClick={() => { setFiltroCatEst(tipo.codigo_categoria_tarea); setFiltroTipoEst(tipo.codigo_tipo_tarea); setTabActiva('estados') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verEstados')}><Eye size={14} /></button>
+                          <button onClick={() => abrirEditarTipo(tipo)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'tipotarea', item: tipo })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                         </div>
                       </TablaTd>
                     </SortableRow>
@@ -661,16 +664,16 @@ export default function PaginaTareasDatosBasicos() {
         <>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-wrap">
-              <p className="text-sm text-texto-muted">Filtrar:</p>
+              <p className="text-sm text-texto-muted">{t('filtrar')}</p>
               <select value={filtroCatEst} onChange={(e) => { setFiltroCatEst(e.target.value); setFiltroTipoEst('') }} className={selectCls}>
-                <option value="">Todas las categorías</option>
+                <option value="">{t('filtroTodasCategorias')}</option>
                 {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
               </select>
               <select value={filtroTipoEst} onChange={(e) => setFiltroTipoEst(e.target.value)} className={selectCls}>
-                <option value="">Todos los tipos</option>
-                {tiposParaEstados.map((t) => (
-                  <option key={`${t.codigo_categoria_tarea}/${t.codigo_tipo_tarea}`} value={t.codigo_tipo_tarea}>
-                    {t.nombre_tipo_tarea}
+                <option value="">{t('filtroTodosTipos')}</option>
+                {tiposParaEstados.map((tipo) => (
+                  <option key={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`} value={tipo.codigo_tipo_tarea}>
+                    {tipo.nombre_tipo_tarea}
                   </option>
                 ))}
               </select>
@@ -678,25 +681,25 @@ export default function PaginaTareasDatosBasicos() {
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(estadosFiltrados as unknown as Record<string, unknown>[], [
-                  { titulo: 'Categoría', campo: 'codigo_categoria_tarea' },
-                  { titulo: 'Tipo', campo: 'codigo_tipo_tarea' },
-                  { titulo: 'Código estado', campo: 'codigo_estado_tarea' },
-                  { titulo: 'Nombre', campo: 'nombre_estado_tarea' },
-                  { titulo: 'Canónico', campo: 'codigo_estado_canonico' },
-                  { titulo: 'Orden', campo: 'orden' },
-                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: t('colCategoria'), campo: 'codigo_categoria_tarea' },
+                  { titulo: t('colTipo'), campo: 'codigo_tipo_tarea' },
+                  { titulo: t('colCodigoEstado'), campo: 'codigo_estado_tarea' },
+                  { titulo: t('colNombre'), campo: 'nombre_estado_tarea' },
+                  { titulo: t('colCanonico'), campo: 'codigo_estado_canonico' },
+                  { titulo: t('colOrden'), campo: 'orden' },
+                  { titulo: t('colNombre'), campo: 'nombre', formato: (v) => v ? tc('si') : tc('no') },
                 ], 'estados_tarea')}
                 disabled={estadosFiltrados.length === 0}>
-                <Download size={15} /> Excel
+                <Download size={15} /> {tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevoEst}><Plus size={16} /> Nuevo estado</Boton>
+              <Boton variante="primario" onClick={abrirNuevoEst}><Plus size={16} /> {t('nuevoEstado')}</Boton>
             </div>
           </div>
 
           {cargandoEst ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
           ) : estadosFiltrados.length === 0 ? (
-            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">No hay estados registrados</div>
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">{t('sinEstadosTab')}</div>
           ) : (
             <SortableDndContext
               items={estadosFiltrados as unknown as Record<string, unknown>[]}
@@ -706,10 +709,10 @@ export default function PaginaTareasDatosBasicos() {
               <Tabla>
                 <TablaCabecera><tr>
                   <TablaTh className="w-8" />
-                  <TablaTh className="w-16 text-center">Orden</TablaTh>
-                  <TablaTh>Categoría</TablaTh><TablaTh>Tipo</TablaTh><TablaTh>Código</TablaTh>
-                  <TablaTh>Nombre</TablaTh><TablaTh>Canónico</TablaTh><TablaTh>Estado</TablaTh>
-                  <TablaTh className="text-right w-24">Acciones</TablaTh>
+                  <TablaTh className="w-16 text-center">{t('colOrden')}</TablaTh>
+                  <TablaTh>{t('colCategoria')}</TablaTh><TablaTh>{t('colTipo')}</TablaTh><TablaTh>{t('colCodigo')}</TablaTh>
+                  <TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colCanonico')}</TablaTh><TablaTh>{t('colEstado')}</TablaTh>
+                  <TablaTh className="text-right w-24">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {estadosFiltrados.map((e) => (
@@ -721,14 +724,14 @@ export default function PaginaTareasDatosBasicos() {
                       <TablaTd className="font-medium">{e.nombre_estado_tarea}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm">{e.codigo_estado_canonico}</TablaTd>
                       <TablaTd>
-                        <button onClick={() => toggleActivoEst(e)} title="Cambiar estado">
-                          
+                        <button onClick={() => toggleActivoEst(e)} title={t('cambiarEstado')}>
+
                         </button>
                       </TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => abrirEditarEst(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                          <button onClick={() => setItemAEliminar({ tipo: 'estado', item: e })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                          <button onClick={() => abrirEditarEst(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'estado', item: e })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                         </div>
                       </TablaTd>
                     </SortableRow>
@@ -744,19 +747,19 @@ export default function PaginaTareasDatosBasicos() {
       {tabActiva === 'tipos-canonicos' && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-texto-muted">Tipos canónicos globales de tarea</p>
+            <p className="text-sm text-texto-muted">{t('tcSubtitulo')}</p>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(tiposCanonicos as unknown as Record<string, unknown>[], [
-                  { titulo: 'Código', campo: 'codigo_tipo_canonico' },
-                  { titulo: 'Nombre', campo: 'nombre_tipo_canonico' },
-                  { titulo: 'Descripción', campo: 'descripcion_tipo_canonico' },
-                  { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: t('colCodigo'), campo: 'codigo_tipo_canonico' },
+                  { titulo: t('colNombre'), campo: 'nombre_tipo_canonico' },
+                  { titulo: t('colDescripcion'), campo: 'descripcion_tipo_canonico' },
+                  { titulo: t('colNombre'), campo: 'nombre', formato: (v) => v ? tc('si') : tc('no') },
                 ], 'tipos_canonicos_tarea')}
                 disabled={tiposCanonicos.length === 0}>
-                <Download size={15} /> Excel
+                <Download size={15} /> {tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevoTC}><Plus size={16} /> Nuevo tipo canónico</Boton>
+              <Boton variante="primario" onClick={abrirNuevoTC}><Plus size={16} /> {t('nuevoTipoCanonico')}</Boton>
             </div>
           </div>
 
@@ -765,24 +768,24 @@ export default function PaginaTareasDatosBasicos() {
           ) : (
             <Tabla>
               <TablaCabecera><tr>
-                <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh><TablaTh>Estado</TablaTh>
-                <TablaTh className="text-right">Acciones</TablaTh>
+                <TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh><TablaTh>{t('colEstado')}</TablaTh>
+                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
                 {tiposCanonicos.length === 0 ? (
-                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>No hay tipos canónicos registrados</TablaTd></TablaFila>
-                ) : tiposCanonicos.map((tc) => (
-                  <TablaFila key={tc.codigo_tipo_canonico}>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tc.codigo_tipo_canonico}</code></TablaTd>
-                    <TablaTd className="font-medium">{tc.nombre_tipo_canonico}</TablaTd>
-                    <TablaTd className="text-texto-muted text-sm">{tc.descripcion_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>{t('sinTiposCanonicos')}</TablaTd></TablaFila>
+                ) : tiposCanonicos.map((tcItem) => (
+                  <TablaFila key={tcItem.codigo_tipo_canonico}>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tcItem.codigo_tipo_canonico}</code></TablaTd>
+                    <TablaTd className="font-medium">{tcItem.nombre_tipo_canonico}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm">{tcItem.descripcion_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                     <TablaTd>
-                      
+
                     </TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => abrirEditarTC(tc)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                        <button onClick={() => setItemAEliminar({ tipo: 'tipocanonico', item: tc })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                        <button onClick={() => abrirEditarTC(tcItem)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                        <button onClick={() => setItemAEliminar({ tipo: 'tipocanonico', item: tcItem })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                       </div>
                     </TablaTd>
                   </TablaFila>
@@ -794,28 +797,28 @@ export default function PaginaTareasDatosBasicos() {
       )}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar categoría tarea: ${catEditando.nombre_categoria_tarea}` : 'Nueva categoría de tarea'}>
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('catEditarTitulo', { nombre: catEditando.nombre_categoria_tarea }) : t('catNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(catEditando ? ['md'] : [])] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab as TabModalCat)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
+                {tab === 'datos' ? t('tabModalDatos') : tab === 'system_prompt' ? t('tabModalSystemPrompt') : tab === 'programacion_insert' ? t('tabModalProgInsert') : tab === 'programacion_update' ? t('tabModalProgUpdate') : t('tabModalMd')}
               </button>
             ))}
           </div>
           {tabModalCat === 'datos' && <>
             {!catEditando && (
-              <Input etiqueta="Código (dejar vacío para autogenerar)" value={formCat.codigo_categoria_tarea}
+              <Input etiqueta={t('etiquetaCodigoAutogenerar')} value={formCat.codigo_categoria_tarea}
                 onChange={(e) => setFormCat({ ...formCat, codigo_categoria_tarea: e.target.value })}
                 placeholder="SOPORTE_TI" />
             )}
-            <Input etiqueta="Nombre *" value={formCat.nombre_categoria_tarea}
+            <Input etiqueta={t('etiquetaNombreObligatorio')} value={formCat.nombre_categoria_tarea}
               onChange={(e) => setFormCat({ ...formCat, nombre_categoria_tarea: e.target.value })}
               placeholder="Soporte TI" />
-            <Input etiqueta="Descripción" value={formCat.descripcion_categoria_tarea}
+            <Input etiqueta={t('etiquetaDescripcion')} value={formCat.descripcion_categoria_tarea}
               onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_tarea: e.target.value })}
-              placeholder="Descripción opcional" />
+              placeholder={t('placeholderDescripcionOpcional')} />
           </>}
           {tabModalCat === 'system_prompt' && catEditando && (
             <TabPrompts tabla="categorias_tarea" pkColumna="codigo_categoria_tarea" pkValor={catEditando.codigo_categoria_tarea}
@@ -835,21 +838,21 @@ export default function PaginaTareasDatosBasicos() {
           {catEditando && tabModalCat === 'md' && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
-                <textarea value={mdCat} readOnly rows={13} placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                <label className="text-sm font-medium text-texto">{t('mdLabel')}</label>
+                <textarea value={mdCat} readOnly rows={13} placeholder={t('mdPlaceholder')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
               </div>
               {mensajeMdCat && <p className={`text-xs px-1 ${mensajeMdCat.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdCat.texto}</p>}
               <div className="flex justify-between items-center pt-2">
                 <div className="flex gap-2">
                   <Boton className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
-                    onClick={async () => { setGenerandoMdCat(true); setMensajeMdCat(null); try { const r = await tareasDatosBasicosApi.generarMdCategoria(catEditando.codigo_categoria_tarea); setMdCat(r.md); setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado correctamente.' }) } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' }) } finally { setGenerandoMdCat(false) } }}
-                    cargando={generandoMdCat} disabled={generandoMdCat || sincronizandoMdCat}>Generar</Boton>
+                    onClick={async () => { setGenerandoMdCat(true); setMensajeMdCat(null); try { const r = await tareasDatosBasicosApi.generarMdCategoria(catEditando.codigo_categoria_tarea); setMdCat(r.md); setMensajeMdCat({ tipo: 'ok', texto: t('mdGenerado') }) } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorGenerar') }) } finally { setGenerandoMdCat(false) } }}
+                    cargando={generandoMdCat} disabled={generandoMdCat || sincronizandoMdCat}>{t('btnGenerar')}</Boton>
                   <Boton className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
-                    onClick={async () => { setSincronizandoMdCat(true); setMensajeMdCat(null); try { const r = await promptsApi.sincronizarFila('categorias_tarea', 'codigo_categoria_tarea', catEditando.codigo_categoria_tarea); setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` }) } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' }) } finally { setSincronizandoMdCat(false) } }}
-                    cargando={sincronizandoMdCat} disabled={generandoMdCat || sincronizandoMdCat || !mdCat}>Sincronizar</Boton>
+                    onClick={async () => { setSincronizandoMdCat(true); setMensajeMdCat(null); try { const r = await promptsApi.sincronizarFila('categorias_tarea', 'codigo_categoria_tarea', catEditando.codigo_categoria_tarea); setMensajeMdCat({ tipo: 'ok', texto: t('mdSincronizado', { accion: r.accion, codigo: r.codigo_documento }) }) } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorSincronizar') }) } finally { setSincronizandoMdCat(false) } }}
+                    cargando={sincronizandoMdCat} disabled={generandoMdCat || sincronizandoMdCat || !mdCat}>{t('btnSincronizar')}</Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalCat(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalCat(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -876,45 +879,45 @@ export default function PaginaTareasDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo */}
-      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? `Editar tipo de tarea: ${tipoEditando.nombre_tipo_tarea}` : 'Nuevo tipo de tarea'}>
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? t('tipoEditarTitulo', { nombre: tipoEditando.nombre_tipo_tarea }) : t('tipoNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(tipoEditando ? ['md'] : [])] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab as TabModalTipo)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
+                {tab === 'datos' ? t('tabModalDatos') : tab === 'system_prompt' ? t('tabModalSystemPrompt') : tab === 'programacion_insert' ? t('tabModalProgInsert') : tab === 'programacion_update' ? t('tabModalProgUpdate') : t('tabModalMd')}
               </button>
             ))}
           </div>
           {tabModalTipo === 'datos' && <>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Categoría *</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaCategoriaObligatoria')}</label>
               <select value={formTipo.codigo_categoria_tarea}
                 onChange={(e) => setFormTipo({ ...formTipo, codigo_categoria_tarea: e.target.value })}
                 disabled={!!tipoEditando}
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-                <option value="">Seleccionar categoría...</option>
+                <option value="">{t('placeholderSeleccionarCategoria')}</option>
                 {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
               </select>
             </div>
-            <Input etiqueta="Código tipo *" value={formTipo.codigo_tipo_tarea}
+            <Input etiqueta={t('etiquetaCodigoTipo')} value={formTipo.codigo_tipo_tarea}
               onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_tarea: e.target.value })}
               placeholder="INCIDENCIA_RED"
               disabled={!!tipoEditando} />
-            <Input etiqueta="Nombre *" value={formTipo.nombre_tipo_tarea}
+            <Input etiqueta={t('etiquetaNombreObligatorio')} value={formTipo.nombre_tipo_tarea}
               onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_tarea: e.target.value })}
               placeholder="Incidencia de Red" />
-            <Input etiqueta="Descripción" value={formTipo.descripcion_tipo_tarea}
+            <Input etiqueta={t('etiquetaDescripcion')} value={formTipo.descripcion_tipo_tarea}
               onChange={(e) => setFormTipo({ ...formTipo, descripcion_tipo_tarea: e.target.value })}
-              placeholder="Descripción opcional" />
+              placeholder={t('placeholderDescripcionOpcional')} />
             {tiposCanonicos.length > 0 && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Tipo canónico (opcional)</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaTipoCanonicoOpcional')}</label>
                 <select value={formTipo.codigo_tipo_canonico}
                   onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_canonico: e.target.value })}
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
-                  <option value="">Sin tipo canónico</option>
-                  {tiposCanonicos.map((tc) => <option key={tc.codigo_tipo_canonico} value={tc.codigo_tipo_canonico}>{tc.nombre_tipo_canonico}</option>)}
+                  <option value="">{t('placeholderSinTipoCanonico')}</option>
+                  {tiposCanonicos.map((tcItem) => <option key={tcItem.codigo_tipo_canonico} value={tcItem.codigo_tipo_canonico}>{tcItem.nombre_tipo_canonico}</option>)}
                 </select>
               </div>
             )}
@@ -937,21 +940,21 @@ export default function PaginaTareasDatosBasicos() {
           {tipoEditando && tabModalTipo === 'md' && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
-                <textarea value={mdTipo} readOnly rows={13} placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                <label className="text-sm font-medium text-texto">{t('mdLabel')}</label>
+                <textarea value={mdTipo} readOnly rows={13} placeholder={t('mdPlaceholder')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
               </div>
               {mensajeMdTipo && <p className={`text-xs px-1 ${mensajeMdTipo.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdTipo.texto}</p>}
               <div className="flex justify-between items-center pt-2">
                 <div className="flex gap-2">
                   <Boton className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
-                    onClick={async () => { setGenerandoMdTipo(true); setMensajeMdTipo(null); try { const r = await tareasDatosBasicosApi.generarMdTipo(tipoEditando.codigo_categoria_tarea, tipoEditando.codigo_tipo_tarea); setMdTipo(r.md); setMensajeMdTipo({ tipo: 'ok', texto: 'Markdown generado correctamente.' }) } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' }) } finally { setGenerandoMdTipo(false) } }}
-                    cargando={generandoMdTipo} disabled={generandoMdTipo || sincronizandoMdTipo}>Generar</Boton>
+                    onClick={async () => { setGenerandoMdTipo(true); setMensajeMdTipo(null); try { const r = await tareasDatosBasicosApi.generarMdTipo(tipoEditando.codigo_categoria_tarea, tipoEditando.codigo_tipo_tarea); setMdTipo(r.md); setMensajeMdTipo({ tipo: 'ok', texto: t('mdGenerado') }) } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorGenerar') }) } finally { setGenerandoMdTipo(false) } }}
+                    cargando={generandoMdTipo} disabled={generandoMdTipo || sincronizandoMdTipo}>{t('btnGenerar')}</Boton>
                   <Boton className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
-                    onClick={async () => { setSincronizandoMdTipo(true); setMensajeMdTipo(null); try { const r = await promptsApi.sincronizarFila('tipos_tarea', 'codigo_tipo_tarea', tipoEditando.codigo_tipo_tarea); setMensajeMdTipo({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` }) } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' }) } finally { setSincronizandoMdTipo(false) } }}
-                    cargando={sincronizandoMdTipo} disabled={generandoMdTipo || sincronizandoMdTipo || !mdTipo}>Sincronizar</Boton>
+                    onClick={async () => { setSincronizandoMdTipo(true); setMensajeMdTipo(null); try { const r = await promptsApi.sincronizarFila('tipos_tarea', 'codigo_tipo_tarea', tipoEditando.codigo_tipo_tarea); setMensajeMdTipo({ tipo: 'ok', texto: t('mdSincronizado', { accion: r.accion, codigo: r.codigo_documento }) }) } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorSincronizar') }) } finally { setSincronizandoMdTipo(false) } }}
+                    cargando={sincronizandoMdTipo} disabled={generandoMdTipo || sincronizandoMdTipo || !mdTipo}>{t('btnSincronizar')}</Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalTipo(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalTipo(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -978,54 +981,54 @@ export default function PaginaTareasDatosBasicos() {
       </Modal>
 
       {/* Modal Estado */}
-      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? `Editar estado de tarea: ${estEditando.nombre_estado_tarea}` : 'Nuevo estado de tarea'}>
+      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? t('estEditarTitulo', { nombre: estEditando.nombre_estado_tarea }) : t('estNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(estEditando ? ['md'] : [])] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalEst(tab as TabModalEst)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalEst === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
+                {tab === 'datos' ? t('tabModalDatos') : tab === 'system_prompt' ? t('tabModalSystemPrompt') : tab === 'programacion_insert' ? t('tabModalProgInsert') : tab === 'programacion_update' ? t('tabModalProgUpdate') : t('tabModalMd')}
               </button>
             ))}
           </div>
           {tabModalEst === 'datos' && <>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Categoría *</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaCategoriaObligatoria')}</label>
               <select value={formEst.codigo_categoria_tarea}
                 onChange={(e) => setFormEst({ ...formEst, codigo_categoria_tarea: e.target.value, codigo_tipo_tarea: '' })}
                 disabled={!!estEditando}
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-                <option value="">Seleccionar categoría...</option>
+                <option value="">{t('placeholderSeleccionarCategoria')}</option>
                 {categorias.map((c) => <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>{c.nombre_categoria_tarea}</option>)}
               </select>
             </div>
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Tipo *</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaTipoObligatorio')}</label>
               <select value={formEst.codigo_tipo_tarea}
                 onChange={(e) => setFormEst({ ...formEst, codigo_tipo_tarea: e.target.value })}
                 disabled={!!estEditando}
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-                <option value="">Seleccionar tipo...</option>
-                {tipos.filter((t) => t.codigo_categoria_tarea === formEst.codigo_categoria_tarea)
-                  .map((t) => <option key={t.codigo_tipo_tarea} value={t.codigo_tipo_tarea}>{t.nombre_tipo_tarea}</option>)}
+                <option value="">{t('placeholderSeleccionarTipo')}</option>
+                {tipos.filter((tipo) => tipo.codigo_categoria_tarea === formEst.codigo_categoria_tarea)
+                  .map((tipo) => <option key={tipo.codigo_tipo_tarea} value={tipo.codigo_tipo_tarea}>{tipo.nombre_tipo_tarea}</option>)}
               </select>
             </div>
-            <Input etiqueta="Código estado *" value={formEst.codigo_estado_tarea}
+            <Input etiqueta={t('etiquetaCodigoEstado')} value={formEst.codigo_estado_tarea}
               onChange={(e) => setFormEst({ ...formEst, codigo_estado_tarea: e.target.value })}
               placeholder="PENDIENTE"
               disabled={!!estEditando} />
-            <Input etiqueta="Nombre *" value={formEst.nombre_estado_tarea}
+            <Input etiqueta={t('etiquetaNombreObligatorio')} value={formEst.nombre_estado_tarea}
               onChange={(e) => setFormEst({ ...formEst, nombre_estado_tarea: e.target.value })}
               placeholder="Pendiente" />
-            <Input etiqueta="Descripción" value={formEst.descripcion_estado_tarea}
+            <Input etiqueta={t('etiquetaDescripcion')} value={formEst.descripcion_estado_tarea}
               onChange={(e) => setFormEst({ ...formEst, descripcion_estado_tarea: e.target.value })}
-              placeholder="Descripción opcional" />
+              placeholder={t('placeholderDescripcionOpcional')} />
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Estado canónico *</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaCanonicoObligatorio')}</label>
               <select value={formEst.codigo_estado_canonico}
                 onChange={(e) => setFormEst({ ...formEst, codigo_estado_canonico: e.target.value })}
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
-                <option value="">Seleccionar estado canónico...</option>
+                <option value="">{t('placeholderSeleccionarCanonico')}</option>
                 {canonicosEst.map((c) => <option key={c.codigo_estado_canonico} value={c.codigo_estado_canonico}>{c.nombre_estado_canonico}</option>)}
               </select>
             </div>
@@ -1048,21 +1051,21 @@ export default function PaginaTareasDatosBasicos() {
           {estEditando && tabModalEst === 'md' && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
-                <textarea value={mdEst} readOnly rows={13} placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                <label className="text-sm font-medium text-texto">{t('mdLabel')}</label>
+                <textarea value={mdEst} readOnly rows={13} placeholder={t('mdPlaceholder')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
               </div>
               {mensajeMdEst && <p className={`text-xs px-1 ${mensajeMdEst.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdEst.texto}</p>}
               <div className="flex justify-between items-center pt-2">
                 <div className="flex gap-2">
                   <Boton className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
-                    onClick={async () => { setGenerandoMdEst(true); setMensajeMdEst(null); try { const r = await tareasDatosBasicosApi.generarMdEstado(estEditando.codigo_categoria_tarea, estEditando.codigo_tipo_tarea, estEditando.codigo_estado_tarea); setMdEst(r.md); setMensajeMdEst({ tipo: 'ok', texto: 'Markdown generado correctamente.' }) } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' }) } finally { setGenerandoMdEst(false) } }}
-                    cargando={generandoMdEst} disabled={generandoMdEst || sincronizandoMdEst}>Generar</Boton>
+                    onClick={async () => { setGenerandoMdEst(true); setMensajeMdEst(null); try { const r = await tareasDatosBasicosApi.generarMdEstado(estEditando.codigo_categoria_tarea, estEditando.codigo_tipo_tarea, estEditando.codigo_estado_tarea); setMdEst(r.md); setMensajeMdEst({ tipo: 'ok', texto: t('mdGenerado') }) } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorGenerar') }) } finally { setGenerandoMdEst(false) } }}
+                    cargando={generandoMdEst} disabled={generandoMdEst || sincronizandoMdEst}>{t('btnGenerar')}</Boton>
                   <Boton className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
-                    onClick={async () => { setSincronizandoMdEst(true); setMensajeMdEst(null); try { const r = await promptsApi.sincronizarFila('estados_tarea', 'codigo_estado_tarea', estEditando.codigo_estado_tarea); setMensajeMdEst({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` }) } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' }) } finally { setSincronizandoMdEst(false) } }}
-                    cargando={sincronizandoMdEst} disabled={generandoMdEst || sincronizandoMdEst || !mdEst}>Sincronizar</Boton>
+                    onClick={async () => { setSincronizandoMdEst(true); setMensajeMdEst(null); try { const r = await promptsApi.sincronizarFila('estados_tarea', 'codigo_estado_tarea', estEditando.codigo_estado_tarea); setMensajeMdEst({ tipo: 'ok', texto: t('mdSincronizado', { accion: r.accion, codigo: r.codigo_documento }) }) } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorSincronizar') }) } finally { setSincronizandoMdEst(false) } }}
+                    cargando={sincronizandoMdEst} disabled={generandoMdEst || sincronizandoMdEst || !mdEst}>{t('btnSincronizar')}</Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalEst(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalEst(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -1089,19 +1092,19 @@ export default function PaginaTareasDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo Canónico */}
-      <Modal abierto={modalTC} alCerrar={() => setModalTC(false)} titulo={tcEditando ? 'Editar tipo canónico' : 'Nuevo tipo canónico de tarea'}>
+      <Modal abierto={modalTC} alCerrar={() => setModalTC(false)} titulo={tcEditando ? t('tcEditarTitulo') : t('tcNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-w-[400px]">
           {!tcEditando && (
-            <Input etiqueta="Código (dejar vacío para autogenerar)" value={formTC.codigo_tipo_canonico}
+            <Input etiqueta={t('etiquetaCodigoAutogenerar')} value={formTC.codigo_tipo_canonico}
               onChange={(e) => setFormTC({ ...formTC, codigo_tipo_canonico: e.target.value })}
               placeholder="INCIDENCIA" />
           )}
-          <Input etiqueta="Nombre *" value={formTC.nombre_tipo_canonico}
+          <Input etiqueta={t('etiquetaNombreObligatorio')} value={formTC.nombre_tipo_canonico}
             onChange={(e) => setFormTC({ ...formTC, nombre_tipo_canonico: e.target.value })}
             placeholder="Incidencia" />
-          <Textarea etiqueta="Descripción" value={formTC.descripcion_tipo_canonico}
+          <Textarea etiqueta={t('etiquetaDescripcion')} value={formTC.descripcion_tipo_canonico}
             onChange={(e) => setFormTC({ ...formTC, descripcion_tipo_canonico: e.target.value })}
-            placeholder="Descripción opcional"
+            placeholder={t('placeholderDescripcionOpcional')}
             rows={3} />
           {errorTC && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTC}</p></div>}
           <PieBotonesModal
@@ -1120,20 +1123,20 @@ export default function PaginaTareasDatosBasicos() {
         alCerrar={() => setItemAEliminar(null)}
         alConfirmar={ejecutarEliminacion}
         titulo={
-          itemAEliminar?.tipo === 'categoria' ? 'Eliminar categoría' :
-          itemAEliminar?.tipo === 'tipotarea' ? 'Eliminar tipo de tarea' :
-          itemAEliminar?.tipo === 'tipocanonico' ? 'Eliminar tipo canónico' : 'Eliminar estado de tarea'
+          itemAEliminar?.tipo === 'categoria' ? t('eliminarCatTitulo') :
+          itemAEliminar?.tipo === 'tipotarea' ? t('eliminarTipoTitulo') :
+          itemAEliminar?.tipo === 'tipocanonico' ? t('eliminarTcTitulo') : t('eliminarEstTitulo')
         }
         mensaje={
           itemAEliminar?.tipo === 'categoria'
-            ? `¿Eliminar la categoría "${(itemAEliminar.item as CategoriaTarea).nombre_categoria_tarea}"? Solo posible si no tiene tipos asociados.`
+            ? t('eliminarCatConfirm', { nombre: (itemAEliminar.item as CategoriaTarea).nombre_categoria_tarea })
             : itemAEliminar?.tipo === 'tipotarea'
-            ? `¿Eliminar el tipo "${(itemAEliminar.item as TipoTarea).nombre_tipo_tarea}"? Solo posible si no tiene estados asociados.`
+            ? t('eliminarTipoConfirm', { nombre: (itemAEliminar.item as TipoTarea).nombre_tipo_tarea })
             : itemAEliminar?.tipo === 'tipocanonico'
-            ? `¿Eliminar el tipo canónico "${(itemAEliminar.item as TipoCanonicoTarea).nombre_tipo_canonico}"?`
-            : `¿Eliminar el estado "${(itemAEliminar?.item as EstadoTarea)?.nombre_estado_tarea}"?`
+            ? t('eliminarTcConfirm', { nombre: (itemAEliminar.item as TipoCanonicoTarea).nombre_tipo_canonico })
+            : t('eliminarEstConfirm', { nombre: (itemAEliminar?.item as EstadoTarea)?.nombre_estado_tarea ?? '' })
         }
-        textoConfirmar="Eliminar"
+        textoConfirmar={tc('eliminar')}
         cargando={eliminando}
       />
     </div>

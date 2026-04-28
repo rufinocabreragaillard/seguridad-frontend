@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { Plus, Pencil, Trash2, Eye, Save } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
@@ -22,6 +23,8 @@ interface ValorGrupo {
 const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
 export default function PaginaParametrosGrupo() {
+  const t = useTranslations('parametrosGrupo')
+  const tc = useTranslations('common')
   const [tabActiva, setTabActiva] = useState<TabId>('categorias')
 
   // ── Catálogo ───────────────────────────────────────────────────────────────
@@ -82,16 +85,16 @@ export default function PaginaParametrosGrupo() {
     setGuardando(key); setError('')
     try {
       await parametrosApi.upsertGrupo({ categoria_parametro: cat, tipo_parametro: tipo, valor_parametro: valor })
-      mostrarExito('Parámetro guardado')
+      mostrarExito(t('parametroGuardado'))
       cargarValores()
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al guardar') }
+    } catch (e) { setError(e instanceof Error ? e.message : tc('errorAlGuardar')) }
     finally { setGuardando(null) }
   }
 
   // ── Agregar nuevo valor ────────────────────────────────────────────────────
   const agregarNuevo = async () => {
     if (!nuevoVal.categoria_parametro || !nuevoVal.tipo_parametro || !nuevoVal.valor_parametro) {
-      setError('Categoría, tipo y valor son obligatorios'); return
+      setError(t('errorCategoriaTipoValorObligatorios')); return
     }
     await guardarInline(nuevoVal.categoria_parametro, nuevoVal.tipo_parametro, nuevoVal.valor_parametro)
     setNuevoVal({ categoria_parametro: '', tipo_parametro: '', valor_parametro: '' })
@@ -103,10 +106,10 @@ export default function PaginaParametrosGrupo() {
     setEliminando(true)
     try {
       await parametrosApi.eliminarGrupo(valAEliminar.categoria_parametro, valAEliminar.tipo_parametro)
-      mostrarExito('Parámetro eliminado')
+      mostrarExito(t('parametroEliminado'))
       setValAEliminar(null)
       cargarValores()
-    } catch (e) { setError(e instanceof Error ? e.message : 'Error al eliminar') }
+    } catch (e) { setError(e instanceof Error ? e.message : tc('errorAlEliminar')) }
     finally { setEliminando(false) }
   }
 
@@ -124,16 +127,16 @@ export default function PaginaParametrosGrupo() {
   )
 
   const tabs: { id: TabId; label: string }[] = [
-    { id: 'categorias', label: 'Categorías de Parámetro' },
-    { id: 'valores', label: 'Valores del Grupo' },
+    { id: 'categorias', label: t('tabCategorias') },
+    { id: 'valores', label: t('tabValores') },
   ]
 
   return (
     <div className="relative flex flex-col gap-6">
       <BotonChat />
       <div>
-        <h2 className="page-heading">Parámetros del Grupo</h2>
-        <p className="text-sm text-texto-muted mt-1">Configura los valores de parámetros específicos para este grupo</p>
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       {mensajeExito && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3"><p className="text-sm text-exito">{mensajeExito}</p></div>}
@@ -156,12 +159,12 @@ export default function PaginaParametrosGrupo() {
           ) : (
             <Tabla>
               <TablaCabecera><tr>
-                <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh>
-                <TablaTh>Valores configurados</TablaTh><TablaTh className="text-right">Acciones</TablaTh>
+                <TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh>
+                <TablaTh>{t('colValoresConfig')}</TablaTh><TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
                 {categoriasConInfo.length === 0 ? (
-                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>No hay categorías en el catálogo</TablaTd></TablaFila>
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>{t('sinCategoriasCatalogo')}</TablaTd></TablaFila>
                 ) : categoriasConInfo.map((c) => (
                   <TablaFila key={c.categoria_parametro}
                     onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('valores') }}
@@ -171,13 +174,13 @@ export default function PaginaParametrosGrupo() {
                     <TablaTd className="text-texto-muted text-sm">{c.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                     <TablaTd>
                       {c.nValores > 0
-                        ? <Insignia variante="exito">{c.nValores} configurado{c.nValores !== 1 ? 's' : ''}</Insignia>
-                        : <Insignia variante="neutro">Sin valores</Insignia>}
+                        ? <Insignia variante="exito">{t('configurados', { n: c.nValores })}</Insignia>
+                        : <Insignia variante="neutro">{t('sinValores')}</Insignia>}
                     </TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('valores') }}
-                          className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver valores">
+                          className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verValores')}>
                           <Eye size={14} />
                         </button>
                       </div>
@@ -194,9 +197,9 @@ export default function PaginaParametrosGrupo() {
       {tabActiva === 'valores' && (
         <>
           <div className="flex items-center gap-3">
-            <p className="text-sm text-texto-muted">Filtrar por categoría:</p>
+            <p className="text-sm text-texto-muted">{t('filtrarPorCategoria')}</p>
             <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
-              <option value="">Todas</option>
+              <option value="">{t('todas')}</option>
               {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
             </select>
           </div>
@@ -207,7 +210,7 @@ export default function PaginaParametrosGrupo() {
             <div className="flex flex-col gap-3">
               {valoresFiltrados.length === 0 ? (
                 <p className="text-sm text-texto-muted text-center py-8">
-                  {filtroCategoria ? `No hay valores configurados para esta categoría` : 'No hay valores configurados en este grupo'}
+                  {filtroCategoria ? t('sinValoresCategoria') : t('sinValoresGrupo')}
                 </p>
               ) : valoresFiltrados.map((v) => {
                 const key = `${v.categoria_parametro}/${v.tipo_parametro}`
@@ -231,11 +234,11 @@ export default function PaginaParametrosGrupo() {
                     <button
                       onClick={(e) => { const inp = (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement); if (inp) guardarInline(v.categoria_parametro, v.tipo_parametro, inp.value) }}
                       disabled={guardando === key}
-                      className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title="Guardar">
+                      className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title={tc('guardar')}>
                       <Save size={14} />
                     </button>
                     <button onClick={() => setValAEliminar(v)}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title="Eliminar">
+                      className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title={tc('eliminar')}>
                       <Trash2 size={14} />
                     </button>
                   </div>
@@ -246,31 +249,31 @@ export default function PaginaParametrosGrupo() {
 
           {/* Agregar nuevo */}
           <div className="border-t border-borde pt-4 mt-2">
-            <p className="text-xs font-semibold text-texto-muted uppercase tracking-wider mb-3">Agregar parámetro</p>
+            <p className="text-xs font-semibold text-texto-muted uppercase tracking-wider mb-3">{t('agregarParametro')}</p>
             <div className="flex flex-col gap-2">
               <div className={`gap-2 ${filtroCategoria ? 'flex' : 'grid grid-cols-2'}`}>
                 {!filtroCategoria && (
                   <select value={nuevoVal.categoria_parametro}
                     onChange={(e) => setNuevoVal({ categoria_parametro: e.target.value, tipo_parametro: '', valor_parametro: nuevoVal.valor_parametro })}
                     className={selectCls}>
-                    <option value="">Selecciona categoría</option>
+                    <option value="">{t('seleccionaCategoria')}</option>
                     {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
                   </select>
                 )}
                 <select value={nuevoVal.tipo_parametro}
                   onChange={(e) => setNuevoVal({ ...nuevoVal, tipo_parametro: e.target.value })}
                   disabled={!nuevoVal.categoria_parametro && !filtroCategoria} className={`${selectCls} flex-1`}>
-                  <option value="">Selecciona tipo</option>
-                  {tiposDisponibles.map((t) => <option key={t.tipo_parametro} value={t.tipo_parametro}>{t.nombre}</option>)}
+                  <option value="">{t('seleccionaTipo')}</option>
+                  {tiposDisponibles.map((tp) => <option key={tp.tipo_parametro} value={tp.tipo_parametro}>{tp.nombre}</option>)}
                 </select>
               </div>
               <div className="flex gap-2">
-                <input type="text" placeholder="Valor" value={nuevoVal.valor_parametro}
+                <input type="text" placeholder={t('placeholderValor')} value={nuevoVal.valor_parametro}
                   onChange={(e) => setNuevoVal({ ...nuevoVal, valor_parametro: e.target.value })}
                   className="flex-1 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario" />
                 <Boton variante="primario" tamano="sm" onClick={agregarNuevo}
                   disabled={!nuevoVal.categoria_parametro || !nuevoVal.tipo_parametro || !nuevoVal.valor_parametro}>
-                  <Plus size={14} /> Agregar
+                  <Plus size={14} /> {t('agregar')}
                 </Boton>
               </div>
             </div>
@@ -282,9 +285,9 @@ export default function PaginaParametrosGrupo() {
         abierto={!!valAEliminar}
         alCerrar={() => setValAEliminar(null)}
         alConfirmar={confirmarEliminar}
-        titulo="Eliminar parámetro"
-        mensaje={valAEliminar ? `¿Eliminar el parámetro ${valAEliminar.categoria_parametro}/${valAEliminar.tipo_parametro}?` : ''}
-        textoConfirmar="Eliminar"
+        titulo={t('eliminarTitulo')}
+        mensaje={valAEliminar ? t('eliminarConfirm', { categoria: valAEliminar.categoria_parametro, tipo: valAEliminar.tipo_parametro }) : ''}
+        textoConfirmar={tc('eliminar')}
         cargando={eliminando}
       />
     </div>

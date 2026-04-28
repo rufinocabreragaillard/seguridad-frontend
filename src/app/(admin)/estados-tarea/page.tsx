@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -37,6 +38,8 @@ const FORM_INICIAL: FormEstadoTarea = {
 }
 
 export default function PaginaEstadosTarea() {
+  const t = useTranslations('estadosTarea')
+  const tc = useTranslations('common')
   const [categorias, setCategorias] = useState<CategoriaTarea[]>([])
   const [tipos, setTipos] = useState<TipoTareaSimple[]>([])
   const [canonicos, setCanonicos] = useState<EstadoCanonicoTarea[]>([])
@@ -135,8 +138,8 @@ export default function PaginaEstadosTarea() {
     <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">Estados de Tarea</h2>
-        <p className="text-sm text-texto-muted mt-1">Estados por tipo de tarea para el grupo activo</p>
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">
@@ -145,7 +148,7 @@ export default function PaginaEstadosTarea() {
           onChange={(e) => { setFiltroCategoria(e.target.value); crud.cargar() }}
           className="text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario"
         >
-          <option value="">Todas las categorías</option>
+          <option value="">{t('filtroTodasCategorias')}</option>
           {categorias.map((c) => (
             <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>
               {c.nombre_categoria_tarea}
@@ -158,7 +161,7 @@ export default function PaginaEstadosTarea() {
           className="text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario"
           disabled={!filtroCategoria}
         >
-          <option value="">Todos los tipos</option>
+          <option value="">{t('filtroTodosTipos')}</option>
           {tiposFiltrados.map((t) => (
             <option key={t.codigo_tipo_tarea} value={t.codigo_tipo_tarea}>
               {t.nombre_tipo_tarea}
@@ -170,18 +173,18 @@ export default function PaginaEstadosTarea() {
       <BarraHerramientas
         busqueda={crud.busqueda}
         onBusqueda={crud.setBusqueda}
-        placeholderBusqueda="Buscar estado..."
+        placeholderBusqueda={t('buscarPlaceholder')}
         onNuevo={crud.abrirNuevo}
-        textoNuevo="Nuevo Estado"
+        textoNuevo={t('nuevoEstado')}
         excelDatos={filtradosOrdenados as unknown as Record<string, unknown>[]}
         excelColumnas={[
-          { titulo: 'Categoría', campo: 'codigo_categoria_tarea' },
-          { titulo: 'Tipo', campo: 'codigo_tipo_tarea' },
-          { titulo: 'Código', campo: 'codigo_estado_tarea' },
-          { titulo: 'Nombre', campo: 'nombre_estado_tarea' },
-          { titulo: 'Canónico', campo: 'codigo_estado_canonico' },
-          { titulo: 'Orden', campo: 'orden' },
-          { titulo: 'Nombre', campo: 'nombre_estado_tarea' },
+          { titulo: t('colCategoria'), campo: 'codigo_categoria_tarea' },
+          { titulo: t('colTipo'), campo: 'codigo_tipo_tarea' },
+          { titulo: t('colCodigo'), campo: 'codigo_estado_tarea' },
+          { titulo: t('colNombre'), campo: 'nombre_estado_tarea' },
+          { titulo: t('colCanonico'), campo: 'codigo_estado_canonico' },
+          { titulo: t('colOrden'), campo: 'orden' },
+          { titulo: t('colNombre'), campo: 'nombre_estado_tarea' },
         ]}
         excelNombreArchivo="estados-tarea"
       />
@@ -189,29 +192,29 @@ export default function PaginaEstadosTarea() {
       <TablaCrud
         columnas={[
           {
-            titulo: 'Categoría',
+            titulo: t('colCategoria'),
             render: (e: EstadoTarea) => {
               const cat = categorias.find((c) => c.codigo_categoria_tarea === e.codigo_categoria_tarea)
               return <span className="text-xs text-texto-muted">{cat?.nombre_categoria_tarea ?? e.codigo_categoria_tarea}</span>
             },
           },
           {
-            titulo: 'Tipo',
+            titulo: t('colTipo'),
             render: (e: EstadoTarea) => (
               <span className="text-xs text-texto-muted">{e.codigo_tipo_tarea}</span>
             ),
           },
-          columnaCodigo<EstadoTarea>('Código', (e) => e.codigo_estado_tarea),
-          columnaNombre<EstadoTarea>('Nombre', (e) => e.nombre_estado_tarea),
+          columnaCodigo<EstadoTarea>(t('colCodigo'), (e) => e.codigo_estado_tarea),
+          columnaNombre<EstadoTarea>(t('colNombre'), (e) => e.nombre_estado_tarea),
           {
-            titulo: 'Canónico',
+            titulo: t('colCanonico'),
             render: (e: EstadoTarea) => {
               const can = canonicos.find((c) => c.codigo_estado_canonico === e.codigo_estado_canonico)
               return <span className="text-xs">{can?.nombre_estado_canonico ?? e.codigo_estado_canonico}</span>
             },
           },
           {
-            titulo: 'Orden',
+            titulo: t('colOrden'),
             render: (e: EstadoTarea) => <span className="text-xs">{e.orden}</span>,
           },
         ]}
@@ -220,19 +223,19 @@ export default function PaginaEstadosTarea() {
         getId={(e) => `${e.codigo_grupo}/${e.codigo_categoria_tarea}/${e.codigo_tipo_tarea}/${e.codigo_estado_tarea}`}
         onEditar={crud.abrirEditar}
         onEliminar={crud.setConfirmacion}
-        textoVacio="Sin estados de tarea"
+        textoVacio={t('sinEstados')}
       />
 
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? `Editar: ${crud.editando.nombre_estado_tarea}` : 'Nuevo Estado de Tarea'}
+        titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_estado_tarea }) : t('nuevoTitulo')}
         className="max-w-xl"
       >
         <div className="flex flex-col gap-4 min-w-[480px]">
           <div>
             <label className="text-sm font-medium text-texto block mb-1">
-              Categoría <span className="text-error">*</span>
+              {t('etiquetaCategoria')} <span className="text-error">*</span>
             </label>
             <select
               value={crud.form.codigo_categoria_tarea}
@@ -240,7 +243,7 @@ export default function PaginaEstadosTarea() {
               disabled={!!crud.editando}
               className="w-full text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-60"
             >
-              <option value="">Seleccionar categoría...</option>
+              <option value="">{t('placeholderSeleccionarCategoria')}</option>
               {categorias.map((c) => (
                 <option key={c.codigo_categoria_tarea} value={c.codigo_categoria_tarea}>
                   {c.nombre_categoria_tarea}
@@ -251,7 +254,7 @@ export default function PaginaEstadosTarea() {
 
           <div>
             <label className="text-sm font-medium text-texto block mb-1">
-              Tipo de Tarea <span className="text-error">*</span>
+              {t('etiquetaTipoTarea')} <span className="text-error">*</span>
             </label>
             <select
               value={crud.form.codigo_tipo_tarea}
@@ -259,7 +262,7 @@ export default function PaginaEstadosTarea() {
               disabled={!!crud.editando}
               className="w-full text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-60"
             >
-              <option value="">Seleccionar tipo...</option>
+              <option value="">{t('placeholderSeleccionarTipo')}</option>
               {tiposModal.map((t) => (
                 <option key={t.codigo_tipo_tarea} value={t.codigo_tipo_tarea}>
                   {t.nombre_tipo_tarea}
@@ -269,37 +272,37 @@ export default function PaginaEstadosTarea() {
           </div>
 
           <Input
-            etiqueta="Código"
+            etiqueta={t('etiquetaCodigo')}
             value={crud.form.codigo_estado_tarea}
             onChange={(e) => crud.updateForm('codigo_estado_tarea', e.target.value)}
-            placeholder="Se genera automáticamente"
+            placeholder={t('placeholderCodigo')}
             disabled={!!crud.editando}
           />
           <Input
-            etiqueta="Nombre"
+            etiqueta={t('etiquetaNombre')}
             value={crud.form.nombre_estado_tarea}
             onChange={(e) => crud.updateForm('nombre_estado_tarea', e.target.value)}
-            placeholder="Nombre del estado"
+            placeholder={t('placeholderNombre')}
             autoFocus
           />
           <Textarea
-            etiqueta="Descripción"
+            etiqueta={t('etiquetaDescripcion')}
             value={crud.form.descripcion_estado_tarea}
             onChange={(e) => crud.updateForm('descripcion_estado_tarea', e.target.value)}
-            placeholder="Descripción del estado"
+            placeholder={t('placeholderDescripcion')}
             rows={2}
           />
 
           <div>
             <label className="text-sm font-medium text-texto block mb-1">
-              Estado Canónico <span className="text-error">*</span>
+              {t('etiquetaCanonico')} <span className="text-error">*</span>
             </label>
             <select
               value={crud.form.codigo_estado_canonico}
               onChange={(e) => crud.updateForm('codigo_estado_canonico', e.target.value)}
               className="w-full text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario"
             >
-              <option value="">Seleccionar estado canónico...</option>
+              <option value="">{t('placeholderSeleccionarCanonico')}</option>
               {canonicos.map((c) => (
                 <option key={c.codigo_estado_canonico} value={c.codigo_estado_canonico}>
                   {c.nombre_estado_canonico}
@@ -309,7 +312,7 @@ export default function PaginaEstadosTarea() {
           </div>
 
           <Input
-            etiqueta="Orden"
+            etiqueta={t('etiquetaOrden')}
             type="number"
             value={String(crud.form.orden)}
             onChange={(e) => crud.updateForm('orden', parseInt(e.target.value) || 0)}
@@ -325,17 +328,17 @@ export default function PaginaEstadosTarea() {
           <PieBotonesModal
             editando={!!crud.editando}
             onGuardar={() => {
-              if (!crud.form.nombre_estado_tarea.trim()) { crud.setError('El nombre es obligatorio'); return }
-              if (!crud.editando && !crud.form.codigo_categoria_tarea) { crud.setError('La categoría es obligatoria'); return }
-              if (!crud.editando && !crud.form.codigo_tipo_tarea) { crud.setError('El tipo de tarea es obligatorio'); return }
-              if (!crud.form.codigo_estado_canonico) { crud.setError('El estado canónico es obligatorio'); return }
+              if (!crud.form.nombre_estado_tarea.trim()) { crud.setError(t('errorNombreObligatorio')); return }
+              if (!crud.editando && !crud.form.codigo_categoria_tarea) { crud.setError(t('errorCategoriaObligatoria')); return }
+              if (!crud.editando && !crud.form.codigo_tipo_tarea) { crud.setError(t('errorTipoObligatorio')); return }
+              if (!crud.form.codigo_estado_canonico) { crud.setError(t('errorCanonicoObligatorio')); return }
               crud.guardar(undefined, undefined, { cerrar: false })
             }}
             onGuardarYSalir={() => {
-              if (!crud.form.nombre_estado_tarea.trim()) { crud.setError('El nombre es obligatorio'); return }
-              if (!crud.editando && !crud.form.codigo_categoria_tarea) { crud.setError('La categoría es obligatoria'); return }
-              if (!crud.editando && !crud.form.codigo_tipo_tarea) { crud.setError('El tipo de tarea es obligatorio'); return }
-              if (!crud.form.codigo_estado_canonico) { crud.setError('El estado canónico es obligatorio'); return }
+              if (!crud.form.nombre_estado_tarea.trim()) { crud.setError(t('errorNombreObligatorio')); return }
+              if (!crud.editando && !crud.form.codigo_categoria_tarea) { crud.setError(t('errorCategoriaObligatoria')); return }
+              if (!crud.editando && !crud.form.codigo_tipo_tarea) { crud.setError(t('errorTipoObligatorio')); return }
+              if (!crud.form.codigo_estado_canonico) { crud.setError(t('errorCanonicoObligatorio')); return }
               crud.guardar(undefined, undefined, { cerrar: true })
             }}
             onCerrar={crud.cerrarModal}
@@ -348,9 +351,9 @@ export default function PaginaEstadosTarea() {
         abierto={!!crud.confirmacion}
         alCerrar={() => crud.setConfirmacion(null)}
         alConfirmar={crud.ejecutarEliminacion}
-        titulo="Eliminar Estado de Tarea"
-        mensaje={crud.confirmacion ? `¿Eliminar el estado "${crud.confirmacion.nombre_estado_tarea}"?` : ''}
-        textoConfirmar="Eliminar"
+        titulo={t('eliminarTitulo')}
+        mensaje={crud.confirmacion ? t('eliminarConfirm', { nombre: crud.confirmacion.nombre_estado_tarea }) : ''}
+        textoConfirmar={tc('eliminar')}
         variante="peligro"
         cargando={crud.eliminando}
       />

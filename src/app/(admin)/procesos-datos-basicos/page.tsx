@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { Plus, Pencil, Trash2, Download, Search, Eye } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -20,14 +21,6 @@ import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 type TabId = 'categorias' | 'tipos' | 'estados' | 'canonicos'
 type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
-const TABS_MODAL_LABELS: Record<TabModal, string> = {
-  datos: 'Datos',
-  system_prompt: 'System Prompt',
-  programacion_insert: 'Prog. Insert',
-  programacion_update: 'Prog. Update',
-  md: '.md',
-}
-
 type ItemEliminar =
   | { tipo: 'categoria'; item: CategoriaProceso }
   | { tipo: 'tipo'; item: TipoProceso }
@@ -35,7 +28,18 @@ type ItemEliminar =
   | { tipo: 'canonico'; item: EstadoCanonicalProceso }
 
 export default function PaginaProcesosDatosBasicos() {
+  const t = useTranslations('procesosDatosBasicos')
+  const tc = useTranslations('common')
   const { aplicacionActiva } = useAuth()
+
+  const tabsModalLabels: Record<TabModal, string> = {
+    datos: t('tabDatos'),
+    system_prompt: t('tabSystemPrompt'),
+    programacion_insert: t('tabProgInsert'),
+    programacion_update: t('tabProgUpdate'),
+    md: t('tabMd'),
+  }
+
   const [tabActiva, setTabActiva] = useState<TabId>('categorias')
 
   // ── Categorías ─────────────────────────────────────────────────────────────
@@ -209,7 +213,7 @@ export default function PaginaProcesosDatosBasicos() {
   }
 
   const guardarCategoria = async (cerrar = true) => {
-    if (!formCat.nombre_categoria_proceso) { setErrorCat('El nombre es obligatorio'); return }
+    if (!formCat.nombre_categoria_proceso) { setErrorCat(t('errorNombreObligatorio')); return }
     setGuardandoCat(true); setErrorCat('')
     try {
       if (catEditando) {
@@ -235,7 +239,7 @@ export default function PaginaProcesosDatosBasicos() {
       if (cerrar) setModalCat(false)
       cargarCategorias()
     } catch (e) {
-      setErrorCat(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorCat(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoCat(false) }
   }
 
@@ -346,7 +350,7 @@ export default function PaginaProcesosDatosBasicos() {
 
   const guardarTipo = async (cerrar = true) => {
     if (!formTipo.codigo_categoria_proceso || !formTipo.nombre_tipo_proceso) {
-      setErrorTipo('La categoría y el nombre son obligatorios'); return
+      setErrorTipo(t('errorCategoriaNombreObligatorios')); return
     }
     setGuardandoTipo(true); setErrorTipo('')
     try {
@@ -389,7 +393,7 @@ export default function PaginaProcesosDatosBasicos() {
       }
       cargarTipos()
     } catch (e) {
-      setErrorTipo(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorTipo(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoTipo(false) }
   }
 
@@ -442,7 +446,7 @@ export default function PaginaProcesosDatosBasicos() {
 
   const guardarEstado = async (cerrar = true) => {
     if (!formEst.codigo_categoria_proceso || !formEst.codigo_tipo_proceso || !formEst.nombre_estado) {
-      setErrorEst('Categoría, tipo y nombre son obligatorios'); return
+      setErrorEst(t('errorCategoriaTipoNombreObligatorios')); return
     }
     setGuardandoEst(true); setErrorEst('')
     try {
@@ -476,7 +480,7 @@ export default function PaginaProcesosDatosBasicos() {
       if (cerrar) setModalEst(false)
       cargarEstados()
     } catch (e) {
-      setErrorEst(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorEst(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoEst(false) }
   }
 
@@ -489,8 +493,8 @@ export default function PaginaProcesosDatosBasicos() {
         await procesosDatosBasicosApi.eliminarCategoria((itemAEliminar.item as CategoriaProceso).codigo_categoria_proceso)
         cargarCategorias()
       } else if (itemAEliminar.tipo === 'tipo') {
-        const t = itemAEliminar.item as TipoProceso
-        await procesosDatosBasicosApi.eliminarTipo(t.codigo_categoria_proceso, t.codigo_tipo_proceso)
+        const tp = itemAEliminar.item as TipoProceso
+        await procesosDatosBasicosApi.eliminarTipo(tp.codigo_categoria_proceso, tp.codigo_tipo_proceso)
         cargarTipos()
       } else if (itemAEliminar.tipo === 'estado') {
         const e = itemAEliminar.item as EstadoProceso
@@ -502,7 +506,7 @@ export default function PaginaProcesosDatosBasicos() {
       }
       setItemAEliminar(null)
     } catch (e) {
-      alert(e instanceof Error ? e.message : 'Error al eliminar')
+      alert(e instanceof Error ? e.message : tc('errorAlEliminar'))
       setItemAEliminar(null)
     } finally { setEliminando(false) }
   }
@@ -523,8 +527,8 @@ export default function PaginaProcesosDatosBasicos() {
   }
 
   const guardarCanonico = async (cerrar = true) => {
-    if (!formCan.nombre.trim()) { setErrorCan('El nombre es obligatorio'); return }
-    if (!canEditando && !formCan.codigo_estado_canonico.trim()) { setErrorCan('El código es obligatorio'); return }
+    if (!formCan.nombre.trim()) { setErrorCan(t('errorNombreObligatorio')); return }
+    if (!canEditando && !formCan.codigo_estado_canonico.trim()) { setErrorCan(t('errorCodigoObligatorio')); return }
     setGuardandoCan(true); setErrorCan('')
     try {
       if (canEditando) {
@@ -538,7 +542,7 @@ export default function PaginaProcesosDatosBasicos() {
       if (cerrar) setModalCan(false)
       cargarCanonicos()
     } catch (e) {
-      setErrorCan(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorCan(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoCan(false) }
   }
 
@@ -604,42 +608,42 @@ export default function PaginaProcesosDatosBasicos() {
       <BotonChat className="top-0 right-0" />
 
       <div className="pr-28">
-        <h2 className="page-heading">Datos Básicos de Procesos</h2>
-        <p className="text-sm text-texto-muted mt-1">Configuración de categorías, tipos y estados de proceso</p>
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       {/* Pestañas */}
       <div className="flex border-b border-borde gap-1">
-        <button onClick={() => setTabActiva('categorias')} className={tabCls('categorias')}>Categorías de Proceso</button>
-        <button onClick={() => setTabActiva('tipos')} className={tabCls('tipos')}>Tipos de Proceso</button>
-        <button onClick={() => setTabActiva('estados')} className={tabCls('estados')}>Estados de Proceso</button>
-        <button onClick={() => setTabActiva('canonicos')} className={tabCls('canonicos')}>Estados Canónicos</button>
+        <button onClick={() => setTabActiva('categorias')} className={tabCls('categorias')}>{t('tabCategorias')}</button>
+        <button onClick={() => setTabActiva('tipos')} className={tabCls('tipos')}>{t('tabTipos')}</button>
+        <button onClick={() => setTabActiva('estados')} className={tabCls('estados')}>{t('tabEstados')}</button>
+        <button onClick={() => setTabActiva('canonicos')} className={tabCls('canonicos')}>{t('tabCanonicos')}</button>
       </div>
 
       {/* ── Tab: Categorías ── */}
       {tabActiva === 'categorias' && (
         <>
           <div className="flex items-center justify-between">
-            <p className="text-sm text-texto-muted">Categorías globales de proceso</p>
+            <p className="text-sm text-texto-muted">{t('descripcionCategorias')}</p>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(categorias as unknown as Record<string, unknown>[], [
-                  { titulo: 'Código', campo: 'codigo_categoria_proceso' },
-                  { titulo: 'Nombre', campo: 'nombre_categoria_proceso' },
-                  { titulo: 'Descripción', campo: 'descripcion_categoria_proceso' },
-                  { titulo: 'Alias', campo: 'alias' },
+                  { titulo: t('colCodigo'), campo: 'codigo_categoria_proceso' },
+                  { titulo: t('colNombre'), campo: 'nombre_categoria_proceso' },
+                  { titulo: t('colDescripcion'), campo: 'descripcion_categoria_proceso' },
+                  { titulo: t('colAlias'), campo: 'alias' },
                 ], 'categorias_proceso')}
                 disabled={categorias.length === 0}>
-                <Download size={15} /> Excel
+                <Download size={15} /> {tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> Nueva categoría</Boton>
+              <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> {t('btnNuevaCategoria')}</Boton>
             </div>
           </div>
 
           {cargandoCat ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
           ) : categorias.length === 0 ? (
-            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">No hay categorías registradas</div>
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">{t('sinCategorias')}</div>
           ) : (
             <SortableDndContext
               items={categorias as unknown as Record<string, unknown>[]}
@@ -649,10 +653,10 @@ export default function PaginaProcesosDatosBasicos() {
               <Tabla>
                 <TablaCabecera><tr>
                   <TablaTh className="w-8" />
-                  <TablaTh className="w-16 text-center">Orden</TablaTh>
-                  <TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh><TablaTh>Alias</TablaTh>
-                  <TablaTh className="w-48">Código</TablaTh>
-                  <TablaTh className="text-right w-28">Acciones</TablaTh>
+                  <TablaTh className="w-16 text-center">{t('colOrden')}</TablaTh>
+                  <TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh><TablaTh>{t('colAlias')}</TablaTh>
+                  <TablaTh className="w-48">{t('colCodigo')}</TablaTh>
+                  <TablaTh className="text-right w-28">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {categorias.map((c) => (
@@ -666,9 +670,9 @@ export default function PaginaProcesosDatosBasicos() {
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => { setFiltroCategoria(c.codigo_categoria_proceso); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver tipos"><Eye size={14} /></button>
-                          <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                          <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                          <button onClick={() => { setFiltroCategoria(c.codigo_categoria_proceso); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verTipos')}><Eye size={14} /></button>
+                          <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                         </div>
                       </TablaTd>
                     </SortableRow>
@@ -685,10 +689,10 @@ export default function PaginaProcesosDatosBasicos() {
         <>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1">
-              <p className="text-sm text-texto-muted whitespace-nowrap">Categoría:</p>
+              <p className="text-sm text-texto-muted whitespace-nowrap">{t('lblCategoria')}</p>
               <div className="relative max-w-md flex-1">
                 <Input
-                  placeholder="Buscar y seleccionar categoría..."
+                  placeholder={t('placeholderBuscarSeleccionarCategoria')}
                   value={mostrarListaCat ? busquedaCat : (categoriaSel?.nombre_categoria_proceso || '')}
                   onChange={(e) => { setBusquedaCat(e.target.value); setMostrarListaCat(true) }}
                   onFocus={() => { setMostrarListaCat(true); setBusquedaCat('') }}
@@ -704,7 +708,7 @@ export default function PaginaProcesosDatosBasicos() {
                         onClick={() => { setFiltroCategoria(''); setFiltroTipo(''); setMostrarListaCat(false); setBusquedaCat('') }}
                         className="block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm text-texto-muted border-b border-borde"
                       >
-                        (limpiar selección)
+                        {t('limpiarSeleccion')}
                       </button>
                     )}
                     {categoriasSug.map((c) => (
@@ -726,28 +730,28 @@ export default function PaginaProcesosDatosBasicos() {
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(tiposFiltrados as unknown as Record<string, unknown>[], [
-                  { titulo: 'Orden', campo: 'orden' },
-                  { titulo: 'Categoría', campo: 'codigo_categoria_proceso' },
-                  { titulo: 'Código tipo', campo: 'codigo_tipo_proceso' },
-                  { titulo: 'Nombre', campo: 'nombre_tipo_proceso' },
-                  { titulo: 'Descripción', campo: 'descripcion_tipo_proceso' },
+                  { titulo: t('colOrden'), campo: 'orden' },
+                  { titulo: t('colCategoria'), campo: 'codigo_categoria_proceso' },
+                  { titulo: t('colCodigoTipo'), campo: 'codigo_tipo_proceso' },
+                  { titulo: t('colNombre'), campo: 'nombre_tipo_proceso' },
+                  { titulo: t('colDescripcion'), campo: 'descripcion_tipo_proceso' },
                 ], 'tipos_proceso')}
                 disabled={tiposFiltrados.length === 0}>
-                <Download size={15} /> Excel
+                <Download size={15} /> {tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> Nuevo tipo</Boton>
+              <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> {t('btnNuevoTipo')}</Boton>
             </div>
           </div>
 
           {!filtroCategoria ? (
             <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
-              Selecciona una categoría para ver sus tipos de proceso
+              {t('seleccionaCategoriaParaVerTipos')}
             </div>
           ) : cargandoTipo ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
           ) : tiposFiltrados.length === 0 ? (
             <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
-              No hay tipos registrados en esta categoría
+              {t('sinTiposEnCategoria')}
             </div>
           ) : (
             <SortableDndContext
@@ -758,24 +762,24 @@ export default function PaginaProcesosDatosBasicos() {
               <Tabla>
                 <TablaCabecera><tr>
                   <TablaTh className="w-8" />
-                  <TablaTh className="w-16 text-center">Orden</TablaTh>
-                  <TablaTh>Nombre</TablaTh>
-                  <TablaTh>Descripción</TablaTh>
-                  <TablaTh className="w-40">Código</TablaTh>
-                  <TablaTh className="text-right w-28">Acciones</TablaTh>
+                  <TablaTh className="w-16 text-center">{t('colOrden')}</TablaTh>
+                  <TablaTh>{t('colNombre')}</TablaTh>
+                  <TablaTh>{t('colDescripcion')}</TablaTh>
+                  <TablaTh className="w-40">{t('colCodigo')}</TablaTh>
+                  <TablaTh className="text-right w-28">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
-                  {tiposFiltrados.map((t) => (
-                    <SortableRow key={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} id={`${t.codigo_categoria_proceso}/${t.codigo_tipo_proceso}`} onDoubleClick={() => { setFiltroTipo(t.codigo_tipo_proceso); setTabActiva('estados') }}>
-                      <TablaTd className="text-center text-texto-muted text-sm">{t.orden ?? '—'}</TablaTd>
-                      <TablaTd className="font-medium">{t.nombre_tipo_proceso}</TablaTd>
-                      <TablaTd className="text-texto-muted text-sm">{t.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.codigo_tipo_proceso}</code></TablaTd>
+                  {tiposFiltrados.map((tp) => (
+                    <SortableRow key={`${tp.codigo_categoria_proceso}/${tp.codigo_tipo_proceso}`} id={`${tp.codigo_categoria_proceso}/${tp.codigo_tipo_proceso}`} onDoubleClick={() => { setFiltroTipo(tp.codigo_tipo_proceso); setTabActiva('estados') }}>
+                      <TablaTd className="text-center text-texto-muted text-sm">{tp.orden ?? '—'}</TablaTd>
+                      <TablaTd className="font-medium">{tp.nombre_tipo_proceso}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm">{tp.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tp.codigo_tipo_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => { setFiltroTipo(t.codigo_tipo_proceso); setTabActiva('estados') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver estados"><Eye size={14} /></button>
-                          <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                          <button onClick={() => setItemAEliminar({ tipo: 'tipo', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                          <button onClick={() => { setFiltroTipo(tp.codigo_tipo_proceso); setTabActiva('estados') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verEstados')}><Eye size={14} /></button>
+                          <button onClick={() => abrirEditarTipo(tp)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'tipo', item: tp })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                         </div>
                       </TablaTd>
                     </SortableRow>
@@ -792,10 +796,10 @@ export default function PaginaProcesosDatosBasicos() {
         <>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3 flex-1 flex-wrap">
-              <p className="text-sm text-texto-muted whitespace-nowrap">Categoría:</p>
+              <p className="text-sm text-texto-muted whitespace-nowrap">{t('lblCategoria')}</p>
               <div className="relative max-w-xs flex-1">
                 <Input
-                  placeholder="Buscar categoría..."
+                  placeholder={t('placeholderBuscarCategoria')}
                   value={mostrarListaCat ? busquedaCat : (categoriaSel?.nombre_categoria_proceso || '')}
                   onChange={(e) => { setBusquedaCat(e.target.value); setMostrarListaCat(true) }}
                   onFocus={() => { setMostrarListaCat(true); setBusquedaCat('') }}
@@ -808,7 +812,7 @@ export default function PaginaProcesosDatosBasicos() {
                       <button type="button" onMouseDown={(e) => e.preventDefault()}
                         onClick={() => { setFiltroCategoria(''); setFiltroTipo(''); setMostrarListaCat(false); setBusquedaCat('') }}
                         className="block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm text-texto-muted border-b border-borde">
-                        (limpiar selección)
+                        {t('limpiarSeleccion')}
                       </button>
                     )}
                     {categoriasSug.map((c) => (
@@ -824,10 +828,10 @@ export default function PaginaProcesosDatosBasicos() {
               </div>
               {filtroCategoria && (
                 <>
-                  <p className="text-sm text-texto-muted whitespace-nowrap">Tipo:</p>
+                  <p className="text-sm text-texto-muted whitespace-nowrap">{t('lblTipo')}</p>
                   <div className="relative max-w-xs flex-1">
                     <Input
-                      placeholder="Buscar tipo..."
+                      placeholder={t('placeholderBuscarTipo')}
                       value={mostrarListaTipo ? busquedaTipo : (tipoSel?.nombre_tipo_proceso || '')}
                       onChange={(e) => { setBusquedaTipo(e.target.value); setMostrarListaTipo(true) }}
                       onFocus={() => { setMostrarListaTipo(true); setBusquedaTipo('') }}
@@ -840,15 +844,15 @@ export default function PaginaProcesosDatosBasicos() {
                           <button type="button" onMouseDown={(e) => e.preventDefault()}
                             onClick={() => { setFiltroTipo(''); setMostrarListaTipo(false); setBusquedaTipo('') }}
                             className="block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm text-texto-muted border-b border-borde">
-                            (limpiar selección)
+                            {t('limpiarSeleccion')}
                           </button>
                         )}
-                        {tiposSug.map((t) => (
-                          <button key={t.codigo_tipo_proceso} type="button" onMouseDown={(e) => e.preventDefault()}
-                            onClick={() => { setFiltroTipo(t.codigo_tipo_proceso); setMostrarListaTipo(false); setBusquedaTipo('') }}
-                            className={`block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm ${t.codigo_tipo_proceso === filtroTipo ? 'bg-primario-muy-claro text-primario font-medium' : ''}`}>
-                            {t.nombre_tipo_proceso}
-                            {t.alias && <span className="text-texto-muted text-xs ml-2">({t.alias})</span>}
+                        {tiposSug.map((tp) => (
+                          <button key={tp.codigo_tipo_proceso} type="button" onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => { setFiltroTipo(tp.codigo_tipo_proceso); setMostrarListaTipo(false); setBusquedaTipo('') }}
+                            className={`block w-full text-left px-3 py-2 hover:bg-primario-muy-claro text-sm ${tp.codigo_tipo_proceso === filtroTipo ? 'bg-primario-muy-claro text-primario font-medium' : ''}`}>
+                            {tp.nombre_tipo_proceso}
+                            {tp.alias && <span className="text-texto-muted text-xs ml-2">({tp.alias})</span>}
                           </button>
                         ))}
                       </div>
@@ -860,30 +864,30 @@ export default function PaginaProcesosDatosBasicos() {
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(estadosFiltrados as unknown as Record<string, unknown>[], [
-                  { titulo: 'Orden', campo: 'orden' },
-                  { titulo: 'Categoría', campo: 'codigo_categoria_proceso' },
-                  { titulo: 'Tipo', campo: 'codigo_tipo_proceso' },
-                  { titulo: 'Código estado', campo: 'codigo_estado_proceso' },
-                  { titulo: 'Nombre', campo: 'nombre_estado' },
-                  { titulo: 'Secuencia', campo: 'secuencia' },
-                  { titulo: 'Traducir', campo: 'traducir', formato: (v) => v ? 'Sí' : 'No' },
+                  { titulo: t('colOrden'), campo: 'orden' },
+                  { titulo: t('colCategoria'), campo: 'codigo_categoria_proceso' },
+                  { titulo: t('colTipo'), campo: 'codigo_tipo_proceso' },
+                  { titulo: t('colCodigoEstado'), campo: 'codigo_estado_proceso' },
+                  { titulo: t('colNombre'), campo: 'nombre_estado' },
+                  { titulo: t('colSecuencia'), campo: 'secuencia' },
+                  { titulo: t('colTraducir'), campo: 'traducir', formato: (v) => v ? tc('si') : tc('no') },
                 ], 'estados_proceso')}
                 disabled={estadosFiltrados.length === 0}>
-                <Download size={15} /> Excel
+                <Download size={15} /> {tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevoEst}><Plus size={16} /> Nuevo estado</Boton>
+              <Boton variante="primario" onClick={abrirNuevoEst}><Plus size={16} /> {t('btnNuevoEstado')}</Boton>
             </div>
           </div>
 
           {!filtroCategoria || !filtroTipo ? (
             <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
-              {!filtroCategoria ? 'Selecciona una categoría y un tipo para ver sus estados' : 'Selecciona un tipo de proceso para ver sus estados'}
+              {!filtroCategoria ? t('seleccionaCategoriaTipoParaVerEstados') : t('seleccionaTipoParaVerEstados')}
             </div>
           ) : cargandoEst ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
           ) : estadosFiltrados.length === 0 ? (
             <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">
-              No hay estados registrados para este tipo de proceso
+              {t('sinEstadosEnTipo')}
             </div>
           ) : (
             <SortableDndContext
@@ -894,10 +898,10 @@ export default function PaginaProcesosDatosBasicos() {
               <Tabla>
                 <TablaCabecera><tr>
                   <TablaTh className="w-8" />
-                  <TablaTh className="w-16 text-center">Orden</TablaTh>
-                  <TablaTh>Nombre</TablaTh>
-                  <TablaTh className="w-36">Código</TablaTh>
-                  <TablaTh className="text-right w-24">Acciones</TablaTh>
+                  <TablaTh className="w-16 text-center">{t('colOrden')}</TablaTh>
+                  <TablaTh>{t('colNombre')}</TablaTh>
+                  <TablaTh className="w-36">{t('colCodigo')}</TablaTh>
+                  <TablaTh className="text-right w-24">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {estadosFiltrados.map((e) => (
@@ -907,8 +911,8 @@ export default function PaginaProcesosDatosBasicos() {
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => abrirEditarEst(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                          <button onClick={() => setItemAEliminar({ tipo: 'estado', item: e })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                          <button onClick={() => abrirEditarEst(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'estado', item: e })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                         </div>
                       </TablaTd>
                     </SortableRow>
@@ -929,28 +933,28 @@ export default function PaginaProcesosDatosBasicos() {
                 type="text"
                 value={busquedaCan}
                 onChange={(e) => setBusquedaCan(e.target.value)}
-                placeholder="Buscar estado canónico..."
+                placeholder={t('placeholderBuscarCanonico')}
                 className={selectCls + ' w-64'}
               />
             </div>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(canonicosFiltrados as unknown as Record<string, unknown>[], [
-                  { titulo: 'Orden', campo: 'orden' },
-                  { titulo: 'Código', campo: 'codigo_estado_canonico' },
-                  { titulo: 'Nombre', campo: 'nombre' },
+                  { titulo: t('colOrden'), campo: 'orden' },
+                  { titulo: t('colCodigo'), campo: 'codigo_estado_canonico' },
+                  { titulo: t('colNombre'), campo: 'nombre' },
                 ], 'canonicos_proceso')}
                 disabled={canonicosFiltrados.length === 0}>
-                <Download size={15} /> Excel
+                <Download size={15} /> {tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevoCan}><Plus size={16} /> Nuevo estado canónico</Boton>
+              <Boton variante="primario" onClick={abrirNuevoCan}><Plus size={16} /> {t('btnNuevoCanonico')}</Boton>
             </div>
           </div>
 
           {cargandoCan ? (
             <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
           ) : canonicos.length === 0 ? (
-            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">No hay estados canónicos registrados</div>
+            <div className="text-center text-texto-muted py-12 border border-dashed border-borde rounded-lg">{t('sinCanonicos')}</div>
           ) : (
             <SortableDndContext
               items={canonicosFiltrados as unknown as Record<string, unknown>[]}
@@ -960,14 +964,14 @@ export default function PaginaProcesosDatosBasicos() {
               <Tabla>
                 <TablaCabecera><tr>
                   <TablaTh className="w-8" />
-                  <TablaTh className="w-16 text-center">Orden</TablaTh>
-                  <TablaTh>Nombre</TablaTh>
-                  <TablaTh className="w-48">Código</TablaTh>
-                  <TablaTh className="text-right w-24">Acciones</TablaTh>
+                  <TablaTh className="w-16 text-center">{t('colOrden')}</TablaTh>
+                  <TablaTh>{t('colNombre')}</TablaTh>
+                  <TablaTh className="w-48">{t('colCodigo')}</TablaTh>
+                  <TablaTh className="text-right w-24">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {canonicosFiltrados.length === 0 ? (
-                    <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>Sin resultados para la búsqueda</TablaTd></TablaFila>
+                    <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>{t('sinResultadosBusqueda')}</TablaTd></TablaFila>
                   ) : canonicosFiltrados.map((c) => (
                     <SortableRow key={c.codigo_estado_canonico} id={c.codigo_estado_canonico}>
                       <TablaTd className="text-center text-texto-muted text-sm">{c.orden ?? '—'}</TablaTd>
@@ -975,8 +979,8 @@ export default function PaginaProcesosDatosBasicos() {
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_estado_canonico}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => abrirEditarCan(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                          <button onClick={() => setItemAEliminar({ tipo: 'canonico', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                          <button onClick={() => abrirEditarCan(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                          <button onClick={() => setItemAEliminar({ tipo: 'canonico', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                         </div>
                       </TablaTd>
                     </SortableRow>
@@ -989,7 +993,7 @@ export default function PaginaProcesosDatosBasicos() {
       )}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar categoría de proceso: ${catEditando.nombre_categoria_proceso}` : 'Nueva categoría de proceso'} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('modalCategoriaEditar', { nombre: catEditando.nombre_categoria_proceso }) : t('modalCategoriaNueva')} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -998,7 +1002,7 @@ export default function PaginaProcesosDatosBasicos() {
               : (['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[])
             ).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)} className={tabModalCls(tabModalCat, tab)}>
-                {TABS_MODAL_LABELS[tab]}
+                {tabsModalLabels[tab]}
               </button>
             ))}
           </div>
@@ -1007,24 +1011,24 @@ export default function PaginaProcesosDatosBasicos() {
           {tabModalCat === 'datos' && (
             <div className="flex flex-col gap-4">
               {!catEditando && (
-                <Input etiqueta="Código (dejar vacío para autogenerar)" value={formCat.codigo_categoria_proceso}
+                <Input etiqueta={t('etiquetaCodigoAutogenerar')} value={formCat.codigo_categoria_proceso}
                   onChange={(e) => setFormCat({ ...formCat, codigo_categoria_proceso: e.target.value })}
                   placeholder="GESTION_PREDIOS" />
               )}
               <div className="grid grid-cols-2 gap-3">
-                <Input etiqueta="Nombre *" value={formCat.nombre_categoria_proceso}
+                <Input etiqueta={t('etiquetaNombreObligatorio')} value={formCat.nombre_categoria_proceso}
                   onChange={(e) => setFormCat({ ...formCat, nombre_categoria_proceso: e.target.value })}
-                  placeholder="Gestión de Predios" />
-                <Input etiqueta="Alias" value={formCat.alias}
+                  placeholder={t('placeholderNombreCategoria')} />
+                <Input etiqueta={t('etiquetaAlias')} value={formCat.alias}
                   onChange={(e) => setFormCat({ ...formCat, alias: e.target.value })}
-                  placeholder="Alias breve" />
+                  placeholder={t('placeholderAliasBreve')} />
               </div>
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Descripción</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaDescripcion')}</label>
                 <textarea value={formCat.descripcion_categoria_proceso}
                   onChange={(e) => setFormCat({ ...formCat, descripcion_categoria_proceso: e.target.value })}
                   rows={6}
-                  placeholder="Descripción opcional"
+                  placeholder={t('placeholderDescripcionOpcional')}
                   className={textareaCls} />
               </div>
             </div>
@@ -1033,11 +1037,11 @@ export default function PaginaProcesosDatosBasicos() {
           {/* Tab System Prompt */}
           {tabModalCat === 'system_prompt' && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">System prompt</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaSystemPrompt')}</label>
               <textarea value={formCat.system_prompt}
                 onChange={(e) => setFormCat({ ...formCat, system_prompt: e.target.value })}
                 rows={11}
-                placeholder="Instrucciones system para el LLM"
+                placeholder={t('placeholderInstruccionesSystem')}
                 className={textareaCls + ' font-mono'} />
             </div>
           )}
@@ -1069,11 +1073,11 @@ export default function PaginaProcesosDatosBasicos() {
           )}
           {tabModalCat === 'programacion_insert' && !catEditando && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Prompt insert</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaPromptInsert')}</label>
               <textarea value={formCat.prompt_insert}
                 onChange={(e) => setFormCat({ ...formCat, prompt_insert: e.target.value })}
                 rows={12}
-                placeholder="Prompt para INSERT"
+                placeholder={t('placeholderPromptInsert')}
                 className={textareaCls} />
             </div>
           )}
@@ -1104,11 +1108,11 @@ export default function PaginaProcesosDatosBasicos() {
           )}
           {tabModalCat === 'programacion_update' && !catEditando && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Prompt update</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaPromptUpdate')}</label>
               <textarea value={formCat.prompt_update}
                 onChange={(e) => setFormCat({ ...formCat, prompt_update: e.target.value })}
                 rows={12}
-                placeholder="Prompt para UPDATE"
+                placeholder={t('placeholderPromptUpdate')}
                 className={textareaCls} />
             </div>
           )}
@@ -1117,9 +1121,9 @@ export default function PaginaProcesosDatosBasicos() {
           {tabModalCat === 'md' && catEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaMarkdownGenerado')}</label>
                 <textarea value={formCat.md || ''} readOnly rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('placeholderSinContenidoMd')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
               </div>
               {mensajeMdCat && (
@@ -1133,28 +1137,28 @@ export default function PaginaProcesosDatosBasicos() {
                       try {
                         const r = await procesosDatosBasicosApi.generarMdCategoria(catEditando.codigo_categoria_proceso)
                         setFormCat((p) => ({ ...p, md: r.md }))
-                        setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado.' })
-                      } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                        setMensajeMdCat({ tipo: 'ok', texto: t('msgMarkdownGenerado') })
+                      } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : tc('error') }) }
                       finally { setGenerandoMdCat(false) }
                     }}
                     cargando={generandoMdCat}
                     disabled={generandoMdCat || sincronizandoMdCat}
-                  >Generar</Boton>
+                  >{t('btnGenerar')}</Boton>
                   <Boton
                     variante="secundario"
                     onClick={async () => {
                       setSincronizandoMdCat(true); setMensajeMdCat(null)
                       try {
                         const r = await promptsApi.sincronizarFila('categorias_proceso', 'codigo_categoria_proceso', catEditando.codigo_categoria_proceso)
-                        setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
-                      } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                        setMensajeMdCat({ tipo: 'ok', texto: t('msgDocumentoSincronizado', { accion: r.accion, codigo: r.codigo_documento }) })
+                      } catch (e) { setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : tc('error') }) }
                       finally { setSincronizandoMdCat(false) }
                     }}
                     cargando={sincronizandoMdCat}
                     disabled={generandoMdCat || sincronizandoMdCat || !formCat.md}
-                  >Sincronizar</Boton>
+                  >{t('btnSincronizar')}</Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalCat(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalCat(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -1183,7 +1187,7 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo */}
-      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? `Editar tipo de proceso: ${tipoEditando.nombre_tipo_proceso}` : 'Nuevo tipo de proceso'} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? t('modalTipoEditar', { nombre: tipoEditando.nombre_tipo_proceso }) : t('modalTipoNuevo')} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -1192,7 +1196,7 @@ export default function PaginaProcesosDatosBasicos() {
               : (['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[])
             ).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)} className={tabModalCls(tabModalTipo, tab)}>
-                {TABS_MODAL_LABELS[tab]}
+                {tabsModalLabels[tab]}
               </button>
             ))}
           </div>
@@ -1201,40 +1205,40 @@ export default function PaginaProcesosDatosBasicos() {
           {tabModalTipo === 'datos' && (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Categoría *</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaCategoriaObligatoria')}</label>
                 <select value={formTipo.codigo_categoria_proceso}
                   onChange={(e) => setFormTipo({ ...formTipo, codigo_categoria_proceso: e.target.value })}
                   disabled={!!tipoEditando}
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-                  <option value="">Seleccionar categoría...</option>
+                  <option value="">{t('placeholderSeleccionarCategoria')}</option>
                   {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
                 </select>
               </div>
               {!tipoEditando && (
-                <Input etiqueta="Código tipo (dejar vacío para autogenerar)" value={formTipo.codigo_tipo_proceso}
+                <Input etiqueta={t('etiquetaCodigoTipoAutogenerar')} value={formTipo.codigo_tipo_proceso}
                   onChange={(e) => setFormTipo({ ...formTipo, codigo_tipo_proceso: e.target.value })}
                   placeholder="LICENCIA_OBRAS" />
               )}
-              <Input etiqueta="Nombre *" value={formTipo.nombre_tipo_proceso}
+              <Input etiqueta={t('etiquetaNombreObligatorio')} value={formTipo.nombre_tipo_proceso}
                 onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_proceso: e.target.value })}
-                placeholder="Licencia de Obras" />
-              <Input etiqueta="Descripción" value={formTipo.descripcion_tipo_proceso}
+                placeholder={t('placeholderNombreTipo')} />
+              <Input etiqueta={t('etiquetaDescripcion')} value={formTipo.descripcion_tipo_proceso}
                 onChange={(e) => setFormTipo({ ...formTipo, descripcion_tipo_proceso: e.target.value })}
-                placeholder="Descripción opcional" />
-              <Input etiqueta="Alias" value={formTipo.alias}
+                placeholder={t('placeholderDescripcionOpcional')} />
+              <Input etiqueta={t('etiquetaAlias')} value={formTipo.alias}
                 onChange={(e) => setFormTipo({ ...formTipo, alias: e.target.value })}
-                placeholder="Alias breve" />
+                placeholder={t('placeholderAliasBreve')} />
             </div>
           )}
 
           {/* Tab System Prompt */}
           {tabModalTipo === 'system_prompt' && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">System prompt</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaSystemPrompt')}</label>
               <textarea value={formTipo.system_prompt}
                 onChange={(e) => setFormTipo({ ...formTipo, system_prompt: e.target.value })}
                 rows={11}
-                placeholder="Instrucciones system para el LLM"
+                placeholder={t('placeholderInstruccionesSystem')}
                 className={textareaCls + ' font-mono'} />
             </div>
           )}
@@ -1266,11 +1270,11 @@ export default function PaginaProcesosDatosBasicos() {
           )}
           {tabModalTipo === 'programacion_insert' && !tipoEditando && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Prompt insert</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaPromptInsert')}</label>
               <textarea value={formTipo.prompt_insert}
                 onChange={(e) => setFormTipo({ ...formTipo, prompt_insert: e.target.value })}
                 rows={12}
-                placeholder="Prompt para INSERT"
+                placeholder={t('placeholderPromptInsert')}
                 className={textareaCls} />
             </div>
           )}
@@ -1301,11 +1305,11 @@ export default function PaginaProcesosDatosBasicos() {
           )}
           {tabModalTipo === 'programacion_update' && !tipoEditando && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Prompt update</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaPromptUpdate')}</label>
               <textarea value={formTipo.prompt_update}
                 onChange={(e) => setFormTipo({ ...formTipo, prompt_update: e.target.value })}
                 rows={12}
-                placeholder="Prompt para UPDATE"
+                placeholder={t('placeholderPromptUpdate')}
                 className={textareaCls} />
             </div>
           )}
@@ -1314,9 +1318,9 @@ export default function PaginaProcesosDatosBasicos() {
           {tabModalTipo === 'md' && tipoEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaMarkdownGenerado')}</label>
                 <textarea value={formTipo.md || ''} readOnly rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('placeholderSinContenidoMd')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
               </div>
               {mensajeMdTipo && (
@@ -1330,28 +1334,28 @@ export default function PaginaProcesosDatosBasicos() {
                       try {
                         const r = await procesosDatosBasicosApi.generarMdTipo(tipoEditando.codigo_categoria_proceso, tipoEditando.codigo_tipo_proceso)
                         setFormTipo((p) => ({ ...p, md: r.md }))
-                        setMensajeMdTipo({ tipo: 'ok', texto: 'Markdown generado.' })
-                      } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                        setMensajeMdTipo({ tipo: 'ok', texto: t('msgMarkdownGenerado') })
+                      } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : tc('error') }) }
                       finally { setGenerandoMdTipo(false) }
                     }}
                     cargando={generandoMdTipo}
                     disabled={generandoMdTipo || sincronizandoMdTipo}
-                  >Generar</Boton>
+                  >{t('btnGenerar')}</Boton>
                   <Boton
                     variante="secundario"
                     onClick={async () => {
                       setSincronizandoMdTipo(true); setMensajeMdTipo(null)
                       try {
                         const r = await promptsApi.sincronizarFila('tipos_proceso', 'codigo_tipo_proceso', tipoEditando.codigo_tipo_proceso)
-                        setMensajeMdTipo({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
-                      } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                        setMensajeMdTipo({ tipo: 'ok', texto: t('msgDocumentoSincronizado', { accion: r.accion, codigo: r.codigo_documento }) })
+                      } catch (e) { setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : tc('error') }) }
                       finally { setSincronizandoMdTipo(false) }
                     }}
                     cargando={sincronizandoMdTipo}
                     disabled={generandoMdTipo || sincronizandoMdTipo || !formTipo.md}
-                  >Sincronizar</Boton>
+                  >{t('btnSincronizar')}</Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalTipo(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalTipo(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -1380,7 +1384,7 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Estado */}
-      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? `Editar estado de proceso: ${estEditando.nombre_estado}` : 'Nuevo estado de proceso'} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? t('modalEstadoEditar', { nombre: estEditando.nombre_estado }) : t('modalEstadoNuevo')} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -1389,7 +1393,7 @@ export default function PaginaProcesosDatosBasicos() {
               : (['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as TabModal[])
             ).map((tab) => (
               <button key={tab} onClick={() => setTabModalEst(tab)} className={tabModalCls(tabModalEst, tab)}>
-                {TABS_MODAL_LABELS[tab]}
+                {tabsModalLabels[tab]}
               </button>
             ))}
           </div>
@@ -1399,44 +1403,44 @@ export default function PaginaProcesosDatosBasicos() {
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-texto">Categoría *</label>
+                  <label className="text-sm font-medium text-texto">{t('etiquetaCategoriaObligatoria')}</label>
                   <select value={formEst.codigo_categoria_proceso}
                     onChange={(e) => setFormEst({ ...formEst, codigo_categoria_proceso: e.target.value, codigo_tipo_proceso: '' })}
                     disabled={!!estEditando}
                     className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-                    <option value="">Seleccionar categoría...</option>
+                    <option value="">{t('placeholderSeleccionarCategoria')}</option>
                     {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
                   </select>
                 </div>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-texto">Tipo *</label>
+                  <label className="text-sm font-medium text-texto">{t('etiquetaTipoObligatorio')}</label>
                   <select value={formEst.codigo_tipo_proceso}
                     onChange={(e) => setFormEst({ ...formEst, codigo_tipo_proceso: e.target.value })}
                     disabled={!!estEditando}
                     className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-60">
-                    <option value="">Seleccionar tipo...</option>
-                    {tipos.filter((t) => t.codigo_categoria_proceso === formEst.codigo_categoria_proceso)
-                      .map((t) => <option key={t.codigo_tipo_proceso} value={t.codigo_tipo_proceso}>{t.nombre_tipo_proceso}</option>)}
+                    <option value="">{t('placeholderSeleccionarTipo')}</option>
+                    {tipos.filter((tp) => tp.codigo_categoria_proceso === formEst.codigo_categoria_proceso)
+                      .map((tp) => <option key={tp.codigo_tipo_proceso} value={tp.codigo_tipo_proceso}>{tp.nombre_tipo_proceso}</option>)}
                   </select>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 {!estEditando ? (
-                  <Input etiqueta="Código estado (vacío = autogenerar)" value={formEst.codigo_estado_proceso}
+                  <Input etiqueta={t('etiquetaCodigoEstadoAutogenerar')} value={formEst.codigo_estado_proceso}
                     onChange={(e) => setFormEst({ ...formEst, codigo_estado_proceso: e.target.value })}
                     placeholder="INGRESADO" />
                 ) : (
-                  <Input etiqueta="Código estado" value={formEst.codigo_estado_proceso} disabled />
+                  <Input etiqueta={t('etiquetaCodigoEstado')} value={formEst.codigo_estado_proceso} disabled />
                 )}
-                <Input etiqueta="Nombre *" value={formEst.nombre_estado}
+                <Input etiqueta={t('etiquetaNombreObligatorio')} value={formEst.nombre_estado}
                   onChange={(e) => setFormEst({ ...formEst, nombre_estado: e.target.value })}
-                  placeholder="Ingresado" />
+                  placeholder={t('placeholderNombreEstado')} />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-texto">Secuencia</label>
+                  <label className="text-sm font-medium text-texto">{t('etiquetaSecuencia')}</label>
                   <input type="number" min={0} value={formEst.secuencia}
                     onChange={(e) => setFormEst({ ...formEst, secuencia: parseInt(e.target.value) || 0 })}
                     className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
@@ -1447,15 +1451,15 @@ export default function PaginaProcesosDatosBasicos() {
                 <input type="checkbox" checked={formEst.traducir}
                   onChange={(e) => setFormEst({ ...formEst, traducir: e.target.checked })}
                   className="h-4 w-4 rounded border-borde text-primario focus:ring-primario" />
-                Traducir este estado a los idiomas configurados
+                {t('etiquetaTraducirEstado')}
               </label>
 
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Ayuda</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaAyuda')}</label>
                 <textarea value={formEst.ayuda}
                   onChange={(e) => setFormEst({ ...formEst, ayuda: e.target.value })}
                   rows={2}
-                  placeholder="Texto de ayuda contextual para este estado"
+                  placeholder={t('placeholderAyudaEstado')}
                   className={textareaCls} />
               </div>
             </div>
@@ -1464,11 +1468,11 @@ export default function PaginaProcesosDatosBasicos() {
           {/* Tab System Prompt */}
           {tabModalEst === 'system_prompt' && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">System prompt</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaSystemPrompt')}</label>
               <textarea value={formEst.system_prompt}
                 onChange={(e) => setFormEst({ ...formEst, system_prompt: e.target.value })}
                 rows={11}
-                placeholder="Instrucciones system para el LLM"
+                placeholder={t('placeholderInstruccionesSystem')}
                 className={textareaCls + ' font-mono'} />
             </div>
           )}
@@ -1500,11 +1504,11 @@ export default function PaginaProcesosDatosBasicos() {
           )}
           {tabModalEst === 'programacion_insert' && !estEditando && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Prompt insert</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaPromptInsert')}</label>
               <textarea value={formEst.prompt_insert}
                 onChange={(e) => setFormEst({ ...formEst, prompt_insert: e.target.value })}
                 rows={12}
-                placeholder="Prompt específico del estado (INSERT)"
+                placeholder={t('placeholderPromptInsertEstado')}
                 className={textareaCls} />
             </div>
           )}
@@ -1535,11 +1539,11 @@ export default function PaginaProcesosDatosBasicos() {
           )}
           {tabModalEst === 'programacion_update' && !estEditando && (
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Prompt update</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaPromptUpdate')}</label>
               <textarea value={formEst.prompt_update}
                 onChange={(e) => setFormEst({ ...formEst, prompt_update: e.target.value })}
                 rows={12}
-                placeholder="Prompt específico del estado (UPDATE)"
+                placeholder={t('placeholderPromptUpdateEstado')}
                 className={textareaCls} />
             </div>
           )}
@@ -1548,9 +1552,9 @@ export default function PaginaProcesosDatosBasicos() {
           {tabModalEst === 'md' && estEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaMarkdownGenerado')}</label>
                 <textarea value={formEst.md || ''} readOnly rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('placeholderSinContenidoMd')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
               </div>
               {mensajeMdEst && (
@@ -1564,28 +1568,28 @@ export default function PaginaProcesosDatosBasicos() {
                       try {
                         const r = await procesosDatosBasicosApi.generarMdEstado(estEditando.codigo_categoria_proceso, estEditando.codigo_tipo_proceso, estEditando.codigo_estado_proceso)
                         setFormEst((p) => ({ ...p, md: r.md }))
-                        setMensajeMdEst({ tipo: 'ok', texto: 'Markdown generado.' })
-                      } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                        setMensajeMdEst({ tipo: 'ok', texto: t('msgMarkdownGenerado') })
+                      } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : tc('error') }) }
                       finally { setGenerandoMdEst(false) }
                     }}
                     cargando={generandoMdEst}
                     disabled={generandoMdEst || sincronizandoMdEst}
-                  >Generar</Boton>
+                  >{t('btnGenerar')}</Boton>
                   <Boton
                     variante="secundario"
                     onClick={async () => {
                       setSincronizandoMdEst(true); setMensajeMdEst(null)
                       try {
                         const r = await promptsApi.sincronizarFila('estados_procesos', 'codigo_estado_proceso', estEditando.codigo_estado_proceso)
-                        setMensajeMdEst({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}).` })
-                      } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error' }) }
+                        setMensajeMdEst({ tipo: 'ok', texto: t('msgDocumentoSincronizado', { accion: r.accion, codigo: r.codigo_documento }) })
+                      } catch (e) { setMensajeMdEst({ tipo: 'error', texto: e instanceof Error ? e.message : tc('error') }) }
                       finally { setSincronizandoMdEst(false) }
                     }}
                     cargando={sincronizandoMdEst}
                     disabled={generandoMdEst || sincronizandoMdEst || !formEst.md}
-                  >Sincronizar</Boton>
+                  >{t('btnSincronizar')}</Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalEst(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalEst(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -1614,17 +1618,17 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Canónico */}
-      <Modal abierto={modalCan} alCerrar={() => setModalCan(false)} titulo={canEditando ? `Editar: ${canEditando.nombre}` : 'Nuevo Estado Canónico de Proceso'}>
+      <Modal abierto={modalCan} alCerrar={() => setModalCan(false)} titulo={canEditando ? t('modalCanonicoEditar', { nombre: canEditando.nombre }) : t('modalCanonicoNuevo')}>
         <div className="flex flex-col gap-4 min-w-[440px]">
-          <Input etiqueta="Código" value={formCan.codigo_estado_canonico}
+          <Input etiqueta={t('etiquetaCodigo')} value={formCan.codigo_estado_canonico}
             onChange={(e) => setFormCan({ ...formCan, codigo_estado_canonico: e.target.value })}
-            placeholder="Ej: ABIERTO, EN_PROCESO, CERRADO"
+            placeholder={t('placeholderCodigoCanonico')}
             disabled={!!canEditando}
             autoFocus={!canEditando}
           />
-          <Input etiqueta="Nombre *" value={formCan.nombre}
+          <Input etiqueta={t('etiquetaNombreObligatorio')} value={formCan.nombre}
             onChange={(e) => setFormCan({ ...formCan, nombre: e.target.value })}
-            placeholder="Nombre del estado canónico"
+            placeholder={t('placeholderNombreCanonico')}
             autoFocus={!!canEditando}
           />
           {errorCan && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCan}</p></div>}
@@ -1644,20 +1648,20 @@ export default function PaginaProcesosDatosBasicos() {
         alCerrar={() => setItemAEliminar(null)}
         alConfirmar={ejecutarEliminacion}
         titulo={
-          itemAEliminar?.tipo === 'categoria' ? 'Eliminar categoría' :
-          itemAEliminar?.tipo === 'tipo' ? 'Eliminar tipo' :
-          itemAEliminar?.tipo === 'canonico' ? 'Eliminar estado canónico' : 'Eliminar estado'
+          itemAEliminar?.tipo === 'categoria' ? t('eliminarCategoriaTitulo') :
+          itemAEliminar?.tipo === 'tipo' ? t('eliminarTipoTitulo') :
+          itemAEliminar?.tipo === 'canonico' ? t('eliminarCanonicoTitulo') : t('eliminarEstadoTitulo')
         }
         mensaje={
           itemAEliminar?.tipo === 'categoria'
-            ? `¿Eliminar la categoría "${(itemAEliminar.item as CategoriaProceso).nombre_categoria_proceso}"? Solo posible si no tiene tipos asociados.`
+            ? t('eliminarCategoriaConfirm', { nombre: (itemAEliminar.item as CategoriaProceso).nombre_categoria_proceso })
             : itemAEliminar?.tipo === 'tipo'
-            ? `¿Eliminar el tipo "${(itemAEliminar.item as TipoProceso).nombre_tipo_proceso}"? Solo posible si no tiene estados asociados.`
+            ? t('eliminarTipoConfirm', { nombre: (itemAEliminar.item as TipoProceso).nombre_tipo_proceso })
             : itemAEliminar?.tipo === 'canonico'
-            ? `¿Eliminar el estado canónico "${(itemAEliminar.item as EstadoCanonicalProceso).nombre}"?`
-            : `¿Eliminar el estado "${(itemAEliminar?.item as EstadoProceso)?.nombre_estado}"?`
+            ? t('eliminarCanonicoConfirm', { nombre: (itemAEliminar.item as EstadoCanonicalProceso).nombre })
+            : t('eliminarEstadoConfirm', { nombre: (itemAEliminar?.item as EstadoProceso)?.nombre_estado ?? '' })
         }
-        textoConfirmar="Eliminar"
+        textoConfirmar={tc('eliminar')}
         cargando={eliminando}
       />
     </div>

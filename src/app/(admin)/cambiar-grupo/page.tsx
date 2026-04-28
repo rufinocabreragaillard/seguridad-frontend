@@ -2,11 +2,14 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useAuth } from '@/context/AuthContext'
 import { gruposApi, usuariosApi } from '@/lib/api'
 import type { Grupo } from '@/lib/tipos'
 
 export default function CambiarGrupoPage() {
+  const t = useTranslations('cambiarGrupo')
+  const tc = useTranslations('common')
   const router = useRouter()
   const { usuario } = useAuth()
 
@@ -28,7 +31,7 @@ export default function CambiarGrupoPage() {
   useEffect(() => {
     gruposApi.listar()
       .then((data) => setGrupos(data))
-      .catch(() => setError('No se pudieron cargar los grupos.'))
+      .catch(() => setError(t('errorCargarGrupos')))
       .finally(() => setCargando(false))
   }, [])
 
@@ -50,7 +53,7 @@ export default function CambiarGrupoPage() {
       router.push('/dashboard')
     } catch (e: unknown) {
       const err = e as { response?: { data?: { detail?: string } } }
-      setError(err?.response?.data?.detail || 'Error al cambiar el grupo.')
+      setError(err?.response?.data?.detail || t('errorCambiarGrupo'))
       setGuardando(false)
     }
   }
@@ -58,7 +61,7 @@ export default function CambiarGrupoPage() {
   if (cargando) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
-        <div className="text-texto-muted">Cargando grupos…</div>
+        <div className="text-texto-muted">{t('cargandoGrupos')}</div>
       </div>
     )
   }
@@ -69,16 +72,16 @@ export default function CambiarGrupoPage() {
 
   return (
     <div className="max-w-md mx-auto mt-12 p-6 bg-surface rounded-xl border border-borde shadow-sm">
-      <h1 className="page-heading mb-1">Cambiar de Grupo</h1>
+      <h1 className="page-heading mb-1">{t('titulo')}</h1>
       <p className="text-sm text-texto-muted mb-6">
-        Grupo actual:{' '}
+        {t('grupoActual')}{' '}
         <span className="font-medium text-texto">{grupoActualNombre}</span>
       </p>
 
       {/* Selector buscable */}
       <div className="mb-6">
         <label className="block text-sm font-medium text-texto mb-1">
-          Seleccionar nuevo grupo
+          {t('seleccionarNuevoGrupo')}
         </label>
 
         {/* Campo de búsqueda */}
@@ -86,7 +89,7 @@ export default function CambiarGrupoPage() {
           <input
             type="text"
             className="w-full border border-borde rounded-lg px-3 py-2 text-sm text-texto bg-fondo focus:outline-none focus:ring-2 focus:ring-primario/40"
-            placeholder="Buscar grupo…"
+            placeholder={t('buscarGrupoPlaceholder')}
             value={seleccionado
               ? (abierto ? busqueda : grupoSeleccionadoNombre || '')
               : busqueda}
@@ -122,7 +125,7 @@ export default function CambiarGrupoPage() {
                   <span className="font-medium">{g.nombre}</span>
                   <span className="ml-2 text-xs text-texto-muted">{g.codigo_grupo}</span>
                   {g.codigo_grupo === usuario?.grupo_activo && (
-                    <span className="ml-2 text-xs text-texto-muted">(actual)</span>
+                    <span className="ml-2 text-xs text-texto-muted">{t('marcaActual')}</span>
                   )}
                 </li>
               ))}
@@ -131,7 +134,7 @@ export default function CambiarGrupoPage() {
 
           {abierto && gruposFiltrados.length === 0 && (
             <div className="absolute z-10 mt-1 w-full bg-surface border border-borde rounded-lg shadow-lg px-3 py-2 text-sm text-texto-muted">
-              Sin resultados
+              {tc('sinResultados')}
             </div>
           )}
         </div>
@@ -140,7 +143,7 @@ export default function CambiarGrupoPage() {
       {/* Confirmación */}
       {seleccionado && seleccionado !== usuario?.grupo_activo && (
         <div className="mb-4 p-3 rounded-lg bg-primario-muy-claro border border-primario/20 text-sm text-texto">
-          Cambiar a: <span className="font-semibold">{grupoSeleccionadoNombre}</span>
+          {t('cambiarA')} <span className="font-semibold">{grupoSeleccionadoNombre}</span>
         </div>
       )}
 
@@ -156,7 +159,7 @@ export default function CambiarGrupoPage() {
         className="w-full bg-primario text-primario-texto rounded-lg py-2 text-sm font-medium
           hover:bg-primario-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
       >
-        {guardando ? 'Cambiando…' : 'Confirmar cambio de grupo'}
+        {guardando ? t('cambiando') : t('confirmarCambio')}
       </button>
     </div>
   )

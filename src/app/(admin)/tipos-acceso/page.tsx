@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { ChevronDown, ChevronRight, ShieldCheck, Pencil, Trash2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -22,6 +23,9 @@ type FormTipoAcceso = {
 }
 
 export default function PaginaTiposAcceso() {
+  const t = useTranslations('tiposAcceso')
+  const tc = useTranslations('common')
+
   const crud = useCrudPage<TipoAcceso, FormTipoAcceso>({
     cargarFn: () => tiposAccesoApi.listar(),
     crearFn: (f) =>
@@ -70,15 +74,15 @@ export default function PaginaTiposAcceso() {
     if (!excluirCodigo) return crud.items
     const desc = new Set<string>([excluirCodigo])
     const buscar = (cod: string) => {
-      for (const t of crud.items) {
-        if (t.tipo_acceso_superior === cod && !desc.has(t.codigo_tipo_acceso)) {
-          desc.add(t.codigo_tipo_acceso)
-          buscar(t.codigo_tipo_acceso)
+      for (const item of crud.items) {
+        if (item.tipo_acceso_superior === cod && !desc.has(item.codigo_tipo_acceso)) {
+          desc.add(item.codigo_tipo_acceso)
+          buscar(item.codigo_tipo_acceso)
         }
       }
     }
     buscar(excluirCodigo)
-    return crud.items.filter((t) => !desc.has(t.codigo_tipo_acceso))
+    return crud.items.filter((item) => !desc.has(item.codigo_tipo_acceso))
   }
 
   const renderNodo = (item: TipoAcceso, nivel: number) => {
@@ -107,21 +111,21 @@ export default function PaginaTiposAcceso() {
           </div>
 
           <span className="text-xs text-texto-muted shrink-0 w-16 text-right pr-2">
-            Nivel {nivel + 1}
+            {t('nivel', { n: nivel + 1 })}
           </span>
 
           <div className="flex items-center gap-0.5 shrink-0">
             <button
               onClick={() => crud.abrirEditar(item)}
               className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
-              title="Editar"
+              title={tc('editar')}
             >
               <Pencil size={14} />
             </button>
             <button
               onClick={() => crud.setConfirmacion(item)}
               className="p-1.5 rounded-lg hover:bg-orange-50 text-texto-muted hover:text-orange-500 transition-colors"
-              title="Eliminar"
+              title={tc('eliminar')}
             >
               <Trash2 size={14} />
             </button>
@@ -150,9 +154,9 @@ export default function PaginaTiposAcceso() {
   return (
     <div className="relative flex flex-col gap-6 max-w-3xl">
       <div>
-        <h2 className="page-heading">Tipos de Acceso</h2>
+        <h2 className="page-heading">{t('titulo')}</h2>
         <p className="text-sm text-texto-muted mt-1">
-          Catálogo jerárquico de niveles de acceso. Define qué tipos puede ver cada nivel.
+          {t('subtitulo')}
         </p>
       </div>
 
@@ -161,34 +165,34 @@ export default function PaginaTiposAcceso() {
           <BarraHerramientas
             busqueda={crud.busqueda}
             onBusqueda={crud.setBusqueda}
-            placeholderBusqueda="Buscar tipo de acceso…"
+            placeholderBusqueda={t('buscarPlaceholder')}
             onNuevo={() => crud.abrirNuevo()}
-            textoNuevo="Nuevo tipo"
+            textoNuevo={t('nuevoTipo')}
             excelDatos={filtradosOrdenados as unknown as Record<string, unknown>[]}
             excelColumnas={[
-              { titulo: 'Código', campo: 'codigo_tipo_acceso' },
-              { titulo: 'Nombre', campo: 'nombre_tipo_acceso' },
-              { titulo: 'Superior', campo: 'tipo_acceso_superior' },
+              { titulo: t('colCodigo'), campo: 'codigo_tipo_acceso' },
+              { titulo: t('colNombre'), campo: 'nombre_tipo_acceso' },
+              { titulo: t('colSuperior'), campo: 'tipo_acceso_superior' },
             ]}
             excelNombreArchivo="tipos-acceso"
           />
         </div>
         <Boton variante="contorno" className="h-[38px]" onClick={expandirTodos} disabled={crud.items.length === 0}>
-          Expandir todo
+          {t('expandirTodo')}
         </Boton>
         <Boton variante="contorno" className="h-[38px]" onClick={colapsarTodos} disabled={expandidos.size === 0}>
-          Colapsar todo
+          {t('colapsarTodo')}
         </Boton>
       </div>
 
       {/* Árbol */}
       <div className="bg-surface rounded-lg border border-borde p-2 flex flex-col gap-1 min-h-[180px]">
         {crud.cargando ? (
-          <div className="text-center text-texto-muted py-8 text-sm">Cargando…</div>
+          <div className="text-center text-texto-muted py-8 text-sm">{tc('cargando')}</div>
         ) : raices.length === 0 ? (
-          <div className="text-center text-texto-muted py-8 text-sm">Sin tipos de acceso.</div>
+          <div className="text-center text-texto-muted py-8 text-sm">{t('sinTiposAcceso')}</div>
         ) : (
-          raices.map((t) => renderNodo(t, 0))
+          raices.map((item) => renderNodo(item, 0))
         )}
       </div>
 
@@ -196,13 +200,13 @@ export default function PaginaTiposAcceso() {
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? `Editar: ${crud.editando.nombre_tipo_acceso}` : 'Nuevo tipo de acceso'}
+        titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_tipo_acceso }) : t('nuevoTitulo')}
         className="max-w-md"
       >
         <div className="flex flex-col gap-4 min-w-[360px]">
           {crud.editando && (
             <Input
-              etiqueta="Código"
+              etiqueta={t('etiquetaCodigo')}
               value={crud.form.codigo_tipo_acceso}
               onChange={() => {}}
               disabled
@@ -210,31 +214,31 @@ export default function PaginaTiposAcceso() {
           )}
 
           <Input
-            etiqueta="Nombre"
+            etiqueta={t('etiquetaNombre')}
             value={crud.form.nombre_tipo_acceso}
             onChange={(e) => crud.updateForm('nombre_tipo_acceso', e.target.value)}
-            placeholder="Ej: Supervisor"
+            placeholder={t('placeholderNombre')}
             autoFocus
           />
 
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-texto">Tipo superior</label>
+            <label className="text-sm font-medium text-texto">{t('etiquetaSuperior')}</label>
             <select
               className={selectClass}
               value={crud.form.tipo_acceso_superior}
               onChange={(e) => crud.updateForm('tipo_acceso_superior', e.target.value)}
             >
-              <option value="">— Sin superior (raíz) —</option>
+              <option value="">{t('opcionSinSuperior')}</option>
               {opcionesPadre(crud.editando?.codigo_tipo_acceso)
                 .sort((a, b) => a.nombre_tipo_acceso.localeCompare(b.nombre_tipo_acceso))
-                .map((t) => (
-                  <option key={t.codigo_tipo_acceso} value={t.codigo_tipo_acceso}>
-                    {t.nombre_tipo_acceso} ({t.codigo_tipo_acceso})
+                .map((item) => (
+                  <option key={item.codigo_tipo_acceso} value={item.codigo_tipo_acceso}>
+                    {item.nombre_tipo_acceso} ({item.codigo_tipo_acceso})
                   </option>
                 ))}
             </select>
             <p className="text-xs text-texto-muted">
-              El tipo padre en la jerarquía. Vacío = nivel raíz (máximo privilegio).
+              {t('descSuperior')}
             </p>
           </div>
 
@@ -248,14 +252,14 @@ export default function PaginaTiposAcceso() {
             editando={!!crud.editando}
             onGuardar={() => {
               if (!crud.form.nombre_tipo_acceso.trim()) {
-                crud.setError('El nombre es obligatorio.')
+                crud.setError(t('errorNombreObligatorio'))
                 return
               }
               crud.guardar(undefined, undefined, { cerrar: false })
             }}
             onGuardarYSalir={() => {
               if (!crud.form.nombre_tipo_acceso.trim()) {
-                crud.setError('El nombre es obligatorio.')
+                crud.setError(t('errorNombreObligatorio'))
                 return
               }
               crud.guardar(undefined, undefined, { cerrar: true })
@@ -268,8 +272,8 @@ export default function PaginaTiposAcceso() {
 
       <ModalConfirmar
         abierto={!!crud.confirmacion}
-        titulo="Eliminar tipo de acceso"
-        mensaje={`¿Eliminar "${crud.confirmacion?.nombre_tipo_acceso}"? Esta acción no se puede deshacer.`}
+        titulo={t('eliminarTitulo')}
+        mensaje={crud.confirmacion ? t('eliminarConfirm', { nombre: crud.confirmacion.nombre_tipo_acceso }) : ''}
         onConfirmar={crud.confirmarEliminar}
         onCancelar={() => crud.setConfirmacion(null)}
         cargando={crud.eliminando}

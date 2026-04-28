@@ -11,7 +11,7 @@
   --color-text-heading:   #374151;  /* gris oscuro — títulos de página */
   --color-text-muted:     #86868b;  /* gris medio — subtítulos, secciones */
   --color-bg-body:        #F4F5F8;  /* fondo general */
-  --color-brand:          #074B91;  /* azul principal Server LM */
+  --color-brand:          #ebebeb;  /* gris claro — color de marca Server LM */
 }
 
 body {

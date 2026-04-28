@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { Plus, Pencil, Trash2, Search, Download } from 'lucide-react'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
@@ -42,6 +43,8 @@ const FORM_VACIO: FormData = {
 }
 
 export default function PaginaValoresParametrosGenerales() {
+  const t = useTranslations('parametrosGeneralesValores')
+  const tc = useTranslations('common')
   const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [categorias, setCategorias] = useState<string[]>([])
@@ -119,7 +122,7 @@ export default function PaginaValoresParametrosGenerales() {
 
   const guardar = async (cerrar: boolean) => {
     if (!form.categoria_parametro.trim() || !form.tipo_parametro.trim()) {
-      setError('Categoría y tipo son obligatorios')
+      setError(t('errorCategoriaTipoObligatorios'))
       return
     }
     setGuardando(true)
@@ -144,7 +147,7 @@ export default function PaginaValoresParametrosGenerales() {
       refetch()
       cargarCategorias()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al guardar')
+      setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally {
       setGuardando(false)
     }
@@ -169,9 +172,9 @@ export default function PaginaValoresParametrosGenerales() {
     <div className="relative flex flex-col gap-6">
       <BotonChat />
       <div>
-        <h2 className="page-heading">Valores de Parámetros Generales</h2>
+        <h2 className="page-heading">{t('titulo')}</h2>
         <p className="text-sm text-texto-muted mt-1">
-          Administra los valores de los parámetros globales que controlan el comportamiento del sistema
+          {t('subtitulo')}
         </p>
       </div>
 
@@ -179,7 +182,7 @@ export default function PaginaValoresParametrosGenerales() {
       <div className="flex flex-wrap items-center gap-3">
         <div className="max-w-xs flex-1">
           <Input
-            placeholder="Buscar parámetro..."
+            placeholder={t('buscarPlaceholder')}
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
             icono={<Search size={15} />}
@@ -190,7 +193,7 @@ export default function PaginaValoresParametrosGenerales() {
           onChange={(e) => setFiltroCategoria(e.target.value)}
           className="rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario"
         >
-          <option value="">Todas las categorías</option>
+          <option value="">{t('todasLasCategorias')}</option>
           {categorias.map((c) => (
             <option key={c} value={c}>{c}</option>
           ))}
@@ -204,19 +207,19 @@ export default function PaginaValoresParametrosGenerales() {
               exportarExcel(
                 items as unknown as Record<string, unknown>[],
                 [
-                  { titulo: 'Categoría', campo: 'categoria_parametro' },
-                  { titulo: 'Tipo', campo: 'tipo_parametro' },
-                  { titulo: 'Valor', campo: 'valor_parametro' },
-                  { titulo: 'Descripción', campo: 'descripcion' },
+                  { titulo: t('colCategoria'), campo: 'categoria_parametro' },
+                  { titulo: t('colTipo'), campo: 'tipo_parametro' },
+                  { titulo: t('colValor'), campo: 'valor_parametro' },
+                  { titulo: t('colDescripcion'), campo: 'descripcion' },
                 ],
                 'valores-parametros-generales'
               )
             }
           >
-            <Download size={15} /> Excel
+            <Download size={15} /> {tc('exportarExcel')}
           </Boton>
           <Boton variante="primario" onClick={abrirNuevo}>
-            <Plus size={16} /> Nuevo valor
+            <Plus size={16} /> {t('nuevoValor')}
           </Boton>
         </div>
       </div>
@@ -238,17 +241,17 @@ export default function PaginaValoresParametrosGenerales() {
             <TablaCabecera>
               <tr>
                 <TablaTh className="w-8" />
-                <TablaTh>Categoría</TablaTh>
-                <TablaTh>Tipo</TablaTh>
-                <TablaTh>Valor</TablaTh>
-                <TablaTh className="text-right">Acciones</TablaTh>
+                <TablaTh>{t('colCategoria')}</TablaTh>
+                <TablaTh>{t('colTipo')}</TablaTh>
+                <TablaTh>{t('colValor')}</TablaTh>
+                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr>
             </TablaCabecera>
             <TablaCuerpo>
               {itemsLocales.length === 0 ? (
                 <tr>
                   <TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>
-                    {busqueda || filtroCategoria ? 'No se encontraron parámetros' : 'No hay parámetros registrados'}
+                    {busqueda || filtroCategoria ? t('sinParametrosEncontrados') : t('sinParametrosRegistrados')}
                   </TablaTd>
                 </tr>
               ) : (
@@ -270,7 +273,7 @@ export default function PaginaValoresParametrosGenerales() {
                     </TablaTd>
                     <TablaTd className="max-w-[280px]">
                       <span className="block truncate text-sm font-mono" title={p.valor_parametro}>
-                        {p.valor_parametro || <span className="text-texto-light italic">sin valor</span>}
+                        {p.valor_parametro || <span className="text-texto-light italic">{t('sinValor')}</span>}
                       </span>
                     </TablaTd>
                     <TablaTd>
@@ -278,14 +281,14 @@ export default function PaginaValoresParametrosGenerales() {
                         <button
                           onClick={() => abrirEditar(p)}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
-                          title="Editar"
+                          title={tc('editar')}
                         >
                           <Pencil size={14} />
                         </button>
                         <button
                           onClick={() => setAEliminar(p)}
                           className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
-                          title="Eliminar"
+                          title={tc('eliminar')}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -317,27 +320,27 @@ export default function PaginaValoresParametrosGenerales() {
         abierto={modal}
         alCerrar={() => setModal(false)}
         titulo={editando
-          ? `Editar: ${editando.categoria_parametro} / ${editando.tipo_parametro}`
-          : 'Nuevo valor de parámetro general'}
+          ? t('editarTitulo', { categoria: editando.categoria_parametro, tipo: editando.tipo_parametro })
+          : t('nuevoTitulo')}
         className="w-[620px] max-w-[95vw]"
       >
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-sm font-medium text-texto mb-1">Categoría *</label>
+              <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaCategoria')}</label>
               <input
                 className={inputCls}
-                placeholder="ej: SISTEMA"
+                placeholder={t('placeholderCategoria')}
                 value={form.categoria_parametro}
                 disabled={!!editando}
                 onChange={(e) => setForm({ ...form, categoria_parametro: e.target.value.toUpperCase() })}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-texto mb-1">Tipo *</label>
+              <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaTipo')}</label>
               <input
                 className={inputCls}
-                placeholder="ej: TIMEOUT"
+                placeholder={t('placeholderTipo')}
                 value={form.tipo_parametro}
                 disabled={!!editando}
                 onChange={(e) => setForm({ ...form, tipo_parametro: e.target.value.toUpperCase() })}
@@ -346,21 +349,21 @@ export default function PaginaValoresParametrosGenerales() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-texto mb-1">Valor</label>
+            <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaValor')}</label>
             <input
               className={inputCls}
-              placeholder="Valor del parámetro"
+              placeholder={t('placeholderValor')}
               value={form.valor_parametro}
               onChange={(e) => setForm({ ...form, valor_parametro: e.target.value })}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
+            <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaDescripcion')}</label>
             <textarea
               className={inputCls}
               rows={2}
-              placeholder="Descripción del parámetro"
+              placeholder={t('placeholderDescripcion')}
               value={form.descripcion}
               onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
             />
@@ -383,11 +386,11 @@ export default function PaginaValoresParametrosGenerales() {
         abierto={!!aEliminar}
         alCerrar={() => setAEliminar(null)}
         alConfirmar={confirmarEliminar}
-        titulo="Eliminar parámetro"
+        titulo={t('eliminarTitulo')}
         mensaje={aEliminar
-          ? `¿Eliminar el parámetro "${aEliminar.categoria_parametro} / ${aEliminar.tipo_parametro}"? Esta acción puede afectar el comportamiento del sistema.`
+          ? t('eliminarConfirm', { categoria: aEliminar.categoria_parametro, tipo: aEliminar.tipo_parametro })
           : ''}
-        textoConfirmar="Eliminar"
+        textoConfirmar={tc('eliminar')}
         cargando={eliminando}
       />
     </div>

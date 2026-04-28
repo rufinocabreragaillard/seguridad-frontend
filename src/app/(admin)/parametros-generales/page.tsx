@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { Plus, Pencil, Trash2, Eye, Search, Download } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -29,6 +30,8 @@ const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-2 text-sm t
 const inputCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
 export default function PaginaParametrosGenerales() {
+  const t = useTranslations('parametrosGenerales')
+  const tc = useTranslations('common')
   const [tabActiva, setTabActiva] = useState<TabId>('categorias')
 
   // ── Categorías ─────────────────────────────────────────────────────────────
@@ -142,7 +145,7 @@ export default function PaginaParametrosGenerales() {
   }
 
   const guardarCat = async (cerrar: boolean) => {
-    if (!formCat.categoria_parametro.trim() || !formCat.nombre.trim()) { setErrorCat('Código y nombre son obligatorios'); return }
+    if (!formCat.categoria_parametro.trim() || !formCat.nombre.trim()) { setErrorCat(t('errorCodigoNombreObligatorios')); return }
     setGuardandoCat(true); setErrorCat('')
     try {
       if (catEditando) {
@@ -166,7 +169,7 @@ export default function PaginaParametrosGenerales() {
       }
       if (cerrar) setModalCat(false)
       cargarCategorias()
-    } catch (e) { setErrorCat(e instanceof Error ? e.message : 'Error al guardar') }
+    } catch (e) { setErrorCat(e instanceof Error ? e.message : tc('errorAlGuardar')) }
     finally { setGuardandoCat(false) }
   }
 
@@ -175,7 +178,7 @@ export default function PaginaParametrosGenerales() {
   const abrirEditarTipo = (t: TipoParametro) => { const t2 = t as unknown as Record<string, unknown>; setTipoEditando(t); setFormTipo({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, nombre: t.nombre, descripcion: t.descripcion || '' }); setPromptsTipo({ prompt_insert: t2.prompt_insert as string ?? null, prompt_update: t2.prompt_update as string ?? null, system_prompt: t2.system_prompt as string ?? null, python_insert: t2.python_insert as string ?? null, python_update: t2.python_update as string ?? null, javascript: t2.javascript as string ?? null, python_editado_manual: t2.python_editado_manual as boolean ?? false, javascript_editado_manual: t2.javascript_editado_manual as boolean ?? false }); setMdTipo((t2.md as string) || ''); setMensajeMdTipo(null); setTabModalTipo('datos'); setErrorTipo(''); setModalTipo(true) }
 
   const guardarTipo = async (cerrar: boolean) => {
-    if (!formTipo.categoria_parametro || !formTipo.tipo_parametro.trim() || !formTipo.nombre.trim()) { setErrorTipo('Categoría, código y nombre son obligatorios'); return }
+    if (!formTipo.categoria_parametro || !formTipo.tipo_parametro.trim() || !formTipo.nombre.trim()) { setErrorTipo(t('errorCategoriaCodigoNombreObligatorios')); return }
     setGuardandoTipo(true); setErrorTipo('')
     try {
       if (tipoEditando) {
@@ -187,7 +190,7 @@ export default function PaginaParametrosGenerales() {
       }
       if (cerrar) setModalTipo(false)
       cargarTipos()
-    } catch (e) { setErrorTipo(e instanceof Error ? e.message : 'Error al guardar') }
+    } catch (e) { setErrorTipo(e instanceof Error ? e.message : tc('errorAlGuardar')) }
     finally { setGuardandoTipo(false) }
   }
 
@@ -218,16 +221,16 @@ export default function PaginaParametrosGenerales() {
   const tiposFiltrados = filtroCategoria ? tipos.filter((t) => t.categoria_parametro === filtroCategoria) : tipos
 
   const tabs: { id: TabId; label: string }[] = [
-    { id: 'categorias', label: 'Categorías de Parámetro' },
-    { id: 'tipos', label: 'Tipos de Parámetro' },
+    { id: 'categorias', label: t('tabCategorias') },
+    { id: 'tipos', label: t('tabTipos') },
   ]
 
   return (
     <div className="relative flex flex-col gap-6">
       <BotonChat />
       <div>
-        <h2 className="page-heading">Parámetros Generales</h2>
-        <p className="text-sm text-texto-muted mt-1">Administra las categorías y tipos de parámetros del sistema</p>
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtituloAdmin')}</p>
       </div>
 
       {/* Tabs */}
@@ -244,24 +247,24 @@ export default function PaginaParametrosGenerales() {
         <>
           <div className="flex items-center gap-3">
             <div className="max-w-sm flex-1">
-              <Input placeholder="Buscar categoría..." value={busquedaCat} onChange={(e) => setBusquedaCat(e.target.value)} icono={<Search size={15} />} />
+              <Input placeholder={t('buscarCategoriaPlaceholder')} value={busquedaCat} onChange={(e) => setBusquedaCat(e.target.value)} icono={<Search size={15} />} />
             </div>
             <div className="flex gap-2 ml-auto">
               <Boton variante="contorno" tamano="sm" disabled={catsFiltradas.length === 0}
                 onClick={() => exportarExcel(catsFiltradas as unknown as Record<string, unknown>[], [
-                  { titulo: 'Código', campo: 'categoria_parametro' },
-                  { titulo: 'Nombre', campo: 'nombre' },
-                  { titulo: 'Rep G', campo: 'replica_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Vis G', campo: 'visible_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Edit G', campo: 'editable_grupo', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Rep U', campo: 'replica_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Vis U', campo: 'visible_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Edit U', campo: 'editable_usuario', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Nombre', campo: 'nombre', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
+                  { titulo: t('colCodigo'), campo: 'categoria_parametro' },
+                  { titulo: t('colNombre'), campo: 'nombre' },
+                  { titulo: t('colRepGrupo'), campo: 'replica_grupo', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
+                  { titulo: t('colVisGrupo'), campo: 'visible_grupo', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
+                  { titulo: t('colEditGrupo'), campo: 'editable_grupo', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
+                  { titulo: t('colRepUsuario'), campo: 'replica_usuario', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
+                  { titulo: t('colVisUsuario'), campo: 'visible_usuario', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
+                  { titulo: t('colEditUsuario'), campo: 'editable_usuario', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
+                  { titulo: t('colNombre'), campo: 'nombre', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
                 ], 'categorias-parametro')}>
-                <Download size={15} />Excel
+                <Download size={15} />{tc('exportarExcel')}
               </Boton>
-              <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> Nueva categoría</Boton>
+              <Boton variante="primario" onClick={abrirNuevaCat}><Plus size={16} /> {t('nuevaCategoria')}</Boton>
             </div>
           </div>
 
@@ -272,20 +275,20 @@ export default function PaginaParametrosGenerales() {
               <TablaCabecera><tr>
                 <TablaTh className="w-8"></TablaTh>
                 <TablaTh className="w-10">#</TablaTh>
-                <TablaTh>Código</TablaTh>
-                <TablaTh>Nombre</TablaTh>
-                <TablaTh className="text-center">Rep G</TablaTh>
-                <TablaTh className="text-center">Vis G</TablaTh>
-                <TablaTh className="text-center">Edit G</TablaTh>
-                <TablaTh className="text-center">Rep U</TablaTh>
-                <TablaTh className="text-center">Vis U</TablaTh>
-                <TablaTh className="text-center">Edit U</TablaTh>
-                <TablaTh>Estado</TablaTh>
-                <TablaTh className="text-right">Acciones</TablaTh>
+                <TablaTh>{t('colCodigo')}</TablaTh>
+                <TablaTh>{t('colNombre')}</TablaTh>
+                <TablaTh className="text-center">{t('colRepGrupo')}</TablaTh>
+                <TablaTh className="text-center">{t('colVisGrupo')}</TablaTh>
+                <TablaTh className="text-center">{t('colEditGrupo')}</TablaTh>
+                <TablaTh className="text-center">{t('colRepUsuario')}</TablaTh>
+                <TablaTh className="text-center">{t('colVisUsuario')}</TablaTh>
+                <TablaTh className="text-center">{t('colEditUsuario')}</TablaTh>
+                <TablaTh>{t('colEstado')}</TablaTh>
+                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
                 {catsFiltradas.length === 0 ? (
-                  <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={12 as never}>{busquedaCat ? 'No se encontraron categorías' : 'No hay categorías registradas'}</TablaTd></tr>
+                  <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={12 as never}>{busquedaCat ? t('sinCategoriasEncontradas') : t('sinCategoriasRegistradas')}</TablaTd></tr>
                 ) : (
                   <SortableDndContext
                     items={catsFiltradas as unknown as Record<string, unknown>[]}
@@ -300,20 +303,20 @@ export default function PaginaParametrosGenerales() {
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{c.orden ?? idx + 1}</TablaTd>
                         <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
                         <TablaTd className="font-medium">{c.nombre}</TablaTd>
-                        <TablaTd className="text-center"><Insignia variante={c.replica_grupo ? 'exito' : 'error'}>{c.replica_grupo ? 'Sí' : 'No'}</Insignia></TablaTd>
-                        <TablaTd className="text-center"><Insignia variante={c.visible_grupo ? 'exito' : 'error'}>{c.visible_grupo ? 'Sí' : 'No'}</Insignia></TablaTd>
-                        <TablaTd className="text-center"><Insignia variante={c.editable_grupo ? 'exito' : 'error'}>{c.editable_grupo ? 'Sí' : 'No'}</Insignia></TablaTd>
-                        <TablaTd className="text-center"><Insignia variante={c.replica_usuario ? 'exito' : 'error'}>{c.replica_usuario ? 'Sí' : 'No'}</Insignia></TablaTd>
-                        <TablaTd className="text-center"><Insignia variante={c.visible_usuario ? 'exito' : 'error'}>{c.visible_usuario ? 'Sí' : 'No'}</Insignia></TablaTd>
-                        <TablaTd className="text-center"><Insignia variante={c.editable_usuario ? 'exito' : 'error'}>{c.editable_usuario ? 'Sí' : 'No'}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.replica_grupo ? 'exito' : 'error'}>{c.replica_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.visible_grupo ? 'exito' : 'error'}>{c.visible_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.editable_grupo ? 'exito' : 'error'}>{c.editable_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.replica_usuario ? 'exito' : 'error'}>{c.replica_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.visible_usuario ? 'exito' : 'error'}>{c.visible_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
+                        <TablaTd className="text-center"><Insignia variante={c.editable_usuario ? 'exito' : 'error'}>{c.editable_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd>
                           
                         </TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver tipos"><Eye size={14} /></button>
-                            <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                            <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                            <button onClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verTipos')}><Eye size={14} /></button>
+                            <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                            <button onClick={() => setItemAEliminar({ tipo: 'categoria', item: c })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                           </div>
                         </TablaTd>
                       </SortableRow>
@@ -331,18 +334,18 @@ export default function PaginaParametrosGenerales() {
         <>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <p className="text-sm text-texto-muted">Filtrar por categoría:</p>
+              <p className="text-sm text-texto-muted">{t('filtrarPorCategoria')}</p>
               <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
-                <option value="">Todas</option>
+                <option value="">{t('todas')}</option>
                 {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
               </select>
             </div>
-            <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> Nuevo tipo</Boton>
+            <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> {t('nuevoTipo')}</Boton>
           </div>
 
           {filtroCategoria === '' && (
             <div className="bg-primario-muy-claro/50 border border-primario/20 rounded-lg px-4 py-3">
-              <p className="text-sm text-primario-oscuro">Selecciona una categoría para ver sus tipos, o muestra todos.</p>
+              <p className="text-sm text-primario-oscuro">{t('seleccionaCategoriaTipos')}</p>
             </div>
           )}
 
@@ -353,13 +356,13 @@ export default function PaginaParametrosGenerales() {
               <TablaCabecera><tr>
                 <TablaTh className="w-8"></TablaTh>
                 <TablaTh className="w-10">#</TablaTh>
-                <TablaTh>Categoría</TablaTh><TablaTh>Código tipo</TablaTh><TablaTh>Nombre</TablaTh>
-                <TablaTh>Descripción</TablaTh><TablaTh>Estado</TablaTh>
-                <TablaTh className="text-right">Acciones</TablaTh>
+                <TablaTh>{t('colCategoria')}</TablaTh><TablaTh>{t('colCodigoTipo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh>
+                <TablaTh>{t('colDescripcion')}</TablaTh><TablaTh>{t('colEstado')}</TablaTh>
+                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
                 {tiposFiltrados.length === 0 ? (
-                  <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={8 as never}>No hay tipos registrados</TablaTd></tr>
+                  <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={8 as never}>{t('sinTiposRegistrados')}</TablaTd></tr>
                 ) : (
                   <SortableDndContext
                     items={tiposFiltrados as unknown as Record<string, unknown>[]}
@@ -378,8 +381,8 @@ export default function PaginaParametrosGenerales() {
                         </TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                            <button onClick={() => setItemAEliminar({ tipo: 'tipoparam', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                            <button onClick={() => abrirEditarTipo(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                            <button onClick={() => setItemAEliminar({ tipo: 'tipoparam', item: t })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                           </div>
                         </TablaTd>
                       </SortableRow>
@@ -396,7 +399,7 @@ export default function PaginaParametrosGenerales() {
       <Modal
         abierto={modalCat}
         alCerrar={() => setModalCat(false)}
-        titulo={catEditando ? `Editar categoría: ${catEditando.nombre}` : 'Nueva categoría de parámetro'}
+        titulo={catEditando ? t('editarCategoriaTitulo', { nombre: catEditando.nombre }) : t('nuevaCategoriaTitulo')}
         className="w-[853px] max-w-[95vw]"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">
@@ -405,7 +408,7 @@ export default function PaginaParametrosGenerales() {
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 whitespace-nowrap ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prompt Insert' : tab === 'programacion_update' ? 'Prompt Update' : '.md'}
+                {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? t('tabSystemPrompt') : tab === 'programacion_insert' ? t('tabPromptInsert') : tab === 'programacion_update' ? t('tabPromptUpdate') : t('tabMd')}
               </button>
             ))}
           </div>
@@ -414,52 +417,52 @@ export default function PaginaParametrosGenerales() {
             <div className="flex flex-col gap-4">
               {!catEditando && (
                 <div>
-                  <label className="block text-sm font-medium text-texto mb-1">Código *</label>
-                  <input className={inputCls} placeholder="ej: SISTEMA" value={formCat.categoria_parametro}
+                  <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaCodigo')}</label>
+                  <input className={inputCls} placeholder={t('placeholderCodigoCat')} value={formCat.categoria_parametro}
                     onChange={(e) => setFormCat({ ...formCat, categoria_parametro: e.target.value.toUpperCase() })} />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Nombre *</label>
-                <input className={inputCls} placeholder="Nombre de la categoría" value={formCat.nombre}
+                <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaNombre')}</label>
+                <input className={inputCls} placeholder={t('placeholderNombreCat')} value={formCat.nombre}
                   onChange={(e) => setFormCat({ ...formCat, nombre: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
-                <textarea className={inputCls} rows={2} placeholder="Descripción opcional" value={formCat.descripcion}
+                <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaDescripcion')}</label>
+                <textarea className={inputCls} rows={2} placeholder={t('placeholderDescripcionOpcional')} value={formCat.descripcion}
                   onChange={(e) => setFormCat({ ...formCat, descripcion: e.target.value })} />
               </div>
               <div className="border border-borde rounded-lg p-3">
-                <p className="text-sm font-medium text-texto mb-2">Políticas de propagación y acceso</p>
+                <p className="text-sm font-medium text-texto mb-2">{t('politicasTitulo')}</p>
                 <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="flex flex-col gap-1.5">
-                    <p className="text-xs text-texto-muted font-medium uppercase">Grupo</p>
+                    <p className="text-xs text-texto-muted font-medium uppercase">{t('grupo')}</p>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={formCat.replica_grupo} onChange={(e) => setFormCat({ ...formCat, replica_grupo: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
-                      Replica a grupo
+                      {t('replicaAGrupo')}
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={formCat.visible_grupo} onChange={(e) => setFormCat({ ...formCat, visible_grupo: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
-                      Visible para grupo
+                      {t('visibleParaGrupo')}
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={formCat.editable_grupo} onChange={(e) => setFormCat({ ...formCat, editable_grupo: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
-                      Editable por grupo
+                      {t('editablePorGrupo')}
                     </label>
                   </div>
                   <div className="flex flex-col gap-1.5">
-                    <p className="text-xs text-texto-muted font-medium uppercase">Usuario</p>
+                    <p className="text-xs text-texto-muted font-medium uppercase">{t('usuario')}</p>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={formCat.replica_usuario} onChange={(e) => setFormCat({ ...formCat, replica_usuario: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
-                      Replica a usuario
+                      {t('replicaAUsuario')}
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={formCat.visible_usuario} onChange={(e) => setFormCat({ ...formCat, visible_usuario: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
-                      Visible para usuario
+                      {t('visibleParaUsuario')}
                     </label>
                     <label className="flex items-center gap-2 cursor-pointer">
                       <input type="checkbox" checked={formCat.editable_usuario} onChange={(e) => setFormCat({ ...formCat, editable_usuario: e.target.checked })} className="rounded border-borde text-primario h-4 w-4" />
-                      Editable por usuario
+                      {t('editablePorUsuario')}
                     </label>
                   </div>
                 </div>
@@ -545,12 +548,12 @@ export default function PaginaParametrosGenerales() {
           {tabModalCat === 'md' && catEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('mdEtiqueta')}</label>
                 <textarea
                   value={mdCat || ''}
                   readOnly
                   rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('mdPlaceholder')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
@@ -568,15 +571,15 @@ export default function PaginaParametrosGenerales() {
                       try {
                         const r = await datosBasicosApi.generarMdCategoria(catEditando.categoria_parametro)
                         setMdCat(r.md)
-                        setMensajeMdCat({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        setMensajeMdCat({ tipo: 'ok', texto: t('mdGeneradoOk') })
                       } catch (e) {
-                        setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : t('mdErrorGenerar') })
                       } finally { setGenerandoMdCat(false) }
                     }}
                     cargando={generandoMdCat}
                     disabled={generandoMdCat || sincronizandoMdCat}
                   >
-                    Generar
+                    {t('mdGenerar')}
                   </Boton>
                   <Boton
                     className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -584,18 +587,18 @@ export default function PaginaParametrosGenerales() {
                       setSincronizandoMdCat(true); setMensajeMdCat(null)
                       try {
                         const r = await promptsApi.sincronizarFila('categorias_parametro', 'categoria_parametro', catEditando.categoria_parametro)
-                        setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        setMensajeMdCat({ tipo: 'ok', texto: t('mdSincronizadoOk', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
-                        setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : t('mdErrorSincronizar') })
                       } finally { setSincronizandoMdCat(false) }
                     }}
                     cargando={sincronizandoMdCat}
                     disabled={generandoMdCat || sincronizandoMdCat || !mdCat}
                   >
-                    Sincronizar
+                    {t('mdSincronizar')}
                   </Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalCat(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalCat(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -606,7 +609,7 @@ export default function PaginaParametrosGenerales() {
       <Modal
         abierto={modalTipo}
         alCerrar={() => setModalTipo(false)}
-        titulo={tipoEditando ? `Editar tipo: ${tipoEditando.nombre}` : 'Nuevo tipo de parámetro'}
+        titulo={tipoEditando ? t('editarTipoTitulo', { nombre: tipoEditando.nombre }) : t('nuevoTipoTitulo')}
         className="w-[683px] max-w-[95vw]"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">
@@ -615,7 +618,7 @@ export default function PaginaParametrosGenerales() {
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
                 className={`flex-1 text-center px-3 py-2 text-sm border-b-2 whitespace-nowrap ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prompt Insert' : tab === 'programacion_update' ? 'Prompt Update' : '.md'}
+                {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? t('tabSystemPrompt') : tab === 'programacion_insert' ? t('tabPromptInsert') : tab === 'programacion_update' ? t('tabPromptUpdate') : t('tabMd')}
               </button>
             ))}
           </div>
@@ -623,29 +626,29 @@ export default function PaginaParametrosGenerales() {
           {tabModalTipo === 'datos' && (
             <div className="flex flex-col gap-4">
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Categoría *</label>
+                <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaCategoria')}</label>
                 <select className={selectCls} value={formTipo.categoria_parametro}
                   onChange={(e) => setFormTipo({ ...formTipo, categoria_parametro: e.target.value })}
                   disabled={!!tipoEditando}>
-                  <option value="">Selecciona categoría</option>
+                  <option value="">{t('seleccionaCategoria')}</option>
                   {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
                 </select>
               </div>
               {!tipoEditando && (
                 <div>
-                  <label className="block text-sm font-medium text-texto mb-1">Código *</label>
-                  <input className={inputCls} placeholder="ej: TIMEOUT" value={formTipo.tipo_parametro}
+                  <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaCodigo')}</label>
+                  <input className={inputCls} placeholder={t('placeholderCodigoTipo')} value={formTipo.tipo_parametro}
                     onChange={(e) => setFormTipo({ ...formTipo, tipo_parametro: e.target.value.toUpperCase() })} />
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Nombre *</label>
-                <input className={inputCls} placeholder="Nombre del tipo" value={formTipo.nombre}
+                <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaNombre')}</label>
+                <input className={inputCls} placeholder={t('placeholderNombreTipo')} value={formTipo.nombre}
                   onChange={(e) => setFormTipo({ ...formTipo, nombre: e.target.value })} />
               </div>
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
-                <textarea className={inputCls} rows={2} placeholder="Descripción opcional" value={formTipo.descripcion}
+                <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaDescripcion')}</label>
+                <textarea className={inputCls} rows={2} placeholder={t('placeholderDescripcionOpcional')} value={formTipo.descripcion}
                   onChange={(e) => setFormTipo({ ...formTipo, descripcion: e.target.value })} />
               </div>
               {errorTipo && <p className="text-sm text-error">{errorTipo}</p>}
@@ -729,12 +732,12 @@ export default function PaginaParametrosGenerales() {
           {tabModalTipo === 'md' && tipoEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('mdEtiqueta')}</label>
                 <textarea
                   value={mdTipo || ''}
                   readOnly
                   rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('mdPlaceholder')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
@@ -752,15 +755,15 @@ export default function PaginaParametrosGenerales() {
                       try {
                         const r = await datosBasicosApi.generarMdTipo(tipoEditando.categoria_parametro, tipoEditando.tipo_parametro)
                         setMdTipo(r.md)
-                        setMensajeMdTipo({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        setMensajeMdTipo({ tipo: 'ok', texto: t('mdGeneradoOk') })
                       } catch (e) {
-                        setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : t('mdErrorGenerar') })
                       } finally { setGenerandoMdTipo(false) }
                     }}
                     cargando={generandoMdTipo}
                     disabled={generandoMdTipo || sincronizandoMdTipo}
                   >
-                    Generar
+                    {t('mdGenerar')}
                   </Boton>
                   <Boton
                     className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -768,18 +771,18 @@ export default function PaginaParametrosGenerales() {
                       setSincronizandoMdTipo(true); setMensajeMdTipo(null)
                       try {
                         const r = await promptsApi.sincronizarFila('tipos_parametro', 'tipo_parametro', tipoEditando.tipo_parametro)
-                        setMensajeMdTipo({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        setMensajeMdTipo({ tipo: 'ok', texto: t('mdSincronizadoOk', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
-                        setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        setMensajeMdTipo({ tipo: 'error', texto: e instanceof Error ? e.message : t('mdErrorSincronizar') })
                       } finally { setSincronizandoMdTipo(false) }
                     }}
                     cargando={sincronizandoMdTipo}
                     disabled={generandoMdTipo || sincronizandoMdTipo || !mdTipo}
                   >
-                    Sincronizar
+                    {t('mdSincronizar')}
                   </Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalTipo(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalTipo(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -791,13 +794,13 @@ export default function PaginaParametrosGenerales() {
         abierto={!!itemAEliminar}
         alCerrar={() => setItemAEliminar(null)}
         alConfirmar={confirmarEliminar}
-        titulo="Eliminar"
+        titulo={tc('eliminar')}
         mensaje={itemAEliminar
           ? itemAEliminar.tipo === 'categoria'
-            ? `¿Eliminar la categoría "${(itemAEliminar.item as CategoriaParametro).nombre}"? Se eliminarán también sus tipos.`
-            : `¿Eliminar el tipo "${(itemAEliminar.item as TipoParametro).nombre}"?`
+            ? t('eliminarCategoriaConfirm', { nombre: (itemAEliminar.item as CategoriaParametro).nombre })
+            : t('eliminarTipoConfirm', { nombre: (itemAEliminar.item as TipoParametro).nombre })
           : ''}
-        textoConfirmar="Eliminar"
+        textoConfirmar={tc('eliminar')}
         cargando={eliminando}
       />
     </div>

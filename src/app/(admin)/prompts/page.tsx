@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   Brain, RefreshCw, Upload, Zap, Languages, Globe,
   AlertCircle, CheckCircle2, Code2, FileText, Play, ChevronDown, ChevronUp, Search,
@@ -15,17 +16,6 @@ import type { EstadoTraducciones, Funcion } from '@/lib/tipos'
 import ES_MESSAGES from '../../../../messages/es.json'
 
 type Tab = 'prompts' | 'codigo' | 'vistas' | 'mensajes' | 'traducciones' | 'apis' | 'jerarquias' | 'grafo'
-
-const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: 'prompts',      label: 'Prompts',      icon: <Brain className="w-4 h-4" /> },
-  { id: 'codigo',       label: 'Código y MD',  icon: <Code2 className="w-4 h-4" /> },
-  { id: 'vistas',       label: 'Vistas chat',  icon: <Eye className="w-4 h-4" /> },
-  { id: 'mensajes',     label: 'Mensajes UI',  icon: <Languages className="w-4 h-4" /> },
-  { id: 'traducciones', label: 'Traducciones', icon: <Languages className="w-4 h-4" /> },
-  { id: 'apis',         label: 'APIs',         icon: <Globe className="w-4 h-4" /> },
-  { id: 'jerarquias',   label: 'Jerarquías',   icon: <Network className="w-4 h-4" /> },
-  { id: 'grafo',        label: 'Grafo Funciones', icon: <Workflow className="w-4 h-4" /> },
-]
 
 // Componente reutilizable para la barra filtro + acciones
 function BarraHerramientas({
@@ -59,6 +49,20 @@ function BarraHerramientas({
 }
 
 export default function PaginaPrompts() {
+  const t = useTranslations('prompts')
+  const tc = useTranslations('common')
+
+  const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
+    { id: 'prompts',      label: t('tabPrompts'),      icon: <Brain className="w-4 h-4" /> },
+    { id: 'codigo',       label: t('tabCodigoMd'),     icon: <Code2 className="w-4 h-4" /> },
+    { id: 'vistas',       label: t('tabVistasChat'),   icon: <Eye className="w-4 h-4" /> },
+    { id: 'mensajes',     label: t('tabMensajesUi'),   icon: <Languages className="w-4 h-4" /> },
+    { id: 'traducciones', label: t('tabTraducciones'), icon: <Languages className="w-4 h-4" /> },
+    { id: 'apis',         label: t('tabApis'),         icon: <Globe className="w-4 h-4" /> },
+    { id: 'jerarquias',   label: t('tabJerarquias'),   icon: <Network className="w-4 h-4" /> },
+    { id: 'grafo',        label: t('tabGrafoFunciones'), icon: <Workflow className="w-4 h-4" /> },
+  ]
+
   const [tab, setTab] = useState<Tab>('prompts')
   const [estado, setEstado] = useState<EstadoPrompts | null>(null)
   const [estadoTrad, setEstadoTrad] = useState<EstadoTraducciones | null>(null)
@@ -124,11 +128,11 @@ export default function PaginaPrompts() {
     setMensaje(null)
     try {
       const r = await jerarquiasApi.refrescar(tabla)
-      setMensaje({ tipo: 'ok', texto: `${tabla}: ${r.filas} pares insertados.` })
+      setMensaje({ tipo: 'ok', texto: t('grafoRefrescadoOk', { tabla, filas: r.filas }) })
       cargarGrafos()
     } catch (e: unknown) {
       const err = e as { message?: string; response?: { data?: { detail?: string } } }
-      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error' })
+      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || tc('error') })
     } finally { setRefrescandoGrafo(null) }
   }
 
@@ -139,14 +143,16 @@ export default function PaginaPrompts() {
       const r = await jerarquiasApi.refrescarTodos()
       const ok = r.resultados.filter((x) => x.ok).length
       const ko = r.resultados.length - ok
+      const baseMsg = t('jerarquiasRefrescadas', { ok, total: r.resultados.length })
+      const errMsg = ko ? ` ${t('erroresEnTablas', { tablas: r.resultados.filter((x) => !x.ok).map((x) => x.tabla).join(', ') })}` : ''
       setMensaje({
         tipo: ko === 0 ? 'ok' : 'error',
-        texto: `Refrescadas ${ok}/${r.resultados.length} jerarquías.${ko ? ` Errores: ${r.resultados.filter((x) => !x.ok).map((x) => x.tabla).join(', ')}` : ''}`,
+        texto: baseMsg + errMsg,
       })
       cargarGrafos()
     } catch (e: unknown) {
       const err = e as { message?: string; response?: { data?: { detail?: string } } }
-      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error' })
+      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || tc('error') })
     } finally { setRefrescandoGrafo(null) }
   }
 
@@ -226,7 +232,7 @@ export default function PaginaPrompts() {
       setMensaje({ tipo: 'ok', texto: res.mensaje })
     } catch (e: unknown) {
       const err = e as { message?: string; response?: { data?: { detail?: string } } }
-      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error' })
+      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || tc('error') })
     } finally {
       setSincronizando(null)
     }
@@ -237,10 +243,10 @@ export default function PaginaPrompts() {
     setMensaje(null)
     try {
       const res = await promptsApi.regenerarApis()
-      setMensaje({ tipo: 'ok', texto: `APIs regeneradas: ${res.upserted} endpoints desde ${res.total_vista} filas de v_funcion_api.` })
+      setMensaje({ tipo: 'ok', texto: t('apisRegeneradasOk', { upserted: res.upserted, total: res.total_vista }) })
     } catch (e: unknown) {
       const err = e as { message?: string; response?: { data?: { detail?: string } } }
-      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error' })
+      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || tc('error') })
     } finally {
       setRegenerandoApis(false)
     }
@@ -271,13 +277,14 @@ export default function PaginaPrompts() {
         ok++
       } catch (e: unknown) {
         const err = e as { message?: string; response?: { data?: { detail?: string } } }
-        errores.push({ codigo: f.codigo_funcion, error: err?.response?.data?.detail || err?.message || 'Error' })
+        errores.push({ codigo: f.codigo_funcion, error: err?.response?.data?.detail || err?.message || tc('error') })
       }
     }
     setGenProgress((p) => ({ ...p, terminado: true, errores }))
+    const tituloModo = modo === 'md' ? t('modoGenerarMd') : modo === 'insert' ? t('modoPythonInsert') : t('modoPythonUpdate')
     setMensaje({
       tipo: errores.length === 0 ? 'ok' : 'error',
-      texto: `${modo === 'md' ? 'Generar MD' : modo === 'insert' ? 'Python Insert' : 'Python Update'}: ${ok} ok, ${errores.length} errores.`,
+      texto: t('resultadoMasivo', { modo: tituloModo, ok, errores: errores.length }),
     })
     cargarFunciones()
   }
@@ -298,7 +305,7 @@ export default function PaginaPrompts() {
       )
     } catch (e: unknown) {
       const err = e as { message?: string; response?: { data?: { detail?: string } } }
-      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error obteniendo lista' })
+      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || t('errorObteniendoLista') })
       return
     }
     setGenVistasProgress({ modo, actual: 0, total: lista.length, errores: [], terminado: false })
@@ -314,13 +321,14 @@ export default function PaginaPrompts() {
         ok++
       } catch (e: unknown) {
         const err = e as { message?: string; response?: { data?: { detail?: string } } }
-        errores.push({ codigo: f.codigo_funcion, error: err?.response?.data?.detail || err?.message || 'Error' })
+        errores.push({ codigo: f.codigo_funcion, error: err?.response?.data?.detail || err?.message || tc('error') })
       }
     }
     setGenVistasProgress((p) => ({ ...p, terminado: true, errores }))
+    const tituloModo = modo === 'gen' ? t('modoGenerarVistas') : t('modoSincronizarVistas')
     setMensaje({
       tipo: errores.length === 0 ? 'ok' : 'error',
-      texto: `${modo === 'gen' ? 'Generar vistas' : 'Sincronizar vistas'}: ${ok} ok, ${errores.length} errores.`,
+      texto: t('resultadoMasivo', { modo: tituloModo, ok, errores: errores.length }),
     })
     cargarResumenVistas()
   }
@@ -337,10 +345,10 @@ export default function PaginaPrompts() {
       const resultado = await traduccionesApi.generarMensajesUi(ES_MESSAGES)
       setMensajesUiResultado(resultado)
       const idiomas = Object.keys(resultado)
-      setMensaje({ tipo: 'ok', texto: `Mensajes generados para: ${idiomas.join(', ')}.` })
+      setMensaje({ tipo: 'ok', texto: t('mensajesGeneradosOk', { idiomas: idiomas.join(', ') }) })
     } catch (e: unknown) {
       const err = e as { message?: string; response?: { data?: { detail?: string } } }
-      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || 'Error al generar mensajes' })
+      setMensaje({ tipo: 'error', texto: err?.response?.data?.detail || err?.message || t('errorGenerarMensajes') })
     } finally {
       setGenerandoMensajes(false)
     }
@@ -373,12 +381,12 @@ export default function PaginaPrompts() {
   return (
     <div className="flex flex-col gap-4 max-w-6xl">
       <h2 className="page-heading flex items-center gap-2">
-        <Brain /> Sincronización
+        <Brain /> {t('titulo')}
       </h2>
 
       {/* Pestañas */}
       <div className="border-b border-borde">
-        <nav className="flex gap-0" aria-label="Pestañas de sincronización">
+        <nav className="flex gap-0" aria-label={t('tabsAriaLabel')}>
           {TABS.map((t) => (
             <button
               key={t.id}
@@ -419,11 +427,11 @@ export default function PaginaPrompts() {
           <BarraHerramientas
             filtro={filtroTabla}
             onFiltro={setFiltroTabla}
-            placeholder="Filtrar tabla…"
+            placeholder={t('filtrarTabla')}
             acciones={
               <>
                 <Boton variante="contorno" tamano="sm" onClick={cargar} disabled={cargando}>
-                  <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} /> Refrescar
+                  <RefreshCw className={`w-4 h-4 ${cargando ? 'animate-spin' : ''}`} /> {t('refrescar')}
                 </Boton>
                 <Boton
                   variante="primario"
@@ -431,35 +439,35 @@ export default function PaginaPrompts() {
                   onClick={sincronizarTodo}
                   disabled={sincronizando !== null || tablasConPendientes.length === 0}
                 >
-                  <Upload className="w-4 h-4" /> Sincronizar pendientes ({tablasConPendientes.length})
+                  <Upload className="w-4 h-4" /> {t('sincronizarPendientes', { total: tablasConPendientes.length })}
                 </Boton>
               </>
             }
           />
 
-          {cargando && <p className="text-sm text-texto-muted">Cargando estado…</p>}
+          {cargando && <p className="text-sm text-texto-muted">{t('cargandoEstado')}</p>}
 
           {!cargando && estado && (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="border-b border-borde">
                   <tr>
-                    <th className="text-left py-2 px-2">Tabla</th>
-                    <th className="text-right py-2 px-2">Total filas</th>
-                    <th className="text-right py-2 px-2">Con prompt</th>
-                    <th className="text-right py-2 px-2">Pendientes sync</th>
+                    <th className="text-left py-2 px-2">{t('colTabla')}</th>
+                    <th className="text-right py-2 px-2">{t('colTotalFilas')}</th>
+                    <th className="text-right py-2 px-2">{t('colConPrompt')}</th>
+                    <th className="text-right py-2 px-2">{t('colPendientesSync')}</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {tablasFiltradas.map((t: TablaConteoPrompts) => (
-                    <tr key={t.tabla} className="border-b border-borde/50 hover:bg-gris-fondo/50">
-                      <td className="py-2 px-2 font-mono text-xs">{t.tabla}</td>
-                      <td className="py-2 px-2 text-right">{t.total_filas ?? '—'}</td>
-                      <td className="py-2 px-2 text-right">{t.con_prompt ?? '—'}</td>
+                  {tablasFiltradas.map((row: TablaConteoPrompts) => (
+                    <tr key={row.tabla} className="border-b border-borde/50 hover:bg-gris-fondo/50">
+                      <td className="py-2 px-2 font-mono text-xs">{row.tabla}</td>
+                      <td className="py-2 px-2 text-right">{row.total_filas ?? '—'}</td>
+                      <td className="py-2 px-2 text-right">{row.con_prompt ?? '—'}</td>
                       <td className="py-2 px-2 text-right">
-                        {(t.pendientes_sync ?? 0) > 0 ? (
+                        {(row.pendientes_sync ?? 0) > 0 ? (
                           <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-xs font-medium">
-                            {t.pendientes_sync}
+                            {row.pendientes_sync}
                           </span>
                         ) : (
                           <span className="text-texto-muted">0</span>
@@ -470,15 +478,15 @@ export default function PaginaPrompts() {
                   {tablasFiltradas.length === 0 && (
                     <tr>
                       <td colSpan={4} className="py-4 text-center text-sm text-texto-muted">
-                        Sin resultados para &ldquo;{filtroTabla}&rdquo;
+                        {t('sinResultadosFiltro', { filtro: filtroTabla })}
                       </td>
                     </tr>
                   )}
                 </tbody>
               </table>
               <p className="text-xs text-texto-muted mt-2">
-                Total pendientes: <strong>{estado.total_pendientes_sync}</strong>
-                {filtroTabla && ` · Mostrando ${tablasFiltradas.length} de ${estado.tablas.length} tablas`}
+                {t('totalPendientes')}: <strong>{estado.total_pendientes_sync}</strong>
+                {filtroTabla && ` · ${t('mostrandoTablas', { mostradas: tablasFiltradas.length, total: estado.tablas.length })}`}
               </p>
             </div>
           )}
@@ -491,7 +499,7 @@ export default function PaginaPrompts() {
           <BarraHerramientas
             filtro={filtroCodigo}
             onFiltro={setFiltroCodigo}
-            placeholder="Filtrar función…"
+            placeholder={t('filtrarFuncion')}
             acciones={
               <>
                 <Boton
@@ -500,7 +508,7 @@ export default function PaginaPrompts() {
                   onClick={() => generarMasivo('insert')}
                   disabled={generandoMasivo || cargandoFunciones || insertFiltradas.length === 0}
                 >
-                  <Play className="w-4 h-4 text-green-600" /> Python Insert ({insertFiltradas.length})
+                  <Play className="w-4 h-4 text-green-600" /> {t('pythonInsertConTotal', { total: insertFiltradas.length })}
                 </Boton>
                 <Boton
                   variante="contorno"
@@ -508,7 +516,7 @@ export default function PaginaPrompts() {
                   onClick={() => generarMasivo('update')}
                   disabled={generandoMasivo || cargandoFunciones || updateFiltradas.length === 0}
                 >
-                  <Play className="w-4 h-4 text-blue-600" /> Python Update ({updateFiltradas.length})
+                  <Play className="w-4 h-4 text-blue-600" /> {t('pythonUpdateConTotal', { total: updateFiltradas.length })}
                 </Boton>
                 <Boton
                   variante="primario"
@@ -516,11 +524,11 @@ export default function PaginaPrompts() {
                   onClick={() => generarMasivo('md')}
                   disabled={generandoMasivo || cargandoFunciones || mdFiltradas.length === 0}
                 >
-                  <FileText className="w-4 h-4" /> Generar MD ({mdFiltradas.length})
+                  <FileText className="w-4 h-4" /> {t('generarMdConTotal', { total: mdFiltradas.length })}
                 </Boton>
                 {generandoMasivo && (
                   <Boton variante="contorno" tamano="sm" onClick={detenerGeneracion}>
-                    Detener
+                    {t('detener')}
                   </Boton>
                 )}
               </>
@@ -531,8 +539,8 @@ export default function PaginaPrompts() {
             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-sm font-medium text-blue-800">
-                  {genProgress.modo === 'insert' ? 'Generando Python Insert' :
-                   genProgress.modo === 'update' ? 'Generando Python Update' : 'Generando MD'}{' '}
+                  {genProgress.modo === 'insert' ? t('generandoPythonInsert') :
+                   genProgress.modo === 'update' ? t('generandoPythonUpdate') : t('generandoMd')}{' '}
                   — {genProgress.actual} / {genProgress.total}
                 </span>
               </div>
@@ -550,8 +558,8 @@ export default function PaginaPrompts() {
           )}
 
           <p className="text-sm text-texto-muted">
-            {cargandoFunciones ? 'Cargando funciones…' : `${funciones.length} funciones totales.`}
-            {filtroCodigo && ` · Filtro activo: mostrando ${mdFiltradas.length} funciones.`}
+            {cargandoFunciones ? t('cargandoFunciones') : t('funcionesTotales', { total: funciones.length })}
+            {filtroCodigo && ` · ${t('filtroActivoFunciones', { mostradas: mdFiltradas.length })}`}
           </p>
         </div>
       )}
@@ -564,11 +572,11 @@ export default function PaginaPrompts() {
             <BarraHerramientas
               filtro={filtroVistas}
               onFiltro={setFiltroVistas}
-              placeholder="Filtrar función…"
+              placeholder={t('filtrarFuncion')}
               acciones={
                 <>
                   <Boton variante="contorno" tamano="sm" onClick={cargarResumenVistas} disabled={cargandoVistas || generandoVistas}>
-                    <RefreshCw className={`w-4 h-4 ${cargandoVistas ? 'animate-spin' : ''}`} /> Refrescar
+                    <RefreshCw className={`w-4 h-4 ${cargandoVistas ? 'animate-spin' : ''}`} /> {t('refrescar')}
                   </Boton>
                   <Boton
                     variante="contorno"
@@ -576,7 +584,7 @@ export default function PaginaPrompts() {
                     onClick={() => vistasMasivo('gen')}
                     disabled={generandoVistas || cargandoVistas || (resumenVistas?.con_prompt_view ?? 0) === 0}
                   >
-                    <Play className="w-4 h-4 text-green-600" /> Generar SQL ({resumenVistas?.con_prompt_view ?? 0})
+                    <Play className="w-4 h-4 text-green-600" /> {t('generarSqlConTotal', { total: resumenVistas?.con_prompt_view ?? 0 })}
                   </Boton>
                   <Boton
                     variante="primario"
@@ -584,11 +592,11 @@ export default function PaginaPrompts() {
                     onClick={() => vistasMasivo('sync')}
                     disabled={generandoVistas || cargandoVistas || (resumenVistas?.pendientes_sync ?? 0) === 0}
                   >
-                    <Upload className="w-4 h-4" /> Sincronizar pendientes ({resumenVistas?.pendientes_sync ?? 0})
+                    <Upload className="w-4 h-4" /> {t('sincronizarPendientes', { total: resumenVistas?.pendientes_sync ?? 0 })}
                   </Boton>
                   {generandoVistas && (
                     <Boton variante="contorno" tamano="sm" onClick={detenerVistas}>
-                      Detener
+                      {t('detener')}
                     </Boton>
                   )}
                 </>
@@ -599,7 +607,7 @@ export default function PaginaPrompts() {
               <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-medium text-blue-800">
-                    {genVistasProgress.modo === 'gen' ? 'Generando SQL de vistas' : 'Sincronizando vistas en BD'}{' '}
+                    {genVistasProgress.modo === 'gen' ? t('generandoSqlVistas') : t('sincronizandoVistas')}{' '}
                     — {genVistasProgress.actual} / {genVistasProgress.total}
                   </span>
                 </div>
@@ -616,32 +624,32 @@ export default function PaginaPrompts() {
               <ErroresGeneracion errores={genVistasProgress.errores} />
             )}
 
-            {cargandoVistas && <p className="text-sm text-texto-muted">Cargando estado de vistas…</p>}
+            {cargandoVistas && <p className="text-sm text-texto-muted">{t('cargandoEstadoVistas')}</p>}
 
             {!cargandoVistas && resumenVistas && (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead className="border-b border-borde">
                     <tr>
-                      <th className="text-left py-2 px-2">Indicador</th>
-                      <th className="text-right py-2 px-2">Cantidad</th>
+                      <th className="text-left py-2 px-2">{t('colIndicador')}</th>
+                      <th className="text-right py-2 px-2">{t('colCantidad')}</th>
                     </tr>
                   </thead>
                   <tbody>
                     <tr className="border-b border-borde/50">
-                      <td className="py-2 px-2">Funciones totales</td>
+                      <td className="py-2 px-2">{t('vistasFuncionesTotales')}</td>
                       <td className="py-2 px-2 text-right">{resumenVistas.total}</td>
                     </tr>
                     <tr className="border-b border-borde/50">
-                      <td className="py-2 px-2">Con <code>prompt_view</code> (elegibles para Generar)</td>
+                      <td className="py-2 px-2">{t('vistasConPromptView')} <code>prompt_view</code> ({t('vistasElegiblesGenerar')})</td>
                       <td className="py-2 px-2 text-right">{resumenVistas.con_prompt_view}</td>
                     </tr>
                     <tr className="border-b border-borde/50">
-                      <td className="py-2 px-2">Con <code>sql_view</code> (generadas)</td>
+                      <td className="py-2 px-2">{t('vistasConSqlView')} <code>sql_view</code> ({t('vistasGeneradas')})</td>
                       <td className="py-2 px-2 text-right">{resumenVistas.con_sql_view}</td>
                     </tr>
                     <tr className="border-b border-borde/50">
-                      <td className="py-2 px-2">Pendientes de sincronizar a la BD</td>
+                      <td className="py-2 px-2">{t('vistasPendientesSyncBd')}</td>
                       <td className="py-2 px-2 text-right">
                         {resumenVistas.pendientes_sync > 0 ? (
                           <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200 text-xs font-medium">
@@ -655,8 +663,8 @@ export default function PaginaPrompts() {
                   </tbody>
                 </table>
                 <p className="text-xs text-texto-muted mt-2">
-                  <strong>Generar SQL</strong>: ejecuta el LLM sobre cada <code>prompt_view</code> y guarda el SQL.
-                  {' '}<strong>Sincronizar</strong>: aplica el SQL en BD (DROP VIEW IF EXISTS CASCADE + CREATE VIEW + GRANT chat_readonly).
+                  <strong>{t('vistasGenerarSql')}</strong>: {t('vistasGenerarSqlDesc')}
+                  {' '}<strong>{t('vistasSincronizar')}</strong>: {t('vistasSincronizarDesc')}
                 </p>
               </div>
             )}
@@ -670,23 +678,22 @@ export default function PaginaPrompts() {
           <BarraHerramientas
             filtro={filtroMensajes}
             onFiltro={setFiltroMensajes}
-            placeholder="Filtrar idioma…"
+            placeholder={t('filtrarIdioma')}
             acciones={
               <Boton variante="primario" tamano="sm" onClick={generarMensajesUi} disabled={generandoMensajes}>
                 <Languages className="w-4 h-4" />
-                {generandoMensajes ? 'Generando…' : 'Generar mensajes UI'}
+                {generandoMensajes ? t('generando') : t('generarMensajesUi')}
               </Boton>
             }
           />
 
           <p className="text-sm text-texto-muted mb-4">
-            Traduce los archivos <code>messages/*.json</code> del frontend. Genera EN, PT, FR, DE desde el español.
-            Una vez generados, descarga cada archivo y reemplázalo en <code>frontend/messages/</code> antes del próximo deploy.
+            {t('mensajesUiDesc1')} <code>messages/*.json</code> {t('mensajesUiDesc2')} <code>frontend/messages/</code> {t('mensajesUiDesc3')}
           </p>
 
           {mensajesUiResultado && (
             <div>
-              <p className="text-sm font-medium mb-2">Descargar archivos generados:</p>
+              <p className="text-sm font-medium mb-2">{t('descargarArchivosGenerados')}</p>
               <div className="flex flex-wrap gap-2">
                 {localesFiltrados.map(([locale, data]) => (
                   <Boton
@@ -699,11 +706,11 @@ export default function PaginaPrompts() {
                   </Boton>
                 ))}
                 {localesFiltrados.length === 0 && filtroMensajes && (
-                  <p className="text-sm text-texto-muted">Sin resultados para &ldquo;{filtroMensajes}&rdquo;</p>
+                  <p className="text-sm text-texto-muted">{t('sinResultadosFiltro', { filtro: filtroMensajes })}</p>
                 )}
               </div>
               <p className="text-xs text-texto-muted mt-2">
-                Reemplaza los archivos descargados en <code>frontend/messages/</code> y haz commit+push para que Vercel despliegue con los nuevos textos.
+                {t('reemplazaArchivos1')} <code>frontend/messages/</code> {t('reemplazaArchivos2')}
               </p>
             </div>
           )}
@@ -716,10 +723,10 @@ export default function PaginaPrompts() {
           <BarraHerramientas
             filtro={filtroTraducciones}
             onFiltro={setFiltroTraducciones}
-            placeholder="Filtrar catálogo…"
+            placeholder={t('filtrarCatalogo')}
             acciones={
               <a href="/traducciones" className="text-primario text-sm underline whitespace-nowrap">
-                Ir al panel completo →
+                {t('irPanelCompleto')}
               </a>
             }
           />
@@ -727,11 +734,11 @@ export default function PaginaPrompts() {
           <p className="text-sm text-texto-muted">
             {estadoTrad ? (
               <>
-                Última generación: <strong>{estadoTrad.ultima_generacion ? new Date(estadoTrad.ultima_generacion).toLocaleString('es-CL') : '—'}</strong>.{' '}
-                Pendiente: <strong>{estadoTrad.pendiente ? 'Sí' : 'No'}</strong>.
+                {t('ultimaGeneracion')}: <strong>{estadoTrad.ultima_generacion ? new Date(estadoTrad.ultima_generacion).toLocaleString('es-CL') : '—'}</strong>.{' '}
+                {t('pendiente')}: <strong>{estadoTrad.pendiente ? tc('si') : tc('no')}</strong>.
               </>
             ) : (
-              'Cargando estado…'
+              t('cargandoEstado')
             )}
           </p>
         </div>
@@ -743,7 +750,7 @@ export default function PaginaPrompts() {
           <BarraHerramientas
             filtro={filtroJerarquias}
             onFiltro={setFiltroJerarquias}
-            placeholder="Filtrar jerarquía…"
+            placeholder={t('filtrarJerarquia')}
             acciones={
               <Boton
                 variante="primario"
@@ -752,33 +759,32 @@ export default function PaginaPrompts() {
                 disabled={refrescandoGrafo !== null || grafos.length === 0}
               >
                 <RefreshCw className={`w-4 h-4 ${refrescandoGrafo === '__todos__' ? 'animate-spin' : ''}`} />
-                {refrescandoGrafo === '__todos__' ? 'Refrescando…' : `Refrescar todos (${grafos.length})`}
+                {refrescandoGrafo === '__todos__' ? t('refrescando') : t('refrescarTodos', { total: grafos.length })}
               </Boton>
             }
           />
 
           <p className="text-sm text-texto-muted mb-4">
-            Refresca la closure table (grafo desnormalizado) de cada jerarquía recomputándola desde la tabla origen.
-            En operación normal el refresco se hace automáticamente al editar un nodo; este panel sirve para rebuild masivo si quedó desincronizada.
+            {t('jerarquiasDesc')}
           </p>
 
           {cargandoGrafos ? (
-            <p className="text-sm text-texto-muted">Cargando grafos…</p>
+            <p className="text-sm text-texto-muted">{t('cargandoGrafos')}</p>
           ) : grafosFiltrados.length === 0 ? (
             <p className="text-sm text-texto-muted">
-              {filtroJerarquias ? `Sin resultados para "${filtroJerarquias}".` : 'No hay jerarquías registradas.'}
+              {filtroJerarquias ? t('sinResultadosFiltro', { filtro: filtroJerarquias }) : t('sinJerarquias')}
             </p>
           ) : (
             <div className="border border-borde rounded-lg overflow-hidden">
               <table className="w-full text-sm">
                 <thead className="bg-gris-fondo border-b border-borde">
                   <tr className="text-left">
-                    <th className="px-3 py-2 font-medium">Jerarquía</th>
-                    <th className="px-3 py-2 font-medium">Tabla origen</th>
-                    <th className="px-3 py-2 font-medium text-right">Nodos</th>
-                    <th className="px-3 py-2 font-medium text-right">Pares</th>
-                    <th className="px-3 py-2 font-medium text-right">Máx. profundidad</th>
-                    <th className="px-3 py-2 font-medium text-right">Acción</th>
+                    <th className="px-3 py-2 font-medium">{t('colJerarquia')}</th>
+                    <th className="px-3 py-2 font-medium">{t('colTablaOrigen')}</th>
+                    <th className="px-3 py-2 font-medium text-right">{t('colNodos')}</th>
+                    <th className="px-3 py-2 font-medium text-right">{t('colPares')}</th>
+                    <th className="px-3 py-2 font-medium text-right">{t('colMaxProfundidad')}</th>
+                    <th className="px-3 py-2 font-medium text-right">{t('colAccion')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -799,7 +805,7 @@ export default function PaginaPrompts() {
                           disabled={refrescandoGrafo !== null}
                         >
                           <RefreshCw className={`w-3.5 h-3.5 ${refrescandoGrafo === g.tabla ? 'animate-spin' : ''}`} />
-                          {refrescandoGrafo === g.tabla ? 'Refrescando…' : 'Refrescar'}
+                          {refrescandoGrafo === g.tabla ? t('refrescando') : t('refrescar')}
                         </Boton>
                       </td>
                     </tr>
@@ -817,16 +823,16 @@ export default function PaginaPrompts() {
           <BarraHerramientas
             filtro={filtroApis}
             onFiltro={setFiltroApis}
-            placeholder="Filtrar endpoint…"
+            placeholder={t('filtrarEndpoint')}
             acciones={
               <Boton variante="primario" tamano="sm" onClick={regenerarApis} disabled={regenerandoApis}>
-                <Zap className="w-4 h-4" /> {regenerandoApis ? 'Regenerando…' : 'Regenerar APIs'}
+                <Zap className="w-4 h-4" /> {regenerandoApis ? t('regenerando') : t('regenerarApis')}
               </Boton>
             }
           />
 
           <p className="text-sm text-texto-muted">
-            Regenera la tabla <code>api_endpoints</code> desde la vista <code>v_funcion_api</code>. Los LLMs solo acceden vía esta tabla.
+            {t('apisDesc1')} <code>api_endpoints</code> {t('apisDesc2')} <code>v_funcion_api</code>{t('apisDesc3')}
           </p>
         </div>
       )}
@@ -840,6 +846,7 @@ export default function PaginaPrompts() {
 // Tab Grafo Funciones — sincronización masiva del grafo de dependencias entre funciones
 // ─────────────────────────────────────────────────────────────────────────────
 function TabGrafoFunciones() {
+  const t = useTranslations('prompts')
   const [sincronizando, setSincronizando] = useState(false)
   const [resultado, setResultado] = useState<{
     arcos_totales: number
@@ -858,7 +865,7 @@ function TabGrafoFunciones() {
       const res = await funcionesApi.sincronizarTodas()
       setResultado(res)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error desconocido')
+      setError(e instanceof Error ? e.message : t('errorDesconocido'))
     } finally {
       setSincronizando(false)
     }
@@ -869,16 +876,15 @@ function TabGrafoFunciones() {
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1">
           <p className="text-sm text-texto-muted">
-            Recomputa los arcos de <code>rel_funcion_dependencia</code> de TODAS las funciones desde
-            <code> api_endpoints.tabla_asociada</code> cruzado con FKs. No sobreescribe arcos con código manual
-            (preserva <code>python_*</code>, <code>prompt_*</code>, <code>orden</code>). Además dispara la
-            regeneración de los documentos virtuales del RAG en background. Solo super-admin.
+            {t('grafoDesc1')} <code>rel_funcion_dependencia</code> {t('grafoDesc2')}
+            <code> api_endpoints.tabla_asociada</code> {t('grafoDesc3')}
+            <code>python_*</code>, <code>prompt_*</code>, <code>orden</code>{t('grafoDesc4')}
           </p>
         </div>
         <Boton variante="primario" tamano="sm" onClick={sincronizarTodas} disabled={sincronizando}>
           {sincronizando
-            ? <><RefreshCw className="w-4 h-4 animate-spin" /> Sincronizando…</>
-            : <><Workflow className="w-4 h-4" /> Sincronizar todas</>}
+            ? <><RefreshCw className="w-4 h-4 animate-spin" /> {t('sincronizando')}</>
+            : <><Workflow className="w-4 h-4" /> {t('sincronizarTodas')}</>}
         </Boton>
       </div>
 
@@ -895,22 +901,22 @@ function TabGrafoFunciones() {
           <div className="text-sm">
             <p className="font-medium text-emerald-800">{resultado.mensaje}</p>
             <p className="text-emerald-700 mt-1">
-              Arcos totales: <strong>{resultado.arcos_totales}</strong> · Nuevos: <strong>{resultado.arcos_nuevos}</strong>
-              {' · '}Docs virtuales: <em>{resultado.docs_virtuales}</em>
+              {t('arcosTotales')}: <strong>{resultado.arcos_totales}</strong> · {t('nuevos')}: <strong>{resultado.arcos_nuevos}</strong>
+              {' · '}{t('docsVirtuales')}: <em>{resultado.docs_virtuales}</em>
             </p>
           </div>
         </div>
       )}
 
       <div className="text-xs text-texto-muted border-t border-borde pt-3">
-        Para sincronizar UNA sola función, usa el botón <RefreshCw className="w-3 h-3 inline" /> en la tabla de <a className="text-primario hover:underline" href="/funciones">/funciones</a>,
-        o el skill <code>/serverlm-actualizar-funcion CODIGO</code> conversando con Claude.
+        {t('grafoFooter1')} <RefreshCw className="w-3 h-3 inline" /> {t('grafoFooter2')} <a className="text-primario hover:underline" href="/funciones">/funciones</a>{t('grafoFooter3')} <code>/serverlm-actualizar-funcion CODIGO</code> {t('grafoFooter4')}
       </div>
     </div>
   )
 }
 
 function ErroresGeneracion({ errores }: { errores: { codigo: string; error: string }[] }) {
+  const t = useTranslations('prompts')
   const [expandido, setExpandido] = useState(false)
   return (
     <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
@@ -919,7 +925,7 @@ function ErroresGeneracion({ errores }: { errores: { codigo: string; error: stri
         onClick={() => setExpandido((v) => !v)}
       >
         <AlertCircle className="w-4 h-4" />
-        {errores.length} error{errores.length > 1 ? 'es' : ''} durante la generación
+        {t('erroresDuranteGeneracion', { total: errores.length })}
         {expandido ? <ChevronUp className="w-4 h-4 ml-auto" /> : <ChevronDown className="w-4 h-4 ml-auto" />}
       </button>
       {expandido && (

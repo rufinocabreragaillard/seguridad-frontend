@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   FolderOpen, Folder, FolderInput, FolderPlus, FolderTree,
   CheckCircle, AlertTriangle, RefreshCw, Upload, Download,
@@ -54,6 +55,8 @@ type EstadoEtapa = 'pendiente' | 'activo' | 'completado'
 // ── Componente ────────────────────────────────────────────────────────────────
 
 export default function PaginaCargaDocsUsuario() {
+  const t = useTranslations('procesarPipeline')
+  const tc = useTranslations('common')
   const { grupoActivo } = useAuth()
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -130,7 +133,7 @@ export default function PaginaCargaDocsUsuario() {
     setTabModalUb('datos'); setErrorUb(''); setModalUb(true)
   }
   const guardarUb = async (cerrar: boolean) => {
-    if (!formUb.nombre_ubicacion.trim()) { setErrorUb('El nombre es obligatorio'); return }
+    if (!formUb.nombre_ubicacion.trim()) { setErrorUb(t('errorNombreObligatorio')); return }
     setGuardandoUb(true)
     try {
       if (editandoUb) {
@@ -146,7 +149,7 @@ export default function PaginaCargaDocsUsuario() {
         if (cerrar) { setModalUb(false) } else { setEditandoUb(nueva); setFormUb({ ...formUb, codigo_ubicacion: nueva.codigo_ubicacion, nombre_ubicacion: nueva.nombre_ubicacion }) }
       }
       cargarUbicaciones()
-    } catch (e) { setErrorUb(e instanceof Error ? e.message : 'Error al guardar') }
+    } catch (e) { setErrorUb(e instanceof Error ? e.message : tc('errorAlGuardar')) }
     finally { setGuardandoUb(false) }
   }
   const toggleHabilitada = async (u: UbicacionDoc) => {
@@ -171,13 +174,13 @@ export default function PaginaCargaDocsUsuario() {
 
   // Carga desde directorio
   const iniciarEscaneoDir = async () => {
-    if (!soportaDirectoryPicker()) { alert('Tu navegador no soporta esta funcionalidad. Usa Chrome o Edge.'); return }
+    if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoporta')); return }
     setEscaneandoDir(true); setResultadoSync(null)
     try {
       const r = await escanearDirectorio()
       if (!r) { setEscaneandoDir(false); return }
       setDatosEscaneo(r); setModalCarga(true)
-    } catch { alert('Error al escanear el directorio.') }
+    } catch { alert(t('alertErrorEscaneo')) }
     finally { setEscaneandoDir(false) }
   }
   const ejecutarSincronizacion = async () => {
@@ -188,14 +191,14 @@ export default function PaginaCargaDocsUsuario() {
       setResultadoSync(res); cargarUbicaciones()
       setEtapa1Estado('completado')
     } catch (e) {
-      const msg = e && typeof e === 'object' && 'response' in e ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Error al sincronizar.' : 'Error al sincronizar.'
+      const msg = e && typeof e === 'object' && 'response' in e ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || t('alertErrorSincronizar') : t('alertErrorSincronizar')
       alert(msg)
     } finally { setSincronizando(false) }
   }
   const cerrarModalCarga = () => { setModalCarga(false); setDatosEscaneo(null); setResultadoSync(null) }
 
   const cargarUbicacionIndividual = async () => {
-    if (!soportaDirectoryPicker()) { alert('Tu navegador no soporta esta funcionalidad.'); return }
+    if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoportaCorto')); return }
     setCargandoUbIndividual(true)
     try {
       const r = await escanearDirectorioSinHijos()
@@ -203,7 +206,7 @@ export default function PaginaCargaDocsUsuario() {
       await ubicacionesDocsApi.crear({ codigo_ubicacion: r.directorio.codigo_ubicacion, codigo_grupo: grupoActivo!, nombre_ubicacion: r.directorio.nombre_ubicacion })
       cargarUbicaciones()
     } catch (e) {
-      const msg = e && typeof e === 'object' && 'response' in e ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Error.' : e instanceof Error ? e.message : 'Error.'
+      const msg = e && typeof e === 'object' && 'response' in e ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || t('alertError') : e instanceof Error ? e.message : t('alertError')
       alert(msg)
     } finally { setCargandoUbIndividual(false) }
   }
@@ -273,15 +276,15 @@ export default function PaginaCargaDocsUsuario() {
             {u.ruta_completa || ''}
           </span>
           <Insignia variante={u.tipo_ubicacion === 'AREA' ? 'primario' : 'advertencia'}>{u.tipo_ubicacion}</Insignia>
-          <Insignia variante={u.ubicacion_habilitada ? 'exito' : 'advertencia'}>{u.ubicacion_habilitada ? 'Habilitada' : 'Inhabilitada'}</Insignia>
-          <Insignia variante='exito'>Activo</Insignia>
+          <Insignia variante={u.ubicacion_habilitada ? 'exito' : 'advertencia'}>{u.ubicacion_habilitada ? t('habilitada') : t('inhabilitada')}</Insignia>
+          <Insignia variante='exito'>{tc('activo')}</Insignia>
           <div className="flex items-center gap-0.5 shrink-0 transition-opacity">
-            <button onClick={() => toggleHabilitada(u)} className={`p-1.5 rounded-lg transition-colors ${u.ubicacion_habilitada ? 'hover:bg-amber-50 text-texto-muted hover:text-amber-600' : 'hover:bg-green-50 text-texto-muted hover:text-green-600'}`} title={u.ubicacion_habilitada ? 'Inhabilitar (incluye hijos)' : 'Habilitar (incluye hijos)'}>
+            <button onClick={() => toggleHabilitada(u)} className={`p-1.5 rounded-lg transition-colors ${u.ubicacion_habilitada ? 'hover:bg-amber-50 text-texto-muted hover:text-amber-600' : 'hover:bg-green-50 text-texto-muted hover:text-green-600'}`} title={u.ubicacion_habilitada ? t('inhabilitarConHijos') : t('habilitarConHijos')}>
               {u.ubicacion_habilitada ? <ToggleRight size={14} /> : <ToggleLeft size={14} />}
             </button>
-            <button onClick={() => setConfirmarTipo({ u, nuevoTipo: u.tipo_ubicacion === 'AREA' ? 'CONTENIDO' : 'AREA' })} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={`Cambiar a ${u.tipo_ubicacion === 'AREA' ? 'CONTENIDO' : 'AREA'}`}><Shuffle size={14} /></button>
-            <button onClick={() => abrirEditarUb(u)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-            <button onClick={() => abrirConfirmElim(u)} className="p-1.5 rounded-lg hover:bg-orange-50 text-texto-muted hover:text-orange-500 transition-colors" title="Quitar de la BD"><X size={14} className="stroke-[2.5]" /></button>
+            <button onClick={() => setConfirmarTipo({ u, nuevoTipo: u.tipo_ubicacion === 'AREA' ? 'CONTENIDO' : 'AREA' })} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('cambiarA', { tipo: u.tipo_ubicacion === 'AREA' ? 'CONTENIDO' : 'AREA' })}><Shuffle size={14} /></button>
+            <button onClick={() => abrirEditarUb(u)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+            <button onClick={() => abrirConfirmElim(u)} className="p-1.5 rounded-lg hover:bg-orange-50 text-texto-muted hover:text-orange-500 transition-colors" title={t('quitarDeBd')}><X size={14} className="stroke-[2.5]" /></button>
           </div>
         </div>
         {expandido && ubicaciones.filter((h) => h.codigo_ubicacion_superior === u.codigo_ubicacion).sort((a, b) => a.orden - b.orden || a.nombre_ubicacion.localeCompare(b.nombre_ubicacion)).map((h) => renderNodo(h))}
@@ -455,7 +458,7 @@ export default function PaginaCargaDocsUsuario() {
       } catch (e) {
         if (e instanceof PdfProtegidoError) {
           await documentosApi.subirTexto(doc.codigo_documento, {
-            texto_fuente: '', detalle_error: 'PDF protegido con contraseña (desproteger el archivo antes de procesar)',
+            texto_fuente: '', detalle_error: t('errorPdfProtegido'),
           }).catch(() => {})
         } else if (e instanceof ArchivoNoEscaneable) {
           await documentosApi.subirTexto(doc.codigo_documento, {
@@ -508,7 +511,7 @@ export default function PaginaCargaDocsUsuario() {
         const ok = paso.clienteSide ? await ejecutarExtraer() : await ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
         if (!ok) break
       }
-    } catch (e) { setMensajeError(e instanceof Error ? e.message : 'Error inesperado') }
+    } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
     finally { desuscribirCola(); setEjecutando(false); await cargarConteos() }
   }
 
@@ -588,8 +591,8 @@ export default function PaginaCargaDocsUsuario() {
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">Carga tus Ubicaciones y Documentos</h2>
-        <p className="text-sm text-texto-muted mt-1">Configura las ubicaciones y procesa tus documentos paso a paso.</p>
+        <h2 className="page-heading">{t('tituloPagina')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtituloPagina')}</p>
       </div>
 
       {/* Tabs */}
@@ -602,7 +605,7 @@ export default function PaginaCargaDocsUsuario() {
               : 'text-texto-muted hover:text-texto'
           }`}
         >
-          <span className="flex items-center gap-2"><FolderTree size={15} />Ubicaciones</span>
+          <span className="flex items-center gap-2"><FolderTree size={15} />{t('tabUbicaciones')}</span>
         </button>
         <button
           onClick={() => setTabActiva('documentos')}
@@ -612,7 +615,7 @@ export default function PaginaCargaDocsUsuario() {
               : 'text-texto-muted hover:text-texto'
           }`}
         >
-          <span className="flex items-center gap-2"><Upload size={15} />Documentos</span>
+          <span className="flex items-center gap-2"><Upload size={15} />{t('tabDocumentos')}</span>
         </button>
       </div>
 
@@ -627,22 +630,22 @@ export default function PaginaCargaDocsUsuario() {
               <div className="flex flex-col items-center">
                 <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbIndividual}>
                   <FolderPlus size={16} />
-                  Cargar Ubicación
+                  {t('cargarUbicacion')}
                 </Boton>
-                <span className="text-[11px] text-texto-muted mt-0.5">solo un directorio</span>
+                <span className="text-[11px] text-texto-muted mt-0.5">{t('soloUnDirectorio')}</span>
               </div>
               <div className="flex flex-col items-center">
                 <Boton variante="contorno" onClick={iniciarEscaneoDir} cargando={escaneandoDir}>
                   <FolderInput size={16} />
-                  Cargar Ubicaciones desde Directorio
+                  {t('cargarUbicacionesDesdeDirectorio')}
                 </Boton>
-                <span className="text-[11px] text-texto-muted mt-0.5">y todos los sub-directorios</span>
+                <span className="text-[11px] text-texto-muted mt-0.5">{t('yTodosSubdirectorios')}</span>
               </div>
               <Boton variante="contorno" className="h-[38px]" onClick={() => setExpandidos(new Set(ubicaciones.map((u) => u.codigo_ubicacion)))} disabled={!ubicaciones.length}>
-                Expandir todo
+                {t('expandirTodo')}
               </Boton>
               <Boton variante="contorno" className="h-[38px]" onClick={() => setExpandidos(new Set())} disabled={!ubicaciones.length}>
-                Colapsar todo
+                {t('colapsarTodo')}
               </Boton>
               <Boton
                 variante="contorno"
@@ -651,13 +654,13 @@ export default function PaginaCargaDocsUsuario() {
                   exportarExcel(
                     filtradosUbs as unknown as Record<string, unknown>[],
                     [
-                      { titulo: 'Código', campo: 'codigo_ubicacion' },
-                      { titulo: 'Nombre', campo: 'nombre_ubicacion' },
-                      { titulo: 'Ruta', campo: 'ruta_completa' },
-                      { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
-                      { titulo: 'Nivel', campo: 'nivel' },
-                      { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                      { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
+                      { titulo: t('colCodigo'), campo: 'codigo_ubicacion' },
+                      { titulo: t('colNombre'), campo: 'nombre_ubicacion' },
+                      { titulo: t('colRuta'), campo: 'ruta_completa' },
+                      { titulo: t('colPadre'), campo: 'codigo_ubicacion_superior' },
+                      { titulo: t('colNivel'), campo: 'nivel' },
+                      { titulo: t('colHabilitada'), campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
+                      { titulo: t('colHabilitada'), campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
                     ],
                     'ubicaciones-docs'
                   )
@@ -665,7 +668,7 @@ export default function PaginaCargaDocsUsuario() {
                 disabled={filtradosUbs.length === 0}
               >
                 <Download size={15} />
-                Excel
+                {t('excel')}
               </Boton>
             </div>
           </div>
@@ -673,12 +676,12 @@ export default function PaginaCargaDocsUsuario() {
           {/* Árbol jerárquico — misma presentación que /ubicaciones-docs */}
           <div className="border border-borde rounded-lg bg-fondo-tarjeta">
             {cargandoUbs ? (
-              <div className="py-8 text-center text-texto-muted">Cargando...</div>
+              <div className="py-8 text-center text-texto-muted">{tc('cargando')}</div>
             ) : raices.length === 0 ? (
               <div className="py-8 text-center text-texto-muted flex flex-col items-center gap-2">
                 <FolderTree size={32} className="text-texto-muted/50" />
-                <p>Sin ubicaciones configuradas</p>
-                <p className="text-xs text-texto-muted/70">Usa &quot;Cargar Ubicaciones desde Directorio&quot; para cargar desde una carpeta de tu computador.</p>
+                <p>{t('sinUbicacionesConfiguradas')}</p>
+                <p className="text-xs text-texto-muted/70">{t('ayudaCargarDesdeDirectorio')}</p>
               </div>
             ) : (
               <div className="py-2">{raices.map((u) => renderNodo(u))}</div>
@@ -707,8 +710,8 @@ export default function PaginaCargaDocsUsuario() {
                   <FolderOpen size={15} className={ubicacionDocSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
                   <span className="flex-1 text-left truncate">
                     {ubicacionDocSel
-                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel)?.nombre_ubicacion ?? 'Seleccionar ubicación')
-                      : 'Seleccionar ubicación'}
+                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel)?.nombre_ubicacion ?? t('seleccionarUbicacion'))
+                      : t('seleccionarUbicacion')}
                   </span>
                   {ubicacionDocSel ? (
                     <X size={13} className="text-texto-muted hover:text-error shrink-0" onClick={(e) => { e.stopPropagation(); setUbicacionDocSel(''); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }} />
@@ -721,7 +724,7 @@ export default function PaginaCargaDocsUsuario() {
                     <div className="p-2 border-b border-borde shrink-0">
                       <input
                         type="text"
-                        placeholder="Buscar ubicación…"
+                        placeholder={t('buscarUbicacionPlaceholder')}
                         value={ubicDocBusqueda}
                         onChange={(e) => setUbicDocBusqueda(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
@@ -731,7 +734,7 @@ export default function PaginaCargaDocsUsuario() {
                     </div>
                     <div className="overflow-y-auto flex-1">
                       <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { setUbicacionDocSel(''); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }}>
-                        Todas las ubicaciones
+                        {t('todasLasUbicaciones')}
                       </div>
                       {(() => {
                         const tieneHijosDoc = (cod: string) => ubicaciones.some(u => u.codigo_ubicacion_superior === cod)
@@ -741,7 +744,7 @@ export default function PaginaCargaDocsUsuario() {
                             u.nombre_ubicacion.toLowerCase().includes(ubicDocBusqueda.toLowerCase()) ||
                             (u.ruta_completa || '').toLowerCase().includes(ubicDocBusqueda.toLowerCase())
                           )
-                          if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
+                          if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
                           return filtradas.map(u => {
                             const esArea = u.tipo_ubicacion === 'AREA'
                             const selec = ubicacionDocSel === u.codigo_ubicacion
@@ -754,7 +757,7 @@ export default function PaginaCargaDocsUsuario() {
                               >
                                 <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
                                 <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('area') : t('contenido')}</span>
                               </div>
                             )
                           })
@@ -789,7 +792,7 @@ export default function PaginaCargaDocsUsuario() {
                                 }
                                 <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
                                 <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('area') : t('contenido')}</span>
                               </div>
                               {expandido && hijos.map(h => renderNodoDropdown(h))}
                             </div>
@@ -798,7 +801,7 @@ export default function PaginaCargaDocsUsuario() {
                         const raicesDoc = ubicaciones
                           .filter(u => !u.codigo_ubicacion_superior)
                           .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
-                        if (raicesDoc.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin ubicaciones</div>
+                        if (raicesDoc.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinUbicaciones')}</div>
                         return raicesDoc.map(u => renderNodoDropdown(u))
                       })()}
                     </div>
@@ -815,10 +818,10 @@ export default function PaginaCargaDocsUsuario() {
                   } catch { /* cancelado */ }
                 }}
                 className="flex items-center gap-2 rounded-lg border border-primario bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors shrink-0"
-                title="Seleccionar carpeta raíz en tu computador"
+                title={t('seleccionarCarpetaRaizTitulo')}
               >
                 <FolderOpen size={15} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
-                {dirHandle ? dirHandle.name : 'Carpeta'}
+                {dirHandle ? dirHandle.name : t('carpeta')}
               </button>
             </div>
 
@@ -842,15 +845,15 @@ export default function PaginaCargaDocsUsuario() {
             <div className="grid grid-cols-3 gap-4 pt-1">
               <div className="flex flex-col items-center gap-0.5">
                 <span className="page-heading">{totalDocs}</span>
-                <span className="text-xs text-texto-muted">Documentos totales</span>
+                <span className="text-xs text-texto-muted">{t('documentosTotales')}</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
                 <span className="stat-number text-green-600">{docsValidos}</span>
-                <span className="text-xs text-texto-muted">Procesados correctamente</span>
+                <span className="text-xs text-texto-muted">{t('procesadosCorrectamente')}</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
                 <span className="stat-number text-red-500">{docsRechazados}</span>
-                <span className="text-xs text-texto-muted">Rechazados</span>
+                <span className="text-xs text-texto-muted">{t('rechazados')}</span>
               </div>
             </div>
 
@@ -858,22 +861,22 @@ export default function PaginaCargaDocsUsuario() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-texto-muted uppercase">
-                  {todosListos ? 'Documentos procesados (CHUNKEADO)' : 'Documentos pendientes (CARGADO)'}
+                  {todosListos ? t('docsProcesadosChunkeado') : t('docsPendientesCargado')}
                 </p>
-                {cargandoDocsLista && <span className="text-xs text-texto-muted animate-pulse">Cargando...</span>}
+                {cargandoDocsLista && <span className="text-xs text-texto-muted animate-pulse">{tc('cargando')}</span>}
               </div>
               {docsLista.length === 0 && !cargandoDocsLista ? (
-                <p className="text-xs text-texto-muted text-center py-3">Sin documentos en este estado</p>
+                <p className="text-xs text-texto-muted text-center py-3">{t('sinDocumentosEnEsteEstado')}</p>
               ) : (
                 <>
                   <div className="rounded-lg border border-borde overflow-hidden bg-white">
                     <table className="w-full text-sm">
                       <thead>
                         <tr className="border-b border-borde">
-                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase">Documento</th>
-                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase hidden md:table-cell">Ubicación</th>
-                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase w-36">Estado</th>
-                          <th className="text-right px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase w-24">Acciones</th>
+                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase">{t('thDocumento')}</th>
+                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase hidden md:table-cell">{t('thUbicacion')}</th>
+                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase w-36">{t('thEstado')}</th>
+                          <th className="text-right px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase w-24">{tc('acciones')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -896,14 +899,14 @@ export default function PaginaCargaDocsUsuario() {
                               <td className="px-3 py-2.5 w-24">
                                 <div className="flex items-center justify-end gap-1">
                                   {doc.ubicacion_documento && !/^https?:\/\//i.test(doc.ubicacion_documento) && (
-                                    <button type="button" title="Abrir archivo" onClick={() => abrirDocumento(doc.ubicacion_documento)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                                    <button type="button" title={t('abrirArchivo')} onClick={() => abrirDocumento(doc.ubicacion_documento)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                                       <FileText size={15} />
                                     </button>
                                   )}
-                                  <button type="button" title="Ver detalle" onClick={() => setDocDetalle(doc)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                                  <button type="button" title={t('verDetalle')} onClick={() => setDocDetalle(doc)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                                     <Eye size={15} />
                                   </button>
-                                  <button type="button" title="Quitar de la BD" onClick={() => setConfirmEliminarDoc(doc)} className="p-1.5 rounded-lg hover:bg-orange-50 text-texto-muted hover:text-orange-500 transition-colors">
+                                  <button type="button" title={t('quitarDeBd')} onClick={() => setConfirmEliminarDoc(doc)} className="p-1.5 rounded-lg hover:bg-orange-50 text-texto-muted hover:text-orange-500 transition-colors">
                                     <XCircle size={15} />
                                   </button>
                                 </div>
@@ -918,7 +921,7 @@ export default function PaginaCargaDocsUsuario() {
                   {docsListaTotal > DOCS_LISTA_POR_PAGINA && (
                     <div className="flex items-center justify-between pt-1">
                       <span className="text-xs text-texto-muted">
-                        Página {docsListaPagina} de {Math.ceil(docsListaTotal / DOCS_LISTA_POR_PAGINA)}
+                        {t('paginaDe', { actual: docsListaPagina, total: Math.ceil(docsListaTotal / DOCS_LISTA_POR_PAGINA) })}
                       </span>
                       <div className="flex gap-2">
                         <Boton
@@ -927,7 +930,7 @@ export default function PaginaCargaDocsUsuario() {
                           onClick={() => setDocsListaPagina(p => Math.max(1, p - 1))}
                           disabled={docsListaPagina <= 1 || cargandoDocsLista}
                         >
-                          Anterior
+                          {t('anterior')}
                         </Boton>
                         <Boton
                           variante="contorno"
@@ -935,7 +938,7 @@ export default function PaginaCargaDocsUsuario() {
                           onClick={() => setDocsListaPagina(p => Math.min(Math.ceil(docsListaTotal / DOCS_LISTA_POR_PAGINA), p + 1))}
                           disabled={docsListaPagina >= Math.ceil(docsListaTotal / DOCS_LISTA_POR_PAGINA) || cargandoDocsLista}
                         >
-                          Siguiente
+                          {t('siguiente')}
                         </Boton>
                       </div>
                     </div>
@@ -947,7 +950,7 @@ export default function PaginaCargaDocsUsuario() {
             {/* Timer */}
             {(ejecutando || todosListos) && (
               <p className="text-center text-sm text-texto-muted">
-                {ejecutando ? `Procesando... ${formatTiempo(tiempoTranscurrido)}` : `Completado en ${formatTiempo(tiempoTranscurrido)}`}
+                {ejecutando ? t('procesando', { tiempo: formatTiempo(tiempoTranscurrido) }) : t('completadoEn', { tiempo: formatTiempo(tiempoTranscurrido) })}
               </p>
             )}
 
@@ -956,10 +959,10 @@ export default function PaginaCargaDocsUsuario() {
               {!ejecutando ? (
                 <Boton variante="primario" className="flex-1" onClick={ejecutarPipeline}>
                   <Upload size={15} />
-                  {todosListos ? 'Cargar de nuevo' : 'Cargar Documentos'}
+                  {todosListos ? t('cargarDeNuevo') : t('cargarDocumentos')}
                 </Boton>
               ) : (
-                <Boton variante="peligro" className="flex-1" onClick={detener}>Detener</Boton>
+                <Boton variante="peligro" className="flex-1" onClick={detener}>{t('detener')}</Boton>
               )}
             </div>
           </div>
@@ -971,16 +974,16 @@ export default function PaginaCargaDocsUsuario() {
       ══════════════════════════════════════════════════════════════════════ */}
 
       {/* Modal CRUD ubicación */}
-      <Modal abierto={modalUb} alCerrar={() => setModalUb(false)} titulo={editandoUb ? `Ubicación Docs.: ${editandoUb.nombre_ubicacion}` : 'Nueva Ubicación'} className="max-w-3xl">
+      <Modal abierto={modalUb} alCerrar={() => setModalUb(false)} titulo={editandoUb ? t('modalUbEditarTitulo', { nombre: editandoUb.nombre_ubicacion }) : t('modalUbNuevoTitulo')} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {editandoUb?.tipo_ubicacion === 'AREA' && (
             <div className="flex border-b border-borde">
               {([
-                { key: 'datos', label: 'Datos' },
-                { key: 'system_prompt', label: 'System Prompt' },
-                { key: 'programacion_insert', label: 'Prog. Insert' },
-                { key: 'programacion_update', label: 'Prog. Update' },
-                { key: 'md', label: '.md' },
+                { key: 'datos', label: t('tabDatos') },
+                { key: 'system_prompt', label: t('tabSystemPrompt') },
+                { key: 'programacion_insert', label: t('tabProgInsert') },
+                { key: 'programacion_update', label: t('tabProgUpdate') },
+                { key: 'md', label: t('tabMd') },
               ] as { key: typeof tabModalUb; label: string }[]).map(({ key, label }) => (
                 <button key={key} onClick={() => setTabModalUb(key)} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalUb === key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
                   {label}
@@ -992,13 +995,13 @@ export default function PaginaCargaDocsUsuario() {
             <div className="grid grid-cols-2 gap-4">
               {!editandoUb && (
                 <div className="col-span-2">
-                  <Input etiqueta="Nombre" value={formUb.nombre_ubicacion} onChange={(e) => setFormUb({ ...formUb, nombre_ubicacion: e.target.value })} placeholder="Nombre de la ubicación" />
+                  <Input etiqueta={t('etiquetaNombre')} value={formUb.nombre_ubicacion} onChange={(e) => setFormUb({ ...formUb, nombre_ubicacion: e.target.value })} placeholder={t('placeholderNombreUbicacion')} />
                 </div>
               )}
-              <Input etiqueta="Alias" value={formUb.alias_ubicacion} onChange={(e) => setFormUb({ ...formUb, alias_ubicacion: e.target.value })} placeholder="Alias corto opcional" />
+              <Input etiqueta={t('etiquetaAlias')} value={formUb.alias_ubicacion} onChange={(e) => setFormUb({ ...formUb, alias_ubicacion: e.target.value })} placeholder={t('placeholderAlias')} />
               {editandoUb && (
                 <div>
-                  <label className="block text-sm font-medium text-texto mb-1.5">Tipo</label>
+                  <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaTipo')}</label>
                   <select
                     className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none"
                     value={editandoUb.tipo_ubicacion}
@@ -1015,13 +1018,13 @@ export default function PaginaCargaDocsUsuario() {
                 </div>
               )}
               <div className="col-span-2">
-                <Textarea etiqueta="Descripción" value={formUb.descripcion} onChange={(e) => setFormUb({ ...formUb, descripcion: e.target.value })} placeholder="Descripción de esta ubicación" rows={2} />
+                <Textarea etiqueta={t('etiquetaDescripcion')} value={formUb.descripcion} onChange={(e) => setFormUb({ ...formUb, descripcion: e.target.value })} placeholder={t('placeholderDescripcionUbicacion')} rows={2} />
               </div>
               {!editandoUb && (
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-texto mb-1.5">Carpeta padre</label>
+                  <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaCarpetaPadre')}</label>
                   <select className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none" value={formUb.codigo_ubicacion_superior} onChange={(e) => setFormUb({ ...formUb, codigo_ubicacion_superior: e.target.value })}>
-                    <option value="">— Raíz —</option>
+                    <option value="">{t('opcionRaiz')}</option>
                     {opcionesPadre(editandoUb?.codigo_ubicacion).map((u) => <option key={u.codigo_ubicacion} value={u.codigo_ubicacion}>{'  '.repeat(u.nivel)}{u.nombre_ubicacion}</option>)}
                   </select>
                 </div>
@@ -1029,11 +1032,11 @@ export default function PaginaCargaDocsUsuario() {
               {editandoUb && (
                 <label className="flex items-center gap-3 cursor-pointer">
                   <input type="checkbox" checked={formUb.ubicacion_habilitada} onChange={(e) => setFormUb({ ...formUb, ubicacion_habilitada: e.target.checked })} className="w-4 h-4 rounded border-borde text-primario focus:ring-primario" />
-                  <span className="text-sm font-medium text-texto">Ubicación habilitada</span>
-                  <span className="text-xs text-texto-muted">(se aplica a todas las ubicaciones hijas)</span>
+                  <span className="text-sm font-medium text-texto">{t('ubicacionHabilitada')}</span>
+                  <span className="text-xs text-texto-muted">{t('ubicacionHabilitadaHint')}</span>
                 </label>
               )}
-              {editandoUb && <Input etiqueta="Código" value={formUb.codigo_ubicacion} disabled readOnly />}
+              {editandoUb && <Input etiqueta={t('etiquetaCodigo')} value={formUb.codigo_ubicacion} disabled readOnly />}
             </div>
           )}
           {tabModalUb === 'system_prompt' && editandoUb?.tipo_ubicacion === 'AREA' && (
@@ -1088,7 +1091,7 @@ export default function PaginaCargaDocsUsuario() {
                 rows={13}
                 value={mdUb}
                 className="w-full text-sm font-mono rounded-lg border border-borde px-3 py-2 bg-fondo text-texto resize-none focus:outline-none"
-                placeholder="Sin contenido .md generado"
+                placeholder={t('mdSinContenido')}
               />
               {mensajeMdUb && (
                 <p className="text-xs text-texto-muted">{mensajeMdUb}</p>
@@ -1103,15 +1106,15 @@ export default function PaginaCargaDocsUsuario() {
                     try {
                       const res = await ubicacionesDocsApi.generarMd(editandoUb.codigo_ubicacion)
                       setMdUb((res as unknown as Record<string, unknown>).md as string || '')
-                      setMensajeMdUb('Markdown generado correctamente')
+                      setMensajeMdUb(t('mdGeneradoOk'))
                     } catch {
-                      setMensajeMdUb('Error al generar markdown')
+                      setMensajeMdUb(t('mdErrorGenerar'))
                     } finally {
                       setGenerandoMdUb(false)
                     }
                   }}
                 >
-                  Generar
+                  {t('btnGenerar')}
                 </Boton>
                 <Boton
                   variante="secundario"
@@ -1121,15 +1124,15 @@ export default function PaginaCargaDocsUsuario() {
                     setMensajeMdUb(null)
                     try {
                       await promptsApi.sincronizarFila('ubicaciones_docs', 'codigo_ubicacion', editandoUb.codigo_ubicacion)
-                      setMensajeMdUb('Sincronizado correctamente')
+                      setMensajeMdUb(t('mdSincronizadoOk'))
                     } catch {
-                      setMensajeMdUb('Error al sincronizar')
+                      setMensajeMdUb(t('mdErrorSincronizar'))
                     } finally {
                       setSincronizandoMdUb(false)
                     }
                   }}
                 >
-                  Sincronizar
+                  {t('btnSincronizar')}
                 </Boton>
               </div>
             </div>
@@ -1159,34 +1162,34 @@ export default function PaginaCargaDocsUsuario() {
       {/* Modal confirmar eliminar */}
       <ModalConfirmar
         abierto={!!confirmElim} alCerrar={() => { setConfirmElim(null); setPreviewElim(null) }} alConfirmar={ejecutarEliminar}
-        titulo="Eliminar ubicación"
-        mensaje={confirmElim ? (previewElim ? `Se eliminarán ${previewElim.ubicaciones} ubicación(es) y ${previewElim.documentos_a_eliminar} documento(s). ¿Confirmas?` : `Calculando impacto de "${confirmElim.nombre_ubicacion}"...`) : ''}
-        textoConfirmar="Eliminar" cargando={eliminandoUb || !previewElim}
+        titulo={t('eliminarUbicacionTitulo')}
+        mensaje={confirmElim ? (previewElim ? t('eliminarUbicacionMensaje', { ubicaciones: previewElim.ubicaciones, documentos: previewElim.documentos_a_eliminar }) : t('calculandoImpacto', { nombre: confirmElim.nombre_ubicacion })) : ''}
+        textoConfirmar={tc('eliminar')} cargando={eliminandoUb || !previewElim}
       />
 
       {/* Modal confirmar cambio de tipo */}
       <ModalConfirmar
         abierto={!!confirmarTipo} alCerrar={() => setConfirmarTipo(null)} alConfirmar={ejecutarCambioTipo}
-        titulo="Cambiar tipo de ubicación"
-        mensaje={confirmarTipo ? `¿Cambiar "${confirmarTipo.u.nombre_ubicacion}" a tipo ${confirmarTipo.nuevoTipo}?` : ''}
-        textoConfirmar="Cambiar" cargando={cambiandoTipo}
+        titulo={t('cambiarTipoTitulo')}
+        mensaje={confirmarTipo ? t('cambiarTipoMensaje', { nombre: confirmarTipo.u.nombre_ubicacion, tipo: confirmarTipo.nuevoTipo }) : ''}
+        textoConfirmar={t('btnCambiar')} cargando={cambiandoTipo}
       />
 
       {/* Modal carga desde directorio */}
-      <Modal abierto={modalCarga} alCerrar={cerrarModalCarga} titulo="Cargar desde directorio">
+      <Modal abierto={modalCarga} alCerrar={cerrarModalCarga} titulo={t('cargarDesdeDirectorioTitulo')}>
         <div className="flex flex-col gap-4 min-w-[480px]">
           {!resultadoSync && datosEscaneo && (
             <>
               <div className="bg-fondo rounded-lg p-4 flex items-center gap-3">
                 <FolderOpen size={22} className="text-primario shrink-0" />
-                <div><p className="font-medium text-texto">{datosEscaneo.nombreRaiz}</p><p className="text-sm text-texto-muted">{datosEscaneo.directorios.length} directorio(s) encontrado(s)</p></div>
+                <div><p className="font-medium text-texto">{datosEscaneo.nombreRaiz}</p><p className="text-sm text-texto-muted">{t('directoriosEncontrados', { n: datosEscaneo.directorios.length })}</p></div>
               </div>
               {diff && (
                 <div className={`grid ${diff.excluidas > 0 ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>
-                  <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-green-600">{diff.nuevas}</p><p className="text-xs text-texto-muted">Nuevas</p></div>
-                  <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-red-600">{diff.aEliminar}</p><p className="text-xs text-texto-muted">A eliminar</p></div>
-                  <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-texto-muted">{diff.sinCambio}</p><p className="text-xs text-texto-muted">Sin cambio</p></div>
-                  {diff.excluidas > 0 && <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-center"><p className="stat-number text-amber-600">{diff.excluidas}</p><p className="text-xs text-amber-700">Excluidas</p></div>}
+                  <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-green-600">{diff.nuevas}</p><p className="text-xs text-texto-muted">{t('nuevas')}</p></div>
+                  <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-red-600">{diff.aEliminar}</p><p className="text-xs text-texto-muted">{t('aEliminar')}</p></div>
+                  <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-texto-muted">{diff.sinCambio}</p><p className="text-xs text-texto-muted">{t('sinCambio')}</p></div>
+                  {diff.excluidas > 0 && <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-center"><p className="stat-number text-amber-600">{diff.excluidas}</p><p className="text-xs text-amber-700">{t('excluidasLabel')}</p></div>}
                 </div>
               )}
               <div className="border border-borde rounded-lg max-h-[260px] overflow-y-auto">
@@ -1201,55 +1204,55 @@ export default function PaginaCargaDocsUsuario() {
                         <div key={d.codigo_ubicacion} className={`flex items-center gap-2 px-3 py-1.5 text-sm ${esExcluida ? 'opacity-40' : ''}`} style={{ paddingLeft: `${d.nivel * 18 + 12}px` }}>
                           <Folder size={13} className="text-texto-muted shrink-0" />
                           <span className={esExcluida ? 'text-texto-muted line-through' : esNueva ? 'text-green-700 font-medium' : 'text-texto'}>{d.nombre_ubicacion}</span>
-                          {!esExcluida && esNueva && <Insignia variante="exito">Nueva</Insignia>}
-                          {esExcluida && <Insignia variante="advertencia">Excluida</Insignia>}
+                          {!esExcluida && esNueva && <Insignia variante="exito">{t('insigniaNueva')}</Insignia>}
+                          {esExcluida && <Insignia variante="advertencia">{t('insigniaExcluida')}</Insignia>}
                         </div>
                       )
                     })
                   })()}
-                  {datosEscaneo.directorios.length > 30 && <p className="px-4 py-2 text-xs text-texto-muted text-center">...y {datosEscaneo.directorios.length - 30} más</p>}
+                  {datosEscaneo.directorios.length > 30 && <p className="px-4 py-2 text-xs text-texto-muted text-center">{t('yMas', { n: datosEscaneo.directorios.length - 30 })}</p>}
                 </div>
               </div>
-              {diff && diff.aEliminar > 0 && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">Se eliminarán {diff.aEliminar} ubicación(es) que ya no existen en el directorio.</div>}
+              {diff && diff.aEliminar > 0 && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">{t('avisoEliminacion', { n: diff.aEliminar })}</div>}
               <div className="flex gap-3 justify-end pt-1">
-                <Boton variante="contorno" onClick={cerrarModalCarga}>Cancelar</Boton>
-                <Boton variante="primario" onClick={ejecutarSincronizacion} cargando={sincronizando}><RefreshCw size={14} />Sincronizar</Boton>
+                <Boton variante="contorno" onClick={cerrarModalCarga}>{tc('cancelar')}</Boton>
+                <Boton variante="primario" onClick={ejecutarSincronizacion} cargando={sincronizando}><RefreshCw size={14} />{t('btnSincronizar')}</Boton>
               </div>
             </>
           )}
           {resultadoSync && (
             <>
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center"><p className="text-lg font-medium text-green-800">Sincronización completada</p></div>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center"><p className="text-lg font-medium text-green-800">{t('sincronizacionCompletada')}</p></div>
               <div className={`grid ${resultadoSync.excluidas > 0 ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>
-                <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-green-600">{resultadoSync.insertadas}</p><p className="text-xs text-texto-muted">Insertadas</p></div>
-                <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-red-600">{resultadoSync.eliminadas}</p><p className="text-xs text-texto-muted">Eliminadas</p></div>
-                <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-primario">{resultadoSync.actualizadas}</p><p className="text-xs text-texto-muted">Actualizadas</p></div>
-                {resultadoSync.excluidas > 0 && <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-center"><p className="stat-number text-amber-600">{resultadoSync.excluidas}</p><p className="text-xs text-amber-700">Excluidas</p></div>}
+                <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-green-600">{resultadoSync.insertadas}</p><p className="text-xs text-texto-muted">{t('insertadas')}</p></div>
+                <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-red-600">{resultadoSync.eliminadas}</p><p className="text-xs text-texto-muted">{t('eliminadasLabel')}</p></div>
+                <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-primario">{resultadoSync.actualizadas}</p><p className="text-xs text-texto-muted">{t('actualizadas')}</p></div>
+                {resultadoSync.excluidas > 0 && <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-center"><p className="stat-number text-amber-600">{resultadoSync.excluidas}</p><p className="text-xs text-amber-700">{t('excluidasLabel')}</p></div>}
               </div>
-              <div className="flex justify-end pt-1"><Boton variante="primario" onClick={cerrarModalCarga}>Salir</Boton></div>
+              <div className="flex justify-end pt-1"><Boton variante="primario" onClick={cerrarModalCarga}>{tc('salir')}</Boton></div>
             </>
           )}
         </div>
       </Modal>
 
       {/* Modal detalle documento */}
-      <Modal abierto={!!docDetalle} alCerrar={() => setDocDetalle(null)} titulo="Detalle del documento">
+      <Modal abierto={!!docDetalle} alCerrar={() => setDocDetalle(null)} titulo={t('detalleDocumentoTitulo')}>
         {docDetalle && (
           <div className="flex flex-col gap-3 min-w-[420px]">
             <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              <span className="text-texto-muted font-medium">Nombre</span>
+              <span className="text-texto-muted font-medium">{t('etiquetaNombre')}</span>
               <span className="text-texto font-medium">{docDetalle.nombre_documento}</span>
-              <span className="text-texto-muted font-medium">Estado</span>
+              <span className="text-texto-muted font-medium">{t('thEstado')}</span>
               <span><Insignia variante={['CHUNKEADO','VECTORIZADO'].includes(docDetalle.codigo_estado_doc ?? '') ? 'exito' : ['NO_ANALIZABLE','NO_ESCANEABLE'].includes(docDetalle.codigo_estado_doc ?? '') ? 'error' : 'primario'}>{docDetalle.codigo_estado_doc ?? '—'}</Insignia></span>
-              <span className="text-texto-muted font-medium">Ubicación</span>
+              <span className="text-texto-muted font-medium">{t('thUbicacion')}</span>
               <span className="text-texto text-xs break-all">{docDetalle.ubicacion_documento || '—'}</span>
               {docDetalle.resumen_documento && (<>
-                <span className="text-texto-muted font-medium">Resumen</span>
+                <span className="text-texto-muted font-medium">{t('resumen')}</span>
                 <span className="text-texto text-xs">{docDetalle.resumen_documento}</span>
               </>)}
             </div>
             <div className="flex justify-end pt-2">
-              <Boton variante="contorno" onClick={() => setDocDetalle(null)}>Salir</Boton>
+              <Boton variante="contorno" onClick={() => setDocDetalle(null)}>{tc('salir')}</Boton>
             </div>
           </div>
         )}
@@ -1260,9 +1263,9 @@ export default function PaginaCargaDocsUsuario() {
         abierto={!!confirmEliminarDoc}
         alCerrar={() => setConfirmEliminarDoc(null)}
         alConfirmar={ejecutarEliminarDoc}
-        titulo="Quitar documento de la BD"
-        mensaje={confirmEliminarDoc ? `¿Quitar "${confirmEliminarDoc.nombre_documento}" de la base de datos?` : ''}
-        textoConfirmar="Quitar"
+        titulo={t('quitarDocumentoTitulo')}
+        mensaje={confirmEliminarDoc ? t('quitarDocumentoMensaje', { nombre: confirmEliminarDoc.nombre_documento }) : ''}
+        textoConfirmar={t('btnQuitar')}
         cargando={eliminandoDoc}
       />
     </div>

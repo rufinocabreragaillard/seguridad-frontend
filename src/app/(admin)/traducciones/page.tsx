@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef } from 'react'
+import { useTranslations } from 'next-intl'
 import {
   Languages, RefreshCw, Play, CheckCircle2, AlertCircle,
   Globe, Plus, Trash2, Loader2, XCircle,
@@ -24,13 +25,14 @@ function formatFecha(iso: string | null) {
   } catch { return iso }
 }
 
-function BadgeBase({ esBase }: { esBase: boolean }) {
-  if (esBase) return <span className="px-2 py-0.5 rounded text-xs font-medium bg-primario-muy-claro text-primario border border-primario/30">Base</span>
+function BadgeBase({ esBase, label }: { esBase: boolean; label: string }) {
+  if (esBase) return <span className="px-2 py-0.5 rounded text-xs font-medium bg-primario-muy-claro text-primario border border-primario/30">{label}</span>
   return null
 }
 
 // Barra de progreso de generación
 function BarraProgreso({ estado, onCancelar }: { estado: EstadoTraducciones; onCancelar: () => void }) {
+  const t = useTranslations('traducciones')
   const prog = estado.progreso
   if (!estado.generando && !prog?.idiomas_ok?.length) return null
 
@@ -44,14 +46,14 @@ function BarraProgreso({ estado, onCancelar }: { estado: EstadoTraducciones; onC
       <div className="flex items-center gap-2 mb-2">
         <Loader2 size={14} className="text-blue-600 animate-spin shrink-0" />
         <p className="text-sm font-medium text-blue-800 flex-1">
-          Generando traducciones…{actual ? ` procesando ${actual.toUpperCase()}` : ''}
+          {actual ? t('generandoTraduccionesProcesando', { idioma: actual.toUpperCase() }) : t('generandoTraducciones')}
         </p>
         <button
           onClick={onCancelar}
           className="flex items-center gap-1 text-xs text-blue-600 hover:text-red-600 transition-colors"
-          title="Detener y resetear el estado de generación"
+          title={t('cancelarTooltip')}
         >
-          <XCircle size={14} /> Cancelar
+          <XCircle size={14} /> {t('cancelar')}
         </button>
       </div>
       {/* Barra */}
@@ -89,6 +91,8 @@ function BarraProgreso({ estado, onCancelar }: { estado: EstadoTraducciones; onC
 // ─── Componente principal ─────────────────────────────────────────────────────
 
 export default function TraduccionesPage() {
+  const t = useTranslations('traducciones')
+  const tc = useTranslations('common')
   const [estado, setEstado] = useState<EstadoTraducciones | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState('')
@@ -117,12 +121,12 @@ export default function TraduccionesPage() {
       setError('')
       return data
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al cargar estado')
+      setError(e instanceof Error ? e.message : t('errorCargarEstado'))
       return null
     } finally {
       setCargando(false)
     }
-  }, [])
+  }, [t])
 
   // Polling automático mientras generando=true
   const iniciarPolling = useCallback(() => {
@@ -135,13 +139,13 @@ export default function TraduccionesPage() {
         pollingRef.current = null
         const total = Object.values(data.conteos_por_locale ?? {}).reduce((a, b) => a + b, 0)
         if (total > 0) {
-          setResultadoGen(`Generación completada. ${total.toLocaleString()} traducciones en BD.`)
+          setResultadoGen(t('generacionCompletada', { total: total.toLocaleString() }))
         } else {
-          setErrorGen('La generación terminó pero no se guardaron traducciones. Revisa los logs del servidor.')
+          setErrorGen(t('errorSinTraducciones'))
         }
       }
     }, 2500)
-  }, [cargarEstado])
+  }, [cargarEstado, t])
 
   // Cancelar / resetear estado GENERANDO atascado
   const cancelarGeneracion = async () => {
@@ -152,7 +156,7 @@ export default function TraduccionesPage() {
       setErrorGen('')
       setResultadoGen(null)
     } catch (e: unknown) {
-      setErrorGen(e instanceof Error ? e.message : 'Error al cancelar')
+      setErrorGen(e instanceof Error ? e.message : t('errorCancelar'))
     }
   }
 
@@ -176,7 +180,7 @@ export default function TraduccionesPage() {
       await traduccionesApi.eliminarLocale(locale.codigo)
       await cargarEstado()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al eliminar idioma')
+      setError(e instanceof Error ? e.message : t('errorEliminarIdioma'))
     }
   }
 
@@ -190,7 +194,7 @@ export default function TraduccionesPage() {
       await cargarEstado()
       iniciarPolling()
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al iniciar generación'
+      const msg = e instanceof Error ? e.message : t('errorIniciarGeneracion')
       // 409 = ya hay una generación en curso → solo arrancar polling
       if (msg.includes('409') || msg.includes('en curso')) {
         await cargarEstado()
@@ -217,7 +221,7 @@ export default function TraduccionesPage() {
   // ── Agregar idioma ─────────────────────────────────────────────────────────
   const guardarNuevo = async () => {
     if (!formNuevo.codigo || !formNuevo.nombre_nativo || !formNuevo.nombre_es) {
-      setErrorNuevo('Todos los campos son obligatorios')
+      setErrorNuevo(t('errorCamposObligatorios'))
       return
     }
     setGuardandoNuevo(true)
@@ -232,7 +236,7 @@ export default function TraduccionesPage() {
       setFormNuevo({ codigo: '', nombre_nativo: '', nombre_es: '' })
       await cargarEstado()
     } catch (e: unknown) {
-      setErrorNuevo(e instanceof Error ? e.message : 'Error al crear idioma')
+      setErrorNuevo(e instanceof Error ? e.message : t('errorCrearIdioma'))
     } finally {
       setGuardandoNuevo(false)
     }
@@ -246,7 +250,7 @@ export default function TraduccionesPage() {
       setLocalEliminar(null)
       await cargarEstado()
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Error al eliminar')
+      setError(e instanceof Error ? e.message : t('errorEliminar'))
     }
   }
 
@@ -281,12 +285,12 @@ export default function TraduccionesPage() {
           <Languages size={20} className="text-primario" />
         </div>
         <div>
-          <h1 className="page-heading">Traducciones</h1>
-          <p className="text-sm text-texto-muted">Gestión de idiomas y generación automática de traducciones de catálogos</p>
+          <h1 className="page-heading">{t('titulo')}</h1>
+          <p className="text-sm text-texto-muted">{t('subtitulo')}</p>
         </div>
         <div className="ml-auto">
           <Boton variante="contorno" onClick={cargarEstado} className="gap-2" deshabilitado={enGeneracion}>
-            <RefreshCw size={14} /> Actualizar
+            <RefreshCw size={14} /> {tc('actualizar')}
           </Boton>
         </div>
       </div>
@@ -294,28 +298,28 @@ export default function TraduccionesPage() {
       {/* ── Estado general ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
         <div className="bg-surface border border-borde rounded-xl p-4">
-          <p className="text-xs text-texto-muted mb-1">Última generación</p>
+          <p className="text-xs text-texto-muted mb-1">{t('ultimaGeneracion')}</p>
           <p className="text-sm font-medium text-texto">{formatFecha(estado?.ultima_generacion ?? null)}</p>
         </div>
         <div className="bg-surface border border-borde rounded-xl p-4">
-          <p className="text-xs text-texto-muted mb-1">Traducciones en BD</p>
-          <p className="text-sm font-medium text-texto">{totalTraducciones.toLocaleString()} claves</p>
+          <p className="text-xs text-texto-muted mb-1">{t('traduccionesEnBd')}</p>
+          <p className="text-sm font-medium text-texto">{t('clavesContador', { total: totalTraducciones.toLocaleString() })}</p>
         </div>
         <div className={`rounded-xl p-4 border ${estado?.pendiente ? 'bg-amber-50 border-amber-200' : 'bg-surface border-borde'}`}>
-          <p className="text-xs text-texto-muted mb-1">Cambios pendientes</p>
+          <p className="text-xs text-texto-muted mb-1">{t('cambiosPendientes')}</p>
           <div className="flex items-center gap-1.5">
             {estado?.pendiente
               ? <AlertCircle size={14} className="text-amber-600" />
               : <CheckCircle2 size={14} className="text-green-600" />}
             <p className="text-sm font-medium text-texto">
-              {estado?.cambios_pendientes ?? 0} cambios sin traducir
+              {t('cambiosSinTraducir', { total: estado?.cambios_pendientes ?? 0 })}
             </p>
           </div>
         </div>
       </div>
 
       {/* ── Barra de progreso (cuando generando) ──────────────────────────── */}
-      {estado && <BarraProgreso estado={estado} />}
+      {estado && <BarraProgreso estado={estado} onCancelar={cancelarGeneracion} />}
 
       {/* ── Resultado última operación ─────────────────────────────────────── */}
       {resultadoGen && !enGeneracion && (
@@ -332,10 +336,9 @@ export default function TraduccionesPage() {
 
       {/* ── Acciones de generación ─────────────────────────────────────────── */}
       <div className="bg-surface border border-borde rounded-xl p-5">
-        <h2 className="text-sm font-semibold text-texto mb-1">Generación de traducciones</h2>
+        <h2 className="text-sm font-semibold text-texto mb-1">{t('seccionGeneracionTitulo')}</h2>
         <p className="text-xs text-texto-muted mb-4">
-          Las traducciones se generan automáticamente con IA (Gemini Flash) para todos los idiomas activos.
-          La generación corre en background — puedes navegar libremente mientras avanza.
+          {t('seccionGeneracionDescripcion')}
         </p>
         <div className="flex gap-3">
           <Boton
@@ -345,7 +348,7 @@ export default function TraduccionesPage() {
             deshabilitado={enGeneracion}
             className="gap-2"
           >
-            <Play size={14} /> Regenerar TODO
+            <Play size={14} /> {t('regenerarTodo')}
           </Boton>
           <Boton
             variante="contorno"
@@ -354,7 +357,7 @@ export default function TraduccionesPage() {
             deshabilitado={enGeneracion || (estado?.cambios_pendientes ?? 0) === 0}
             className="gap-2"
           >
-            <RefreshCw size={14} /> Solo cambios ({estado?.cambios_pendientes ?? 0})
+            <RefreshCw size={14} /> {t('soloCambios', { total: estado?.cambios_pendientes ?? 0 })}
           </Boton>
         </div>
       </div>
@@ -363,9 +366,9 @@ export default function TraduccionesPage() {
       <div className="bg-surface border border-borde rounded-xl overflow-hidden">
         <div className="px-5 py-4 border-b border-borde flex items-center justify-between">
           <div>
-            <h2 className="text-sm font-semibold text-texto">Idiomas soportados</h2>
+            <h2 className="text-sm font-semibold text-texto">{t('idiomasSoportados')}</h2>
             <p className="text-xs text-texto-muted mt-0.5">
-              Solo los idiomas activos se muestran en el selector del sistema
+              {t('idiomasSoportadosDesc')}
             </p>
           </div>
           <Boton
@@ -374,18 +377,18 @@ export default function TraduccionesPage() {
             className="gap-2"
             deshabilitado={enGeneracion}
           >
-            <Plus size={14} /> Agregar idioma
+            <Plus size={14} /> {t('agregarIdioma')}
           </Boton>
         </div>
 
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-borde bg-fondo">
-              <th className="px-5 py-3 text-left text-xs font-semibold text-texto-muted uppercase tracking-wider">Idioma</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold text-texto-muted uppercase tracking-wider">Código</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold text-texto-muted uppercase tracking-wider">Traducciones</th>
-              <th className="px-5 py-3 text-left text-xs font-semibold text-texto-muted uppercase tracking-wider">Estado</th>
-              <th className="px-5 py-3 text-right text-xs font-semibold text-texto-muted uppercase tracking-wider">Acciones</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-texto-muted uppercase tracking-wider">{t('colIdioma')}</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-texto-muted uppercase tracking-wider">{t('colCodigo')}</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-texto-muted uppercase tracking-wider">{t('colTraducciones')}</th>
+              <th className="px-5 py-3 text-left text-xs font-semibold text-texto-muted uppercase tracking-wider">{t('colEstado')}</th>
+              <th className="px-5 py-3 text-right text-xs font-semibold text-texto-muted uppercase tracking-wider">{tc('acciones')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-borde">
@@ -414,12 +417,12 @@ export default function TraduccionesPage() {
                   </td>
                   <td className="px-5 py-3">
                     {loc.es_base
-                      ? <span className="text-xs text-texto-muted">Original (no se traduce)</span>
-                      : <span className="text-sm text-texto">{count.toLocaleString()} claves</span>
+                      ? <span className="text-xs text-texto-muted">{t('originalNoSeTraduce')}</span>
+                      : <span className="text-sm text-texto">{t('clavesContador', { total: count.toLocaleString() })}</span>
                     }
                   </td>
                   <td className="px-5 py-3">
-                    <BadgeBase esBase={loc.es_base} />
+                    <BadgeBase esBase={loc.es_base} label={t('badgeBase')} />
                   </td>
                   <td className="px-5 py-3">
                     <div className="flex items-center justify-end gap-2">
@@ -429,7 +432,7 @@ export default function TraduccionesPage() {
                           disabled={enGeneracion}
                           className="text-xs px-2.5 py-1 rounded border border-borde text-texto-muted hover:border-error hover:text-error transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                         >
-                          Eliminar
+                          {tc('eliminar')}
                         </button>
                       )}
                       {!loc.es_base && (
@@ -439,7 +442,7 @@ export default function TraduccionesPage() {
                           deshabilitado={enGeneracion}
                           className="text-xs py-1 px-2.5 h-auto gap-1"
                         >
-                          <RefreshCw size={11} /> Regenerar
+                          <RefreshCw size={11} /> {t('regenerar')}
                         </Boton>
                       )}
                       {!loc.es_base && (
@@ -447,7 +450,7 @@ export default function TraduccionesPage() {
                           onClick={() => setLocalEliminar(loc)}
                           disabled={enGeneracion}
                           className="p-1.5 rounded text-texto-muted hover:text-error hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                          title="Eliminar idioma"
+                          title={t('eliminarIdiomaTooltip')}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -462,7 +465,7 @@ export default function TraduccionesPage() {
 
         {locales.length === 0 && (
           <div className="px-5 py-8 text-center text-sm text-texto-muted">
-            No hay idiomas configurados
+            {t('sinIdiomas')}
           </div>
         )}
       </div>
@@ -470,20 +473,19 @@ export default function TraduccionesPage() {
       {/* ── Nota sobre agregar idiomas nuevos ─────────────────────────────── */}
       <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
         <p className="text-xs text-amber-700">
-          <strong>Nota:</strong> Para que un idioma nuevo funcione completamente en el sistema, además de registrarlo aquí
-          es necesario crear el archivo de mensajes <code className="bg-amber-100 px-1 rounded">messages/xx.json</code> y
-          agregarlo al array <code className="bg-amber-100 px-1 rounded">locales</code> en{' '}
-          <code className="bg-amber-100 px-1 rounded">src/i18n/config.ts</code>, y luego hacer deploy.
-          Los idiomas predefinidos (ES, EN, PT, FR, DE) ya tienen sus archivos de mensajes incluidos.
+          <strong>{t('notaLabel')}:</strong> {t('notaTexto1')}{' '}
+          <code className="bg-amber-100 px-1 rounded">messages/xx.json</code> {t('notaTexto2')}{' '}
+          <code className="bg-amber-100 px-1 rounded">locales</code> {t('notaTexto3')}{' '}
+          <code className="bg-amber-100 px-1 rounded">src/i18n/config.ts</code>{t('notaTexto4')}
         </p>
       </div>
 
       {/* ── Modal confirmación Regenerar TODO ──────────────────────────────── */}
       <ModalConfirmar
         abierto={modalCompleto}
-        titulo="Regenerar TODAS las traducciones"
-        mensaje={`Se regenerarán las traducciones para todos los idiomas activos (${estado?.idiomas?.join(', ') ?? '…'}). La generación corre en background y puedes seguir navegando. ¿Continuar?`}
-        textoConfirmar="Sí, regenerar todo"
+        titulo={t('modalRegenerarTodoTitulo')}
+        mensaje={t('modalRegenerarTodoMensaje', { idiomas: estado?.idiomas?.join(', ') ?? '…' })}
+        textoConfirmar={t('modalRegenerarTodoConfirmar')}
         variante="primario"
         alConfirmar={generarCompleto}
         alCerrar={() => setModalCompleto(false)}
@@ -492,9 +494,12 @@ export default function TraduccionesPage() {
       {/* ── Modal eliminar idioma ──────────────────────────────────────────── */}
       <ModalConfirmar
         abierto={!!localEliminar}
-        titulo={`Eliminar idioma ${localEliminar?.nombre_es}`}
-        mensaje={`Se eliminarán todas las traducciones generadas para ${localEliminar?.nombre_nativo} (${localEliminar?.codigo?.toUpperCase()}). Esta acción no se puede deshacer.`}
-        textoConfirmar="Eliminar"
+        titulo={t('modalEliminarIdiomaTitulo', { nombre: localEliminar?.nombre_es ?? '' })}
+        mensaje={t('modalEliminarIdiomaMensaje', {
+          nombre: localEliminar?.nombre_nativo ?? '',
+          codigo: localEliminar?.codigo?.toUpperCase() ?? '',
+        })}
+        textoConfirmar={tc('eliminar')}
         variante="peligro"
         alConfirmar={confirmarEliminar}
         alCerrar={() => setLocalEliminar(null)}
@@ -504,28 +509,28 @@ export default function TraduccionesPage() {
       <Modal
         abierto={modalAgregar}
         alCerrar={() => setModalAgregar(false)}
-        titulo="Agregar idioma"
+        titulo={t('agregarIdioma')}
         className="max-w-md"
       >
         <div className="flex flex-col gap-4">
           <Input
-            etiqueta="Código ISO 639-1"
+            etiqueta={t('etiquetaCodigoIso')}
             value={formNuevo.codigo}
             onChange={(e) => setFormNuevo({ ...formNuevo, codigo: e.target.value.toLowerCase() })}
-            placeholder="ej: it, zh, ar"
+            placeholder={t('placeholderCodigoIso')}
             maxLength={5}
           />
           <Input
-            etiqueta="Nombre nativo"
+            etiqueta={t('etiquetaNombreNativo')}
             value={formNuevo.nombre_nativo}
             onChange={(e) => setFormNuevo({ ...formNuevo, nombre_nativo: e.target.value })}
-            placeholder="ej: Italiano, 中文, العربية"
+            placeholder={t('placeholderNombreNativo')}
           />
           <Input
-            etiqueta="Nombre en español"
+            etiqueta={t('etiquetaNombreEs')}
             value={formNuevo.nombre_es}
             onChange={(e) => setFormNuevo({ ...formNuevo, nombre_es: e.target.value })}
-            placeholder="ej: Italiano, Chino, Árabe"
+            placeholder={t('placeholderNombreEs')}
           />
           {errorNuevo && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-3 py-2">
@@ -534,13 +539,13 @@ export default function TraduccionesPage() {
           )}
           <div className="bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
             <p className="text-xs text-amber-700">
-              El idioma se creará. Para usarlo en el sistema, primero deberás agregar su archivo de mensajes al proyecto y hacer deploy.
+              {t('notaIdiomaNuevo')}
             </p>
           </div>
           <div className="flex gap-3 justify-end pt-1">
-            <Boton variante="contorno" onClick={() => setModalAgregar(false)}>Cancelar</Boton>
+            <Boton variante="contorno" onClick={() => setModalAgregar(false)}>{tc('cancelar')}</Boton>
             <Boton variante="primario" onClick={guardarNuevo} cargando={guardandoNuevo}>
-              Agregar
+              {t('agregar')}
             </Boton>
           </div>
         </div>

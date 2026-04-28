@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -15,7 +16,6 @@ import {
   columnaNombre,
   columnaDescripcion,
 } from '@/components/ui/tabla-crud'
-import { Insignia } from '@/components/ui/insignia'
 import { tareasDatosBasicosApi, promptsApi } from '@/lib/api'
 import type { CategoriaTarea } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
@@ -60,6 +60,8 @@ const FORM_INICIAL: FormCategoriaTarea = {
 }
 
 export default function PaginaCategoriasTarea() {
+  const t = useTranslations('categoriasTarea')
+  const tc = useTranslations('common')
   const [tabModal, setTabModal] = useState<TabModal>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
@@ -130,49 +132,49 @@ export default function PaginaCategoriasTarea() {
   )
 
   const tabs: { key: TabModal; label: string }[] = [
-    { key: 'datos', label: 'Datos' },
-    { key: 'system_prompt', label: 'System Prompt' },
-    { key: 'programacion_insert', label: 'Prog. Insert' },
-    { key: 'programacion_update', label: 'Prog. Update' },
-    ...(crud.editando ? [{ key: 'md' as TabModal, label: '.md' }] : []),
+    { key: 'datos', label: t('tabDatos') },
+    { key: 'system_prompt', label: t('tabSystemPrompt') },
+    { key: 'programacion_insert', label: t('tabProgInsert') },
+    { key: 'programacion_update', label: t('tabProgUpdate') },
+    ...(crud.editando ? [{ key: 'md' as TabModal, label: t('tabMd') }] : []),
   ]
 
   return (
     <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">Categorías de Tarea</h2>
-        <p className="text-sm text-texto-muted mt-1">Categorías globales para clasificar los tipos de tarea</p>
+        <h2 className="page-heading">{t('titulo')}</h2>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       <BarraHerramientas
         busqueda={crud.busqueda}
         onBusqueda={crud.setBusqueda}
-        placeholderBusqueda="Buscar categoría..."
+        placeholderBusqueda={t('buscarPlaceholder')}
         onNuevo={crud.abrirNuevo}
-        textoNuevo="Nueva Categoría"
+        textoNuevo={t('nuevaCategoria')}
         excelDatos={filtradosOrdenados as unknown as Record<string, unknown>[]}
         excelColumnas={[
-          { titulo: 'Código', campo: 'codigo_categoria_tarea' },
-          { titulo: 'Nombre', campo: 'nombre_categoria_tarea' },
-          { titulo: 'Descripción', campo: 'descripcion_categoria_tarea' },
-          { titulo: 'Nombre', campo: 'nombre_categoria_tarea' },
+          { titulo: t('colCodigo'), campo: 'codigo_categoria_tarea' },
+          { titulo: t('colNombre'), campo: 'nombre_categoria_tarea' },
+          { titulo: t('colDescripcion'), campo: 'descripcion_categoria_tarea' },
+          { titulo: t('colNombre'), campo: 'nombre_categoria_tarea' },
         ]}
         excelNombreArchivo="categorias-tarea"
       />
 
       <TablaCrud
         columnas={[
-          columnaCodigo<CategoriaTarea>('Código', (c) => c.codigo_categoria_tarea),
-          columnaNombre<CategoriaTarea>('Nombre', (c) => c.nombre_categoria_tarea),
-          columnaDescripcion<CategoriaTarea>('Descripción', (c) => c.descripcion_categoria_tarea),
+          columnaCodigo<CategoriaTarea>(t('colCodigo'), (c) => c.codigo_categoria_tarea),
+          columnaNombre<CategoriaTarea>(t('colNombre'), (c) => c.nombre_categoria_tarea),
+          columnaDescripcion<CategoriaTarea>(t('colDescripcion'), (c) => c.descripcion_categoria_tarea),
         ]}
         items={filtradosOrdenados}
         cargando={crud.cargando}
         getId={(c) => c.codigo_categoria_tarea}
         onEditar={crud.abrirEditar}
         onEliminar={crud.setConfirmacion}
-        textoVacio="Sin categorías"
+        textoVacio={t('sinCategorias')}
       />
 
       {/* Modal crear/editar */}
@@ -181,8 +183,8 @@ export default function PaginaCategoriasTarea() {
         alCerrar={crud.cerrarModal}
         titulo={
           crud.editando
-            ? `Editar categoría tarea: ${crud.editando.nombre_categoria_tarea}`
-            : 'Nueva Categoría de Tarea'
+            ? t('editarTitulo', { nombre: crud.editando.nombre_categoria_tarea })
+            : t('nuevoTitulo')
         }
         className="max-w-2xl"
       >
@@ -210,45 +212,45 @@ export default function PaginaCategoriasTarea() {
           {tabModal === 'datos' && (
             <>
               <Input
-                etiqueta="Código"
+                etiqueta={t('etiquetaCodigo')}
                 value={crud.form.codigo_categoria_tarea}
                 onChange={(e) => crud.updateForm('codigo_categoria_tarea', e.target.value)}
-                placeholder="Se genera automáticamente"
+                placeholder={t('placeholderCodigo')}
                 disabled={!!crud.editando}
                 autoFocus={!crud.editando}
               />
               <Input
-                etiqueta="Nombre"
+                etiqueta={t('etiquetaNombre')}
                 value={crud.form.nombre_categoria_tarea}
                 onChange={(e) => crud.updateForm('nombre_categoria_tarea', e.target.value)}
-                placeholder="Nombre de la categoría"
+                placeholder={t('placeholderNombre')}
                 autoFocus={!!crud.editando}
               />
               <Textarea
-                etiqueta="Descripción"
+                etiqueta={t('etiquetaDescripcion')}
                 value={crud.form.descripcion_categoria_tarea}
                 onChange={(e) => crud.updateForm('descripcion_categoria_tarea', e.target.value)}
-                placeholder="Descripción de la categoría"
+                placeholder={t('placeholderDescripcion')}
                 rows={3}
               />
               <Textarea
-                etiqueta="Ayuda"
+                etiqueta={t('etiquetaAyuda')}
                 value={crud.form.ayuda}
                 onChange={(e) => crud.updateForm('ayuda', e.target.value)}
-                placeholder="Texto de ayuda para el usuario"
+                placeholder={t('placeholderAyuda')}
                 rows={2}
               />
               <Input
-                etiqueta="Generación"
+                etiqueta={t('etiquetaGeneracion')}
                 value={crud.form.generacion}
                 onChange={(e) => crud.updateForm('generacion', e.target.value)}
-                placeholder="Tipo de generación (ej. LLM, automatica, manual)"
+                placeholder={t('placeholderGeneracion')}
               />
               <Input
-                etiqueta="Programa"
+                etiqueta={t('etiquetaPrograma')}
                 value={crud.form.programa}
                 onChange={(e) => crud.updateForm('programa', e.target.value)}
-                placeholder="Programa o script asociado"
+                placeholder={t('placeholderPrograma')}
               />
             </>
           )}
@@ -304,12 +306,12 @@ export default function PaginaCategoriasTarea() {
           {crud.editando && tabModal === 'md' && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('mdLabel')}</label>
                 <textarea
                   value={md}
                   readOnly
                   rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('mdPlaceholder')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
@@ -327,15 +329,15 @@ export default function PaginaCategoriasTarea() {
                       try {
                         const r = await tareasDatosBasicosApi.generarMdCategoria(crud.editando!.codigo_categoria_tarea)
                         setMd(r.md)
-                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        setMensajeMd({ tipo: 'ok', texto: t('mdGeneradoOk') })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('mdGeneradoError') })
                       } finally { setGenerandoMd(false) }
                     }}
                     cargando={generandoMd}
                     disabled={generandoMd || sincronizandoMd}
                   >
-                    Generar
+                    {t('btnGenerar')}
                   </Boton>
                   <Boton
                     className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -343,18 +345,18 @@ export default function PaginaCategoriasTarea() {
                       setSincronizandoMd(true); setMensajeMd(null)
                       try {
                         const r = await promptsApi.sincronizarFila('categorias_tarea', 'codigo_categoria_tarea', crud.editando!.codigo_categoria_tarea)
-                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        setMensajeMd({ tipo: 'ok', texto: t('mdSincronizadoOk', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('mdSincronizadoError') })
                       } finally { setSincronizandoMd(false) }
                     }}
                     cargando={sincronizandoMd}
                     disabled={generandoMd || sincronizandoMd || !md}
                   >
-                    Sincronizar
+                    {t('btnSincronizar')}
                   </Boton>
                 </div>
-                <Boton variante="contorno" onClick={crud.cerrarModal}>Salir</Boton>
+                <Boton variante="contorno" onClick={crud.cerrarModal}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -369,11 +371,11 @@ export default function PaginaCategoriasTarea() {
           <PieBotonesModal
             editando={!!crud.editando}
             onGuardar={() => {
-              if (!crud.form.nombre_categoria_tarea.trim()) { crud.setError('El nombre es obligatorio'); setTabModal('datos'); return }
+              if (!crud.form.nombre_categoria_tarea.trim()) { crud.setError(t('errorNombreObligatorio')); setTabModal('datos'); return }
               crud.guardar(undefined, undefined, { cerrar: false })
             }}
             onGuardarYSalir={() => {
-              if (!crud.form.nombre_categoria_tarea.trim()) { crud.setError('El nombre es obligatorio'); setTabModal('datos'); return }
+              if (!crud.form.nombre_categoria_tarea.trim()) { crud.setError(t('errorNombreObligatorio')); setTabModal('datos'); return }
               crud.guardar(undefined, undefined, { cerrar: true })
             }}
             onCerrar={crud.cerrarModal}
@@ -396,13 +398,13 @@ export default function PaginaCategoriasTarea() {
         abierto={!!crud.confirmacion}
         alCerrar={() => crud.setConfirmacion(null)}
         alConfirmar={crud.ejecutarEliminacion}
-        titulo="Eliminar Categoría"
+        titulo={t('eliminarTitulo')}
         mensaje={
           crud.confirmacion
-            ? `¿Eliminar la categoría "${crud.confirmacion.nombre_categoria_tarea}"?`
+            ? t('eliminarConfirm', { nombre: crud.confirmacion.nombre_categoria_tarea })
             : ''
         }
-        textoConfirmar="Eliminar"
+        textoConfirmar={tc('eliminar')}
         variante="peligro"
         cargando={crud.eliminando}
       />
