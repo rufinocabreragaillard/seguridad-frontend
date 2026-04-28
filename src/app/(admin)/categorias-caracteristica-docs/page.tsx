@@ -408,7 +408,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     <TablaTd><Insignia variante={c.es_unica_docs ? 'advertencia' : 'neutro'}>{c.es_unica_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd><Insignia variante={c.editable_en_detalle_docs ? 'exito' : 'neutro'}>{c.editable_en_detalle_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd></TablaTd>
-                    <TablaTd onDoubleClick={() => { setCatSeleccionada(c); setTabActiva('tipos') }}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_docs}</code></TablaTd>
+                    <TablaTd onDoubleClick={() => abrirEditarCat(c)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_docs}</code></TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
@@ -451,7 +451,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     <TablaFila key={tipo.codigo_tipo_docs}>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.nombre_tipo_docs}</TablaTd>
                       <TablaTd></TablaTd>
-                      <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tipo.codigo_tipo_docs}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarTipo(tipo)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tipo.codigo_tipo_docs}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => abrirEditarTipo(tipo)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"><Pencil size={14} /></button>

@@ -366,13 +366,13 @@ function TabRolesGlobales() {
                 {rolesVisibles.map((r) => {
                   return (
                   <SortableRow key={r.id_rol} id={String(r.id_rol)}>
-                    <td className="py-2 pr-4">
+                    <td className="py-2 pr-4 cursor-pointer" onDoubleClick={() => abrirEditar(r)}>
                       <Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia>
                     </td>
                     <td className="py-2 pr-4 cursor-pointer" onDoubleClick={() => abrirEditar(r)}>{r.nombre}</td>
-                    <td className="py-2 pr-4 text-texto-muted">{r.alias_de_rol || '—'}</td>
+                    <td className="py-2 pr-4 text-texto-muted cursor-pointer" onDoubleClick={() => abrirEditar(r)}>{r.alias_de_rol || '—'}</td>
                     <td className="py-2 pr-4 text-texto-muted truncate max-w-xs">{r.descripcion || '—'}</td>
-                    <td className="py-2 pr-4 font-mono text-xs">{r.codigo_rol}</td>
+                    <td className="py-2 pr-4 font-mono text-xs cursor-pointer" onDoubleClick={() => abrirEditar(r)}>{r.codigo_rol}</td>
                     <td className="py-2 pr-4">
                       <div className="flex gap-1 justify-end">
                         <button

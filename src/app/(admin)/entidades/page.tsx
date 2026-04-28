@@ -287,7 +287,7 @@ export default function PaginaEntidades() {
                     {entidadesFiltradas.map((e, idx) => (
                       <SortableRow key={e.codigo_entidad} id={e.codigo_entidad}>
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{e.orden ?? idx + 1}</TablaTd>
-                        <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_entidad}</code></TablaTd>
+                        <TablaTd onDoubleClick={() => abrirEditarEntidad(e)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_entidad}</code></TablaTd>
                         <TablaTd className="font-medium" onDoubleClick={() => abrirEditarEntidad(e)}>{e.nombre}</TablaTd>
                         <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setEntidadSeleccionada(e); setTabActiva('areas') }}>{e.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                         <TablaTd>

@@ -611,7 +611,7 @@ export default function PaginaUsuariosSemilla() {
             return (
               <TablaFila key={u.codigo_usuario}>
                 <TablaTd className="font-medium" onDoubleClick={() => abrirEditar(u)}>{u.nombre}</TablaTd>
-                <TablaTd className="text-sm text-texto-muted">{u.codigo_usuario}</TablaTd>
+                <TablaTd className="text-sm text-texto-muted" onDoubleClick={() => abrirEditar(u)}>{u.codigo_usuario}</TablaTd>
                 <TablaTd>{u.grupo_por_defecto ? <span className="text-sm">{nombreGrupo(u.grupo_por_defecto)}</span> : <span className="text-texto-muted">—</span>}</TablaTd>
                 <TablaTd>
                   {grupoInfo
@@ -619,7 +619,7 @@ export default function PaginaUsuariosSemilla() {
                     : <span className="text-texto-muted text-sm">—</span>
                   }
                 </TablaTd>
-                <TablaTd>
+                <TablaTd onDoubleClick={() => abrirEditar(u)}>
                   <Insignia variante={varianteTipo(u.tipo_acceso)}>{etiquetaTipo(u.tipo_acceso)}</Insignia>
                 </TablaTd>
                 <TablaTd className="text-texto-muted text-xs">{u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL') : '—'}</TablaTd>

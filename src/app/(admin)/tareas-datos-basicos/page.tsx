@@ -562,9 +562,9 @@ export default function PaginaTareasDatosBasicos() {
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre_categoria_tarea}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroCatTipo(c.codigo_categoria_tarea); setTabActiva('tipos') }}>{c.descripcion_categoria_tarea || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd>
-                        
+
                       </TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_tarea}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarCat(c)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_tarea}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => { setFiltroCatTipo(c.codigo_categoria_tarea); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verTipos')}><Eye size={14} /></button>
@@ -630,10 +630,10 @@ export default function PaginaTareasDatosBasicos() {
                   {tiposFiltrados.map((tipo) => (
                     <SortableRow key={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`} id={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`}>
                       <TablaTd className="text-center text-texto-muted text-sm">{tipo.orden ?? '—'}</TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_categoria_tarea}</code></TablaTd>
-                      <TablaTd onDoubleClick={() => { setFiltroCatEst(tipo.codigo_categoria_tarea); setFiltroTipoEst(tipo.codigo_tipo_tarea); setTabActiva('estados') }}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_tipo_tarea}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarTipo(tipo)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_categoria_tarea}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarTipo(tipo)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_tipo_tarea}</code></TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.nombre_tipo_tarea}</TablaTd>
-                      <TablaTd className="text-texto-muted text-sm">{tipo.codigo_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.codigo_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd>
                         <button onClick={() => toggleActivoTipo(tipo)} title={t('cambiarEstado')}>
 
@@ -714,11 +714,11 @@ export default function PaginaTareasDatosBasicos() {
                   {estadosFiltrados.map((e) => (
                     <SortableRow key={`${e.codigo_categoria_tarea}/${e.codigo_tipo_tarea}/${e.codigo_estado_tarea}`} id={`${e.codigo_categoria_tarea}/${e.codigo_tipo_tarea}/${e.codigo_estado_tarea}`}>
                       <TablaTd className="text-center text-texto-muted text-sm">{e.orden}</TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_categoria_tarea}</code></TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_tipo_tarea}</code></TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_tarea}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarEst(e)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_categoria_tarea}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarEst(e)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_tipo_tarea}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarEst(e)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_tarea}</code></TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarEst(e)}>{e.nombre_estado_tarea}</TablaTd>
-                      <TablaTd className="text-texto-muted text-sm">{e.codigo_estado_canonico}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => abrirEditarEst(e)}>{e.codigo_estado_canonico}</TablaTd>
                       <TablaTd>
                         <button onClick={() => toggleActivoEst(e)} title={t('cambiarEstado')}>
 
@@ -772,7 +772,7 @@ export default function PaginaTareasDatosBasicos() {
                   <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>{t('sinTiposCanonicos')}</TablaTd></TablaFila>
                 ) : tiposCanonicos.map((tcItem) => (
                   <TablaFila key={tcItem.codigo_tipo_canonico}>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tcItem.codigo_tipo_canonico}</code></TablaTd>
+                    <TablaTd onDoubleClick={() => abrirEditarTC(tcItem)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tcItem.codigo_tipo_canonico}</code></TablaTd>
                     <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTC(tcItem)}>{tcItem.nombre_tipo_canonico}</TablaTd>
                     <TablaTd className="text-texto-muted text-sm">{tcItem.descripcion_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                     <TablaTd>

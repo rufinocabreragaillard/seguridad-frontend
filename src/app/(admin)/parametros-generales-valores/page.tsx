@@ -260,12 +260,12 @@ export default function PaginaValoresParametrosGenerales() {
                     key={`${p.categoria_parametro}/${p.tipo_parametro}`}
                     id={`${p.categoria_parametro}/${p.tipo_parametro}`}
                   >
-                    <TablaTd>
+                    <TablaTd onDoubleClick={() => abrirEditar(p)}>
                       <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">
                         {p.categoria_parametro}
                       </code>
                     </TablaTd>
-                    <TablaTd>
+                    <TablaTd onDoubleClick={() => abrirEditar(p)}>
                       <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">
                         {p.tipo_parametro}
                       </code>

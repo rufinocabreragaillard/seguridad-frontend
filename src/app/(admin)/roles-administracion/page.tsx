@@ -567,15 +567,15 @@ export default function PaginaRoles() {
                 >
                   {rolesFiltrados.map((r) => (
                     <SortableRow key={r.id_rol} id={r.id_rol}>
-                      <TablaTd><Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia></TablaTd>
-                      <TablaTd className="text-sm">{r.alias_de_rol || '—'}</TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarRol(r)}><Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia></TablaTd>
+                      <TablaTd className="text-sm" onDoubleClick={() => abrirEditarRol(r)}>{r.alias_de_rol || '—'}</TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarRol(r)}>{r.nombre}</TablaTd>
                       <TablaTd className="text-xs">
                         {r.url_inicio ? (
                           <a href={r.url_inicio} className="text-primario hover:underline font-mono" title={r.url_inicio}>{r.url_inicio}</a>
                         ) : <span className="text-texto-muted">—</span>}
                       </TablaTd>
-                      <TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarRol(r)}>
                         <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_rol}</code>
                         {r.codigo_grupo == null && <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">Global</span>}
                       </TablaTd>
@@ -648,12 +648,12 @@ export default function PaginaRoles() {
               ) : funcionesFiltradas.map((f) => (
                 <TablaFila key={f.codigo_funcion}>
                   <TablaTd className="text-xs text-texto-muted">{nombreApp(f.codigo_aplicacion_origen) || '—'}</TablaTd>
-                  <TablaTd><Insignia variante={varianteTipo(f.tipo_acceso)}>{etiquetaTipo(f.tipo_acceso)}</Insignia></TablaTd>
-                  <TablaTd className="text-sm">{f.alias_de_funcion || '—'}</TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><Insignia variante={varianteTipo(f.tipo_acceso)}>{etiquetaTipo(f.tipo_acceso)}</Insignia></TablaTd>
+                  <TablaTd className="text-sm" onDoubleClick={() => abrirEditarFuncion(f)}>{f.alias_de_funcion || '—'}</TablaTd>
                   <TablaTd className="font-medium" onDoubleClick={() => abrirEditarFuncion(f)}>{f.nombre}</TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{f.icono_de_funcion || '—'}</TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{f.url_funcion || '—'}</TablaTd>
-                  <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>

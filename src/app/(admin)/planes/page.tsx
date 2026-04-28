@@ -162,7 +162,7 @@ export default function PaginaPlanes() {
           <TablaCuerpo>
             {planes.map((p) => (
               <TablaFila key={p.codigo_plan}>
-                <TablaTd className="font-mono text-xs">{p.codigo_plan}</TablaTd>
+                <TablaTd className="font-mono text-xs" onDoubleClick={() => abrirEdicion(p)}>{p.codigo_plan}</TablaTd>
                 <TablaTd className="font-medium" onDoubleClick={() => abrirEdicion(p)}>{p.nombre}</TablaTd>
                 <TablaTd className="font-mono text-xs text-texto-muted">{p.codigo_plan_superior || '—'}</TablaTd>
                 <TablaTd className="text-right">{p.tokens_mensuales?.toLocaleString() ?? '—'}</TablaTd>

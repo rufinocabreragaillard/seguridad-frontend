@@ -111,6 +111,7 @@ export default function PaginaTareasGrupo() {
           columnaNombre<TareaGrupo>(t('colNombre'), (p) => p.nombre_tarea_grupo),
           {
             titulo: t('colTipo'),
+            editaConDobleClic: true,
             render: (p: TareaGrupo) => (
               <Insignia variante={varianteTipo(p.tipo_acceso)}>{etiquetaTipo(p.tipo_acceso)}</Insignia>
             ),
@@ -123,6 +124,7 @@ export default function PaginaTareasGrupo() {
           },
           {
             titulo: t('colCodigo'),
+            editaConDobleClic: true,
             render: (p: TareaGrupo) => (
               <span className="text-xs text-texto-muted font-mono">{p.codigo_tarea_grupo}</span>
             ),

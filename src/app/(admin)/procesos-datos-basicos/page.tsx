@@ -664,8 +664,8 @@ export default function PaginaProcesosDatosBasicos() {
                       <TablaTd className="text-center text-texto-muted text-sm">{c.orden ?? '—'}</TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre_categoria_proceso}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroCategoria(c.codigo_categoria_proceso); setTabActiva('tipos') }}>{c.descripcion_categoria_proceso || <span className="text-texto-light">—</span>}</TablaTd>
-                      <TablaTd className="text-texto-muted text-sm">{c.alias || <span className="text-texto-light">—</span>}</TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_proceso}</code></TablaTd>
+                      <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => abrirEditarCat(c)}>{c.alias || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarCat(c)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => { setFiltroCategoria(c.codigo_categoria_proceso); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verTipos')}><Eye size={14} /></button>
@@ -772,7 +772,7 @@ export default function PaginaProcesosDatosBasicos() {
                       <TablaTd className="text-center text-texto-muted text-sm">{tp.orden ?? '—'}</TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tp)}>{tp.nombre_tipo_proceso}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroTipo(tp.codigo_tipo_proceso); setTabActiva('estados') }}>{tp.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tp.codigo_tipo_proceso}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarTipo(tp)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tp.codigo_tipo_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => { setFiltroTipo(tp.codigo_tipo_proceso); setTabActiva('estados') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verEstados')}><Eye size={14} /></button>
@@ -906,7 +906,7 @@ export default function PaginaProcesosDatosBasicos() {
                     <SortableRow key={`${e.codigo_categoria_proceso}/${e.codigo_tipo_proceso}/${e.codigo_estado_proceso}`} id={`${e.codigo_categoria_proceso}/${e.codigo_tipo_proceso}/${e.codigo_estado_proceso}`}>
                       <TablaTd className="text-center text-texto-muted text-sm">{e.orden ?? '—'}</TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarEst(e)}>{e.nombre_estado}</TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_proceso}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarEst(e)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => abrirEditarEst(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
@@ -974,7 +974,7 @@ export default function PaginaProcesosDatosBasicos() {
                     <SortableRow key={c.codigo_estado_canonico} id={c.codigo_estado_canonico}>
                       <TablaTd className="text-center text-texto-muted text-sm">{c.orden ?? '—'}</TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCan(c)}>{c.nombre}</TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_estado_canonico}</code></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarCan(c)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_estado_canonico}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
                           <button onClick={() => abrirEditarCan(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>

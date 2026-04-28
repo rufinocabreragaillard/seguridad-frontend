@@ -464,8 +464,8 @@ export default function PaginaRegistroLLM() {
                 <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{t('sinModelos')}</TablaTd></TablaFila>
               ) : filtrados.map((m) => (
                 <TablaFila key={m.id_modelo}>
-                  <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{m.proveedor}</code></TablaTd>
-                  <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{m.nombre_tecnico}</code></TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditarModelo(m)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{m.proveedor}</code></TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditarModelo(m)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{m.nombre_tecnico}</code></TablaTd>
                   <TablaTd className="font-medium" onDoubleClick={() => abrirEditarModelo(m)}>{m.nombre_visible}</TablaTd>
                   <TablaTd className="text-texto-muted text-sm max-w-[200px] truncate">{m.descripcion || '—'}</TablaTd>
                   <TablaTd>
@@ -759,8 +759,8 @@ export default function PaginaRegistroLLM() {
                       return (
                         <TablaFila key={keyId}>
                           <TablaTd className="capitalize font-medium" onDoubleClick={() => abrirEditarCredencial(c)}>{c.proveedor}</TablaTd>
-                          <TablaTd>{c.alias}</TablaTd>
-                          <TablaTd className="font-mono text-xs">{c.api_key_preview}</TablaTd>
+                          <TablaTd onDoubleClick={() => abrirEditarCredencial(c)}>{c.alias}</TablaTd>
+                          <TablaTd className="font-mono text-xs" onDoubleClick={() => abrirEditarCredencial(c)}>{c.api_key_preview}</TablaTd>
                           <TablaTd>{c.limite_usd_mes !== null ? `$${c.limite_usd_mes}` : '—'}</TablaTd>
                           <TablaTd className="text-xs text-gray-500">{c.ultimo_uso_en ? new Date(c.ultimo_uso_en).toLocaleString('es-CL') : '—'}</TablaTd>
                           <TablaTd></TablaTd>
@@ -810,7 +810,7 @@ export default function PaginaRegistroLLM() {
                     {precios.map((p) => (
                       <TablaFila key={`${p.proveedor}-${p.nombre_tecnico}-${p.vigente_desde}`}>
                         <TablaTd className="capitalize" onDoubleClick={() => { setEditandoPrecio(p); setFormPrecio({ precio_input_1m: p.precio_input_1m, precio_output_1m: p.precio_output_1m, precio_cache_read_1m: p.precio_cache_read_1m, precio_cache_write_1m: p.precio_cache_write_1m }) }}>{p.proveedor}</TablaTd>
-                        <TablaTd className="font-mono text-xs">{p.nombre_tecnico}</TablaTd>
+                        <TablaTd className="font-mono text-xs" onDoubleClick={() => { setEditandoPrecio(p); setFormPrecio({ precio_input_1m: p.precio_input_1m, precio_output_1m: p.precio_output_1m, precio_cache_read_1m: p.precio_cache_read_1m, precio_cache_write_1m: p.precio_cache_write_1m }) }}>{p.nombre_tecnico}</TablaTd>
                         <TablaTd>${p.precio_input_1m}</TablaTd>
                         <TablaTd>${p.precio_output_1m}</TablaTd>
                         <TablaTd>${p.precio_cache_read_1m}</TablaTd>

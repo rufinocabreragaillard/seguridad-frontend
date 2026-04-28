@@ -299,7 +299,7 @@ export default function PaginaParametrosGenerales() {
                     {catsFiltradas.map((c, idx) => (
                       <SortableRow key={c.categoria_parametro} id={c.categoria_parametro}>
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{c.orden ?? idx + 1}</TablaTd>
-                        <TablaTd onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
+                        <TablaTd onDoubleClick={() => abrirEditarCat(c)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
                         <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre}</TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.replica_grupo ? 'exito' : 'error'}>{c.replica_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.visible_grupo ? 'exito' : 'error'}>{c.visible_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
@@ -370,9 +370,9 @@ export default function PaginaParametrosGenerales() {
                     {tiposFiltrados.map((t, idx) => (
                       <SortableRow key={`${t.categoria_parametro}/${t.tipo_parametro}`} id={`${t.categoria_parametro}/${t.tipo_parametro}`}>
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{t.orden ?? idx + 1}</TablaTd>
-                        <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.categoria_parametro}</code></TablaTd>
-                        <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.tipo_parametro}</code></TablaTd>
-                        <TablaTd className="font-medium">{t.nombre}</TablaTd>
+                        <TablaTd onDoubleClick={() => abrirEditarTipo(t)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.categoria_parametro}</code></TablaTd>
+                        <TablaTd onDoubleClick={() => abrirEditarTipo(t)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.tipo_parametro}</code></TablaTd>
+                        <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(t)}>{t.nombre}</TablaTd>
                         <TablaTd className="text-texto-muted text-sm">{t.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                         <TablaTd>
                           

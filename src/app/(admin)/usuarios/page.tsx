@@ -611,9 +611,9 @@ export default function PaginaUsuarios() {
                       <span className="font-medium">{u.nombre}</span>
                     </div>
                   </TablaTd>
-                  <TablaTd className="text-texto-muted">{u.codigo_usuario}</TablaTd>
+                  <TablaTd className="text-texto-muted" onDoubleClick={() => abrirEditar(u)}>{u.codigo_usuario}</TablaTd>
                   <TablaTd>{u.codigo_rol_principal || <span className="text-texto-light">—</span>}</TablaTd>
-                  <TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditar(u)}>
                     <Insignia variante={varianteTipo(u.tipo_acceso)}>{etiquetaTipo(u.tipo_acceso)}</Insignia>
                   </TablaTd>
                   <TablaTd className="text-texto-muted text-xs">

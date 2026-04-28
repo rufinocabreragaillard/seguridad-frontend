@@ -170,10 +170,11 @@ export function TablaCrud<T extends Record<string, unknown>>({
   )
 }
 
-/** Helper: columna de código (con badge mono) */
+/** Helper: columna de código (con badge mono). Por defecto abre el modal de edición al hacer doble click. */
 export function columnaCodigo<T>(titulo: string, getCodigo: (item: T) => string): ColumnaDef<T> {
   return {
     titulo,
+    editaConDobleClic: true,
     render: (item) => (
       <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{getCodigo(item)}</code>
     ),
