@@ -359,7 +359,20 @@ export default function PaginaFunciones() {
               <SortableRow key={f.codigo_funcion} id={f.codigo_funcion}>
                 <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}>{badgeTipo(f.tipo_acceso)}</TablaTd>
                 <TablaTd className="text-sm" onDoubleClick={() => abrirEditarFuncion(f)}>{f.alias_de_funcion || '—'}</TablaTd>
-                <TablaTd className="font-medium" onDoubleClick={() => abrirEditarFuncion(f)}>{f.nombre}</TablaTd>
+                <TablaTd className="font-medium" onDoubleClick={() => abrirEditarFuncion(f)}>
+                  <span className="inline-flex items-center gap-1.5">
+                    {f.nombre}
+                    {f.traducir_registros && !f.tabla_traducible && (
+                      <span
+                        title={'"Traducir registros del mantenedor" está activo pero falta asignar la tabla. La generación omitirá esta función.'}
+                        className="text-amber-500 cursor-help"
+                        aria-label="Configuración de traducción incompleta"
+                      >
+                        ⚠️
+                      </span>
+                    )}
+                  </span>
+                </TablaTd>
                 <TablaTd className="text-xs">{f.url_funcion ? <a href={f.url_funcion} target="_blank" rel="noopener noreferrer" className="text-primario hover:underline">{f.url_funcion}</a> : <span className="text-texto-muted">—</span>}</TablaTd>
                 <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>
                 <TablaTd>
@@ -523,6 +536,15 @@ export default function PaginaFunciones() {
                             placeholder="ej. nombre_funcion, alias_de_funcion, descripcion"
                           />
                         </div>
+                        {!formFuncion.tabla_traducible.trim() && (
+                          <div className="flex items-start gap-2 px-2.5 py-2 rounded-md border border-amber-300 bg-amber-50 text-amber-800">
+                            <span className="text-base leading-none">⚠️</span>
+                            <p className="text-xs">
+                              <strong>Sin efecto:</strong> el flag está activo pero no hay tabla asignada.
+                              La generación de traducciones omitirá esta función hasta que se complete &ldquo;Tabla a traducir&rdquo;.
+                            </p>
+                          </div>
+                        )}
                       </>
                     )}
                   </div>
