@@ -68,6 +68,9 @@ export default function PaginaFunciones() {
     perm_update: boolean
     perm_delete: boolean
     traducir: boolean
+    traducir_registros: boolean
+    tabla_traducible: string
+    campos_traducibles: string
   }>({
     codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
     alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: '',
@@ -75,6 +78,7 @@ export default function PaginaFunciones() {
     python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
+    traducir_registros: false, tabla_traducible: '', campos_traducibles: '',
   })
   const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
@@ -133,6 +137,7 @@ export default function PaginaFunciones() {
       python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
       perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
       traducir: true,
+      traducir_registros: false, tabla_traducible: '', campos_traducibles: '',
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
@@ -165,6 +170,9 @@ export default function PaginaFunciones() {
       perm_update: f.perm_update ?? true,
       perm_delete: f.perm_delete ?? true,
       traducir: f.traducir ?? true,
+      traducir_registros: f.traducir_registros ?? false,
+      tabla_traducible: f.tabla_traducible || '',
+      campos_traducibles: Array.isArray(f.campos_traducibles) ? f.campos_traducibles.join(', ') : '',
     })
     setErrorFuncion('')
     setMensajeMd(null)
@@ -201,6 +209,11 @@ export default function PaginaFunciones() {
         perm_update: formFuncion.perm_update,
         // perm_delete se excluye: solo modificable directamente en la BD
         traducir: formFuncion.traducir,
+        traducir_registros: formFuncion.traducir_registros,
+        tabla_traducible: formFuncion.tabla_traducible.trim() || null,
+        campos_traducibles: formFuncion.campos_traducibles.trim()
+          ? formFuncion.campos_traducibles.split(',').map((s) => s.trim()).filter(Boolean)
+          : null,
       }
       if (funcionEditando) {
         await funcionesApi.actualizar(funcionEditando.codigo_funcion, payload)
@@ -471,9 +484,49 @@ export default function PaginaFunciones() {
                       className="w-4 h-4 rounded accent-primario"
                     />
                     <span className="text-sm font-medium text-texto">Traducir</span>
-                    <span className="text-xs text-texto-muted">— sistema de traducción automática</span>
+                    <span className="text-xs text-texto-muted">— traducir esta fila</span>
                   </label>
                 </div>
+
+                {formFuncion.tipo_acceso === 'SISTEMA' && (
+                  <div className="border border-borde rounded-lg p-3 bg-fondo flex flex-col gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={formFuncion.traducir_registros}
+                        onChange={(e) => setFormFuncion({ ...formFuncion, traducir_registros: e.target.checked })}
+                        className="w-4 h-4 rounded accent-primario"
+                      />
+                      <span className="text-sm font-medium text-texto">Traducir registros del mantenedor</span>
+                    </label>
+                    <p className="text-xs text-texto-muted -mt-1">
+                      Si está activo, los registros de la tabla asociada se traducen al cambiar de idioma.
+                      No activar para auditorías, logs SQL ni estadísticas LLM.
+                    </p>
+                    {formFuncion.traducir_registros && (
+                      <>
+                        <div>
+                          <label className="text-xs font-medium text-texto block mb-1">Tabla a traducir</label>
+                          <Input
+                            value={formFuncion.tabla_traducible}
+                            onChange={(e) => setFormFuncion({ ...formFuncion, tabla_traducible: e.target.value })}
+                            placeholder="ej. funciones, roles, aplicaciones"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs font-medium text-texto block mb-1">
+                            Campos a traducir <span className="text-texto-muted">(separados por coma; vacío = inferir)</span>
+                          </label>
+                          <Input
+                            value={formFuncion.campos_traducibles}
+                            onChange={(e) => setFormFuncion({ ...formFuncion, campos_traducibles: e.target.value })}
+                            placeholder="ej. nombre_funcion, alias_de_funcion, descripcion"
+                          />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
               {/* Columna derecha */}
               <div className="flex flex-col gap-3">

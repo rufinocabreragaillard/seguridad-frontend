@@ -243,6 +243,9 @@ export interface Funcion {
   perm_update?: boolean
   perm_delete?: boolean
   traducir?: boolean
+  traducir_registros?: boolean       // si true, los registros de la tabla asociada se traducen
+  tabla_traducible?: string | null   // nombre de la tabla cuyas filas se traducen
+  campos_traducibles?: string[] | null // columnas a traducir (NULL = inferir)
 }
 
 // ─── API Endpoints ───────────────────────────────────────────────────────────
