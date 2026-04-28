@@ -162,7 +162,7 @@ export function Sidebar() {
             <div className="relative">
               <Search
                 size={14}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-sidebar-texto-muted pointer-events-none"
+                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
               />
               <input
                 ref={busquedaRef}
@@ -171,12 +171,12 @@ export function Sidebar() {
                 onChange={(e) => setBusqueda(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Escape') setBusqueda('') }}
                 placeholder="Buscar función..."
-                className="w-full pl-8 pr-7 py-1.5 text-sm rounded-md bg-sidebar-hover/40 text-sidebar-texto placeholder:text-sidebar-texto-muted border border-sidebar-texto/20 focus:outline-none focus:border-sidebar-texto/50"
+                className="w-full pl-8 pr-7 py-1.5 text-sm rounded-md bg-gray-200 text-gray-800 placeholder:text-gray-500 border border-gray-300 focus:outline-none focus:border-gray-400"
               />
               {busqueda && (
                 <button
                   onClick={() => setBusqueda('')}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-sidebar-texto-muted hover:text-sidebar-texto hover:bg-sidebar-hover"
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-300"
                   title="Limpiar búsqueda"
                   aria-label="Limpiar búsqueda"
                 >
