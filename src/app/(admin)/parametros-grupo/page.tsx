@@ -166,12 +166,10 @@ export default function PaginaParametrosGrupo() {
                 {categoriasConInfo.length === 0 ? (
                   <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>{t('sinCategoriasCatalogo')}</TablaTd></TablaFila>
                 ) : categoriasConInfo.map((c) => (
-                  <TablaFila key={c.categoria_parametro}
-                    onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('valores') }}
-                  >
+                  <TablaFila key={c.categoria_parametro}>
                     <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
                     <TablaTd className="font-medium">{c.nombre}</TablaTd>
-                    <TablaTd className="text-texto-muted text-sm">{c.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
+                    <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('valores') }}>{c.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                     <TablaTd>
                       {c.nValores > 0
                         ? <Insignia variante="exito">{t('configurados', { n: c.nValores })}</Insignia>

@@ -297,12 +297,10 @@ export default function PaginaParametrosGenerales() {
                     disabled={!!busquedaCat}
                   >
                     {catsFiltradas.map((c, idx) => (
-                      <SortableRow key={c.categoria_parametro} id={c.categoria_parametro}
-                        onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }}
-                      >
+                      <SortableRow key={c.categoria_parametro} id={c.categoria_parametro}>
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{c.orden ?? idx + 1}</TablaTd>
-                        <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
-                        <TablaTd className="font-medium">{c.nombre}</TablaTd>
+                        <TablaTd onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
+                        <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre}</TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.replica_grupo ? 'exito' : 'error'}>{c.replica_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.visible_grupo ? 'exito' : 'error'}>{c.visible_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.editable_grupo ? 'exito' : 'error'}>{c.editable_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>

@@ -233,7 +233,7 @@ export default function PaginaAplicaciones() {
             ) : appsFiltradas.map((a) => (
               <SortableRow key={a.codigo_aplicacion} id={a.codigo_aplicacion}>
                 <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{a.codigo_aplicacion}</code></TablaTd>
-                <TablaTd className="font-medium">{a.nombre}</TablaTd>
+                <TablaTd className="font-medium" onDoubleClick={() => abrirEditarApp(a)}>{a.nombre}</TablaTd>
                 <TablaTd><Insignia variante={varianteTipo(a.tipo_acceso)}>{etiquetaTipo(a.tipo_acceso)}</Insignia></TablaTd>
                 <TablaTd className="text-texto-muted text-sm">{a.descripcion || '—'}</TablaTd>
                 <TablaTd>

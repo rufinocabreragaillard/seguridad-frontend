@@ -660,12 +660,10 @@ export default function PaginaProcesosDatosBasicos() {
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {categorias.map((c) => (
-                    <SortableRow key={c.codigo_categoria_proceso} id={c.codigo_categoria_proceso}
-                      onDoubleClick={() => { setFiltroCategoria(c.codigo_categoria_proceso); setTabActiva('tipos') }}
-                    >
+                    <SortableRow key={c.codigo_categoria_proceso} id={c.codigo_categoria_proceso}>
                       <TablaTd className="text-center text-texto-muted text-sm">{c.orden ?? '—'}</TablaTd>
-                      <TablaTd className="font-medium">{c.nombre_categoria_proceso}</TablaTd>
-                      <TablaTd className="text-texto-muted text-sm">{c.descripcion_categoria_proceso || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre_categoria_proceso}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroCategoria(c.codigo_categoria_proceso); setTabActiva('tipos') }}>{c.descripcion_categoria_proceso || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm">{c.alias || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_categoria_proceso}</code></TablaTd>
                       <TablaTd>
@@ -770,10 +768,10 @@ export default function PaginaProcesosDatosBasicos() {
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {tiposFiltrados.map((tp) => (
-                    <SortableRow key={`${tp.codigo_categoria_proceso}/${tp.codigo_tipo_proceso}`} id={`${tp.codigo_categoria_proceso}/${tp.codigo_tipo_proceso}`} onDoubleClick={() => { setFiltroTipo(tp.codigo_tipo_proceso); setTabActiva('estados') }}>
+                    <SortableRow key={`${tp.codigo_categoria_proceso}/${tp.codigo_tipo_proceso}`} id={`${tp.codigo_categoria_proceso}/${tp.codigo_tipo_proceso}`}>
                       <TablaTd className="text-center text-texto-muted text-sm">{tp.orden ?? '—'}</TablaTd>
-                      <TablaTd className="font-medium">{tp.nombre_tipo_proceso}</TablaTd>
-                      <TablaTd className="text-texto-muted text-sm">{tp.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tp)}>{tp.nombre_tipo_proceso}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroTipo(tp.codigo_tipo_proceso); setTabActiva('estados') }}>{tp.descripcion_tipo_proceso || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tp.codigo_tipo_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
@@ -907,7 +905,7 @@ export default function PaginaProcesosDatosBasicos() {
                   {estadosFiltrados.map((e) => (
                     <SortableRow key={`${e.codigo_categoria_proceso}/${e.codigo_tipo_proceso}/${e.codigo_estado_proceso}`} id={`${e.codigo_categoria_proceso}/${e.codigo_tipo_proceso}/${e.codigo_estado_proceso}`}>
                       <TablaTd className="text-center text-texto-muted text-sm">{e.orden ?? '—'}</TablaTd>
-                      <TablaTd className="font-medium">{e.nombre_estado}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarEst(e)}>{e.nombre_estado}</TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_proceso}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
@@ -975,7 +973,7 @@ export default function PaginaProcesosDatosBasicos() {
                   ) : canonicosFiltrados.map((c) => (
                     <SortableRow key={c.codigo_estado_canonico} id={c.codigo_estado_canonico}>
                       <TablaTd className="text-center text-texto-muted text-sm">{c.orden ?? '—'}</TablaTd>
-                      <TablaTd className="font-medium">{c.nombre}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCan(c)}>{c.nombre}</TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.codigo_estado_canonico}</code></TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">

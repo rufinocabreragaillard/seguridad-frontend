@@ -418,7 +418,7 @@ export default function PaginaCategoriasCaracteristica() {
                   <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{t('sinCategorias')}</TablaTd></TablaFila>
                 ) : catsFiltradas.map((c) => (
                   <SortableRow key={c.codigo_cat_pers} id={c.codigo_cat_pers}>
-                    <TablaTd className="font-medium">{c.nombre_cat_pers}</TablaTd>
+                    <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre_cat_pers}</TablaTd>
                     <TablaTd><Insignia variante={c.es_unica_pers ? 'advertencia' : 'neutro'}>{c.es_unica_pers ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd><Insignia variante={c.editable_en_detalle_pers ? 'exito' : 'neutro'}>{c.editable_en_detalle_pers ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd></TablaTd>
@@ -463,7 +463,7 @@ export default function PaginaCategoriasCaracteristica() {
                     <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={4 as never}>{t('sinTipos')}</TablaTd></TablaFila>
                   ) : tipos.map((tipo) => (
                     <TablaFila key={tipo.codigo_tipo_pers}>
-                      <TablaTd className="font-medium">{tipo.nombre_tipo_pers}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.nombre_tipo_pers}</TablaTd>
                       <TablaTd></TablaTd>
                       <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tipo.codigo_tipo_pers}</code></TablaTd>
                       <TablaTd>

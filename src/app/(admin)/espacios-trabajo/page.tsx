@@ -242,7 +242,7 @@ export default function PaginaEspaciosTrabajo() {
     const puedeEditarCreador = esCreador(e)
     return (
       <TablaFila key={e.id_espacio}>
-        <TablaTd>
+        <TablaTd onDoubleClick={() => abrirEditar(e)}>
           <button
             onClick={() => abrirEditar(e)}
             className="text-primario hover:underline text-sm font-medium"

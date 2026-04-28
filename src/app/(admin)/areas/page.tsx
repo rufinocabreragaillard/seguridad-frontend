@@ -118,7 +118,7 @@ export default function PaginaAreas() {
               {filtrados.map((a) => (
                 <TablaFila key={a.codigo_ubicacion}>
                   <TablaTd className="text-xs text-texto-muted">{a.codigo_entidad || '—'}</TablaTd>
-                  <TablaTd className="font-medium">{a.nombre_ubicacion}</TablaTd>
+                  <TablaTd className="font-medium" onDoubleClick={() => abrirEditar(a)}>{a.nombre_ubicacion}</TablaTd>
                   <TablaTd className="text-texto-muted">{a.alias_ubicacion || '—'}</TablaTd>
                   <TablaTd className="text-xs text-texto-muted">{a.ruta_completa || '—'}</TablaTd>
                   <TablaTd className="text-xs">{a.nivel}</TablaTd>

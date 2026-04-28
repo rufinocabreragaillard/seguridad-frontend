@@ -303,7 +303,7 @@ export default function PaginaPersonas() {
             <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>{t('sinPersonas')}</TablaTd></TablaFila>
           ) : filtrados.map((p) => (
             <TablaFila key={p.id_persona}>
-              <TablaTd className="font-medium">{p.nombre}</TablaTd>
+              <TablaTd className="font-medium" onDoubleClick={() => abrirEditar(p)}>{p.nombre}</TablaTd>
               <TablaTd className="text-sm text-texto-muted">{p.codigo_tipo_doc || '—'}</TablaTd>
               <TablaTd className="text-sm">{p.documento_id || '—'}</TablaTd>
               <TablaTd className="text-sm text-texto-muted">{p.codigo_entidad || '—'}</TablaTd>

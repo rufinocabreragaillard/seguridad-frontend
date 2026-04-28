@@ -285,13 +285,11 @@ export default function PaginaEntidades() {
                     onReorder={(items) => reordenarEntidades(items as unknown as Entidad[])}
                   >
                     {entidadesFiltradas.map((e, idx) => (
-                      <SortableRow key={e.codigo_entidad} id={e.codigo_entidad}
-                        onDoubleClick={() => { setEntidadSeleccionada(e); setTabActiva('areas') }}
-                      >
+                      <SortableRow key={e.codigo_entidad} id={e.codigo_entidad}>
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{e.orden ?? idx + 1}</TablaTd>
                         <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_entidad}</code></TablaTd>
-                        <TablaTd className="font-medium">{e.nombre}</TablaTd>
-                        <TablaTd className="text-texto-muted text-sm">{e.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
+                        <TablaTd className="font-medium" onDoubleClick={() => abrirEditarEntidad(e)}>{e.nombre}</TablaTd>
+                        <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setEntidadSeleccionada(e); setTabActiva('areas') }}>{e.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => { setEntidadSeleccionada(e); setTabActiva('areas') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver áreas"><Eye size={14} /></button>

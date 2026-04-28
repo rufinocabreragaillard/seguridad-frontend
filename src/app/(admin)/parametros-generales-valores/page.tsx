@@ -259,7 +259,6 @@ export default function PaginaValoresParametrosGenerales() {
                   <SortableRow
                     key={`${p.categoria_parametro}/${p.tipo_parametro}`}
                     id={`${p.categoria_parametro}/${p.tipo_parametro}`}
-                    onDoubleClick={() => abrirEditar(p)}
                   >
                     <TablaTd>
                       <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">
@@ -271,7 +270,7 @@ export default function PaginaValoresParametrosGenerales() {
                         {p.tipo_parametro}
                       </code>
                     </TablaTd>
-                    <TablaTd className="max-w-[280px]">
+                    <TablaTd className="max-w-[280px]" onDoubleClick={() => abrirEditar(p)}>
                       <span className="block truncate text-sm font-mono" title={p.valor_parametro}>
                         {p.valor_parametro || <span className="text-texto-light italic">{t('sinValor')}</span>}
                       </span>

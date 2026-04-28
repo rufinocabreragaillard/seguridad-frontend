@@ -603,7 +603,7 @@ export default function PaginaUsuarios() {
             ) : (
               usuariosFiltrados.map((u) => (
                 <TablaFila key={u.codigo_usuario}>
-                  <TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditar(u)}>
                     <div className="flex items-center gap-2">
                       <div className="h-7 w-7 rounded-full bg-secundario flex items-center justify-center text-white text-xs font-semibold shrink-0">
                         {u.nombre.charAt(0).toUpperCase()}

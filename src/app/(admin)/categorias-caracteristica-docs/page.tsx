@@ -403,12 +403,12 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                 ) : catsFiltradas.length === 0 ? (
                   <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{t('sinCategorias')}</TablaTd></TablaFila>
                 ) : catsFiltradas.map((c) => (
-                  <SortableRow key={c.codigo_cat_docs} id={c.codigo_cat_docs} onDoubleClick={() => { setCatSeleccionada(c); setTabActiva('tipos') }}>
-                    <TablaTd className="font-medium">{c.nombre_cat_docs}</TablaTd>
+                  <SortableRow key={c.codigo_cat_docs} id={c.codigo_cat_docs}>
+                    <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre_cat_docs}</TablaTd>
                     <TablaTd><Insignia variante={c.es_unica_docs ? 'advertencia' : 'neutro'}>{c.es_unica_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd><Insignia variante={c.editable_en_detalle_docs ? 'exito' : 'neutro'}>{c.editable_en_detalle_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd></TablaTd>
-                    <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_docs}</code></TablaTd>
+                    <TablaTd onDoubleClick={() => { setCatSeleccionada(c); setTabActiva('tipos') }}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_docs}</code></TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={() => abrirEditarCat(c)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
@@ -449,7 +449,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={4 as never}>{t('sinTipos')}</TablaTd></TablaFila>
                   ) : tipos.map((tipo) => (
                     <TablaFila key={tipo.codigo_tipo_docs}>
-                      <TablaTd className="font-medium">{tipo.nombre_tipo_docs}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.nombre_tipo_docs}</TablaTd>
                       <TablaTd></TablaTd>
                       <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tipo.codigo_tipo_docs}</code></TablaTd>
                       <TablaTd>

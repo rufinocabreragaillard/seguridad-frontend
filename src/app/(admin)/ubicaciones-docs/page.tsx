@@ -576,7 +576,7 @@ export default function PaginaUbicacionesDocs() {
             <Folder size={14} className={`${folderColor} shrink-0`} />
           )}
 
-          <div className="flex-1 min-w-0 truncate" title={`${u.nombre_ubicacion} (${u.codigo_ubicacion})`}>
+          <div className="flex-1 min-w-0 truncate cursor-pointer" title={`${u.nombre_ubicacion} (${u.codigo_ubicacion})`} onDoubleClick={() => abrirEditar(u)}>
             <span className="font-medium text-xs">{u.nombre_ubicacion}</span>
             <span className="text-xs text-texto-muted ml-2">({u.codigo_ubicacion})</span>
           </div>

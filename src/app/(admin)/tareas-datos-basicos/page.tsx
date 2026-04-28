@@ -557,12 +557,10 @@ export default function PaginaTareasDatosBasicos() {
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {categorias.map((c) => (
-                    <SortableRow key={c.codigo_categoria_tarea} id={c.codigo_categoria_tarea}
-                      onDoubleClick={() => { setFiltroCatTipo(c.codigo_categoria_tarea); setTabActiva('tipos') }}
-                    >
+                    <SortableRow key={c.codigo_categoria_tarea} id={c.codigo_categoria_tarea}>
                       <TablaTd className="text-center text-texto-muted text-sm">{c.orden ?? '—'}</TablaTd>
-                      <TablaTd className="font-medium">{c.nombre_categoria_tarea}</TablaTd>
-                      <TablaTd className="text-texto-muted text-sm">{c.descripcion_categoria_tarea || <span className="text-texto-light">—</span>}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre_categoria_tarea}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroCatTipo(c.codigo_categoria_tarea); setTabActiva('tipos') }}>{c.descripcion_categoria_tarea || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd>
                         
                       </TablaTd>
@@ -630,13 +628,11 @@ export default function PaginaTareasDatosBasicos() {
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {tiposFiltrados.map((tipo) => (
-                    <SortableRow key={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`} id={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`}
-                      onDoubleClick={() => { setFiltroCatEst(tipo.codigo_categoria_tarea); setFiltroTipoEst(tipo.codigo_tipo_tarea); setTabActiva('estados') }}
-                    >
+                    <SortableRow key={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`} id={`${tipo.codigo_categoria_tarea}/${tipo.codigo_tipo_tarea}`}>
                       <TablaTd className="text-center text-texto-muted text-sm">{tipo.orden ?? '—'}</TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_categoria_tarea}</code></TablaTd>
-                      <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_tipo_tarea}</code></TablaTd>
-                      <TablaTd className="font-medium">{tipo.nombre_tipo_tarea}</TablaTd>
+                      <TablaTd onDoubleClick={() => { setFiltroCatEst(tipo.codigo_categoria_tarea); setFiltroTipoEst(tipo.codigo_tipo_tarea); setTabActiva('estados') }}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_tipo_tarea}</code></TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.nombre_tipo_tarea}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm">{tipo.codigo_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd>
                         <button onClick={() => toggleActivoTipo(tipo)} title={t('cambiarEstado')}>
@@ -721,7 +717,7 @@ export default function PaginaTareasDatosBasicos() {
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_categoria_tarea}</code></TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_tipo_tarea}</code></TablaTd>
                       <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{e.codigo_estado_tarea}</code></TablaTd>
-                      <TablaTd className="font-medium">{e.nombre_estado_tarea}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarEst(e)}>{e.nombre_estado_tarea}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm">{e.codigo_estado_canonico}</TablaTd>
                       <TablaTd>
                         <button onClick={() => toggleActivoEst(e)} title={t('cambiarEstado')}>
@@ -777,7 +773,7 @@ export default function PaginaTareasDatosBasicos() {
                 ) : tiposCanonicos.map((tcItem) => (
                   <TablaFila key={tcItem.codigo_tipo_canonico}>
                     <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tcItem.codigo_tipo_canonico}</code></TablaTd>
-                    <TablaTd className="font-medium">{tcItem.nombre_tipo_canonico}</TablaTd>
+                    <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTC(tcItem)}>{tcItem.nombre_tipo_canonico}</TablaTd>
                     <TablaTd className="text-texto-muted text-sm">{tcItem.descripcion_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                     <TablaTd>
 

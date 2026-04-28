@@ -369,7 +369,7 @@ function TabRolesGlobales() {
                     <td className="py-2 pr-4">
                       <Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia>
                     </td>
-                    <td className="py-2 pr-4">{r.nombre}</td>
+                    <td className="py-2 pr-4 cursor-pointer" onDoubleClick={() => abrirEditar(r)}>{r.nombre}</td>
                     <td className="py-2 pr-4 text-texto-muted">{r.alias_de_rol || '—'}</td>
                     <td className="py-2 pr-4 text-texto-muted truncate max-w-xs">{r.descripcion || '—'}</td>
                     <td className="py-2 pr-4 font-mono text-xs">{r.codigo_rol}</td>

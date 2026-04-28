@@ -280,7 +280,7 @@ export default function PaginaCargos() {
             <Folder size={14} className="text-amber-500 shrink-0" />
           )}
 
-          <div className="flex-1 min-w-0 truncate" title={`${c.nombre_cargo} (${c.codigo_cargo})`}>
+          <div className="flex-1 min-w-0 truncate cursor-pointer" title={`${c.nombre_cargo} (${c.codigo_cargo})`} onDoubleClick={() => abrirEditar(c)}>
             <span className="font-medium text-xs">{c.nombre_cargo}</span>
             {c.alias && <span className="text-xs text-texto-muted ml-2">{c.alias}</span>}
             <span className="text-xs text-texto-muted ml-2">({c.codigo_cargo})</span>

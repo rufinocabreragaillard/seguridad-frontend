@@ -42,6 +42,21 @@ export function TablaTh({ className, children }: { className?: string; children?
   )
 }
 
-export function TablaTd({ className, children, colSpan, title }: { className?: string; children?: ReactNode; colSpan?: number; title?: string }) {
-  return <td colSpan={colSpan} title={title} className={cn('px-4 py-3 text-texto', className)}>{children}</td>
+export function TablaTd({ className, children, colSpan, title, onDoubleClick }: {
+  className?: string
+  children?: ReactNode
+  colSpan?: number
+  title?: string
+  onDoubleClick?: (e: React.MouseEvent<HTMLTableCellElement>) => void
+}) {
+  return (
+    <td
+      colSpan={colSpan}
+      title={title}
+      onDoubleClick={onDoubleClick}
+      className={cn('px-4 py-3 text-texto', onDoubleClick && 'cursor-pointer', className)}
+    >
+      {children}
+    </td>
+  )
 }

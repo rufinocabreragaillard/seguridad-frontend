@@ -610,7 +610,7 @@ export default function PaginaUsuariosSemilla() {
             const grupoInfo = grupos.find((g) => g.codigo_grupo === u.grupo_por_defecto)
             return (
               <TablaFila key={u.codigo_usuario}>
-                <TablaTd className="font-medium">{u.nombre}</TablaTd>
+                <TablaTd className="font-medium" onDoubleClick={() => abrirEditar(u)}>{u.nombre}</TablaTd>
                 <TablaTd className="text-sm text-texto-muted">{u.codigo_usuario}</TablaTd>
                 <TablaTd>{u.grupo_por_defecto ? <span className="text-sm">{nombreGrupo(u.grupo_por_defecto)}</span> : <span className="text-texto-muted">—</span>}</TablaTd>
                 <TablaTd>

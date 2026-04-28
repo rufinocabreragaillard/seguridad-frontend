@@ -569,7 +569,7 @@ export default function PaginaRoles() {
                     <SortableRow key={r.id_rol} id={r.id_rol}>
                       <TablaTd><Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia></TablaTd>
                       <TablaTd className="text-sm">{r.alias_de_rol || '—'}</TablaTd>
-                      <TablaTd className="font-medium">{r.nombre}</TablaTd>
+                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarRol(r)}>{r.nombre}</TablaTd>
                       <TablaTd className="text-xs">
                         {r.url_inicio ? (
                           <a href={r.url_inicio} className="text-primario hover:underline font-mono" title={r.url_inicio}>{r.url_inicio}</a>
@@ -650,7 +650,7 @@ export default function PaginaRoles() {
                   <TablaTd className="text-xs text-texto-muted">{nombreApp(f.codigo_aplicacion_origen) || '—'}</TablaTd>
                   <TablaTd><Insignia variante={varianteTipo(f.tipo_acceso)}>{etiquetaTipo(f.tipo_acceso)}</Insignia></TablaTd>
                   <TablaTd className="text-sm">{f.alias_de_funcion || '—'}</TablaTd>
-                  <TablaTd className="font-medium">{f.nombre}</TablaTd>
+                  <TablaTd className="font-medium" onDoubleClick={() => abrirEditarFuncion(f)}>{f.nombre}</TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{f.icono_de_funcion || '—'}</TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{f.url_funcion || '—'}</TablaTd>
                   <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>

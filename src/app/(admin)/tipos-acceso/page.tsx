@@ -105,7 +105,7 @@ export default function PaginaTiposAcceso() {
 
           <ShieldCheck size={14} className="text-violet-500 shrink-0" />
 
-          <div className="flex-1 min-w-0 truncate" title={`${item.nombre_tipo_acceso} (${item.codigo_tipo_acceso})`}>
+          <div className="flex-1 min-w-0 truncate cursor-pointer" title={`${item.nombre_tipo_acceso} (${item.codigo_tipo_acceso})`} onDoubleClick={() => crud.abrirEditar(item)}>
             <span className="font-medium text-xs">{item.nombre_tipo_acceso}</span>
             <span className="text-xs text-texto-muted ml-2">({item.codigo_tipo_acceso})</span>
           </div>

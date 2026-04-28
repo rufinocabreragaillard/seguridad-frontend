@@ -10,6 +10,10 @@ export interface ColumnaDef<T> {
   titulo: string
   className?: string
   render: (item: T) => ReactNode
+  /** Si la celda dispara onEditar al hacer doble click. Por defecto true en columnaNombre */
+  editaConDobleClic?: boolean
+  /** Handler de doble click personalizado para esta celda (ej: navegación jerárquica) */
+  onDobleClicCelda?: (item: T) => void
 }
 
 interface TablaCrudProps<T> {
@@ -58,11 +62,18 @@ export function TablaCrud<T extends Record<string, unknown>>({
     <>
       {items.map((item) => (
         <SortableRow key={getId(item)} id={getId(item)}>
-          {columnas.map((col, i) => (
-            <TablaTd key={i} className={col.className}>
-              {col.render(item)}
-            </TablaTd>
-          ))}
+          {columnas.map((col, i) => {
+            const dblHandler = col.onDobleClicCelda
+              ? () => col.onDobleClicCelda!(item)
+              : col.editaConDobleClic && onEditar
+                ? () => onEditar(item)
+                : undefined
+            return (
+              <TablaTd key={i} className={col.className} onDoubleClick={dblHandler}>
+                {col.render(item)}
+              </TablaTd>
+            )
+          })}
           {tieneAcciones && (
             <TablaTd>
               <div className="flex items-center justify-end gap-1">
@@ -95,11 +106,18 @@ export function TablaCrud<T extends Record<string, unknown>>({
     <>
       {items.map((item) => (
         <TablaFila key={getId(item)}>
-          {columnas.map((col, i) => (
-            <TablaTd key={i} className={col.className}>
-              {col.render(item)}
-            </TablaTd>
-          ))}
+          {columnas.map((col, i) => {
+            const dblHandler = col.onDobleClicCelda
+              ? () => col.onDobleClicCelda!(item)
+              : col.editaConDobleClic && onEditar
+                ? () => onEditar(item)
+                : undefined
+            return (
+              <TablaTd key={i} className={col.className} onDoubleClick={dblHandler}>
+                {col.render(item)}
+              </TablaTd>
+            )
+          })}
           {tieneAcciones && (
             <TablaTd>
               <div className="flex items-center justify-end gap-1">
@@ -162,10 +180,11 @@ export function columnaCodigo<T>(titulo: string, getCodigo: (item: T) => string)
   }
 }
 
-/** Helper: columna de texto con font-medium */
+/** Helper: columna de texto con font-medium. Por defecto abre el modal de edición al hacer doble click. */
 export function columnaNombre<T>(titulo: string, getNombre: (item: T) => string): ColumnaDef<T> {
   return {
     titulo,
+    editaConDobleClic: true,
     render: (item) => <span className="font-medium">{getNombre(item)}</span>,
   }
 }

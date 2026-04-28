@@ -466,7 +466,7 @@ export default function PaginaRegistroLLM() {
                 <TablaFila key={m.id_modelo}>
                   <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{m.proveedor}</code></TablaTd>
                   <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{m.nombre_tecnico}</code></TablaTd>
-                  <TablaTd className="font-medium">{m.nombre_visible}</TablaTd>
+                  <TablaTd className="font-medium" onDoubleClick={() => abrirEditarModelo(m)}>{m.nombre_visible}</TablaTd>
                   <TablaTd className="text-texto-muted text-sm max-w-[200px] truncate">{m.descripcion || '—'}</TablaTd>
                   <TablaTd>
                     {m.estado_valido
@@ -758,7 +758,7 @@ export default function PaginaRegistroLLM() {
                       const res = resultadoPrueba?.key === keyId ? resultadoPrueba : null
                       return (
                         <TablaFila key={keyId}>
-                          <TablaTd className="capitalize font-medium">{c.proveedor}</TablaTd>
+                          <TablaTd className="capitalize font-medium" onDoubleClick={() => abrirEditarCredencial(c)}>{c.proveedor}</TablaTd>
                           <TablaTd>{c.alias}</TablaTd>
                           <TablaTd className="font-mono text-xs">{c.api_key_preview}</TablaTd>
                           <TablaTd>{c.limite_usd_mes !== null ? `$${c.limite_usd_mes}` : '—'}</TablaTd>
@@ -809,7 +809,7 @@ export default function PaginaRegistroLLM() {
                   <TablaCuerpo>
                     {precios.map((p) => (
                       <TablaFila key={`${p.proveedor}-${p.nombre_tecnico}-${p.vigente_desde}`}>
-                        <TablaTd className="capitalize">{p.proveedor}</TablaTd>
+                        <TablaTd className="capitalize" onDoubleClick={() => { setEditandoPrecio(p); setFormPrecio({ precio_input_1m: p.precio_input_1m, precio_output_1m: p.precio_output_1m, precio_cache_read_1m: p.precio_cache_read_1m, precio_cache_write_1m: p.precio_cache_write_1m }) }}>{p.proveedor}</TablaTd>
                         <TablaTd className="font-mono text-xs">{p.nombre_tecnico}</TablaTd>
                         <TablaTd>${p.precio_input_1m}</TablaTd>
                         <TablaTd>${p.precio_output_1m}</TablaTd>

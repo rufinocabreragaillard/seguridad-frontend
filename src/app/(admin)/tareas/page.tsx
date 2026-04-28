@@ -131,6 +131,7 @@ export default function PaginaTareasMantenedor() {
         columnas={[
           {
             titulo: t('colNombre'),
+            editaConDobleClic: true,
             render: (tarea: Tarea) => (
               <span className="font-medium text-sm">{tarea.nombre_tarea}</span>
             ),
