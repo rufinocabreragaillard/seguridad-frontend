@@ -577,6 +577,7 @@ export default function PaginaGrupos() {
                     <TablaTh>Nombre</TablaTh>
                     <TablaTh>Código</TablaTh>
                     <TablaTh>Tipo</TablaTh>
+                    <TablaTh>Descripción</TablaTh>
                     <TablaTh className="text-right">Acciones</TablaTh>
                   </tr>
                 </TablaCabecera>
@@ -591,6 +592,7 @@ export default function PaginaGrupos() {
                         <TablaTd onDoubleClick={() => abrirEditarGrupo(g)}><button className={`text-sm font-medium text-left w-full${grupoSeleccionado?.codigo_grupo === g.codigo_grupo ? ' text-primario' : ' text-texto'}`} onClick={() => setGrupoSeleccionado(g)}>{g.nombre}</button></TablaTd>
                         <TablaTd onDoubleClick={() => abrirEditarGrupo(g)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{g.codigo_grupo}</code></TablaTd>
                         <TablaTd onDoubleClick={() => abrirEditarGrupo(g)}><Insignia variante={varianteTipo(g.tipo_acceso)}>{etiquetaTipo(g.tipo_acceso)}</Insignia></TablaTd>
+                        <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }}>{g.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver entidades"><Eye size={14} /></button>

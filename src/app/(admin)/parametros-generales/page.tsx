@@ -277,13 +277,13 @@ export default function PaginaParametrosGenerales() {
                 <TablaTh className="w-10">#</TablaTh>
                 <TablaTh>{t('colCodigo')}</TablaTh>
                 <TablaTh>{t('colNombre')}</TablaTh>
+                <TablaTh>{t('colDescripcion')}</TablaTh>
                 <TablaTh className="text-center">{t('colRepGrupo')}</TablaTh>
                 <TablaTh className="text-center">{t('colVisGrupo')}</TablaTh>
                 <TablaTh className="text-center">{t('colEditGrupo')}</TablaTh>
                 <TablaTh className="text-center">{t('colRepUsuario')}</TablaTh>
                 <TablaTh className="text-center">{t('colVisUsuario')}</TablaTh>
                 <TablaTh className="text-center">{t('colEditUsuario')}</TablaTh>
-                <TablaTh>{t('colEstado')}</TablaTh>
                 <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
@@ -301,15 +301,13 @@ export default function PaginaParametrosGenerales() {
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{c.orden ?? idx + 1}</TablaTd>
                         <TablaTd onDoubleClick={() => abrirEditarCat(c)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
                         <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre}</TablaTd>
+                        <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }}>{c.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.replica_grupo ? 'exito' : 'error'}>{c.replica_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.visible_grupo ? 'exito' : 'error'}>{c.visible_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.editable_grupo ? 'exito' : 'error'}>{c.editable_grupo ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.replica_usuario ? 'exito' : 'error'}>{c.replica_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.visible_usuario ? 'exito' : 'error'}>{c.visible_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.editable_usuario ? 'exito' : 'error'}>{c.editable_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
-                        <TablaTd>
-                          
-                        </TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verTipos')}><Eye size={14} /></button>

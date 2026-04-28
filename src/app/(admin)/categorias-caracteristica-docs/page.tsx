@@ -392,7 +392,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                   <TablaTh>{t('colNombre')}</TablaTh>
                   <TablaTh>{t('colUnica')}</TablaTh>
                   <TablaTh>{t('colEditable')}</TablaTh>
-                  
+                  <TablaTh>{t('colDescripcion')}</TablaTh>
                   <TablaTh>{t('colCodigo')}</TablaTh>
                   <TablaTh className="text-right">{tc('acciones')}</TablaTh>
                 </tr>
@@ -407,7 +407,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                     <TablaTd className="font-medium" onDoubleClick={() => abrirEditarCat(c)}>{c.nombre_cat_docs}</TablaTd>
                     <TablaTd><Insignia variante={c.es_unica_docs ? 'advertencia' : 'neutro'}>{c.es_unica_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
                     <TablaTd><Insignia variante={c.editable_en_detalle_docs ? 'exito' : 'neutro'}>{c.editable_en_detalle_docs ? tc('si') : tc('no')}</Insignia></TablaTd>
-                    <TablaTd></TablaTd>
+                    <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setCatSeleccionada(c); setTabActiva('tipos') }}>{c.descripcion_cat_docs || <span className="text-texto-light">—</span>}</TablaTd>
                     <TablaTd onDoubleClick={() => abrirEditarCat(c)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{c.codigo_cat_docs}</code></TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">

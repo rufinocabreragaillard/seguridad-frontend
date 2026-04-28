@@ -623,6 +623,7 @@ export default function PaginaTareasDatosBasicos() {
                   <TablaTh className="w-8" />
                   <TablaTh className="w-16 text-center">{t('colOrden')}</TablaTh>
                   <TablaTh>{t('colCategoria')}</TablaTh><TablaTh>{t('colCodigoTipo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh>
+                  <TablaTh>{t('colDescripcion')}</TablaTh>
                   <TablaTh>{t('colTipoCanonico')}</TablaTh><TablaTh>{t('colEstado')}</TablaTh>
                   <TablaTh className="text-right w-28">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
@@ -633,6 +634,7 @@ export default function PaginaTareasDatosBasicos() {
                       <TablaTd onDoubleClick={() => abrirEditarTipo(tipo)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_categoria_tarea}</code></TablaTd>
                       <TablaTd onDoubleClick={() => abrirEditarTipo(tipo)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tipo.codigo_tipo_tarea}</code></TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.nombre_tipo_tarea}</TablaTd>
+                      <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroCatEst(tipo.codigo_categoria_tarea); setFiltroTipoEst(tipo.codigo_tipo_tarea); setTabActiva('estados') }}>{tipo.descripcion_tipo_tarea || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.codigo_tipo_canonico || <span className="text-texto-light">—</span>}</TablaTd>
                       <TablaTd>
                         <button onClick={() => toggleActivoTipo(tipo)} title={t('cambiarEstado')}>
