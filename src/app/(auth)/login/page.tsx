@@ -14,8 +14,9 @@ import { locales, type Locale } from '@/i18n/config'
 const LOCALE_LABELS: Record<string, string> = { es: 'ES', en: 'EN', pt: 'PT', fr: 'FR', de: 'DE' }
 
 function cambiarLocale(nuevoLocale: Locale) {
-  document.cookie = `NEXT_LOCALE=${nuevoLocale};path=/;max-age=31536000`
-  window.location.reload()
+  const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
+  document.cookie = `NEXT_LOCALE=${nuevoLocale}; Path=/; Max-Age=31536000; SameSite=Lax${isSecure ? '; Secure' : ''}`
+  window.location.href = window.location.pathname + window.location.search
 }
 
 export default function PaginaLogin() {

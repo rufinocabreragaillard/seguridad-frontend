@@ -76,7 +76,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (typeof document !== 'undefined' && ctx.locale) {
           const cookieActual = document.cookie.match(/NEXT_LOCALE=([^;]+)/)?.[1]
           if (cookieActual !== ctx.locale) {
-            document.cookie = `NEXT_LOCALE=${ctx.locale};path=/;max-age=31536000`
+            const isSecure = window.location.protocol === 'https:'
+            document.cookie = `NEXT_LOCALE=${ctx.locale}; Path=/; Max-Age=31536000; SameSite=Lax${isSecure ? '; Secure' : ''}`
+            // La cookie recién seteada solo aplica al próximo render del servidor.
+            // Forzar reload para que getLocale() la lea y los messages cambien.
+            if (cookieActual && cookieActual !== ctx.locale) {
+              window.location.href = window.location.pathname + window.location.search
+              return ctx
+            }
           }
         }
         return ctx

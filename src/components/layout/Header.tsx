@@ -82,13 +82,16 @@ export function Header({ titulo }: { titulo?: string }) {
   }
 
   const handleCambiarLocale = async (nuevoLocale: Locale) => {
-    document.cookie = `NEXT_LOCALE=${nuevoLocale};path=/;max-age=31536000`
+    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
+    document.cookie = `NEXT_LOCALE=${nuevoLocale}; Path=/; Max-Age=31536000; SameSite=Lax${isSecure ? '; Secure' : ''}`
     if (usuario?.codigo_usuario) {
       try {
         await usuariosApi.actualizar(usuario.codigo_usuario, { locale: nuevoLocale })
-      } catch { /* silencioso */ }
+      } catch (e) {
+        console.error('[locale] error al guardar preferencia:', e)
+      }
     }
-    window.location.reload()
+    window.location.href = window.location.pathname + window.location.search
   }
 
   const handleCambiarAplicacion = async (codigoApp: string) => {
