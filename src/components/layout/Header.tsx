@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import Image from 'next/image'
 import { ChevronDown, Building2, Layers, Check, Bell, LogOut, User, AppWindow } from 'lucide-react'
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu'
 import * as Avatar from '@radix-ui/react-avatar'
 import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
+import { useSidebar } from '@/context/SidebarContext'
 import { Modal } from '@/components/ui/modal'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -26,6 +28,7 @@ export function Header({ titulo }: { titulo?: string }) {
   const tc = useTranslations('common')
   const router = useRouter()
   const { usuario, cambiarEntidad, cambiarGrupo, cambiarAplicacion, logout } = useAuth()
+  const { colapsado } = useSidebar()
   const [cambiando, setCambiando] = useState(false)
   const [localesDinamicos, setLocalesDinamicos] = useState<LocaleSoportado[]>(_localesCache ?? [])
 
@@ -270,6 +273,17 @@ export function Header({ titulo }: { titulo?: string }) {
             </DropdownMenu.Root>
           )}
 
+          {/* Logo Server LM — visible solo cuando el sidebar está colapsado */}
+          {colapsado && (
+            <Image
+              src="/letras_serverlm_gris_claro.png"
+              alt="Server LM"
+              width={110}
+              height={28}
+              className="object-contain shrink-0"
+            />
+          )}
+
           {/* Selector de entidad */}
           {usuario && usuario.entidades && usuario.entidades.length > 0 && (
             usuario.entidades.length === 1 ? (
@@ -326,7 +340,7 @@ export function Header({ titulo }: { titulo?: string }) {
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               <button className="flex items-center gap-2 p-1 rounded-lg hover:bg-fondo transition-colors focus:outline-none">
-                <Avatar.Root className="h-8 w-8 rounded-full bg-secundario flex items-center justify-center shrink-0">
+                <Avatar.Root className="h-8 w-8 rounded-full bg-primario flex items-center justify-center shrink-0">
                   <Avatar.Fallback className="text-white text-xs font-semibold">{iniciales}</Avatar.Fallback>
                 </Avatar.Root>
                 <div className="text-left hidden sm:block">

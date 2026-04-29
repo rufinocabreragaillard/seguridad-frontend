@@ -4,11 +4,12 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { PanelLeftClose, PanelLeftOpen, Search, X } from 'lucide-react'
-import { useState, useMemo, useRef, useCallback } from 'react'
+import { useMemo, useRef, useCallback, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { useTema } from '@/context/ThemeContext'
+import { useSidebar } from '@/context/SidebarContext'
 import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { obtenerIcono } from '@/lib/icon-map'
 import { tr } from '@/lib/traducir'
@@ -36,9 +37,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const { usuario } = useAuth()
   const { logo, appNombreCorto } = useTema()
-  // sidebar_ancho viene de aplicaciones.sidebar_ancho — true=expandido, false=colapsado
-  const sidebarAnchoPorDefecto = usuario?.sidebar_ancho !== false
-  const [colapsado, setColapsado] = useState(!sidebarAnchoPorDefecto)
+  const { colapsado, setColapsado } = useSidebar()
   const [tooltip, setTooltip] = useState<{ texto: string; rect: DOMRect } | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)

@@ -6,6 +6,7 @@ import { ShieldAlert } from 'lucide-react'
 import { Sidebar } from '@/components/layout/Sidebar'
 import { Header } from '@/components/layout/Header'
 import { useAuth } from '@/context/AuthContext'
+import { SidebarProvider } from '@/context/SidebarContext'
 import { useTranslations } from 'next-intl'
 import { AvisoPagina } from '@/components/ui/aviso-pagina'
 import { limpiarAvisos } from '@/lib/avisos-pagina'
@@ -44,7 +45,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const accesoPermitido = tieneAccesoRuta(pathname)
 
+  const sidebarColapsadoPorDefecto = usuario?.sidebar_ancho === false
+
   return (
+    <SidebarProvider defaultColapsado={sidebarColapsadoPorDefecto}>
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -69,5 +73,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </div>
+    </SidebarProvider>
   )
 }
