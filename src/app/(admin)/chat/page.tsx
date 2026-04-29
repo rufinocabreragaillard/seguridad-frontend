@@ -188,10 +188,27 @@ export default function PaginaChatUsuario() {
             setActividad(t('procesandoResultados') ?? 'Procesando resultados…')
           }
         },
-        onDone: async () => {
+        onDone: ({ id_mensaje_user, id_mensaje_assistant }) => {
+          const ahora = new Date().toISOString()
+          setMensajes((prev) => {
+            // Reemplazar mensaje temporal del usuario con ID real
+            const sinTemp = prev.filter((m) => m.id_mensaje !== tempUserMsg.id_mensaje)
+            const mensajeUser: ChatMensaje = {
+              ...tempUserMsg,
+              id_mensaje: id_mensaje_user ?? tempUserMsg.id_mensaje,
+            }
+            // Agregar respuesta del asistente con ID real
+            const mensajeAsistente: ChatMensaje = {
+              id_mensaje: id_mensaje_assistant ?? -Date.now(),
+              id_conversacion: convActivaId,
+              rol: 'assistant',
+              contenido: acumulado,
+              fecha_creacion: ahora,
+            }
+            return [...sinTemp, mensajeUser, ...(acumulado ? [mensajeAsistente] : [])]
+          })
           setRespuestaEnCurso('')
           setActividad('')
-          await cargarConversacion(convActivaId)
           cargarLista()
         },
         onError: (mensaje) => {
