@@ -29,7 +29,8 @@
     "actualizar": "Aktualisieren",
     "activo": "Aktiv",
     "inactivo": "Inaktiv",
-    "global": "Global"
+    "global": "Global",
+    "crearYSalir": "Erstellen und Beenden"
   },
   "layout": {
     "cargando": "Lädt...",
@@ -997,7 +998,13 @@
     "tabApps": "Anwendungen",
     "tabLlm": "LLM",
     "asignar": "Zuweisen",
-    "exportarColumnas": "Gruppe|Code|Alias|Name|Beschreibung|Start-URL|Std. Funktion|Typ"
+    "exportarColumnas": "Gruppe|Code|Alias|Name|Beschreibung|Start-URL|Std. Funktion|Typ",
+    "iniAdminGrupo": "Init. Gruppenadmin",
+    "iniAdminGeneral": "Init. Hauptadmin",
+    "etiquetaFuncionPorDefecto": "Standardfunktion",
+    "etiquetaAppOrigen": "Ursprungsanwendung",
+    "sinAsignar": "— nicht zugewiesen —",
+    "crearRolTitulo": "Neue Rolle"
   },
   "rolesGenerales": {
     "titulo": "Rollen",
@@ -1113,7 +1120,10 @@
     "buscarAppPlaceholder": "Anwendung auswählen...",
     "asignarApp": "Zuweisen",
     "tabDatos": "Daten",
-    "tabApps": "Anwendungen"
+    "tabApps": "Anwendungen",
+    "etiquetaTipo": "Typ",
+    "etiquetaAppOrigen": "Ursprungsanwendung",
+    "sinAsignar": "— nicht zugewiesen —"
   },
   "auditoria": {
     "titulo": "Sicherheitsaudit",

@@ -70,7 +70,8 @@
     "bajar": "Move down",
     "nuevo": "New",
     "codigo": "Code",
-    "global": "Global"
+    "global": "Global",
+    "crearYSalir": "Create and Exit"
   },
   "layout": {
     "cargando": "Loading...",
@@ -1041,7 +1042,13 @@
     "tabApps": "Applications",
     "tabLlm": "LLM",
     "asignar": "Assign",
-    "exportarColumnas": "Group|Code|Alias|Name|Description|Start URL|Default fn.|Type"
+    "exportarColumnas": "Group|Code|Alias|Name|Description|Start URL|Default fn.|Type",
+    "iniAdminGrupo": "Ini. Group Admin",
+    "iniAdminGeneral": "Ini. General Admin",
+    "etiquetaFuncionPorDefecto": "Default function",
+    "etiquetaAppOrigen": "Origin app",
+    "sinAsignar": "— not assigned —",
+    "crearRolTitulo": "New role"
   },
   "rolesGenerales": {
     "titulo": "Roles",
@@ -1157,7 +1164,10 @@
     "buscarAppPlaceholder": "Select application...",
     "asignarApp": "Assign",
     "tabDatos": "Data",
-    "tabApps": "Applications"
+    "tabApps": "Applications",
+    "etiquetaTipo": "Type",
+    "etiquetaAppOrigen": "Origin app",
+    "sinAsignar": "— not assigned —"
   },
   "auditoria": {
     "titulo": "Security Audit",

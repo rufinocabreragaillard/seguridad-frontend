@@ -438,7 +438,7 @@ export default function PaginaFunciones() {
                 <Input value={formFuncion.icono_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, icono_de_funcion: e.target.value })} placeholder={t('placeholderIcono')} />
               </div>
               <div>
-                <label className="text-sm font-medium text-texto">Tipo</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaTipo')}</label>
                 <select value={formFuncion.tipo_acceso} onChange={(e) => setFormFuncion({ ...formFuncion, tipo_acceso: e.target.value as TipoFuncion })} className={selectClass}>
                   {TIPOS_ELEMENTO.map((tp) => (
                     <option key={tp} value={tp}>{tte(tp)}</option>
@@ -474,16 +474,16 @@ export default function PaginaFunciones() {
               {/* Columna izquierda */}
               <div className="flex flex-col gap-3">
                 <div>
-                  <label className="text-sm font-medium text-texto">Aplicación origen</label>
+                  <label className="text-sm font-medium text-texto">{t('etiquetaAppOrigen')}</label>
                   <select value={formFuncion.codigo_aplicacion_origen} onChange={(e) => setFormFuncion({ ...formFuncion, codigo_aplicacion_origen: e.target.value })} className={selectClass}>
-                    <option value="">— sin asignar —</option>
+                    <option value="">{t('sinAsignar')}</option>
                     {[...aplicaciones].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((a) => (
                       <option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-texto">Descripción</label>
+                  <label className="text-sm font-medium text-texto">{t('etiquetaDescripcion')}</label>
                   <textarea value={formFuncion.descripcion} onChange={(e) => setFormFuncion({ ...formFuncion, descripcion: e.target.value })} rows={3} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none" />
                 </div>
                 <div>

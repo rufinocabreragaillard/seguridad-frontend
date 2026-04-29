@@ -70,7 +70,8 @@
     "bajar": "Bajar",
     "nuevo": "Nuevo",
     "codigo": "Código",
-    "global": "Global"
+    "global": "Global",
+    "crearYSalir": "Crear y Salir"
   },
   "layout": {
     "cargando": "Cargando...",
@@ -1042,7 +1043,13 @@
     "tabApps": "Aplicaciones",
     "tabLlm": "LLM",
     "asignar": "Asignar",
-    "exportarColumnas": "Grupo|Código|Alias|Nombre|Descripción|URL inicio|Fn. por defecto|Tipo"
+    "exportarColumnas": "Grupo|Código|Alias|Nombre|Descripción|URL inicio|Fn. por defecto|Tipo",
+    "iniAdminGrupo": "Ini. Admin Grupo",
+    "iniAdminGeneral": "Ini. Admin General",
+    "etiquetaFuncionPorDefecto": "Función por defecto",
+    "etiquetaAppOrigen": "Aplicación origen",
+    "sinAsignar": "— sin asignar —",
+    "crearRolTitulo": "Nuevo rol"
   },
   "rolesGenerales": {
     "titulo": "Roles",
@@ -1158,7 +1165,10 @@
     "buscarAppPlaceholder": "Seleccionar aplicación...",
     "asignarApp": "Asignar",
     "tabDatos": "Datos",
-    "tabApps": "Aplicaciones"
+    "tabApps": "Aplicaciones",
+    "etiquetaTipo": "Tipo",
+    "etiquetaAppOrigen": "Aplicación origen",
+    "sinAsignar": "— sin asignar —"
   },
   "auditoria": {
     "titulo": "Auditoría Seguridad",

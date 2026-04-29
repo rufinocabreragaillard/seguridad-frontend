@@ -29,7 +29,8 @@
     "actualizar": "Actualiser",
     "activo": "Actif",
     "inactivo": "Inactif",
-    "global": "Global"
+    "global": "Global",
+    "crearYSalir": "Créer et Quitter"
   },
   "layout": {
     "cargando": "Chargement...",
@@ -997,7 +998,13 @@
     "tabApps": "Applications",
     "tabLlm": "LLM",
     "asignar": "Assigner",
-    "exportarColumnas": "Groupe|Code|Alias|Nom|Description|URL de démarrage|Fn. par défaut|Type"
+    "exportarColumnas": "Groupe|Code|Alias|Nom|Description|URL de démarrage|Fn. par défaut|Type",
+    "iniAdminGrupo": "Ini. Admin Groupe",
+    "iniAdminGeneral": "Ini. Admin Général",
+    "etiquetaFuncionPorDefecto": "Fonction par défaut",
+    "etiquetaAppOrigen": "Application d'origine",
+    "sinAsignar": "— non assigné —",
+    "crearRolTitulo": "Nouveau rôle"
   },
   "rolesGenerales": {
     "titulo": "Rôles",
@@ -1113,7 +1120,10 @@
     "buscarAppPlaceholder": "Sélectionner une application...",
     "asignarApp": "Assigner",
     "tabDatos": "Données",
-    "tabApps": "Applications"
+    "tabApps": "Applications",
+    "etiquetaTipo": "Type",
+    "etiquetaAppOrigen": "Application d'origine",
+    "sinAsignar": "— non assigné —"
   },
   "auditoria": {
     "titulo": "Audit Sécurité",

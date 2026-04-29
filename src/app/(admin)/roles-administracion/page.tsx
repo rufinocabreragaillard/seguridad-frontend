@@ -735,7 +735,7 @@ export default function PaginaRoles() {
                     onChange={(e) => setFormRol({ ...formRol, inicial: e.target.checked })}
                     className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
                   />
-                  <span className="text-sm text-texto">Rol inicial</span>
+                  <span className="text-sm text-texto">{t('colInicial')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -744,7 +744,7 @@ export default function PaginaRoles() {
                     onChange={(e) => setFormRol({ ...formRol, inicial_admin_grupo: e.target.checked })}
                     className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
                   />
-                  <span className="text-sm text-texto">Ini. Admin Grupo</span>
+                  <span className="text-sm text-texto">{t('iniAdminGrupo')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -753,12 +753,12 @@ export default function PaginaRoles() {
                     onChange={(e) => setFormRol({ ...formRol, inicial_admin_general: e.target.checked })}
                     className="w-4 h-4 rounded border-borde text-primario focus:ring-primario cursor-pointer"
                   />
-                  <span className="text-sm text-texto">Ini. Admin General</span>
+                  <span className="text-sm text-texto">{t('iniAdminGeneral')}</span>
                 </label>
               </div>
               {rolEditando && (
                 <div className="flex flex-col gap-1">
-                  <label className="text-sm font-medium text-texto">Función por defecto</label>
+                  <label className="text-sm font-medium text-texto">{t('etiquetaFuncionPorDefecto')}</label>
                   <select
                     value={formRol.funcion_por_defecto}
                     onChange={(e) => setFormRol({ ...formRol, funcion_por_defecto: e.target.value })}
@@ -1048,9 +1048,9 @@ export default function PaginaRoles() {
               <Input etiqueta={t('etiquetaNombre')} value={formFuncion.nombre} onChange={(e) => setFormFuncion({ ...formFuncion, nombre: e.target.value })} placeholder={t('placeholderNombreFuncion')} />
               <Input etiqueta={t('etiquetaAlias')} value={formFuncion.alias_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, alias_de_funcion: e.target.value.substring(0, 40) })} placeholder={t('placeholderAliasFuncion')} />
               <div className="flex flex-col gap-1">
-                <label className="text-sm font-medium text-texto">Aplicación origen</label>
+                <label className="text-sm font-medium text-texto">{t('etiquetaAppOrigen')}</label>
                 <select value={formFuncion.codigo_aplicacion_origen} onChange={(e) => setFormFuncion({ ...formFuncion, codigo_aplicacion_origen: e.target.value })} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario">
-                  <option value="">— sin asignar —</option>
+                  <option value="">{t('sinAsignar')}</option>
                   {[...todasApps].sort((a, b) => {
                       const ta = a.tipo_acceso === 'USUARIO' ? 0 : 1
                       const tb = b.tipo_acceso === 'USUARIO' ? 0 : 1
