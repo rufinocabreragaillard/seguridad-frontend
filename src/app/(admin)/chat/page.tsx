@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles } from 'lucide-react'
+import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -201,6 +201,7 @@ export default function PaginaChatUsuario() {
   const [areaSel, setAreaSel] = useState<string>('')   // codigo_ubicacion del área filtro
   const [areaBusqueda, setAreaBusqueda] = useState('')
   const [areaDropdownAbierto, setAreaDropdownAbierto] = useState(false)
+  const [areaExpandidos, setAreaExpandidos] = useState<Set<string>>(new Set())
 
   const [espacios, setEspacios] = useState<EspacioTrabajo[]>([])
   const [espacioSel, setEspacioSel] = useState<number | null>(null)
@@ -582,7 +583,7 @@ export default function PaginaChatUsuario() {
                   )}
                 </button>
                 {areaDropdownAbierto && (
-                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-borde rounded-lg shadow-lg z-20 max-h-64 overflow-hidden flex flex-col">
+                  <div className="absolute bottom-full left-0 mb-2 w-80 bg-white border border-borde rounded-lg shadow-lg z-20 max-h-80 overflow-hidden flex flex-col">
                     <div className="p-2 border-b border-borde">
                       <Input
                         autoFocus
@@ -593,24 +594,93 @@ export default function PaginaChatUsuario() {
                       />
                     </div>
                     <div className="overflow-y-auto flex-1 text-xs">
-                      {areasFiltradas.length === 0 ? (
-                        <p className="text-texto-muted text-center py-3">Sin coincidencias</p>
-                      ) : areasFiltradas.map((a) => (
-                        <button
-                          key={a.codigo_ubicacion}
-                          onClick={() => {
-                            setAreaSel(a.codigo_ubicacion)
-                            setAreaDropdownAbierto(false)
-                            setAreaBusqueda('')
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-primario-muy-claro flex flex-col"
-                        >
-                          <span className="font-medium text-texto">{a.alias_ubicacion || a.nombre_ubicacion}</span>
-                          {a.ruta_completa && (
-                            <span className="text-texto-muted text-[10px] truncate">{a.ruta_completa}</span>
-                          )}
-                        </button>
-                      ))}
+                      <div
+                        className="px-3 py-2 hover:bg-fondo cursor-pointer text-texto-muted border-b border-borde"
+                        onClick={() => { setAreaSel(''); setAreaBusqueda(''); setAreaDropdownAbierto(false) }}
+                      >
+                        Todas
+                      </div>
+                      {(() => {
+                        const tieneHijosArea = (cod: string) => areas.some(a => a.codigo_ubicacion !== cod && a.codigo_ubicacion_superior === cod)
+                        // Con búsqueda: lista plana filtrada
+                        if (areaBusqueda) {
+                          if (areasFiltradas.length === 0) {
+                            return <p className="text-texto-muted text-center py-3">Sin coincidencias</p>
+                          }
+                          return areasFiltradas.map((a) => {
+                            const selec = areaSel === a.codigo_ubicacion
+                            return (
+                              <div
+                                key={a.codigo_ubicacion}
+                                className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`}
+                                style={{ paddingLeft: `${(a.nivel || 0) * 16 + 12}px` }}
+                                onClick={() => {
+                                  setAreaSel(a.codigo_ubicacion)
+                                  setAreaDropdownAbierto(false)
+                                  setAreaBusqueda('')
+                                }}
+                              >
+                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : 'text-sky-500'}`} />
+                                <div className="flex-1 min-w-0">
+                                  <div className={`truncate ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{a.alias_ubicacion || a.nombre_ubicacion}</div>
+                                  {a.ruta_completa && (
+                                    <div className="text-texto-muted text-[10px] truncate">{a.ruta_completa}</div>
+                                  )}
+                                </div>
+                              </div>
+                            )
+                          })
+                        }
+                        // Sin búsqueda: árbol colapsable
+                        const toggleExpandirArea = (e: React.MouseEvent, cod: string) => {
+                          e.stopPropagation()
+                          setAreaExpandidos(prev => {
+                            const next = new Set(prev)
+                            next.has(cod) ? next.delete(cod) : next.add(cod)
+                            return next
+                          })
+                        }
+                        const renderNodoArea = (a: UbicacionDoc): React.ReactNode => {
+                          const tieneHijos = tieneHijosArea(a.codigo_ubicacion)
+                          const expandido = areaExpandidos.has(a.codigo_ubicacion)
+                          const selec = areaSel === a.codigo_ubicacion
+                          const hijos = tieneHijos
+                            ? areas
+                                .filter(h => h.codigo_ubicacion_superior === a.codigo_ubicacion)
+                                .sort((x, y) => (x.alias_ubicacion || x.nombre_ubicacion).localeCompare(y.alias_ubicacion || y.nombre_ubicacion))
+                            : []
+                          return (
+                            <div key={a.codigo_ubicacion}>
+                              <div
+                                className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer select-none ${selec ? 'bg-primario-muy-claro' : ''}`}
+                                style={{ paddingLeft: `${(a.nivel || 0) * 16 + 12}px` }}
+                                onClick={() => {
+                                  setAreaSel(a.codigo_ubicacion)
+                                  setAreaDropdownAbierto(false)
+                                  setAreaBusqueda('')
+                                }}
+                              >
+                                {tieneHijos
+                                  ? <button onClick={(e) => toggleExpandirArea(e, a.codigo_ubicacion)} className="shrink-0 hover:text-primario text-texto-muted p-0.5 -ml-0.5 rounded">
+                                      {expandido ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                    </button>
+                                  : <span className="w-3 shrink-0" />
+                                }
+                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : 'text-sky-500'}`} />
+                                <span className={`truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{a.alias_ubicacion || a.nombre_ubicacion}</span>
+                              </div>
+                              {expandido && hijos.map(h => renderNodoArea(h))}
+                            </div>
+                          )
+                        }
+                        const raicesArea = areas
+                          .filter(a => !a.codigo_ubicacion_superior || !areas.some(p => p.codigo_ubicacion === a.codigo_ubicacion_superior))
+                          .sort((x, y) => (x.alias_ubicacion || x.nombre_ubicacion).localeCompare(y.alias_ubicacion || y.nombre_ubicacion))
+                        if (raicesArea.length === 0) {
+                          return <p className="text-texto-muted text-center py-3">Sin áreas</p>
+                        }
+                        return raicesArea.map(a => renderNodoArea(a))
+                      })()}
                     </div>
                   </div>
                 )}
