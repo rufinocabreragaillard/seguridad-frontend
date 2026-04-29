@@ -1390,6 +1390,8 @@ export const chatApi = {
       onChunk: (text: string) => void
       onDone: (info: { id_mensaje_user: number | null; id_mensaje_assistant: number | null }) => void
       onError: (mensaje: string) => void
+      onToolUse?: (info: { id: string; name: string; input: Record<string, unknown> }) => void
+      onToolResult?: (info: { id: string; ok?: boolean; n_filas?: number; duracion_ms?: number; error?: string }) => void
     },
     filtros?: {
       codigo_ubicacion_area?: string | null
@@ -1468,6 +1470,12 @@ export const chatApi = {
             }
             if (evt.text) {
               callbacks.onChunk(evt.text)
+            }
+            if (evt.tool_use && callbacks.onToolUse) {
+              callbacks.onToolUse(evt.tool_use)
+            }
+            if (evt.tool_result && callbacks.onToolResult) {
+              callbacks.onToolResult(evt.tool_result)
             }
             if (evt.done) {
               callbacks.onDone({

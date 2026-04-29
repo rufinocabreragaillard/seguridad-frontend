@@ -18,6 +18,30 @@ import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTra
 
 const CODIGO_FUNCION = 'CHAT-USUARIO'
 
+function etiquetaActividadTool(nombreTool: string, t: (k: string) => string): string {
+  const n = (nombreTool || '').toLowerCase()
+  const fb = (clave: string, defecto: string) => {
+    try {
+      const txt = t(clave)
+      if (txt && !txt.startsWith('chat.')) return txt
+    } catch { /* */ }
+    return defecto
+  }
+  if (n.includes('buscar_documentos')) return fb('buscandoDocumentos', 'Buscando en tus documentos…')
+  if (n.includes('consultar_documentos')) return fb('consultandoDocumentos', 'Consultando documentos…')
+  if (n.includes('buscar_funciones') || n.includes('listar_pantallas')) return fb('buscandoPantallas', 'Buscando pantallas disponibles…')
+  if (n.includes('consultar_parametros')) return fb('consultandoParametros', 'Consultando parámetros…')
+  if (n.includes('consultar_usuarios')) return fb('consultandoUsuarios', 'Consultando usuarios…')
+  if (n.includes('consultar_roles')) return fb('consultandoRoles', 'Consultando roles y permisos…')
+  if (n.includes('consultar_auditoria')) return fb('consultandoAuditoria', 'Revisando auditoría…')
+  if (n.includes('consultar_aplicaciones')) return fb('consultandoApps', 'Consultando aplicaciones…')
+  if (n.includes('como_funciona_seguridad')) return fb('leyendoGuia', 'Leyendo guía de seguridad…')
+  if (n.includes('llamar_api')) return fb('ejecutandoAccion', 'Ejecutando acción en el sistema…')
+  if (n.includes('listar_apis')) return fb('listandoApis', 'Buscando endpoints disponibles…')
+  if (n.includes('entregar_mensaje')) return fb('preparandoMensaje', 'Preparando mensajes pendientes…')
+  return fb('consultandoSistema', 'Consultando el sistema…')
+}
+
 function iconoEstado(estado: string | null | undefined) {
   if (!estado) return 'neutro' as const
   if (estado === 'VECTORIZADO') return 'exito' as const
@@ -55,6 +79,7 @@ export default function PaginaChatUsuario() {
   const [textoInput, setTextoInput] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [respuestaEnCurso, setRespuestaEnCurso] = useState('')
+  const [actividad, setActividad] = useState('')
   const [eliminando, setEliminando] = useState(false)
   const mensajesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
@@ -132,6 +157,7 @@ export default function PaginaChatUsuario() {
     if (!texto || !convActivaId || enviando) return
     setEnviando(true)
     setRespuestaEnCurso('')
+    setActividad(t('pensando') ?? 'Pensando…')
     setErrorConv('')
     const tempUserMsg: ChatMensaje = {
       id_mensaje: -Date.now(),
@@ -149,16 +175,29 @@ export default function PaginaChatUsuario() {
       {
         onChunk: (chunk) => {
           acumulado += chunk
+          if (acumulado.length > 0) setActividad('')
           setRespuestaEnCurso(acumulado)
+        },
+        onToolUse: (info) => {
+          setActividad(etiquetaActividadTool(info.name, t))
+        },
+        onToolResult: (info) => {
+          if (info.ok === false) {
+            setActividad(t('errorTool') ?? 'Hubo un problema con la consulta. Reintentando…')
+          } else {
+            setActividad(t('procesandoResultados') ?? 'Procesando resultados…')
+          }
         },
         onDone: async () => {
           setRespuestaEnCurso('')
+          setActividad('')
           await cargarConversacion(convActivaId)
           cargarLista()
         },
         onError: (mensaje) => {
           setErrorConv(mensaje)
           setRespuestaEnCurso('')
+          setActividad('')
           setMensajes((prev) => prev.filter((m) => m.id_mensaje !== tempUserMsg.id_mensaje))
         },
       },
@@ -527,8 +566,11 @@ export default function PaginaChatUsuario() {
                           streaming
                         />
                       )}
-                      {enviando && !respuestaEnCurso && (
-                        <div className="text-xs text-texto-muted italic px-2">{t('pensando')}</div>
+                      {enviando && actividad && (
+                        <div className="flex items-center gap-2 text-xs text-texto-muted italic px-2">
+                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-texto-muted/50 animate-pulse" />
+                          <span>{actividad}</span>
+                        </div>
                       )}
                     </>
                   )}
