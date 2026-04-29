@@ -553,139 +553,139 @@ export default function PaginaChatUsuario() {
                     <Send size={16} />
                   </Boton>
                 </div>
-
-                {/* ── Barra inferior de filtros + Crear Espacio ── */}
-                <div className="border-t border-borde bg-fondo px-3 py-2 flex flex-wrap items-center gap-2">
-                  {/* Selector buscable: Área */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => { setAreaDropdownAbierto((v) => !v); setEspacioDropdownAbierto(false) }}
-                      className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition ${
-                        areaSel
-                          ? 'bg-primario-muy-claro border-primario text-primario font-medium'
-                          : 'bg-white border-borde text-texto-muted hover:text-texto'
-                      }`}
-                    >
-                      <FolderOpen size={13} />
-                      <span className="max-w-[180px] truncate">
-                        {areaSelObj ? (areaSelObj.alias_ubicacion || areaSelObj.nombre_ubicacion) : 'Área (todas)'}
-                      </span>
-                      {areaSel && (
-                        <X
-                          size={13}
-                          className="hover:text-error"
-                          onClick={(e) => { e.stopPropagation(); setAreaSel(''); setAreaDropdownAbierto(false) }}
-                        />
-                      )}
-                    </button>
-                    {areaDropdownAbierto && (
-                      <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-borde rounded-lg shadow-lg z-20 max-h-64 overflow-hidden flex flex-col">
-                        <div className="p-2 border-b border-borde">
-                          <Input
-                            autoFocus
-                            placeholder="Buscar área…"
-                            value={areaBusqueda}
-                            onChange={(e) => setAreaBusqueda(e.target.value)}
-                            icono={<Search size={13} />}
-                          />
-                        </div>
-                        <div className="overflow-y-auto flex-1 text-xs">
-                          {areasFiltradas.length === 0 ? (
-                            <p className="text-texto-muted text-center py-3">Sin coincidencias</p>
-                          ) : areasFiltradas.map((a) => (
-                            <button
-                              key={a.codigo_ubicacion}
-                              onClick={() => {
-                                setAreaSel(a.codigo_ubicacion)
-                                setAreaDropdownAbierto(false)
-                                setAreaBusqueda('')
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-primario-muy-claro flex flex-col"
-                            >
-                              <span className="font-medium text-texto">{a.alias_ubicacion || a.nombre_ubicacion}</span>
-                              {a.ruta_completa && (
-                                <span className="text-texto-muted text-[10px] truncate">{a.ruta_completa}</span>
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Selector buscable: Espacio de Trabajo */}
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => { setEspacioDropdownAbierto((v) => !v); setAreaDropdownAbierto(false) }}
-                      className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition ${
-                        espacioSel != null
-                          ? 'bg-primario-muy-claro border-primario text-primario font-medium'
-                          : 'bg-white border-borde text-texto-muted hover:text-texto'
-                      }`}
-                    >
-                      <Sparkles size={13} />
-                      <span className="max-w-[180px] truncate">
-                        {espacioSelObj ? espacioSelObj.nombre_espacio : 'Espacio (todos)'}
-                      </span>
-                      {espacioSel != null && (
-                        <X
-                          size={13}
-                          className="hover:text-error"
-                          onClick={(e) => { e.stopPropagation(); setEspacioSel(null); setEspacioDropdownAbierto(false) }}
-                        />
-                      )}
-                    </button>
-                    {espacioDropdownAbierto && (
-                      <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-borde rounded-lg shadow-lg z-20 max-h-64 overflow-hidden flex flex-col">
-                        <div className="p-2 border-b border-borde">
-                          <Input
-                            autoFocus
-                            placeholder="Buscar espacio…"
-                            value={espacioBusqueda}
-                            onChange={(e) => setEspacioBusqueda(e.target.value)}
-                            icono={<Search size={13} />}
-                          />
-                        </div>
-                        <div className="overflow-y-auto flex-1 text-xs">
-                          {espaciosFiltrados.length === 0 ? (
-                            <p className="text-texto-muted text-center py-3">No tienes espacios todavía</p>
-                          ) : espaciosFiltrados.map((e) => (
-                            <button
-                              key={e.id_espacio}
-                              onClick={() => {
-                                setEspacioSel(e.id_espacio)
-                                setEspacioDropdownAbierto(false)
-                                setEspacioBusqueda('')
-                              }}
-                              className="w-full text-left px-3 py-2 hover:bg-primario-muy-claro flex items-center gap-2"
-                            >
-                              <Insignia variante={e.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
-                                {e.tipo_espacio}
-                              </Insignia>
-                              <span className="flex-1 font-medium text-texto truncate">{e.nombre_espacio}</span>
-                              <span className="text-texto-muted text-[10px]">{e.total_documentos ?? 0}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Botón Crear Espacio */}
-                  <button
-                    type="button"
-                    onClick={abrirModalCrear}
-                    className="ml-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-primario/40 text-primario hover:bg-primario-muy-claro transition"
-                    title="Crear un Espacio de Trabajo a partir del filtro actual"
-                  >
-                    <FolderPlus size={13} />
-                    <span>Crear Espacio</span>
-                  </button>
-                </div>
               </>
             )}
+
+            {/* ── Barra inferior de filtros + Crear Espacio (siempre visible) ── */}
+            <div className="border-t border-borde bg-fondo px-3 py-2 flex flex-wrap items-center gap-2">
+              {/* Selector buscable: Área */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setAreaDropdownAbierto((v) => !v); setEspacioDropdownAbierto(false) }}
+                  className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition ${
+                    areaSel
+                      ? 'bg-primario-muy-claro border-primario text-primario font-medium'
+                      : 'bg-white border-borde text-texto-muted hover:text-texto'
+                  }`}
+                >
+                  <FolderOpen size={13} />
+                  <span className="max-w-[180px] truncate">
+                    {areaSelObj ? (areaSelObj.alias_ubicacion || areaSelObj.nombre_ubicacion) : 'Área (todas)'}
+                  </span>
+                  {areaSel && (
+                    <X
+                      size={13}
+                      className="hover:text-error"
+                      onClick={(e) => { e.stopPropagation(); setAreaSel(''); setAreaDropdownAbierto(false) }}
+                    />
+                  )}
+                </button>
+                {areaDropdownAbierto && (
+                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-borde rounded-lg shadow-lg z-20 max-h-64 overflow-hidden flex flex-col">
+                    <div className="p-2 border-b border-borde">
+                      <Input
+                        autoFocus
+                        placeholder="Buscar área…"
+                        value={areaBusqueda}
+                        onChange={(e) => setAreaBusqueda(e.target.value)}
+                        icono={<Search size={13} />}
+                      />
+                    </div>
+                    <div className="overflow-y-auto flex-1 text-xs">
+                      {areasFiltradas.length === 0 ? (
+                        <p className="text-texto-muted text-center py-3">Sin coincidencias</p>
+                      ) : areasFiltradas.map((a) => (
+                        <button
+                          key={a.codigo_ubicacion}
+                          onClick={() => {
+                            setAreaSel(a.codigo_ubicacion)
+                            setAreaDropdownAbierto(false)
+                            setAreaBusqueda('')
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-primario-muy-claro flex flex-col"
+                        >
+                          <span className="font-medium text-texto">{a.alias_ubicacion || a.nombre_ubicacion}</span>
+                          {a.ruta_completa && (
+                            <span className="text-texto-muted text-[10px] truncate">{a.ruta_completa}</span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Selector buscable: Espacio de Trabajo */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setEspacioDropdownAbierto((v) => !v); setAreaDropdownAbierto(false) }}
+                  className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition ${
+                    espacioSel != null
+                      ? 'bg-primario-muy-claro border-primario text-primario font-medium'
+                      : 'bg-white border-borde text-texto-muted hover:text-texto'
+                  }`}
+                >
+                  <Sparkles size={13} />
+                  <span className="max-w-[180px] truncate">
+                    {espacioSelObj ? espacioSelObj.nombre_espacio : 'Espacio (todos)'}
+                  </span>
+                  {espacioSel != null && (
+                    <X
+                      size={13}
+                      className="hover:text-error"
+                      onClick={(e) => { e.stopPropagation(); setEspacioSel(null); setEspacioDropdownAbierto(false) }}
+                    />
+                  )}
+                </button>
+                {espacioDropdownAbierto && (
+                  <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-borde rounded-lg shadow-lg z-20 max-h-64 overflow-hidden flex flex-col">
+                    <div className="p-2 border-b border-borde">
+                      <Input
+                        autoFocus
+                        placeholder="Buscar espacio…"
+                        value={espacioBusqueda}
+                        onChange={(e) => setEspacioBusqueda(e.target.value)}
+                        icono={<Search size={13} />}
+                      />
+                    </div>
+                    <div className="overflow-y-auto flex-1 text-xs">
+                      {espaciosFiltrados.length === 0 ? (
+                        <p className="text-texto-muted text-center py-3">No tienes espacios todavía</p>
+                      ) : espaciosFiltrados.map((e) => (
+                        <button
+                          key={e.id_espacio}
+                          onClick={() => {
+                            setEspacioSel(e.id_espacio)
+                            setEspacioDropdownAbierto(false)
+                            setEspacioBusqueda('')
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-primario-muy-claro flex items-center gap-2"
+                        >
+                          <Insignia variante={e.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
+                            {e.tipo_espacio}
+                          </Insignia>
+                          <span className="flex-1 font-medium text-texto truncate">{e.nombre_espacio}</span>
+                          <span className="text-texto-muted text-[10px]">{e.total_documentos ?? 0}</span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Botón Crear Espacio */}
+              <button
+                type="button"
+                onClick={abrirModalCrear}
+                className="ml-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-primario/40 text-primario hover:bg-primario-muy-claro transition"
+                title="Crear un Espacio de Trabajo a partir del filtro actual"
+              >
+                <FolderPlus size={13} />
+                <span>Crear Espacio</span>
+              </button>
+            </div>
           </main>
         </div>
       )}
