@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown } from 'lucide-react'
+import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -1135,6 +1135,62 @@ function Mensaje({ mensaje, streaming = false }: { mensaje: ChatMensaje; streami
                     <a href={hrefSeguro} target={esInterno ? undefined : '_blank'} rel={esInterno ? undefined : 'noopener noreferrer'} className="text-primario underline hover:text-primario-hover" {...props}>
                       {children}
                     </a>
+                  )
+                },
+                blockquote: ({ children, ...props }) => {
+                  // Detecta avisos del sistema marcados con :information_source:
+                  // (la tool entregar_mensaje_pendiente le indica al LLM que use
+                  // ese marcador). Si esta presente, renderiza con icono + italica
+                  // sutil; si no, blockquote normal.
+                  const obtenerTexto = (n: unknown): string => {
+                    if (typeof n === 'string') return n
+                    if (Array.isArray(n)) return n.map(obtenerTexto).join('')
+                    if (n && typeof n === 'object' && 'props' in n) {
+                      const p = (n as { props?: { children?: unknown } }).props
+                      return obtenerTexto(p?.children)
+                    }
+                    return ''
+                  }
+                  const texto = obtenerTexto(children).trim()
+                  const esAviso = /^:information_source:/i.test(texto)
+                  if (!esAviso) {
+                    return (
+                      <blockquote className="my-2 pl-3 border-l-2 border-borde italic text-texto-muted" {...props}>
+                        {children}
+                      </blockquote>
+                    )
+                  }
+                  // Limpia recursivamente la primera ocurrencia del marcador en el texto
+                  let limpiado = false
+                  const limpiar = (n: unknown): unknown => {
+                    if (limpiado) return n
+                    if (typeof n === 'string') {
+                      const reemplazo = n.replace(/:information_source:\s*/i, '')
+                      if (reemplazo !== n) limpiado = true
+                      return reemplazo
+                    }
+                    if (Array.isArray(n)) return n.map(limpiar)
+                    if (n && typeof n === 'object' && 'props' in n) {
+                      const elem = n as React.ReactElement
+                      const innerProps = (elem.props ?? {}) as { children?: unknown }
+                      const inner = innerProps.children
+                      const nuevoInner = limpiar(inner)
+                      if (nuevoInner !== inner) {
+                        return { ...elem, props: { ...innerProps, children: nuevoInner } }
+                      }
+                    }
+                    return n
+                  }
+                  const childrenLimpio = limpiar(children) as React.ReactNode
+                  return (
+                    <blockquote className="my-2 px-3 py-2 border-l-4 border-primario/40 bg-primario-muy-claro/30 rounded-r">
+                      <div className="flex gap-2 items-start">
+                        <Info size={14} className="mt-1 flex-shrink-0 text-primario" />
+                        <div className="italic text-texto-muted prose-p:my-0.5 prose-p:text-sm">
+                          {childrenLimpio}
+                        </div>
+                      </div>
+                    </blockquote>
                   )
                 },
               }}
