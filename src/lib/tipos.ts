@@ -306,11 +306,15 @@ export interface Aplicacion {
 
 // ─── Parámetros ──────────────────────────────────────────────────────────────
 
+export type TipoWidget = 'INPUT' | 'TEXTAREA' | 'SELECT' | 'BOOLEAN'
+
 export interface ParametroGeneral {
   categoria_parametro: string
   tipo_parametro: string
   valor_parametro: string
   descripcion?: string
+  system_prompt?: string | null
+  tipo_widget?: TipoWidget
 }
 
 export interface ParametroGrupo {

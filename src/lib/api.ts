@@ -511,7 +511,7 @@ export const parametrosApi = {
     api.put(`/parametros/generales/${codigo}`, { valor }),
   upsertGenerales: (datos: {
     categoria_parametro: string; tipo_parametro: string; valor_parametro: string;
-    descripcion?: string;
+    descripcion?: string; system_prompt?: string | null;
   }) =>
     api.put('/parametros/generales', datos),
   eliminarGeneral: (categoria: string, tipo: string) =>

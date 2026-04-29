@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, Search, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Download, FileText } from 'lucide-react'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,7 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { parametrosApi } from '@/lib/api'
 import { usePaginacion } from '@/hooks/usePaginacion'
-import type { ParametroGeneral } from '@/lib/tipos'
+import type { ParametroGeneral, TipoWidget } from '@/lib/tipos'
 
 const inputCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
@@ -33,6 +33,8 @@ type FormData = {
   tipo_parametro: string
   valor_parametro: string
   descripcion: string
+  system_prompt: string
+  tipo_widget: TipoWidget
 }
 
 const FORM_VACIO: FormData = {
@@ -40,6 +42,8 @@ const FORM_VACIO: FormData = {
   tipo_parametro: '',
   valor_parametro: '',
   descripcion: '',
+  system_prompt: '',
+  tipo_widget: 'INPUT',
 }
 
 export default function PaginaValoresParametrosGenerales() {
@@ -115,6 +119,8 @@ export default function PaginaValoresParametrosGenerales() {
       tipo_parametro: p.tipo_parametro,
       valor_parametro: p.valor_parametro || '',
       descripcion: p.descripcion || '',
+      system_prompt: p.system_prompt || '',
+      tipo_widget: p.tipo_widget || 'INPUT',
     })
     setError('')
     setModal(true)
@@ -131,8 +137,9 @@ export default function PaginaValoresParametrosGenerales() {
       await parametrosApi.upsertGenerales({
         categoria_parametro: form.categoria_parametro.toUpperCase().trim(),
         tipo_parametro: form.tipo_parametro.toUpperCase().trim(),
-        valor_parametro: form.valor_parametro,
+        valor_parametro: form.valor_parametro || (form.tipo_widget === 'TEXTAREA' ? '(ver system_prompt)' : ''),
         descripcion: form.descripcion || undefined,
+        system_prompt: form.tipo_widget === 'TEXTAREA' ? (form.system_prompt || null) : undefined,
       })
       if (cerrar) {
         setModal(false)
@@ -271,9 +278,18 @@ export default function PaginaValoresParametrosGenerales() {
                       </code>
                     </TablaTd>
                     <TablaTd className="max-w-[280px]" onDoubleClick={() => abrirEditar(p)}>
-                      <span className="block truncate text-sm font-mono" title={p.valor_parametro}>
-                        {p.valor_parametro || <span className="text-texto-light italic">{t('sinValor')}</span>}
-                      </span>
+                      {p.tipo_widget === 'TEXTAREA' ? (
+                        <span
+                          className="inline-flex items-center gap-1 text-xs text-texto-muted italic"
+                          title={p.system_prompt?.slice(0, 400) || ''}
+                        >
+                          <FileText size={12} /> {(p.system_prompt?.length || 0).toLocaleString()} chars
+                        </span>
+                      ) : (
+                        <span className="block truncate text-sm font-mono" title={p.valor_parametro}>
+                          {p.valor_parametro || <span className="text-texto-light italic">{t('sinValor')}</span>}
+                        </span>
+                      )}
                     </TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
@@ -321,7 +337,7 @@ export default function PaginaValoresParametrosGenerales() {
         titulo={editando
           ? t('editarTitulo', { categoria: editando.categoria_parametro, tipo: editando.tipo_parametro })
           : t('nuevoTitulo')}
-        className="w-[620px] max-w-[95vw]"
+        className={form.tipo_widget === 'TEXTAREA' ? 'w-[920px] max-w-[95vw]' : 'w-[620px] max-w-[95vw]'}
       >
         <div className="flex flex-col gap-4">
           <div className="grid grid-cols-2 gap-3">
@@ -347,15 +363,33 @@ export default function PaginaValoresParametrosGenerales() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaValor')}</label>
-            <input
-              className={inputCls}
-              placeholder={t('placeholderValor')}
-              value={form.valor_parametro}
-              onChange={(e) => setForm({ ...form, valor_parametro: e.target.value })}
-            />
-          </div>
+          {form.tipo_widget === 'TEXTAREA' ? (
+            <div>
+              <label className="block text-sm font-medium text-texto mb-1">
+                System prompt
+              </label>
+              <textarea
+                className={inputCls + ' font-mono text-xs'}
+                rows={18}
+                placeholder="Texto largo del prompt…"
+                value={form.system_prompt}
+                onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
+              />
+              <p className="text-xs text-texto-muted mt-1">
+                {form.system_prompt.length.toLocaleString()} caracteres
+              </p>
+            </div>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaValor')}</label>
+              <input
+                className={inputCls}
+                placeholder={t('placeholderValor')}
+                value={form.valor_parametro}
+                onChange={(e) => setForm({ ...form, valor_parametro: e.target.value })}
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaDescripcion')}</label>
