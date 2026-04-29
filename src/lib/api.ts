@@ -147,6 +147,20 @@ function _esErrorPostgres(msg: string): boolean {
   return /['"]code['"]\s*:\s*['"][0-9A-Z]{5}['"]/.test(msg)
 }
 
+// Detecta si el cuerpo de la respuesta es un ErrorResponse del handler global
+function _esErrorResponse(data: unknown): data is {
+  mensaje_usuario: string
+  codigo_proceso: string
+  sugerencia?: string | null
+} {
+  return (
+    typeof data === 'object' &&
+    data !== null &&
+    'codigo_proceso' in data &&
+    'mensaje_usuario' in data
+  )
+}
+
 // Interceptor: manejo uniforme de errores
 api.interceptors.response.use(
   (res) => res,
@@ -160,10 +174,23 @@ api.interceptors.response.use(
       return Promise.reject(new Error(msg))
     }
 
-    const detail = (error.response?.data as { detail?: unknown })?.detail
+    const responseData = error.response?.data
+
+    // ── Caso 1: el handler global del backend ya procesó el error (ErrorResponse) ──
+    // Retorna {mensaje_usuario, sugerencia, codigo_proceso, error_tecnico}
+    if (_esErrorResponse(responseData)) {
+      const partes: string[] = [responseData.mensaje_usuario]
+      if (responseData.sugerencia) partes.push(`Sugerencia: ${responseData.sugerencia}`)
+      if (responseData.codigo_proceso && responseData.codigo_proceso !== 'ERR-SIN-REGISTRO') {
+        partes.push(`Referencia: ${responseData.codigo_proceso}`)
+      }
+      return Promise.reject(new Error(partes.join('\n')))
+    }
+
+    // ── Caso 2: error estándar de FastAPI (detail: string | array) ──
+    const detail = (responseData as { detail?: unknown })?.detail
     let msg: string
     if (Array.isArray(detail)) {
-      // FastAPI validation errors: [{loc, msg, type}, ...]
       msg = detail.map((e: { msg?: string }) => e.msg || JSON.stringify(e)).join('; ')
     } else if (typeof detail === 'string') {
       msg = detail
@@ -173,11 +200,11 @@ api.interceptors.response.use(
       msg = error.message || 'Error desconocido'
     }
 
-    // Si es un error PostgreSQL, pedirle al LLM que lo diagnostique
+    // ── Caso 3: error PostgreSQL sin handler global (4xx que no pasan por handler) ──
+    // Llama a /utils/explicar-error para obtener mensaje traducido
     if (_esErrorPostgres(msg)) {
       try {
         const token = await obtenerToken()
-        // Extrae endpoint y método de la request original (contexto para el LLM)
         const endpoint = error.config?.url || null
         const metodo = error.config?.method?.toUpperCase() || null
         const r = await fetch(`${BASE_URL}/utils/explicar-error`, {
@@ -186,36 +213,23 @@ api.interceptors.response.use(
             'Content-Type': 'application/json',
             ...(token ? { Authorization: `Bearer ${token}` } : {}),
           },
-          body: JSON.stringify({
-            error_tecnico: msg,
-            endpoint,
-            metodo,
-          }),
+          body: JSON.stringify({ error_tecnico: msg, endpoint, metodo }),
         })
         if (r.ok) {
           const data = await r.json()
           if (data.es_error_tecnico && data.mensaje_usuario) {
-            const partes: string[] = []
-            // Prefijo de categoría (icono textual)
             const iconoCat: Record<string, string> = {
-              dato_usuario: 'ℹ️',
-              configuracion: '⚙️',
-              bug: '⚠️',
-              desconocido: '',
+              dato_usuario: 'ℹ️', configuracion: '⚙️', bug: '⚠️', desconocido: '',
             }
             const icono = iconoCat[data.categoria as string] || ''
-            partes.push(`${icono ? icono + ' ' : ''}${data.mensaje_usuario}`.trim())
-            if (data.sugerencia) {
-              partes.push(`\nSugerencia: ${data.sugerencia}`)
-            }
-            if (data.detalle_tecnico) {
-              partes.push(`\nDetalle técnico: ${data.detalle_tecnico}`)
-            }
+            const partes: string[] = [`${icono ? icono + ' ' : ''}${data.mensaje_usuario}`.trim()]
+            if (data.sugerencia) partes.push(`Sugerencia: ${data.sugerencia}`)
+            if (data.detalle_tecnico) partes.push(`Detalle técnico: ${data.detalle_tecnico}`)
             msg = partes.join('\n')
           }
         }
       } catch {
-        // Mantener el mensaje original si falla la llamada al LLM
+        // mantener el mensaje original si falla la llamada al LLM
       }
     }
 

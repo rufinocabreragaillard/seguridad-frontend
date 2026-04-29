@@ -9,6 +9,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useTranslations } from 'next-intl'
 import { AvisoPagina } from '@/components/ui/aviso-pagina'
 import { limpiarAvisos } from '@/lib/avisos-pagina'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('layout')
@@ -50,6 +51,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <Header />
         <main className="flex-1 overflow-y-auto p-6">
           <AvisoPagina />
+          <ErrorBoundary>
           {accesoPermitido ? children : (
             <div className="flex flex-col items-center justify-center h-full gap-4 text-texto-muted">
               <ShieldAlert className="h-16 w-16 text-red-400" />
@@ -63,6 +65,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </button>
             </div>
           )}
+          </ErrorBoundary>
         </main>
       </div>
     </div>
