@@ -1769,6 +1769,8 @@ export interface PlantillaMensaje {
   cuerpo: string
   prompt_insert?: string | null
   system_prompt?: string | null
+  python_insert?: string | null
+  python_editado_manual?: boolean
   id_modelo?: number | null
   tipo_disparo?: string | null
   condicion_disparo?: string | null

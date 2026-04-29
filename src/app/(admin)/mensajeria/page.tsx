@@ -3,13 +3,15 @@
 import { useCallback, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { Mail, MessageSquare, Smartphone, Send, Plus, Pencil, Trash2, Play, RefreshCw } from 'lucide-react'
+import { Mail, MessageSquare, Smartphone, Plus, Pencil, Trash2, Play, RefreshCw } from 'lucide-react'
 
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Paginador } from '@/components/ui/paginador'
+import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
+import { TabPrompts } from '@/components/ui/tab-prompts'
 import {
   Tabla,
   TablaCabecera,
@@ -92,6 +94,7 @@ function TabPlantillas() {
   const [aEliminar, setAEliminar] = useState<PlantillaMensaje | null>(null)
   const [previsualizacion, setPrevisualizacion] = useState<PlantillaProbarResp | null>(null)
   const [enviando, setEnviando] = useState(false)
+  const [tabModal, setTabModal] = useState<'datos' | 'system_prompt' | 'prompt_insert'>('datos')
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -130,15 +133,17 @@ function TabPlantillas() {
       requiere_accion: false,
     })
     setPrevisualizacion(null)
+    setTabModal('datos')
   }
 
   const abrirEditar = (p: PlantillaMensaje) => {
     setModoCrear(false)
     setEditando({ ...p })
     setPrevisualizacion(null)
+    setTabModal('datos')
   }
 
-  const guardar = async () => {
+  const guardar = async (opts: { cerrar: boolean } = { cerrar: true }) => {
     if (!editando) return
     setEnviando(true)
     try {
@@ -148,14 +153,24 @@ function TabPlantillas() {
           setEnviando(false)
           return
         }
-        await mensajeriaApi.crearPlantilla(editando)
+        const creada = await mensajeriaApi.crearPlantilla(editando)
         toast.success('Plantilla creada')
+        if (opts.cerrar) {
+          setEditando(null)
+        } else {
+          setModoCrear(false)
+          setEditando({ ...creada })
+        }
       } else if (editando.codigo_plantilla) {
         const { codigo_plantilla, ...datos } = editando
-        await mensajeriaApi.actualizarPlantilla(codigo_plantilla, datos)
+        const actualizada = await mensajeriaApi.actualizarPlantilla(codigo_plantilla, datos)
         toast.success('Plantilla actualizada')
+        if (opts.cerrar) {
+          setEditando(null)
+        } else {
+          setEditando({ ...actualizada })
+        }
       }
-      setEditando(null)
       cargar()
     } catch (e) {
       toast.error('Error al guardar', e instanceof Error ? e.message : undefined)
@@ -283,156 +298,219 @@ function TabPlantillas() {
           titulo={modoCrear ? 'Nueva plantilla' : `Editar: ${editando.codigo_plantilla}`}
           className="max-w-3xl"
         >
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-texto-muted">Código</label>
-              <Input
-                value={editando.codigo_plantilla || ''}
-                onChange={(e) => setEditando({ ...editando, codigo_plantilla: e.target.value.toUpperCase() })}
-                disabled={!modoCrear}
-              />
-            </div>
-            <div>
-              <label className="text-xs text-texto-muted">Canal</label>
-              <select
-                value={editando.codigo_canal || ''}
-                onChange={(e) => setEditando({ ...editando, codigo_canal: e.target.value })}
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm"
+          {/* Lenguetas */}
+          <div className="flex border-b border-borde mb-4">
+            {([
+              { key: 'datos', label: 'Datos' },
+              { key: 'system_prompt', label: 'System Prompt' },
+              { key: 'prompt_insert', label: 'Prompt Insert' },
+            ] as const).map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setTabModal(key)}
+                className={`flex-1 text-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+                  tabModal === key
+                    ? 'border-primario text-primario'
+                    : 'border-transparent text-texto-muted hover:text-texto'
+                }`}
               >
-                {canales.map((c) => (
-                  <option key={c.codigo_canal} value={c.codigo_canal}>{c.nombre_canal}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-texto-muted">Tipo de evento</label>
-              <Input
-                value={editando.tipo_evento || ''}
-                onChange={(e) => setEditando({ ...editando, tipo_evento: e.target.value.toUpperCase() })}
-                placeholder="BIENVENIDA, VENCE_PRUEBA..."
-              />
-            </div>
-            <div>
-              <label className="text-xs text-texto-muted">Asunto</label>
-              <Input
-                value={editando.asunto || ''}
-                onChange={(e) => setEditando({ ...editando, asunto: e.target.value })}
-              />
-            </div>
-
-            <div className="col-span-2">
-              <label className="text-xs text-texto-muted">Cuerpo (texto fijo, soporta markdown y placeholders {`{nombre_usuario}`}, {`{codigo_grupo}`}...)</label>
-              <textarea
-                value={editando.cuerpo || ''}
-                onChange={(e) => setEditando({ ...editando, cuerpo: e.target.value })}
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm font-mono"
-                rows={5}
-              />
-            </div>
-
-            <div>
-              <label className="text-xs text-texto-muted">Tipo de disparo</label>
-              <select
-                value={editando.tipo_disparo || ''}
-                onChange={(e) => setEditando({ ...editando, tipo_disparo: e.target.value || null })}
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm"
-              >
-                {TIPOS_DISPARO.map((t) => (
-                  <option key={t} value={t}>{t || '— sin definir —'}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-texto-muted">Frecuencia</label>
-              <select
-                value={editando.frecuencia || ''}
-                onChange={(e) => setEditando({ ...editando, frecuencia: e.target.value || null })}
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm"
-              >
-                {FRECUENCIAS.map((f) => (
-                  <option key={f} value={f}>{f || '— sin definir —'}</option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-xs text-texto-muted">Prioridad (menor = primero)</label>
-              <Input
-                type="number"
-                value={editando.prioridad ?? 100}
-                onChange={(e) => setEditando({ ...editando, prioridad: Number(e.target.value) })}
-              />
-            </div>
-            <div className="flex items-end">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editando.requiere_accion ?? false}
-                  onChange={(e) => setEditando({ ...editando, requiere_accion: e.target.checked })}
-                />
-                <span className="text-sm">Requiere acción del usuario</span>
-              </label>
-            </div>
-
-            <div className="col-span-2 border-t border-borde pt-3 mt-2">
-              <p className="text-xs text-texto-muted mb-2">
-                <strong>Generación via LLM (opcional):</strong> si llenas <code>system_prompt</code> + <code>prompt_insert</code> + un modelo,
-                el motor genera el cuerpo con LLM al disparar.
-              </p>
-              <label className="text-xs text-texto-muted">System prompt</label>
-              <textarea
-                value={editando.system_prompt || ''}
-                onChange={(e) => setEditando({ ...editando, system_prompt: e.target.value })}
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm font-mono"
-                rows={3}
-              />
-              <label className="text-xs text-texto-muted mt-2 block">Prompt insert</label>
-              <textarea
-                value={editando.prompt_insert || ''}
-                onChange={(e) => setEditando({ ...editando, prompt_insert: e.target.value })}
-                className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm font-mono"
-                rows={3}
-              />
-              <label className="text-xs text-texto-muted mt-2 block">id_modelo (registro_llm)</label>
-              <Input
-                type="number"
-                value={editando.id_modelo ?? ''}
-                onChange={(e) => setEditando({ ...editando, id_modelo: e.target.value ? Number(e.target.value) : null })}
-              />
-            </div>
+                {label}
+              </button>
+            ))}
           </div>
 
-          {/* Probador */}
-          {!modoCrear && (
-            <div className="border-t border-borde mt-4 pt-3">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="text-sm font-semibold">Probar</h3>
-                <Boton variante="contorno" tamano="sm" onClick={probar} disabled={enviando}>
-                  <Play size={14} className="mr-1" /> Generar preview
-                </Boton>
-              </div>
-              {previsualizacion && (
-                <div className="bg-fondo rounded-lg p-3 border border-borde">
-                  {previsualizacion.asunto && (
-                    <div className="text-xs text-texto-muted mb-1">
-                      Asunto: <span className="text-texto font-medium">{previsualizacion.asunto}</span>
-                    </div>
-                  )}
-                  <div className="prose prose-sm max-w-none text-texto">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>{previsualizacion.cuerpo}</ReactMarkdown>
-                  </div>
+          <div className="flex flex-col gap-4 min-h-[420px]">
+            {tabModal === 'datos' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs text-texto-muted">Código</label>
+                  <Input
+                    value={editando.codigo_plantilla || ''}
+                    onChange={(e) => setEditando({ ...editando, codigo_plantilla: e.target.value.toUpperCase() })}
+                    disabled={!modoCrear}
+                  />
                 </div>
-              )}
-            </div>
-          )}
+                <div>
+                  <label className="text-xs text-texto-muted">Canal</label>
+                  <select
+                    value={editando.codigo_canal || ''}
+                    onChange={(e) => setEditando({ ...editando, codigo_canal: e.target.value })}
+                    className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm"
+                  >
+                    {canales.map((c) => (
+                      <option key={c.codigo_canal} value={c.codigo_canal}>{c.nombre_canal}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-texto-muted">Tipo de evento</label>
+                  <Input
+                    value={editando.tipo_evento || ''}
+                    onChange={(e) => setEditando({ ...editando, tipo_evento: e.target.value.toUpperCase() })}
+                    placeholder="BIENVENIDA, VENCE_PRUEBA..."
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-texto-muted">Asunto</label>
+                  <Input
+                    value={editando.asunto || ''}
+                    onChange={(e) => setEditando({ ...editando, asunto: e.target.value })}
+                  />
+                </div>
 
-          <div className="flex justify-end gap-2 mt-4 pt-3 border-t border-borde">
-            <Boton variante="secundario" onClick={() => setEditando(null)} disabled={enviando}>
-              Cancelar
-            </Boton>
-            <Boton variante="primario" onClick={guardar} disabled={enviando}>
-              <Send size={14} className="mr-1" /> {modoCrear ? 'Crear' : 'Guardar'}
-            </Boton>
+                <div className="col-span-2">
+                  <label className="text-xs text-texto-muted">Cuerpo (texto fijo, soporta markdown y placeholders {`{nombre_usuario}`}, {`{codigo_grupo}`}...)</label>
+                  <textarea
+                    value={editando.cuerpo || ''}
+                    onChange={(e) => setEditando({ ...editando, cuerpo: e.target.value })}
+                    className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm font-mono"
+                    rows={5}
+                  />
+                </div>
+
+                <div>
+                  <label className="text-xs text-texto-muted">Tipo de disparo</label>
+                  <select
+                    value={editando.tipo_disparo || ''}
+                    onChange={(e) => setEditando({ ...editando, tipo_disparo: e.target.value || null })}
+                    className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm"
+                  >
+                    {TIPOS_DISPARO.map((t) => (
+                      <option key={t} value={t}>{t || '— sin definir —'}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-xs text-texto-muted">Frecuencia</label>
+                  <select
+                    value={editando.frecuencia || ''}
+                    onChange={(e) => setEditando({ ...editando, frecuencia: e.target.value || null })}
+                    className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm"
+                  >
+                    {FRECUENCIAS.map((f) => (
+                      <option key={f} value={f}>{f || '— sin definir —'}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-texto-muted">Prioridad (menor = primero)</label>
+                  <Input
+                    type="number"
+                    value={editando.prioridad ?? 100}
+                    onChange={(e) => setEditando({ ...editando, prioridad: Number(e.target.value) })}
+                  />
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editando.requiere_accion ?? false}
+                      onChange={(e) => setEditando({ ...editando, requiere_accion: e.target.checked })}
+                    />
+                    <span className="text-sm">Requiere acción del usuario</span>
+                  </label>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="text-xs text-texto-muted">id_modelo (registro_llm)</label>
+                  <Input
+                    type="number"
+                    value={editando.id_modelo ?? ''}
+                    onChange={(e) => setEditando({ ...editando, id_modelo: e.target.value ? Number(e.target.value) : null })}
+                  />
+                </div>
+              </div>
+            )}
+
+            {tabModal === 'system_prompt' && (
+              <TabPrompts
+                tabla="plantillas_mensaje"
+                pkColumna="codigo_plantilla"
+                pkValor={editando.codigo_plantilla ?? null}
+                campos={{
+                  prompt_insert: editando.prompt_insert ?? null,
+                  prompt_update: null,
+                  python_insert: editando.python_insert ?? null,
+                  python_update: null,
+                  system_prompt: editando.system_prompt ?? null,
+                  javascript: null,
+                  python_editado_manual: editando.python_editado_manual ?? false,
+                  javascript_editado_manual: false,
+                }}
+                onCampoCambiado={(campo, valor) => setEditando({ ...editando, [campo]: valor })}
+                mostrarSystemPrompt={true}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
+                mostrarJavaScript={false}
+              />
+            )}
+
+            {tabModal === 'prompt_insert' && (
+              <>
+                <p className="text-xs text-texto-muted">
+                  <strong>Generación via LLM (opcional):</strong> si llenas <code>system_prompt</code> + <code>prompt_insert</code> + un modelo,
+                  el motor genera el cuerpo con LLM al disparar.
+                </p>
+                <TabPrompts
+                  tabla="plantillas_mensaje"
+                  pkColumna="codigo_plantilla"
+                  pkValor={editando.codigo_plantilla ?? null}
+                  campos={{
+                    prompt_insert: editando.prompt_insert ?? null,
+                    prompt_update: null,
+                    python_insert: editando.python_insert ?? null,
+                    python_update: null,
+                    system_prompt: editando.system_prompt ?? null,
+                    javascript: null,
+                    python_editado_manual: editando.python_editado_manual ?? false,
+                    javascript_editado_manual: false,
+                  }}
+                  onCampoCambiado={(campo, valor) => setEditando({ ...editando, [campo]: valor })}
+                  mostrarSystemPrompt={false}
+                  mostrarPromptInsert={true}
+                  mostrarPromptUpdate={false}
+                  mostrarPythonInsert={true}
+                  mostrarPythonUpdate={false}
+                  mostrarJavaScript={false}
+                />
+
+                {/* Probador (solo en edición) */}
+                {!modoCrear && (
+                  <div className="border-t border-borde pt-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <h3 className="text-sm font-semibold">Probar</h3>
+                      <Boton variante="contorno" tamano="sm" onClick={probar} cargando={enviando}>
+                        <Play size={14} className="mr-1" /> Generar preview
+                      </Boton>
+                    </div>
+                    {previsualizacion && (
+                      <div className="bg-fondo rounded-lg p-3 border border-borde">
+                        {previsualizacion.asunto && (
+                          <div className="text-xs text-texto-muted mb-1">
+                            Asunto: <span className="text-texto font-medium">{previsualizacion.asunto}</span>
+                          </div>
+                        )}
+                        <div className="prose prose-sm max-w-none text-texto">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>{previsualizacion.cuerpo}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            <PieBotonesModal
+              editando={!modoCrear}
+              onGuardar={() => guardar({ cerrar: false })}
+              onGuardarYSalir={() => guardar({ cerrar: true })}
+              onCerrar={() => setEditando(null)}
+              cargando={enviando}
+            />
           </div>
         </Modal>
       )}
