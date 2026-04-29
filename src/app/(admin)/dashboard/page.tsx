@@ -135,7 +135,6 @@ export default function PaginaDashboard() {
             <div className="flex flex-col gap-2">
               {[
                 { nombre: t('nuevoUsuario'), href: '/usuarios', icono: Users },
-                { nombre: t('gestionarRoles'), href: '/roles-administracion', icono: ShieldCheck },
                 { nombre: t('verEntidades'), href: '/entidades', icono: Building2 },
                 { nombre: t('parametros'), href: '/parametros', icono: ClipboardList },
               ].map((acc) => {
