@@ -82,15 +82,19 @@ export function Header({ titulo }: { titulo?: string }) {
   }
 
   const handleCambiarLocale = async (nuevoLocale: Locale) => {
-    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
-    document.cookie = `NEXT_LOCALE=${nuevoLocale}; Path=/; Max-Age=31536000; SameSite=Lax${isSecure ? '; Secure' : ''}`
+    // BD primero: si falla, no tocar cookie ni recargar para evitar que AuthContext
+    // detecte cookie ≠ BD en el próximo render y revierta el cambio.
     if (usuario?.codigo_usuario) {
       try {
         await usuariosApi.actualizar(usuario.codigo_usuario, { locale: nuevoLocale })
       } catch (e) {
         console.error('[locale] error al guardar preferencia:', e)
+        alert('No se pudo guardar el idioma. Intenta nuevamente.')
+        return
       }
     }
+    const isSecure = typeof window !== 'undefined' && window.location.protocol === 'https:'
+    document.cookie = `NEXT_LOCALE=${nuevoLocale}; Path=/; Max-Age=31536000; SameSite=Lax${isSecure ? '; Secure' : ''}`
     window.location.href = window.location.pathname + window.location.search
   }
 
