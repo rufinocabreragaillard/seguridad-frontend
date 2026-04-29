@@ -141,6 +141,7 @@ function PaginaProcesarDocumentosInterna() {
   const [nParallelEdit, setNParallelEdit] = useState<number>(10)
   const [guardandoParalel, setGuardandoParalel] = useState(false)
   const [tope, setTope] = useState<string>('')  // vacío = sin tope (procesa todo)
+  const [generarResumen, setGenerarResumen] = useState<boolean>(true)
   const [estadoFiltro, setEstadoFiltro] = useState<string>('')  // override de estado para la lista
   const [filtroLibre, setFiltroLibre] = useState<string>('')    // filtro libre de texto (nombre, ubicación, estado, comentarios)
   const [filtroLibreInput, setFiltroLibreInput] = useState<string>('')  // valor del input antes de confirmar
@@ -852,6 +853,9 @@ function PaginaProcesarDocumentosInterna() {
     // 1. Encolar docs: INSERT masivo con los mismos filtros activos en la UI
     //    (estado origen, ubicacion, tope, filtro libre de texto).
     try {
+      const opcionesAnalizar = pasoActual.estado_destino === 'ESCANEADO'
+        ? { generar_resumen: generarResumen }
+        : null
       await colaEstadosDocsApi.inicializarPorEstado(
         pasoActual.estado_origen || '',
         estadoDestino,
@@ -860,6 +864,7 @@ function PaginaProcesarDocumentosInterna() {
         ubicacionSel || null,
         filtroEfectivo || null,
         procesoSel || null,
+        opcionesAnalizar,
       )
     } catch {
       setEjecutando(false)
@@ -1272,6 +1277,18 @@ function PaginaProcesarDocumentosInterna() {
                 className="w-20 text-xs border border-borde rounded px-1.5 py-2 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
               />
             </div>
+            {pasoActual?.estado_destino === 'ESCANEADO' && (
+              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={generarResumen}
+                  onChange={(e) => setGenerarResumen(e.target.checked)}
+                  disabled={ejecutando}
+                  className="w-3.5 h-3.5 accent-primario disabled:opacity-50 cursor-pointer"
+                />
+                <span className="text-xs text-texto-muted">Generar resumen</span>
+              </label>
+            )}
           </div>
 
           {/* Conteo + Ejecutar/Detener — misma línea */}
