@@ -111,7 +111,6 @@ export default function PaginaProcesosGrupo() {
           columnaNombre<ProcesoGrupo>(t('colNombre'), (p) => p.nombre_proceso_grupo),
           {
             titulo: t('colTipo'),
-            editaConDobleClic: true,
             render: (p: ProcesoGrupo) => (
               <InsigniaTipo tipo={p.tipo_acceso} />
             ),
@@ -124,7 +123,6 @@ export default function PaginaProcesosGrupo() {
           },
           {
             titulo: t('colCodigo'),
-            editaConDobleClic: true,
             render: (p: ProcesoGrupo) => (
               <span className="text-xs text-texto-muted font-mono">{p.codigo_proceso_grupo}</span>
             ),

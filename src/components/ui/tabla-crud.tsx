@@ -10,9 +10,9 @@ export interface ColumnaDef<T> {
   titulo: string
   className?: string
   render: (item: T) => ReactNode
-  /** Si la celda dispara onEditar al hacer doble click. Por defecto true en columnaNombre */
+  /** Doble-clic abre el modal de edición. Default: true. Setear a false solo para opt-out explícito. */
   editaConDobleClic?: boolean
-  /** Handler de doble click personalizado para esta celda (ej: navegación jerárquica) */
+  /** Handler de doble click personalizado para esta celda (ej: navegación jerárquica). Tiene prioridad sobre editaConDobleClic. */
   onDobleClicCelda?: (item: T) => void
 }
 
@@ -65,7 +65,7 @@ export function TablaCrud<T extends Record<string, unknown>>({
           {columnas.map((col, i) => {
             const dblHandler = col.onDobleClicCelda
               ? () => col.onDobleClicCelda!(item)
-              : col.editaConDobleClic && onEditar
+              : col.editaConDobleClic !== false && onEditar
                 ? () => onEditar(item)
                 : undefined
             return (
@@ -109,7 +109,7 @@ export function TablaCrud<T extends Record<string, unknown>>({
           {columnas.map((col, i) => {
             const dblHandler = col.onDobleClicCelda
               ? () => col.onDobleClicCelda!(item)
-              : col.editaConDobleClic && onEditar
+              : col.editaConDobleClic !== false && onEditar
                 ? () => onEditar(item)
                 : undefined
             return (
@@ -170,22 +170,20 @@ export function TablaCrud<T extends Record<string, unknown>>({
   )
 }
 
-/** Helper: columna de código (con badge mono). Por defecto abre el modal de edición al hacer doble click. */
+/** Helper: columna de código (con badge mono). */
 export function columnaCodigo<T>(titulo: string, getCodigo: (item: T) => string): ColumnaDef<T> {
   return {
     titulo,
-    editaConDobleClic: true,
     render: (item) => (
       <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{getCodigo(item)}</code>
     ),
   }
 }
 
-/** Helper: columna de texto con font-medium. Por defecto abre el modal de edición al hacer doble click. */
+/** Helper: columna de texto con font-medium. */
 export function columnaNombre<T>(titulo: string, getNombre: (item: T) => string): ColumnaDef<T> {
   return {
     titulo,
-    editaConDobleClic: true,
     render: (item) => <span className="font-medium">{getNombre(item)}</span>,
   }
 }

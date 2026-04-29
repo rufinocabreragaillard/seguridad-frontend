@@ -227,7 +227,7 @@ export default function PaginaCargosAdmin() {
       <TablaCrud
         columnas={[
           columnaNombre<Cargo>(t('colNombre'), (c) => c.nombre_cargo),
-          { titulo: t('colAlias'), editaConDobleClic: true, render: (c: Cargo) => c.alias || '—' },
+          { titulo: t('colAlias'), render: (c: Cargo) => c.alias || '—' },
           columnaDescripcion<Cargo>(t('colDescripcion'), (c) => c.descripcion),
           columnaCodigo<Cargo>(t('colCodigo'), (c) => c.codigo_cargo),
         ]}
