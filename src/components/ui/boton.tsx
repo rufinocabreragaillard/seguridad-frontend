@@ -44,7 +44,7 @@ const Boton = forwardRef<HTMLButtonElement, BotonProps>(
 
     const variantes = {
       primario: 'bg-primario text-primario-texto hover:bg-primario-hover focus:ring-primario',
-      secundario: 'bg-primario-light text-white hover:bg-primario-hover focus:ring-primario',
+      secundario: 'bg-slate-500 text-white hover:bg-slate-600 focus:ring-slate-400',
       fantasma: 'bg-transparent text-texto hover:bg-primario-muy-claro focus:ring-primario',
       peligro: 'bg-error text-white hover:bg-red-700 focus:ring-error',
       contorno:
