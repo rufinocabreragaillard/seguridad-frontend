@@ -44,10 +44,10 @@ export function Sidebar() {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const busquedaRef = useRef<HTMLInputElement>(null)
 
-  // Buscador visible para ADMINISTRADOR y cualquier ancestro en la jerarquía (hoy SISTEMA).
+  // Buscador visible solo para SISTEMA (y cualquier ancestro futuro de SISTEMA).
   // Usa el closure table tipo_acceso_grafo, así que se ajusta solo si la jerarquía cambia.
   const { esDescendiente } = useTipoAccesoGrafo()
-  const puedeBuscar = esDescendiente(usuario?.tipo_acceso, 'ADMINISTRADOR')
+  const puedeBuscar = esDescendiente(usuario?.tipo_acceso, 'SISTEMA')
 
   const mostrarTooltip = useCallback((e: React.MouseEvent<HTMLDivElement>, texto: string) => {
     if (timerRef.current) clearTimeout(timerRef.current)
@@ -146,7 +146,7 @@ export function Sidebar() {
         </button>
       </div>
 
-      {/* Buscador de funciones — solo ADMINISTRADOR y superiores en la jerarquía tipo_acceso */}
+      {/* Buscador de funciones — solo SISTEMA (y futuros ancestros) en la jerarquía tipo_acceso */}
       {puedeBuscar && (
         colapsado ? (
           <button
