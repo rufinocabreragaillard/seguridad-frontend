@@ -472,11 +472,6 @@ export default function PaginaEntidades() {
             </div>
           ) : (
             <div className="flex flex-col gap-4 max-w-2xl bg-surface border border-borde rounded-lg p-6">
-              <div>
-                <p className="text-sm text-texto-muted">Grupo activo</p>
-                <p className="text-base font-medium text-texto">{grupo.nombre}</p>
-                <code className="text-xs bg-fondo border border-borde rounded px-1.5 py-0.5 mt-1 inline-block">{grupo.codigo_grupo}</code>
-              </div>
               <Input
                 etiqueta="Alias"
                 value={formGrupo.alias}
