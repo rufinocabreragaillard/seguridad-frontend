@@ -17,7 +17,8 @@ import { usePaginacion } from '@/hooks/usePaginacion'
 import { usuariosApi, rolesApi, entidadesApi, aplicacionesApi, gruposApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Usuario, Rol, Entidad, Area, Aplicacion, Grupo } from '@/lib/tipos'
-import { normalizarTipo, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
+import { normalizarTipo } from '@/lib/tipo-elemento'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -614,7 +615,7 @@ export default function PaginaUsuarios() {
                   <TablaTd className="text-texto-muted" onDoubleClick={() => abrirEditar(u)}>{u.codigo_usuario}</TablaTd>
                   <TablaTd>{u.codigo_rol_principal || <span className="text-texto-light">—</span>}</TablaTd>
                   <TablaTd onDoubleClick={() => abrirEditar(u)}>
-                    <Insignia variante={varianteTipo(u.tipo_acceso)}>{etiquetaTipo(u.tipo_acceso)}</Insignia>
+                    <InsigniaTipo tipo={u.tipo_acceso} />
                   </TablaTd>
                   <TablaTd className="text-texto-muted text-xs">
                     {u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL') : '—'}

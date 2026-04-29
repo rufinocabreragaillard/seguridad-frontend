@@ -2023,5 +2023,10 @@
     "etiquetaNombreEs": "Name in Spanish",
     "placeholderNombreEs": "e.g. Italiano, Chino, Árabe",
     "notaIdiomaNuevo": "The language will be created. To use it in the system, you must first add its message file to the project and deploy."
+  },
+  "tipoElemento": {
+    "USUARIO": "User",
+    "ADMINISTRADOR": "Administration",
+    "SISTEMA": "System"
   }
 }

@@ -15,7 +15,8 @@ import { rolesApi, funcionesApi, aplicacionesApi, registroLLMApi } from '@/lib/a
 import { useAuth } from '@/context/AuthContext'
 import type { Rol, Funcion, Aplicacion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
-import { etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
@@ -567,7 +568,7 @@ export default function PaginaRoles() {
                 >
                   {rolesFiltrados.map((r) => (
                     <SortableRow key={r.id_rol} id={r.id_rol}>
-                      <TablaTd onDoubleClick={() => abrirEditarRol(r)}><Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia></TablaTd>
+                      <TablaTd onDoubleClick={() => abrirEditarRol(r)}><InsigniaTipo tipo={r.tipo_acceso} /></TablaTd>
                       <TablaTd className="text-sm" onDoubleClick={() => abrirEditarRol(r)}>{r.alias_de_rol || '—'}</TablaTd>
                       <TablaTd className="font-medium" onDoubleClick={() => abrirEditarRol(r)}>{r.nombre}</TablaTd>
                       <TablaTd className="text-xs">
@@ -648,7 +649,7 @@ export default function PaginaRoles() {
               ) : funcionesFiltradas.map((f) => (
                 <TablaFila key={f.codigo_funcion}>
                   <TablaTd className="text-xs text-texto-muted">{nombreApp(f.codigo_aplicacion_origen) || '—'}</TablaTd>
-                  <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><Insignia variante={varianteTipo(f.tipo_acceso)}>{etiquetaTipo(f.tipo_acceso)}</Insignia></TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><InsigniaTipo tipo={f.tipo_acceso} /></TablaTd>
                   <TablaTd className="text-sm" onDoubleClick={() => abrirEditarFuncion(f)}>{f.alias_de_funcion || '—'}</TablaTd>
                   <TablaTd className="font-medium" onDoubleClick={() => abrirEditarFuncion(f)}>{f.nombre}</TablaTd>
                   <TablaTd className="text-texto-muted text-xs">{f.icono_de_funcion || '—'}</TablaTd>
@@ -707,7 +708,7 @@ export default function PaginaRoles() {
                   <label className="text-sm font-medium text-texto">Tipo</label>
                   {rolEditando ? (
                     <div className="flex items-center gap-2 py-1">
-                      <Insignia variante={varianteTipo(formRol.tipo_acceso)}>{etiquetaTipo(formRol.tipo_acceso)}</Insignia>
+                      <InsigniaTipo tipo={formRol.tipo_acceso} />
                       <span className="text-xs text-texto-muted">Solo modificable desde la base de datos</span>
                     </div>
                   ) : (

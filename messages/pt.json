@@ -2016,5 +2016,10 @@
     "seccionMios": "Meus",
     "seccionArea": "Por área",
     "seccionEntidad": "Da entidade"
+  },
+  "tipoElemento": {
+    "USUARIO": "Usuário",
+    "ADMINISTRADOR": "Administração",
+    "SISTEMA": "Sistema"
   }
 }

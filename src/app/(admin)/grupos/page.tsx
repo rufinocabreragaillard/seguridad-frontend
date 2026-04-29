@@ -8,6 +8,7 @@ import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Insignia } from '@/components/ui/insignia'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { Modal } from '@/components/ui/modal'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { gruposApi, usuariosApi, entidadesApi, promptsApi } from '@/lib/api'
@@ -15,7 +16,7 @@ import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { useAuth } from '@/context/AuthContext'
 import type { Grupo, Entidad, Usuario } from '@/lib/tipos'
-import { etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -591,7 +592,7 @@ export default function PaginaGrupos() {
                       <SortableRow key={g.codigo_grupo} id={g.codigo_grupo}>
                         <TablaTd onDoubleClick={() => abrirEditarGrupo(g)}><button className={`text-sm font-medium text-left w-full${grupoSeleccionado?.codigo_grupo === g.codigo_grupo ? ' text-primario' : ' text-texto'}`} onClick={() => setGrupoSeleccionado(g)}>{g.nombre}</button></TablaTd>
                         <TablaTd onDoubleClick={() => abrirEditarGrupo(g)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{g.codigo_grupo}</code></TablaTd>
-                        <TablaTd onDoubleClick={() => abrirEditarGrupo(g)}><Insignia variante={varianteTipo(g.tipo_acceso)}>{etiquetaTipo(g.tipo_acceso)}</Insignia></TablaTd>
+                        <TablaTd onDoubleClick={() => abrirEditarGrupo(g)}><InsigniaTipo tipo={g.tipo_acceso} /></TablaTd>
                         <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setGrupoSeleccionado(g); setTabPrincipal('entidades') }}>{g.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
@@ -833,7 +834,7 @@ export default function PaginaGrupos() {
                           <p className="text-sm font-medium text-texto truncate">{g.nombre}</p>
                           <div className="flex items-center gap-2">
                             <p className="text-xs text-texto-muted">{g.codigo_grupo}</p>
-                            <Insignia variante={varianteTipo(g.tipo_acceso)}>{etiquetaTipo(g.tipo_acceso)}</Insignia>
+                            <InsigniaTipo tipo={g.tipo_acceso} />
                           </div>
                         </div>
                         <Trash2 size={16} className="text-red-400 shrink-0" />
@@ -923,7 +924,7 @@ export default function PaginaGrupos() {
               <div className="flex flex-col gap-1">
                 <label className="text-sm font-medium text-texto">Tipo</label>
                 <div className="flex items-center gap-2 py-1">
-                  <Insignia variante={varianteTipo(formGrupo.tipo_acceso)}>{etiquetaTipo(formGrupo.tipo_acceso)}</Insignia>
+                  <InsigniaTipo tipo={formGrupo.tipo_acceso} />
                   <span className="text-xs text-texto-muted">Solo modificable desde la base de datos</span>
                 </div>
               </div>

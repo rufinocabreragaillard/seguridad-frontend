@@ -2016,5 +2016,10 @@
     "seccionMios": "Meine",
     "seccionArea": "Nach Bereich",
     "seccionEntidad": "Der Entität"
+  },
+  "tipoElemento": {
+    "USUARIO": "Benutzer",
+    "ADMINISTRADOR": "Verwaltung",
+    "SISTEMA": "System"
   }
 }

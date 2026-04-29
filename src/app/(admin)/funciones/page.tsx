@@ -8,6 +8,7 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
 import { Insignia } from '@/components/ui/insignia'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
@@ -18,19 +19,16 @@ import { useAuth } from '@/context/AuthContext'
 import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
-import { TIPOS_ELEMENTO, ETIQUETA_TIPO, etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { TIPOS_ELEMENTO, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
 
 type AppDeFuncion = { codigo_aplicacion: string; aplicaciones?: { nombre_aplicacion: string } }
 
 type TipoFuncion = TipoElemento
 
-function badgeTipo(tipo?: string) {
-  return <Insignia variante={varianteTipo(tipo)}>{etiquetaTipo(tipo)}</Insignia>
-}
-
 export default function PaginaFunciones() {
   const t = useTranslations('funciones')
   const tc = useTranslations('common')
+  const tte = useTranslations('tipoElemento')
   const { grupoActivo, aplicacionActiva } = useAuth()
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([])
   const [funciones, setFunciones] = useState<Funcion[]>([])
@@ -357,7 +355,7 @@ export default function PaginaFunciones() {
             ) : funcionesFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron funciones</TablaTd></TablaFila>
             ) : funcionesFiltradas.map((f) => (
               <SortableRow key={f.codigo_funcion} id={f.codigo_funcion}>
-                <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}>{badgeTipo(f.tipo_acceso)}</TablaTd>
+                <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><InsigniaTipo tipo={f.tipo_acceso} /></TablaTd>
                 <TablaTd className="text-sm" onDoubleClick={() => abrirEditarFuncion(f)}>{f.alias_de_funcion || '—'}</TablaTd>
                 <TablaTd className="font-medium" onDoubleClick={() => abrirEditarFuncion(f)}>
                   <span className="inline-flex items-center gap-1.5">
@@ -442,8 +440,8 @@ export default function PaginaFunciones() {
               <div>
                 <label className="text-sm font-medium text-texto">Tipo</label>
                 <select value={formFuncion.tipo_acceso} onChange={(e) => setFormFuncion({ ...formFuncion, tipo_acceso: e.target.value as TipoFuncion })} className={selectClass}>
-                  {TIPOS_ELEMENTO.map((t) => (
-                    <option key={t} value={t}>{ETIQUETA_TIPO[t]}</option>
+                  {TIPOS_ELEMENTO.map((tp) => (
+                    <option key={tp} value={tp}>{tte(tp)}</option>
                   ))}
                 </select>
               </div>

@@ -11,14 +11,13 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { TablaCrud, columnaNombre } from '@/components/ui/tabla-crud'
 import { Insignia } from '@/components/ui/insignia'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { procesosGrupoApi } from '@/lib/api'
 import type { ProcesoGrupo } from '@/lib/api'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import {
   TIPOS_ELEMENTO_SIN_SISTEMA,
-  etiquetaTipo,
-  varianteTipo,
 } from '@/lib/tipo-elemento'
 
 const selectClass =
@@ -35,6 +34,7 @@ type FormProceso = {
 export default function PaginaProcesosGrupo() {
   const t = useTranslations('procesosGrupo')
   const tc = useTranslations('common')
+  const tte = useTranslations('tipoElemento')
 
   const crud = useCrudPage<ProcesoGrupo, FormProceso>({
     cargarFn: () => procesosGrupoApi.listar(),
@@ -113,7 +113,7 @@ export default function PaginaProcesosGrupo() {
             titulo: t('colTipo'),
             editaConDobleClic: true,
             render: (p: ProcesoGrupo) => (
-              <Insignia variante={varianteTipo(p.tipo_acceso)}>{etiquetaTipo(p.tipo_acceso)}</Insignia>
+              <InsigniaTipo tipo={p.tipo_acceso} />
             ),
           },
           {
@@ -189,7 +189,7 @@ export default function PaginaProcesosGrupo() {
               onChange={(e) => crud.updateForm('tipo_acceso', e.target.value)}
             >
               {TIPOS_ELEMENTO_SIN_SISTEMA.map((tp) => (
-                <option key={tp} value={tp}>{etiquetaTipo(tp)}</option>
+                <option key={tp} value={tp}>{tte(tp)}</option>
               ))}
             </select>
           </div>

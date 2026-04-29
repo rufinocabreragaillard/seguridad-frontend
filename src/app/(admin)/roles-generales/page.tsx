@@ -15,7 +15,8 @@ import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { rolesApi, funcionesApi, aplicacionesApi, promptsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Rol, Funcion, Aplicacion } from '@/lib/tipos'
-import { etiquetaTipo, varianteTipo, normalizarTipo } from '@/lib/tipo-elemento'
+import { normalizarTipo } from '@/lib/tipo-elemento'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { Insignia } from '@/components/ui/insignia'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -367,7 +368,7 @@ function TabRolesGlobales() {
                   return (
                   <SortableRow key={r.id_rol} id={String(r.id_rol)}>
                     <td className="py-2 pr-4 cursor-pointer" onDoubleClick={() => abrirEditar(r)}>
-                      <Insignia variante={varianteTipo(r.tipo_acceso)}>{etiquetaTipo(r.tipo_acceso)}</Insignia>
+                      <InsigniaTipo tipo={r.tipo_acceso} />
                     </td>
                     <td className="py-2 pr-4 cursor-pointer" onDoubleClick={() => abrirEditar(r)}>{r.nombre}</td>
                     <td className="py-2 pr-4 text-texto-muted cursor-pointer" onDoubleClick={() => abrirEditar(r)}>{r.alias_de_rol || '—'}</td>

@@ -26,7 +26,8 @@ import { usePaginacion } from '@/hooks/usePaginacion'
 import { usuariosApi, gruposApi, entidadesApi, rolesApi, aplicacionesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Usuario, Grupo, Entidad, Rol, Aplicacion, Area } from '@/lib/tipos'
-import { normalizarTipo, etiquetaTipo, varianteTipo } from '@/lib/tipo-elemento'
+import { normalizarTipo } from '@/lib/tipo-elemento'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { SortableDndContext, SortableListItem } from '@/components/ui/sortable'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -615,12 +616,12 @@ export default function PaginaUsuariosSemilla() {
                 <TablaTd>{u.grupo_por_defecto ? <span className="text-sm">{nombreGrupo(u.grupo_por_defecto)}</span> : <span className="text-texto-muted">—</span>}</TablaTd>
                 <TablaTd>
                   {grupoInfo
-                    ? <Insignia variante={varianteTipo(grupoInfo.tipo_acceso)}>{etiquetaTipo(grupoInfo.tipo_acceso)}</Insignia>
+                    ? <InsigniaTipo tipo={grupoInfo.tipo_acceso} />
                     : <span className="text-texto-muted text-sm">—</span>
                   }
                 </TablaTd>
                 <TablaTd onDoubleClick={() => abrirEditar(u)}>
-                  <Insignia variante={varianteTipo(u.tipo_acceso)}>{etiquetaTipo(u.tipo_acceso)}</Insignia>
+                  <InsigniaTipo tipo={u.tipo_acceso} />
                 </TablaTd>
                 <TablaTd className="text-texto-muted text-xs">{u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL') : '—'}</TablaTd>
                 <TablaTd className="text-texto-muted text-xs">{u.fecha_final ? new Date(u.fecha_final).toLocaleDateString('es-CL') : '—'}</TablaTd>

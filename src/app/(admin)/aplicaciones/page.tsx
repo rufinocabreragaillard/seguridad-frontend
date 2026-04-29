@@ -15,7 +15,8 @@ import { useAuth } from '@/context/AuthContext'
 import type { Aplicacion, Funcion, Grupo } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
-import { TIPOS_ELEMENTO, ETIQUETA_TIPO, DESCRIPCION_TIPO, etiquetaTipo, varianteTipo, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { TIPOS_ELEMENTO, DESCRIPCION_TIPO, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
@@ -26,6 +27,7 @@ type GrupoApp = { codigo_grupo: string; grupos_entidades: { nombre_grupo: string
 export default function PaginaAplicaciones() {
   const t = useTranslations('aplicaciones')
   const tc = useTranslations('common')
+  const tte = useTranslations('tipoElemento')
   const { grupoActivo } = useAuth()
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([])
   const [funciones, setFunciones] = useState<Funcion[]>([])
@@ -234,7 +236,7 @@ export default function PaginaAplicaciones() {
               <SortableRow key={a.codigo_aplicacion} id={a.codigo_aplicacion}>
                 <TablaTd onDoubleClick={() => abrirEditarApp(a)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{a.codigo_aplicacion}</code></TablaTd>
                 <TablaTd className="font-medium" onDoubleClick={() => abrirEditarApp(a)}>{a.nombre}</TablaTd>
-                <TablaTd onDoubleClick={() => abrirEditarApp(a)}><Insignia variante={varianteTipo(a.tipo_acceso)}>{etiquetaTipo(a.tipo_acceso)}</Insignia></TablaTd>
+                <TablaTd onDoubleClick={() => abrirEditarApp(a)}><InsigniaTipo tipo={a.tipo_acceso} /></TablaTd>
                 <TablaTd className="text-texto-muted text-sm">{a.descripcion || '—'}</TablaTd>
                 <TablaTd>
                   <div className="flex items-center justify-end gap-1">
@@ -291,7 +293,7 @@ export default function PaginaAplicaciones() {
           </>)}
           {tabModalApp === 'funciones' && appEditando && (
             <div className="flex flex-col gap-4">
-              <p className="text-xs text-texto-muted">Solo se muestran funciones de tipo <span className="font-medium">{ETIQUETA_TIPO[normalizarTipo(appEditando.tipo_acceso)]}</span> — una aplicación solo admite funciones de su mismo tipo.</p>
+              <p className="text-xs text-texto-muted">Solo se muestran funciones de tipo <span className="font-medium">{tte(normalizarTipo(appEditando.tipo_acceso))}</span> — una aplicación solo admite funciones de su mismo tipo.</p>
               <div className="flex gap-2">
                 <div className="flex-1 relative" ref={dropdownFuncionAppRef}>
                   <div className="relative">

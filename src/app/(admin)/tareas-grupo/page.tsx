@@ -11,14 +11,13 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { TablaCrud, columnaNombre } from '@/components/ui/tabla-crud'
 import { Insignia } from '@/components/ui/insignia'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { tareasGrupoApi } from '@/lib/api'
 import type { TareaGrupo } from '@/lib/api'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import {
   TIPOS_ELEMENTO_SIN_SISTEMA,
-  etiquetaTipo,
-  varianteTipo,
 } from '@/lib/tipo-elemento'
 
 const selectClass =
@@ -35,6 +34,7 @@ type FormTarea = {
 export default function PaginaTareasGrupo() {
   const t = useTranslations('tareasGrupo')
   const tc = useTranslations('common')
+  const tte = useTranslations('tipoElemento')
 
   const crud = useCrudPage<TareaGrupo, FormTarea>({
     cargarFn: () => tareasGrupoApi.listar(),
@@ -113,7 +113,7 @@ export default function PaginaTareasGrupo() {
             titulo: t('colTipo'),
             editaConDobleClic: true,
             render: (p: TareaGrupo) => (
-              <Insignia variante={varianteTipo(p.tipo_acceso)}>{etiquetaTipo(p.tipo_acceso)}</Insignia>
+              <InsigniaTipo tipo={p.tipo_acceso} />
             ),
           },
           {
@@ -189,7 +189,7 @@ export default function PaginaTareasGrupo() {
               onChange={(e) => crud.updateForm('tipo_acceso', e.target.value)}
             >
               {TIPOS_ELEMENTO_SIN_SISTEMA.map((tp) => (
-                <option key={tp} value={tp}>{etiquetaTipo(tp)}</option>
+                <option key={tp} value={tp}>{tte(tp)}</option>
               ))}
             </select>
           </div>
