@@ -602,7 +602,7 @@ export default function PaginaCargaDocsUsuario() {
           className={`px-5 py-2.5 text-sm font-medium transition-colors ${
             tabActiva === 'ubicaciones'
               ? 'border-b-2 border-primario text-primario'
-              : 'text-texto-muted hover:text-texto'
+              : 'text-texto/70 hover:text-texto'
           }`}
         >
           <span className="flex items-center gap-2"><FolderTree size={15} />{t('tabUbicaciones')}</span>
@@ -612,7 +612,7 @@ export default function PaginaCargaDocsUsuario() {
           className={`px-5 py-2.5 text-sm font-medium transition-colors ${
             tabActiva === 'documentos'
               ? 'border-b-2 border-primario text-primario'
-              : 'text-texto-muted hover:text-texto'
+              : 'text-texto/70 hover:text-texto'
           }`}
         >
           <span className="flex items-center gap-2"><Upload size={15} />{t('tabDocumentos')}</span>
