@@ -606,7 +606,7 @@ export default function PaginaUsuarios() {
                 <TablaFila key={u.codigo_usuario}>
                   <TablaTd onDoubleClick={() => abrirEditar(u)}>
                     <div className="flex items-center gap-2">
-                      <div className="h-7 w-7 rounded-full bg-secundario flex items-center justify-center text-white text-xs font-semibold shrink-0">
+                      <div className="h-7 w-7 rounded-full bg-primario flex items-center justify-center text-primario-texto text-xs font-semibold shrink-0">
                         {u.nombre.charAt(0).toUpperCase()}
                       </div>
                       <span className="font-medium">{u.nombre}</span>
@@ -994,7 +994,7 @@ export default function PaginaUsuarios() {
                         </span>
                         <span className="ml-2 text-xs text-texto-muted">{ea.codigo_entidad}</span>
                         {ea.codigo_area && (
-                          <span className="ml-2 text-xs bg-secundario/10 text-secundario px-1.5 py-0.5 rounded">
+                          <span className="ml-2 text-xs bg-primario/10 text-primario px-1.5 py-0.5 rounded">
                             {ea.codigo_area}
                           </span>
                         )}

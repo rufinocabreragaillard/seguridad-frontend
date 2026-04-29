@@ -39,7 +39,7 @@ export default function PaginaDashboard() {
       titulo: t('tarjetaRoles'),
       valor: stats.totalRoles,
       icono: ShieldCheck,
-      color: 'bg-secundario-muy-claro text-secundario',
+      color: 'bg-primario-muy-claro text-primario',
       tendencia: t('tendenciaRoles'),
     },
     {
