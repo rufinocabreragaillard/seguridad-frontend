@@ -1749,4 +1749,114 @@ export const limpiezaApi = {
     api.post<ResultadoLimpieza[]>('/limpieza/ejecutar-todas').then((r) => r.data),
 }
 
+// ── Mensajeria ────────────────────────────────────────────────────────────────
+
+export interface CanalMensajeria {
+  codigo_canal: string
+  nombre_canal: string
+  soporta_salida: boolean
+  soporta_entrada: boolean
+  prompt_insert?: string | null
+  system_prompt?: string | null
+}
+
+export interface PlantillaMensaje {
+  codigo_plantilla: string
+  codigo_canal: string
+  codigo_entidad?: string | null
+  tipo_evento: string
+  asunto?: string | null
+  cuerpo: string
+  prompt_insert?: string | null
+  system_prompt?: string | null
+  id_modelo?: number | null
+  tipo_disparo?: string | null
+  condicion_disparo?: string | null
+  frecuencia?: string | null
+  vigente_desde?: string | null
+  vigente_hasta?: string | null
+  prioridad: number
+  requiere_accion: boolean
+}
+
+export interface LogMensaje {
+  id_mensaje: number
+  direccion: string
+  codigo_canal: string
+  codigo_plantilla?: string | null
+  codigo_usuario?: string | null
+  codigo_entidad?: string | null
+  asunto?: string | null
+  cuerpo?: string | null
+  origen_destino?: string | null
+  estado: string
+  fecha_hora: string
+  referencia_externa?: string | null
+  mensaje_error?: string | null
+}
+
+export interface LogMensajePaginadoResp {
+  items: LogMensaje[]
+  total: number
+  page: number
+  limit: number
+}
+
+export interface MensajePendiente {
+  id_mensaje: number
+  codigo_plantilla?: string | null
+  codigo_canal: string
+  asunto?: string | null
+  cuerpo: string
+  requiere_accion: boolean
+  prioridad: number
+  fecha_hora: string
+}
+
+export interface PlantillaProbarResp {
+  asunto?: string | null
+  cuerpo: string
+  contexto_usado: Record<string, unknown>
+}
+
+export const mensajeriaApi = {
+  // Canales
+  listarCanales: () => api.get<CanalMensajeria[]>('/canales-mensajeria').then((r) => r.data),
+  actualizarCanal: (codigo: string, datos: Partial<CanalMensajeria>) =>
+    api.put<CanalMensajeria>(`/canales-mensajeria/${codigo}`, datos).then((r) => r.data),
+
+  // Plantillas
+  listarPlantillas: (params?: { codigo_canal?: string; tipo_disparo?: string; q?: string }) =>
+    api.get<PlantillaMensaje[]>('/plantillas-mensaje', { params }).then((r) => r.data),
+  crearPlantilla: (datos: Partial<PlantillaMensaje>) =>
+    api.post<PlantillaMensaje>('/plantillas-mensaje', datos).then((r) => r.data),
+  actualizarPlantilla: (codigo: string, datos: Partial<PlantillaMensaje>) =>
+    api.put<PlantillaMensaje>(`/plantillas-mensaje/${codigo}`, datos).then((r) => r.data),
+  eliminarPlantilla: (codigo: string) =>
+    api.delete(`/plantillas-mensaje/${codigo}`).then((r) => r.data),
+  probarPlantilla: (codigo: string, codigoUsuarioTest?: string) =>
+    api.post<PlantillaProbarResp>(`/plantillas-mensaje/${codigo}/probar`, {
+      codigo_usuario_test: codigoUsuarioTest ?? null,
+    }).then((r) => r.data),
+
+  // Historial paginado
+  listarLogPaginado: (params: {
+    page: number
+    limit: number
+    codigo_canal?: string
+    codigo_plantilla?: string
+    codigo_usuario?: string
+    estado?: string
+    q?: string
+  }) => api.get<LogMensajePaginadoResp>('/log-mensajes/paginado', { params }).then((r) => r.data),
+
+  // Mensajes pendientes del usuario
+  pendientes: (disparar = true) =>
+    api.get<MensajePendiente[]>('/mensajes/pendientes', { params: { disparar } }).then((r) => r.data),
+  cambiarEstado: (idMensaje: number, estado: 'VISTO' | 'ACEPTADO' | 'RECHAZADO') =>
+    api.patch<LogMensaje>(`/mensajes/${idMensaje}/estado`, { estado }).then((r) => r.data),
+  disparar: (evento = 'PRIMER_LOGIN') =>
+    api.post<number[]>('/mensajes/disparar', null, { params: { evento } }).then((r) => r.data),
+}
+
 export default api

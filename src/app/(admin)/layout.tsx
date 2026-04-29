@@ -10,6 +10,7 @@ import { useTranslations } from 'next-intl'
 import { AvisoPagina } from '@/components/ui/aviso-pagina'
 import { limpiarAvisos } from '@/lib/avisos-pagina'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { ModalMensajesPendientes } from '@/components/ui/modal-mensajes-pendientes'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('layout')
@@ -68,6 +69,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </ErrorBoundary>
         </main>
       </div>
+      <ModalMensajesPendientes />
     </div>
   )
 }
