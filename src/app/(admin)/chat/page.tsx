@@ -584,7 +584,15 @@ export default function PaginaChatUsuario() {
                 </button>
                 {areaDropdownAbierto && (
                   <div className="absolute bottom-full left-0 mb-2 w-80 bg-white border border-borde rounded-lg shadow-lg z-20 max-h-80 overflow-hidden flex flex-col">
-                    <div className="p-2 border-b border-borde">
+                    <button
+                      type="button"
+                      onClick={() => setAreaDropdownAbierto(false)}
+                      className="absolute top-1.5 right-1.5 z-10 p-1 rounded hover:bg-fondo text-texto-muted hover:text-error"
+                      title="Cerrar"
+                    >
+                      <X size={14} />
+                    </button>
+                    <div className="p-2 pr-8 border-b border-borde">
                       <Input
                         autoFocus
                         placeholder="Buscar área…"
@@ -711,7 +719,15 @@ export default function PaginaChatUsuario() {
                 </button>
                 {espacioDropdownAbierto && (
                   <div className="absolute bottom-full left-0 mb-2 w-72 bg-white border border-borde rounded-lg shadow-lg z-20 max-h-64 overflow-hidden flex flex-col">
-                    <div className="p-2 border-b border-borde">
+                    <button
+                      type="button"
+                      onClick={() => setEspacioDropdownAbierto(false)}
+                      className="absolute top-1.5 right-1.5 z-10 p-1 rounded hover:bg-fondo text-texto-muted hover:text-error"
+                      title="Cerrar"
+                    >
+                      <X size={14} />
+                    </button>
+                    <div className="p-2 pr-8 border-b border-borde">
                       <Input
                         autoFocus
                         placeholder="Buscar espacio…"
