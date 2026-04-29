@@ -13,9 +13,9 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Insignia } from '@/components/ui/insignia'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
-import { entidadesApi, promptsApi, ubicacionesDocsApi } from '@/lib/api'
+import { entidadesApi, promptsApi, ubicacionesDocsApi, gruposApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Entidad, Area } from '@/lib/tipos'
+import type { Entidad, Area, Grupo } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -25,7 +25,15 @@ export default function PaginaEntidades() {
   const tc = useTranslations('common')
   const { grupoActivo } = useAuth()
 
-  const [tabActiva, setTabActiva] = useState<'entidades' | 'areas'>('entidades')
+  const [tabActiva, setTabActiva] = useState<'entidades' | 'areas' | 'grupo'>('entidades')
+
+  // ── Grupo (tab Grupo) ────────────────────────────────────────────────────
+  const [grupo, setGrupo] = useState<Grupo | null>(null)
+  const [formGrupo, setFormGrupo] = useState({ alias: '', descripcion: '' })
+  const [cargandoGrupo, setCargandoGrupo] = useState(false)
+  const [guardandoGrupo, setGuardandoGrupo] = useState(false)
+  const [errorGrupo, setErrorGrupo] = useState('')
+  const [okGrupo, setOkGrupo] = useState('')
 
   // ── Entidades y Áreas ─────────────────────────────────────────────────────
   const [entidades, setEntidades] = useState<Entidad[]>([])
@@ -94,6 +102,47 @@ export default function PaginaEntidades() {
       setBusquedaAreas('')
     }
   }, [entidadSeleccionada, cargarAreas])
+
+  const cargarGrupoActivo = useCallback(async () => {
+    if (!grupoActivo) return
+    setCargandoGrupo(true)
+    setErrorGrupo('')
+    setOkGrupo('')
+    try {
+      const lista = await gruposApi.listar()
+      const g = lista.find((x) => x.codigo_grupo === grupoActivo) || null
+      setGrupo(g)
+      if (g) setFormGrupo({ alias: g.alias || '', descripcion: g.descripcion || '' })
+    } catch (e) {
+      setErrorGrupo(e instanceof Error ? e.message : 'Error al cargar el grupo')
+    } finally {
+      setCargandoGrupo(false)
+    }
+  }, [grupoActivo])
+
+  useEffect(() => {
+    if (tabActiva === 'grupo' && !grupo && !cargandoGrupo) cargarGrupoActivo()
+  }, [tabActiva, grupo, cargandoGrupo, cargarGrupoActivo])
+
+  const guardarGrupo = async () => {
+    if (!grupo) return
+    setGuardandoGrupo(true)
+    setErrorGrupo('')
+    setOkGrupo('')
+    try {
+      const actualizado = await gruposApi.actualizar(grupo.codigo_grupo, {
+        alias: formGrupo.alias || null,
+        descripcion: formGrupo.descripcion || undefined,
+      })
+      setGrupo(actualizado)
+      setFormGrupo({ alias: actualizado.alias || '', descripcion: actualizado.descripcion || '' })
+      setOkGrupo('Cambios guardados.')
+    } catch (e) {
+      setErrorGrupo(e instanceof Error ? e.message : 'Error al guardar')
+    } finally {
+      setGuardandoGrupo(false)
+    }
+  }
 
   const abrirNuevaEntidad = () => {
     setEntidadEditando(null)
@@ -231,7 +280,7 @@ export default function PaginaEntidades() {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-fondo rounded-lg border border-borde w-fit">
-        {([{ id: 'entidades', label: 'Entidades' }, { id: 'areas', label: 'Áreas' }] as const).map((tab) => (
+        {([{ id: 'entidades', label: 'Entidades' }, { id: 'areas', label: 'Áreas' }, { id: 'grupo', label: 'Grupo' }] as const).map((tab) => (
           <button key={tab.id} onClick={() => setTabActiva(tab.id)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tabActiva === tab.id ? 'bg-surface text-primario-oscuro shadow-sm border border-borde' : 'text-texto-muted hover:text-texto'}`}
           >{tab.label}</button>
@@ -408,6 +457,47 @@ export default function PaginaEntidades() {
                 </TablaCuerpo>
               </Tabla>
             </>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Grupo ── */}
+      {tabActiva === 'grupo' && (
+        <>
+          {cargandoGrupo ? (
+            <div className="h-32 bg-surface rounded-lg border border-borde animate-pulse" />
+          ) : !grupo ? (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <p className="text-sm text-error">{errorGrupo || 'No se pudo cargar el grupo activo.'}</p>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4 max-w-2xl bg-surface border border-borde rounded-lg p-6">
+              <div>
+                <p className="text-sm text-texto-muted">Grupo activo</p>
+                <p className="text-base font-medium text-texto">{grupo.nombre}</p>
+                <code className="text-xs bg-fondo border border-borde rounded px-1.5 py-0.5 mt-1 inline-block">{grupo.codigo_grupo}</code>
+              </div>
+              <Input
+                etiqueta="Alias"
+                value={formGrupo.alias}
+                onChange={(e) => setFormGrupo({ ...formGrupo, alias: e.target.value })}
+                placeholder="Alias del grupo (opcional)"
+              />
+              <Textarea
+                etiqueta="Descripción"
+                value={formGrupo.descripcion}
+                onChange={(e) => setFormGrupo({ ...formGrupo, descripcion: e.target.value })}
+                rows={4}
+                placeholder="Descripción del grupo"
+              />
+              {errorGrupo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorGrupo}</p></div>}
+              {okGrupo && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3"><p className="text-sm text-green-700">{okGrupo}</p></div>}
+              <div className="flex justify-end gap-2 pt-2">
+                <Boton variante="primario" onClick={guardarGrupo} cargando={guardandoGrupo}>
+                  Guardar cambios
+                </Boton>
+              </div>
+            </div>
           )}
         </>
       )}
