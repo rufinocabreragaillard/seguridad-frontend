@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy } from 'lucide-react'
+import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -12,9 +12,9 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi } from '@/lib/api'
+import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi, habilidadesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio } from '@/lib/tipos'
+import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio, Habilidad } from '@/lib/tipos'
 
 const CODIGO_FUNCION = 'CHAT-USUARIO'
 
@@ -346,6 +346,7 @@ export default function PaginaChatUsuario() {
   useEffect(() => {
     cargarUbicaciones()
     cargarEspacios()
+    habilidadesApi.listar().then(setHabilidades).catch(() => {})
   }, [cargarUbicaciones, cargarEspacios, grupoActivo])
 
   const areasFiltradas = useMemo(
@@ -445,6 +446,8 @@ export default function PaginaChatUsuario() {
   const [selectorEspacioBusqueda, setSelectorEspacioBusqueda] = useState('')
   const [cargandoDocsEspacio, setCargandoDocsEspacio] = useState(false)
   const [confirmEliminarEspacio, setConfirmEliminarEspacio] = useState<EspacioTrabajo | null>(null)
+  const [reaplicando, setReaplicando] = useState(false)
+  const [habilidades, setHabilidades] = useState<Habilidad[]>([])
 
   const espacioActivoObj = useMemo(
     () => espacios.find((e) => e.id_espacio === espacioActivoId),
@@ -529,6 +532,17 @@ export default function PaginaChatUsuario() {
         setDocsEspacio([])
       }
     } catch { /* */ }
+  }
+
+  const reaplicarHabilidad = async () => {
+    if (!espacioActivoObj) return
+    setReaplicando(true)
+    try {
+      await espaciosTrabajoApi.reaplicar(espacioActivoObj.id_espacio)
+      await cargarDocsEspacio(espacioActivoObj.id_espacio)
+    } catch { /* */ } finally {
+      setReaplicando(false)
+    }
   }
 
   // Documentos del antiguo tab (preview en chat); se conserva pero ya no se usa en la UI principal del tab 2.
@@ -1023,6 +1037,12 @@ export default function PaginaChatUsuario() {
                         <RefreshCw size={14} className={refrescando ? 'animate-spin' : ''} />
                         <span className="ml-1">Refrescar</span>
                       </Boton>
+                      {docsEspacio.some((d) => d.codigo_habilidad) && (
+                        <Boton variante="contorno" tamano="sm" onClick={reaplicarHabilidad} cargando={reaplicando}>
+                          <Zap size={14} className="mr-1" />
+                          <span>Reaplicar</span>
+                        </Boton>
+                      )}
                       {espacioActivoObj.tipo_espacio === 'AREA' && esCreador(espacioActivoObj) && (
                         <button
                           onClick={promoverEspacio}
@@ -1109,6 +1129,7 @@ export default function PaginaChatUsuario() {
                         <TablaTh>Ubicación</TablaTh>
                         <TablaTh>Estado área</TablaTh>
                         <TablaTh>Estado cola</TablaTh>
+                        <TablaTh>Habilidad</TablaTh>
                         <TablaTh>Modelo</TablaTh>
                         <TablaTh className="text-right">Tokens in/out</TablaTh>
                         <TablaTh>Inicio</TablaTh>
@@ -1118,13 +1139,13 @@ export default function PaginaChatUsuario() {
                     <TablaCuerpo>
                       {cargandoDocsEspacio ? (
                         <TablaFila>
-                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>
+                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={9 as never}>
                             Cargando documentos…
                           </TablaTd>
                         </TablaFila>
                       ) : docsEspacio.length === 0 ? (
                         <TablaFila>
-                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>
+                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={9 as never}>
                             <div className="flex flex-col items-center gap-2">
                               <FileText size={32} className="opacity-30" />
                               <span>Sin documentos. Edita el criterio y refresca para poblarlos.</span>
@@ -1149,6 +1170,18 @@ export default function PaginaChatUsuario() {
                               <Insignia variante={iconoEstadoCola(d.estado_cola)}>
                                 {d.estado_cola}
                               </Insignia>
+                            </TablaTd>
+                            <TablaTd className="text-xs text-texto-muted">
+                              {d.codigo_habilidad ? (
+                                <div className="flex items-center gap-1">
+                                  <Zap size={11} className="text-primario shrink-0" />
+                                  <span title={d.codigo_habilidad}>
+                                    {habilidades.find((h) => h.codigo_habilidad === d.codigo_habilidad)?.alias_habilidad
+                                      || habilidades.find((h) => h.codigo_habilidad === d.codigo_habilidad)?.nombre_habilidad
+                                      || d.codigo_habilidad}
+                                  </span>
+                                </div>
+                              ) : '—'}
                             </TablaTd>
                             <TablaTd className="text-xs text-texto-muted">{d.modelo_usado || '—'}</TablaTd>
                             <TablaTd className="text-right text-xs tabular-nums">

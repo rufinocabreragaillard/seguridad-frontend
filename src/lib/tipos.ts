@@ -966,6 +966,35 @@ export interface DocumentoEspacio {
   costo_usd?: number | null
   resultado?: string | null
   mensaje_error?: string | null
+  codigo_habilidad?: string | null
+}
+
+// ─── Habilidades ──────────────────────────────────────────────────────────────
+export type TipoHabilidad = 'DOCUMENTO' | 'CONJUNTO_DOCUMENTOS' | 'ESPACIO'
+export type SalidaDestino = 'DOC_COLUMNA' | 'CHAT_INLINE' | 'CARACTERISTICA' | 'NUEVO_DOC'
+export type FormatoSalida = 'TEXTO' | 'JSON'
+
+export interface Habilidad {
+  codigo_habilidad: string
+  nombre_habilidad: string
+  alias_habilidad?: string | null
+  descripcion?: string | null
+  tipo_habilidad: TipoHabilidad
+  prompt: string
+  system_prompt?: string | null
+  id_modelo?: number | null
+  salida_destino: SalidaDestino
+  salida_columna?: string | null
+  formato_salida: FormatoSalida
+  fecha_creacion: string
+  fecha_modificacion: string
+}
+
+export interface ReeplicarEspacioRespuesta {
+  id_espacio: number
+  encolados: number
+  worker_disparado: boolean
+  mensaje: string
 }
 
 // ─── Tipos de Acceso ──────────────────────────────────────────────────────────

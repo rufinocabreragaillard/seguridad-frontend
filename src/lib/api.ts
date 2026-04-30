@@ -57,6 +57,8 @@ import type {
   DocumentoEspacio,
   RefrescoEspacioRespuesta,
   PromocionEspacioRespuesta,
+  ReeplicarEspacioRespuesta,
+  Habilidad,
   TipoAcceso,
 } from './tipos'
 
@@ -1606,6 +1608,22 @@ export const espaciosTrabajoApi = {
     params: { page: number; limit: number; q?: string; codigo_estado_doc?: string; estado_area?: string },
   ) =>
     api.get<RespuestaPaginadaApi<DocumentoEspacio>>(`/espacios-trabajo/${id}/documentos/paginado`, { params }).then((r) => r.data),
+  reaplicar: (id: number) =>
+    api.post<ReeplicarEspacioRespuesta>(`/espacios-trabajo/${id}/reaplicar`).then((r) => r.data),
+}
+
+// ─── Habilidades ──────────────────────────────────────────────────────────────
+export const habilidadesApi = {
+  listar: (params?: { tipo_habilidad?: string }) =>
+    api.get<Habilidad[]>('/habilidades', { params }).then((r) => r.data),
+  obtener: (codigo: string) =>
+    api.get<Habilidad>(`/habilidades/${codigo}`).then((r) => r.data),
+  crear: (datos: Partial<Habilidad>) =>
+    api.post<Habilidad>('/habilidades', datos).then((r) => r.data),
+  actualizar: (codigo: string, datos: Partial<Habilidad>) =>
+    api.put<Habilidad>(`/habilidades/${codigo}`, datos).then((r) => r.data),
+  eliminar: (codigo: string) =>
+    api.delete(`/habilidades/${codigo}`),
 }
 
 // ─── Sistema "Todo por Prompts" ───────────────────────────────────────────
