@@ -128,8 +128,8 @@ export default function PaginaLogin() {
 
         <div className="relative z-10 flex flex-col items-center text-center gap-1 max-w-sm">
           <Image
-            src={tema.logo.url}
-            alt={tema.logo.alt}
+            src="/serverlm_logo.png"
+            alt="Server LM"
             width={284}
             height={92}
             className="object-contain"
@@ -150,10 +150,10 @@ export default function PaginaLogin() {
           {/* Logo mobile */}
           <div className="lg:hidden flex justify-center mb-8">
             <Image
-              src={tema.logo.url}
-              alt={tema.logo.alt}
-              width={120}
-              height={40}
+              src="/serverlm_logo.png"
+              alt="Server LM"
+              width={180}
+              height={58}
               className="object-contain"
               onError={(e) => {
                 const t = e.target as HTMLImageElement
