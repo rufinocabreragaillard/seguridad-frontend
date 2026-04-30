@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info } from 'lucide-react'
+import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -83,6 +83,52 @@ export default function PaginaChatUsuario() {
   const [eliminando, setEliminando] = useState(false)
   const mensajesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+
+  // ── Preview del system_prompt (debug, solo super-admin) ──
+  const [modalSpAbierto, setModalSpAbierto] = useState(false)
+  const [cargandoSp, setCargandoSp] = useState(false)
+  const [errorSp, setErrorSp] = useState('')
+  const [spInfo, setSpInfo] = useState<{
+    system_prompt: string
+    n_caracteres: number
+    n_funciones_disponibles: number
+    n_funciones_con_permisos: number
+  } | null>(null)
+  const [spCopiado, setSpCopiado] = useState(false)
+  const esSuperAdmin = grupoActivo === 'ADMIN'
+
+  const verSystemPrompt = async () => {
+    if (convActivaId == null) return
+    setModalSpAbierto(true)
+    setCargandoSp(true)
+    setErrorSp('')
+    setSpInfo(null)
+    setSpCopiado(false)
+    try {
+      const data = await chatApi.previewSystemPrompt(convActivaId)
+      setSpInfo(data)
+    } catch (e: unknown) {
+      let msg = 'Error al cargar el system prompt'
+      if (e && typeof e === 'object' && 'response' in e) {
+        const r = (e as { response?: { data?: { detail?: string } } }).response
+        msg = r?.data?.detail || msg
+      } else if (e instanceof Error) {
+        msg = e.message
+      }
+      setErrorSp(msg)
+    } finally {
+      setCargandoSp(false)
+    }
+  }
+
+  const copiarSystemPrompt = async () => {
+    if (!spInfo?.system_prompt) return
+    try {
+      await navigator.clipboard.writeText(spInfo.system_prompt)
+      setSpCopiado(true)
+      setTimeout(() => setSpCopiado(false), 2000)
+    } catch { /* */ }
+  }
 
   const cargarLista = useCallback(async () => {
     setCargandoLista(true)
@@ -561,6 +607,23 @@ export default function PaginaChatUsuario() {
               </div>
             ) : (
               <>
+                {/* Cabecera del chat: titulo + acciones (debug super-admin) */}
+                {esSuperAdmin && (
+                  <div className="border-b border-borde px-4 py-2 flex items-center justify-between gap-2 bg-fondo">
+                    <span className="text-xs text-texto-muted truncate">
+                      {conversaciones.find((c) => c.id_conversacion === convActivaId)?.titulo || ''}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={verSystemPrompt}
+                      title="Ver system prompt enviado al LLM (solo super-admin)"
+                      className="p-1.5 rounded hover:bg-white text-texto-muted hover:text-texto transition-colors flex items-center gap-1"
+                    >
+                      <Eye size={15} />
+                      <span className="text-xs">prompt</span>
+                    </button>
+                  </div>
+                )}
                 <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
                   {cargandoConv ? (
                     <p className="text-sm text-texto-muted text-center">{t('cargando') ?? 'Cargando...'}</p>
@@ -1149,6 +1212,42 @@ export default function PaginaChatUsuario() {
         textoConfirmar="Eliminar"
         variante="peligro"
       />
+
+      {/* ── Modal preview system_prompt (solo super-admin) ── */}
+      <Modal
+        abierto={modalSpAbierto}
+        alCerrar={() => setModalSpAbierto(false)}
+        titulo="System prompt enviado al LLM"
+        descripcion="Lo que se enviaria si mandaras un mensaje ahora en esta conversacion."
+        className="max-w-4xl"
+      >
+        {cargandoSp ? (
+          <p className="text-sm text-texto-muted">Cargando…</p>
+        ) : errorSp ? (
+          <div className="rounded-lg border border-error/40 bg-error/10 p-3 text-sm text-error">{errorSp}</div>
+        ) : spInfo ? (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-texto-muted">
+              <span>{spInfo.n_caracteres.toLocaleString()} caracteres</span>
+              <span>•</span>
+              <span>{spInfo.n_funciones_disponibles} funciones disponibles</span>
+              <span>•</span>
+              <span>{spInfo.n_funciones_con_permisos} con permisos de escritura</span>
+              <button
+                type="button"
+                onClick={copiarSystemPrompt}
+                className="ml-auto flex items-center gap-1 rounded border border-borde bg-white px-2 py-1 text-xs hover:bg-fondo"
+              >
+                <Copy size={12} />
+                {spCopiado ? 'Copiado' : 'Copiar'}
+              </button>
+            </div>
+            <pre className="text-xs bg-fondo border border-borde rounded p-3 max-h-[60vh] overflow-auto whitespace-pre-wrap font-mono leading-relaxed">
+              {spInfo.system_prompt}
+            </pre>
+          </div>
+        ) : null}
+      </Modal>
     </div>
   )
 }

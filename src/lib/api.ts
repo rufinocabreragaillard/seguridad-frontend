@@ -1374,6 +1374,13 @@ export const chatApi = {
     api.put<ChatConversacion>(`/chat/conversaciones/${id}`, { titulo }).then((r) => r.data),
   eliminarConversacion: (id: number) =>
     api.delete(`/chat/conversaciones/${id}`),
+  previewSystemPrompt: (id: number) =>
+    api.get<{
+      system_prompt: string
+      n_caracteres: number
+      n_funciones_disponibles: number
+      n_funciones_con_permisos: number
+    }>(`/chat/conversaciones/${id}/system-prompt-preview`).then((r) => r.data),
 
   /**
    * Envía un mensaje de usuario a la conversación y recibe la respuesta del LLM en streaming.
