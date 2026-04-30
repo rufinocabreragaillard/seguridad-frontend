@@ -371,6 +371,14 @@ export default function PaginaChatUsuario() {
     [espacios, espacioBusqueda],
   )
 
+  const labelTipoEspacio = (tipo: string) => tipo === 'AREA' ? 'Temporal' : 'Permanente'
+  const labelAlcance = (alcance: string) => {
+    if (alcance === 'USUARIO') return 'Solo yo'
+    if (alcance === 'AREA') return 'Por área'
+    if (alcance === 'ENTIDAD') return 'Toda la entidad'
+    return alcance
+  }
+
   const areaSelObj = useMemo(() => areas.find((a) => a.codigo_ubicacion === areaSel), [areas, areaSel])
   const espacioSelObj = useMemo(() => espacios.find((e) => e.id_espacio === espacioSel), [espacios, espacioSel])
 
@@ -409,7 +417,7 @@ export default function PaginaChatUsuario() {
   const guardarEspacioNuevo = async () => {
     setCrearError(null)
     if (crearForm.alcance === 'AREA' && !crearForm.codigo_ubicacion_area) {
-      setCrearError('Debes seleccionar un área cuando el alcance es AREA.')
+      setCrearError('Debes seleccionar un área cuando el alcance es "Por área".')
       return
     }
     setCrearGuardando(true)
@@ -906,7 +914,7 @@ export default function PaginaChatUsuario() {
                           className="w-full text-left px-3 py-2 hover:bg-primario-muy-claro flex items-center gap-2"
                         >
                           <Insignia variante={e.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
-                            {e.tipo_espacio}
+                            {labelTipoEspacio(e.tipo_espacio)}
                           </Insignia>
                           <span className="flex-1 font-medium text-texto truncate">{e.nombre_espacio}</span>
                           <span className="text-texto-muted text-[10px]">{e.total_documentos ?? 0}</span>
@@ -947,10 +955,10 @@ export default function PaginaChatUsuario() {
                 {espacioActivoObj ? (
                   <>
                     <Insignia variante={espacioActivoObj.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
-                      {espacioActivoObj.tipo_espacio}
+                      {labelTipoEspacio(espacioActivoObj.tipo_espacio)}
                     </Insignia>
                     <span className="flex-1 truncate font-medium text-texto">{espacioActivoObj.nombre_espacio}</span>
-                    <span className="text-[11px] text-texto-muted">{espacioActivoObj.alcance}</span>
+                    <span className="text-[11px] text-texto-muted">{labelAlcance(espacioActivoObj.alcance)}</span>
                   </>
                 ) : (
                   <span className="flex-1 text-texto-muted">— Selecciona un espacio —</span>
@@ -994,10 +1002,10 @@ export default function PaginaChatUsuario() {
                             }`}
                           >
                             <Insignia variante={e.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
-                              {e.tipo_espacio}
+                              {labelTipoEspacio(e.tipo_espacio)}
                             </Insignia>
                             <span className="flex-1 truncate">{e.nombre_espacio}</span>
-                            <span className="text-[11px] text-texto-muted">{e.alcance}</span>
+                            <span className="text-[11px] text-texto-muted">{labelAlcance(e.alcance)}</span>
                           </button>
                         ))
                     )}
@@ -1028,9 +1036,9 @@ export default function PaginaChatUsuario() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-lg font-semibold text-texto">{espacioActivoObj.nombre_espacio}</h2>
                       <Insignia variante={espacioActivoObj.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
-                        {espacioActivoObj.tipo_espacio}
+                        {labelTipoEspacio(espacioActivoObj.tipo_espacio)}
                       </Insignia>
-                      <Insignia variante="neutro">{espacioActivoObj.alcance}</Insignia>
+                      <Insignia variante="neutro">{labelAlcance(espacioActivoObj.alcance)}</Insignia>
                     </div>
                     <div className="flex gap-1 shrink-0">
                       <Boton variante="primario" tamano="sm" onClick={refrescarEspacio} cargando={refrescando}>
@@ -1071,10 +1079,12 @@ export default function PaginaChatUsuario() {
                         ? new Date(espacioActivoObj.fecha_creacion).toLocaleDateString('es-CL')
                         : '—'}
                     </span>
-                    {espacioActivoObj.tipo_espacio === 'AREA' && espacioActivoObj.fecha_termino && (
-                      <span>
-                        Vence: {new Date(espacioActivoObj.fecha_termino).toLocaleDateString('es-CL')}
-                      </span>
+                    {espacioActivoObj.tipo_espacio === 'AREA' ? (
+                      espacioActivoObj.fecha_termino
+                        ? <span>Vence: {new Date(espacioActivoObj.fecha_termino).toLocaleDateString('es-CL')}</span>
+                        : <span className="text-texto-muted italic">Sin fecha de vencimiento definida</span>
+                    ) : (
+                      <span className="text-exito font-medium">Permanente (sin vencimiento)</span>
                     )}
                     {espacioActivoObj.fecha_ultimo_refresco && (
                       <span>
@@ -1084,7 +1094,7 @@ export default function PaginaChatUsuario() {
                     )}
                     {espacioActivoObj.alcance === 'AREA' && espacioActivoObj.codigo_ubicacion_area && (
                       <span>
-                        Área:{' '}
+                        Visible para área:{' '}
                         {ubicaciones.find((u) => u.codigo_ubicacion === espacioActivoObj.codigo_ubicacion_area)?.alias_ubicacion
                           || ubicaciones.find((u) => u.codigo_ubicacion === espacioActivoObj.codigo_ubicacion_area)?.nombre_ubicacion
                           || espacioActivoObj.codigo_ubicacion_area}
@@ -1230,8 +1240,8 @@ export default function PaginaChatUsuario() {
                 onChange={(e) => setCrearForm({ ...crearForm, tipo: e.target.value as TipoEspacio })}
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto"
               >
-                <option value="AREA">AREA — temporal</option>
-                <option value="ESPACIO">ESPACIO — permanente</option>
+                <option value="AREA">Temporal (se borra en 15 días)</option>
+                <option value="ESPACIO">Permanente (sin vencimiento)</option>
               </select>
             </div>
             <div>
@@ -1245,15 +1255,15 @@ export default function PaginaChatUsuario() {
                 })}
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto"
               >
-                <option value="USUARIO">USUARIO — solo yo</option>
-                <option value="AREA">AREA — un área</option>
-                <option value="ENTIDAD">ENTIDAD — toda la entidad</option>
+                <option value="USUARIO">Solo yo</option>
+                <option value="AREA">Por área (usuarios del área)</option>
+                <option value="ENTIDAD">Toda la entidad</option>
               </select>
             </div>
           </div>
           {crearForm.alcance === 'AREA' && (
             <div>
-              <label className="block text-sm font-medium text-texto mb-1">Área destino</label>
+              <label className="block text-sm font-medium text-texto mb-1">Área de visibilidad</label>
               <select
                 value={crearForm.codigo_ubicacion_area}
                 onChange={(e) => setCrearForm({ ...crearForm, codigo_ubicacion_area: e.target.value })}
