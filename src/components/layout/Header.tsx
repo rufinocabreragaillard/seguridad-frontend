@@ -276,7 +276,7 @@ export function Header({ titulo }: { titulo?: string }) {
           {/* Logo Server LM — visible solo cuando el sidebar está colapsado */}
           {colapsado && (
             <Image
-              src="/letras_serverlm_gris_claro.png"
+              src="/serverlm_letras_gris_claro.png"
               alt="Server LM"
               width={110}
               height={28}
