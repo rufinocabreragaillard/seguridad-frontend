@@ -278,8 +278,8 @@ export function Header({ titulo }: { titulo?: string }) {
             <Image
               src="/serverlm_letras_gris_claro.png"
               alt="Server LM"
-              width={110}
-              height={28}
+              width={73}
+              height={19}
               className="object-contain shrink-0"
             />
           )}
