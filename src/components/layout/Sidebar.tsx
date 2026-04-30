@@ -118,8 +118,8 @@ export function Sidebar() {
             <Image
               src={logo.url}
               alt={logo.alt}
-              width={60}
-              height={60}
+              width={48}
+              height={48}
               className="object-contain"
               onError={(e) => {
                 const target = e.target as HTMLImageElement

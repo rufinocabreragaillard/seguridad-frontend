@@ -15,8 +15,8 @@ export const tema = {
     // global de parametros_generales para evitar discrepancias visuales.
     url: '/serverlm_isotipo.png',
     alt: 'Server LM',
-    ancho: 60,
-    alto: 60,
+    ancho: 48,
+    alto: 48,
   },
   // Los colores de Tailwind se configuran en globals.css bajo @theme
   // Referencia para uso en estilos inline si fuera necesario:
