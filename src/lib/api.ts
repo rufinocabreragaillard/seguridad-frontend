@@ -54,6 +54,7 @@ import type {
   EstadoTraducciones,
   EspacioTrabajo,
   EspacioTrabajoCrear,
+  DocumentoEspacio,
   RefrescoEspacioRespuesta,
   PromocionEspacioRespuesta,
   TipoAcceso,
@@ -1600,8 +1601,11 @@ export const espaciosTrabajoApi = {
     api.post<PromocionEspacioRespuesta>(`/espacios-trabajo/${id}/promover`).then((r) => r.data),
   eliminar: (id: number) =>
     api.delete(`/espacios-trabajo/${id}`),
-  listarDocumentos: (id: number, params: { page: number; limit: number; q?: string; codigo_estado_doc?: string }) =>
-    api.get<RespuestaPaginadaApi<Documento>>(`/espacios-trabajo/${id}/documentos/paginado`, { params }).then((r) => r.data),
+  listarDocumentos: (
+    id: number,
+    params: { page: number; limit: number; q?: string; codigo_estado_doc?: string; estado_area?: string },
+  ) =>
+    api.get<RespuestaPaginadaApi<DocumentoEspacio>>(`/espacios-trabajo/${id}/documentos/paginado`, { params }).then((r) => r.data),
 }
 
 // ─── Sistema "Todo por Prompts" ───────────────────────────────────────────

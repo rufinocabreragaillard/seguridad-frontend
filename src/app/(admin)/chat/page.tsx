@@ -14,7 +14,7 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio } from '@/lib/tipos'
+import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio } from '@/lib/tipos'
 
 const CODIGO_FUNCION = 'CHAT-USUARIO'
 
@@ -48,6 +48,24 @@ function iconoEstado(estado: string | null | undefined) {
   if (estado === 'CHUNKEADO') return 'exito' as const
   if (estado === 'ESCANEADO') return 'advertencia' as const
   if (estado === 'METADATA') return 'neutro' as const
+  return 'neutro' as const
+}
+
+function iconoEstadoArea(estado: string | null | undefined) {
+  if (!estado) return 'neutro' as const
+  if (estado === 'ABIERTO') return 'exito' as const
+  if (estado === 'EN_PROCESO') return 'advertencia' as const
+  if (estado === 'CERRADO') return 'neutro' as const
+  if (estado === 'CANCELADO') return 'error' as const
+  return 'neutro' as const
+}
+
+function iconoEstadoCola(estado: string | null | undefined) {
+  if (!estado) return 'neutro' as const
+  if (estado === 'COMPLETADO') return 'exito' as const
+  if (estado === 'EN_PROCESO') return 'advertencia' as const
+  if (estado === 'PENDIENTE') return 'neutro' as const
+  if (estado === 'ERROR') return 'error' as const
   return 'neutro' as const
 }
 
@@ -422,7 +440,9 @@ export default function PaginaChatUsuario() {
   const [criterioEdit, setCriterioEdit] = useState('')
   const [criterioCambios, setCriterioCambios] = useState(false)
   const [refrescando, setRefrescando] = useState(false)
-  const [docsEspacio, setDocsEspacio] = useState<Documento[]>([])
+  const [docsEspacio, setDocsEspacio] = useState<DocumentoEspacio[]>([])
+  const [selectorEspacioAbierto, setSelectorEspacioAbierto] = useState(false)
+  const [selectorEspacioBusqueda, setSelectorEspacioBusqueda] = useState('')
   const [cargandoDocsEspacio, setCargandoDocsEspacio] = useState(false)
   const [confirmEliminarEspacio, setConfirmEliminarEspacio] = useState<EspacioTrabajo | null>(null)
 
@@ -898,76 +918,98 @@ export default function PaginaChatUsuario() {
         </div>
       )}
 
-      {/* ── TAB 2: Espacios de Trabajo ── */}
+      {/* ── TAB 2: Espacios de Trabajo (patrón Procesar Documentos) ── */}
       {tabPagina === 'documentos' && (
-        <div className="flex flex-1 gap-4 max-w-full overflow-hidden">
-          {/* Cola lateral: lista de espacios visibles, ordenados por última actividad */}
-          <aside className="w-72 flex-shrink-0 flex flex-col border border-borde rounded-lg bg-surface overflow-hidden">
-            <div className="px-3 py-2 border-b border-borde flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-texto">Mis Espacios</h3>
+        <div className="flex flex-1 flex-col gap-4 max-w-full overflow-hidden">
+          {/* Selector único arriba: dropdown buscable de espacios visibles */}
+          <div className="flex items-center gap-3 flex-wrap">
+            <label className="text-sm font-medium text-texto whitespace-nowrap">Espacio:</label>
+            <div className="relative flex-1 min-w-[280px] max-w-[520px]">
               <button
-                onClick={abrirModalCrear}
-                className="p-1.5 rounded hover:bg-primario-muy-claro text-primario"
-                title="Crear Espacio de Trabajo"
+                type="button"
+                onClick={() => setSelectorEspacioAbierto((v) => !v)}
+                className="w-full text-left flex items-center gap-2 rounded-lg border border-borde bg-surface px-3 py-2 text-sm hover:border-primario/50"
               >
-                <Plus size={16} />
+                {espacioActivoObj ? (
+                  <>
+                    <Insignia variante={espacioActivoObj.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
+                      {espacioActivoObj.tipo_espacio}
+                    </Insignia>
+                    <span className="flex-1 truncate font-medium text-texto">{espacioActivoObj.nombre_espacio}</span>
+                    <span className="text-[11px] text-texto-muted">{espacioActivoObj.alcance}</span>
+                  </>
+                ) : (
+                  <span className="flex-1 text-texto-muted">— Selecciona un espacio —</span>
+                )}
+                <ChevronDown size={16} className="text-texto-muted" />
               </button>
-            </div>
-            <div className="flex-1 overflow-y-auto p-2 flex flex-col gap-1">
-              {espacios.length === 0 ? (
-                <p className="text-xs text-texto-muted text-center py-6">
-                  No tienes espacios todavía. Crea uno con el botón +.
-                </p>
-              ) : (
-                espaciosFiltrados.map((e) => {
-                  const activo = e.id_espacio === espacioActivoId
-                  const esArea = e.tipo_espacio === 'AREA'
-                  const dias = e.fecha_termino
-                    ? Math.max(0, Math.ceil((new Date(e.fecha_termino).getTime() - Date.now()) / 86_400_000))
-                    : null
-                  return (
-                    <button
-                      key={e.id_espacio}
-                      onClick={() => setEspacioActivoId(e.id_espacio)}
-                      className={`text-left px-3 py-2 rounded text-sm transition ${
-                        activo
-                          ? 'bg-primario-muy-claro text-primario font-medium ring-1 ring-primario/30'
-                          : 'hover:bg-fondo text-texto'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <Insignia variante={esArea ? 'advertencia' : 'exito'}>
-                          {e.tipo_espacio}
-                        </Insignia>
-                        <span className="flex-1 truncate font-medium">{e.nombre_espacio}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-[11px] text-texto-muted">
-                        <span>{e.alcance}</span>
-                        <span>
-                          {esArea && dias !== null ? `${dias}d` : '·'} {e.total_documentos ?? 0} docs
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })
+              {selectorEspacioAbierto && (
+                <div className="absolute z-30 mt-1 w-full rounded-lg border border-borde bg-white shadow-lg max-h-80 overflow-hidden flex flex-col">
+                  <div className="p-2 border-b border-borde">
+                    <Input
+                      autoFocus
+                      placeholder="Buscar espacio…"
+                      value={selectorEspacioBusqueda}
+                      onChange={(e) => setSelectorEspacioBusqueda(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex-1 overflow-y-auto">
+                    {espacios.length === 0 ? (
+                      <p className="text-xs text-texto-muted text-center py-6 px-3">
+                        No tienes espacios todavía. Pulsa &quot;Crear&quot; para empezar.
+                      </p>
+                    ) : (
+                      espacios
+                        .filter((e) =>
+                          !selectorEspacioBusqueda ||
+                          e.nombre_espacio.toLowerCase().includes(selectorEspacioBusqueda.toLowerCase()),
+                        )
+                        .sort((a, b) =>
+                          (b.fecha_ultimo_refresco || b.fecha_creacion || '').localeCompare(a.fecha_ultimo_refresco || a.fecha_creacion || ''),
+                        )
+                        .map((e) => (
+                          <button
+                            key={e.id_espacio}
+                            onClick={() => {
+                              setEspacioActivoId(e.id_espacio)
+                              setSelectorEspacioAbierto(false)
+                              setSelectorEspacioBusqueda('')
+                            }}
+                            className={`w-full text-left px-3 py-2 text-sm hover:bg-fondo flex items-center gap-2 ${
+                              e.id_espacio === espacioActivoId ? 'bg-primario-muy-claro' : ''
+                            }`}
+                          >
+                            <Insignia variante={e.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
+                              {e.tipo_espacio}
+                            </Insignia>
+                            <span className="flex-1 truncate">{e.nombre_espacio}</span>
+                            <span className="text-[11px] text-texto-muted">{e.alcance}</span>
+                          </button>
+                        ))
+                    )}
+                  </div>
+                </div>
               )}
             </div>
-          </aside>
+            <Boton variante="primario" tamano="sm" onClick={abrirModalCrear}>
+              <Plus size={14} className="mr-1" /> Crear
+            </Boton>
+          </div>
 
-          {/* Detalle del espacio activo */}
+          {/* Card del espacio activo + tabla de cola */}
           <main className="flex-1 flex flex-col bg-white border border-borde rounded-lg overflow-hidden min-w-0">
             {!espacioActivoObj ? (
               <div className="flex-1 flex flex-col items-center justify-center text-texto-muted text-sm gap-3">
                 <FolderOpen size={48} className="opacity-30" />
-                <p>Selecciona un espacio de la lista o crea uno nuevo.</p>
+                <p>Selecciona un espacio del listado o crea uno nuevo.</p>
                 <Boton variante="primario" tamano="sm" onClick={abrirModalCrear}>
                   <Plus size={14} /> Crear Espacio
                 </Boton>
               </div>
             ) : (
               <>
-                {/* Encabezado del espacio */}
-                <div className="border-b border-borde p-4 flex flex-col gap-2">
+                {/* Card: encabezado + datos + criterio + acciones */}
+                <div className="border-b border-borde p-4 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       <h2 className="text-lg font-semibold text-texto">{espacioActivoObj.nombre_espacio}</h2>
@@ -977,6 +1019,10 @@ export default function PaginaChatUsuario() {
                       <Insignia variante="neutro">{espacioActivoObj.alcance}</Insignia>
                     </div>
                     <div className="flex gap-1 shrink-0">
+                      <Boton variante="primario" tamano="sm" onClick={refrescarEspacio} cargando={refrescando}>
+                        <RefreshCw size={14} className={refrescando ? 'animate-spin' : ''} />
+                        <span className="ml-1">Refrescar</span>
+                      </Boton>
                       {espacioActivoObj.tipo_espacio === 'AREA' && esCreador(espacioActivoObj) && (
                         <button
                           onClick={promoverEspacio}
@@ -1018,49 +1064,42 @@ export default function PaginaChatUsuario() {
                     )}
                     {espacioActivoObj.alcance === 'AREA' && espacioActivoObj.codigo_ubicacion_area && (
                       <span>
-                        Área: {ubicaciones.find((u) => u.codigo_ubicacion === espacioActivoObj.codigo_ubicacion_area)?.alias_ubicacion
+                        Área:{' '}
+                        {ubicaciones.find((u) => u.codigo_ubicacion === espacioActivoObj.codigo_ubicacion_area)?.alias_ubicacion
                           || ubicaciones.find((u) => u.codigo_ubicacion === espacioActivoObj.codigo_ubicacion_area)?.nombre_ubicacion
                           || espacioActivoObj.codigo_ubicacion_area}
                       </span>
                     )}
                   </div>
-                </div>
-
-                {/* Criterio (prompt) editable + botón refrescar */}
-                <div className="border-b border-borde p-4 flex flex-col gap-2">
-                  <label className="text-xs font-semibold text-texto uppercase tracking-wide">
-                    Criterio del espacio (en palabras)
-                  </label>
-                  <textarea
-                    value={criterioEdit}
-                    onChange={(e) => { setCriterioEdit(e.target.value); setCriterioCambios(true) }}
-                    placeholder="Ej: Documentos sobre licitaciones del 2024 con estado VECTORIZADO"
-                    rows={3}
-                    className="w-full resize-none rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none"
-                  />
-                  <div className="flex items-center gap-2 justify-between">
-                    <p className="text-xs text-texto-muted">
-                      Cualquiera del alcance puede editar el criterio. Pulsa Refrescar para volver a aplicarlo.
-                    </p>
-                    <div className="flex gap-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-semibold text-texto uppercase tracking-wide">
+                      Criterio del espacio (en palabras)
+                    </label>
+                    <textarea
+                      value={criterioEdit}
+                      onChange={(e) => { setCriterioEdit(e.target.value); setCriterioCambios(true) }}
+                      placeholder="Ej: Documentos sobre licitaciones del 2024 con estado VECTORIZADO"
+                      rows={2}
+                      className="w-full resize-none rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none"
+                    />
+                    <div className="flex items-center gap-2 justify-between">
+                      <p className="text-xs text-texto-muted">
+                        Cualquiera del alcance puede editar el criterio. Tras editarlo, pulsa Guardar y luego Refrescar para reaplicarlo.
+                      </p>
                       {criterioCambios && (
                         <Boton variante="contorno" tamano="sm" onClick={guardarCriterio}>
                           Guardar criterio
                         </Boton>
                       )}
-                      <Boton variante="primario" tamano="sm" onClick={refrescarEspacio} cargando={refrescando}>
-                        <RefreshCw size={14} className={refrescando ? 'animate-spin' : ''} />
-                        <span className="ml-1">Refrescar</span>
-                      </Boton>
                     </div>
                   </div>
                 </div>
 
-                {/* Documentos del espacio */}
+                {/* Tabla de documentos en la cola */}
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-semibold text-texto">
-                      Documentos ({docsEspacio.length})
+                      Documentos en la cola ({docsEspacio.length})
                     </h4>
                   </div>
                   <Tabla>
@@ -1068,19 +1107,24 @@ export default function PaginaChatUsuario() {
                       <tr>
                         <TablaTh>Documento</TablaTh>
                         <TablaTh>Ubicación</TablaTh>
-                        <TablaTh>Estado</TablaTh>
+                        <TablaTh>Estado área</TablaTh>
+                        <TablaTh>Estado cola</TablaTh>
+                        <TablaTh>Modelo</TablaTh>
+                        <TablaTh className="text-right">Tokens in/out</TablaTh>
+                        <TablaTh>Inicio</TablaTh>
+                        <TablaTh>Fin</TablaTh>
                       </tr>
                     </TablaCabecera>
                     <TablaCuerpo>
                       {cargandoDocsEspacio ? (
                         <TablaFila>
-                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={3 as never}>
+                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>
                             Cargando documentos…
                           </TablaTd>
                         </TablaFila>
                       ) : docsEspacio.length === 0 ? (
                         <TablaFila>
-                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={3 as never}>
+                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>
                             <div className="flex flex-col items-center gap-2">
                               <FileText size={32} className="opacity-30" />
                               <span>Sin documentos. Edita el criterio y refresca para poblarlos.</span>
@@ -1089,7 +1133,7 @@ export default function PaginaChatUsuario() {
                         </TablaFila>
                       ) : (
                         docsEspacio.map((d) => (
-                          <TablaFila key={d.codigo_documento}>
+                          <TablaFila key={d.id_cola}>
                             <TablaTd>
                               <span className="font-medium text-sm">{d.nombre_documento}</span>
                             </TablaTd>
@@ -1097,9 +1141,26 @@ export default function PaginaChatUsuario() {
                               {d.ubicacion_documento || '—'}
                             </TablaTd>
                             <TablaTd>
-                              <Insignia variante={iconoEstado(d.codigo_estado_doc)}>
-                                {d.codigo_estado_doc || '—'}
+                              <Insignia variante={iconoEstadoArea(d.estado_area)}>
+                                {d.estado_area}
                               </Insignia>
+                            </TablaTd>
+                            <TablaTd>
+                              <Insignia variante={iconoEstadoCola(d.estado_cola)}>
+                                {d.estado_cola}
+                              </Insignia>
+                            </TablaTd>
+                            <TablaTd className="text-xs text-texto-muted">{d.modelo_usado || '—'}</TablaTd>
+                            <TablaTd className="text-right text-xs tabular-nums">
+                              {d.tokens_input != null || d.tokens_output != null
+                                ? `${d.tokens_input ?? 0} / ${d.tokens_output ?? 0}`
+                                : '—'}
+                            </TablaTd>
+                            <TablaTd className="text-xs text-texto-muted">
+                              {d.fecha_inicio ? new Date(d.fecha_inicio).toLocaleString('es-CL') : '—'}
+                            </TablaTd>
+                            <TablaTd className="text-xs text-texto-muted">
+                              {d.fecha_fin ? new Date(d.fecha_fin).toLocaleString('es-CL') : '—'}
                             </TablaTd>
                           </TablaFila>
                         ))

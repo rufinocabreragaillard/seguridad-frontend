@@ -939,6 +939,35 @@ export interface PromocionEspacioRespuesta {
   fecha_termino?: string | null
 }
 
+export type EstadoArea = 'ABIERTO' | 'EN_PROCESO' | 'CERRADO' | 'CANCELADO'
+export type EstadoCola = 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO' | 'ERROR'
+
+// Doc en la cola del espacio: combina datos del documento + estado de la cola
+// (cola_estados_docs filtrada por categoria/tipo='ESPACIOS_TRABAJO').
+export interface DocumentoEspacio {
+  id_cola: number
+  codigo_documento: number
+  codigo_grupo: string
+  codigo_entidad?: string | null
+  nombre_documento: string
+  ubicacion_documento?: string | null
+  resumen_documento?: string | null
+  fecha_modificacion?: string | null
+  tamano_kb?: number | null
+  codigo_estado_doc?: string | null
+  estado_area: EstadoArea
+  estado_cola: EstadoCola
+  fecha_cola?: string | null
+  fecha_inicio?: string | null
+  fecha_fin?: string | null
+  modelo_usado?: string | null
+  tokens_input?: number | null
+  tokens_output?: number | null
+  costo_usd?: number | null
+  resultado?: string | null
+  mensaje_error?: string | null
+}
+
 // ─── Tipos de Acceso ──────────────────────────────────────────────────────────
 export interface TipoAcceso {
   codigo_tipo_acceso: string
