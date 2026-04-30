@@ -134,7 +134,7 @@ export default function PaginaLogin() {
             style={{ width: 284, height: 'auto' }}
             className="object-contain"
           />
-          <p className="font-semibold tracking-wide" style={{ fontSize: '1.45rem', color: '#5a5a5a', textAlign: 'center' }}>
+          <p className="font-semibold tracking-wide" style={{ fontSize: '1.45rem', color: '#4089cd', textAlign: 'center' }}>
             {t('tagline')}
           </p>
         </div>
