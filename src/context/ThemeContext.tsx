@@ -7,20 +7,16 @@ import { tema as temaDefault } from '@/config/tema.config'
 interface ThemeContextType {
   tema: Record<string, unknown> | null
   logo: { url: string; alt: string; ancho: number; alto: number }
-  appNombre: string
-  appNombreCorto: string
 }
 
 const ThemeContext = createContext<ThemeContextType>({
   tema: null,
   logo: temaDefault.logo,
-  appNombre: temaDefault.app.nombre,
-  appNombreCorto: temaDefault.app.nombreCorto,
 })
 
 /**
  * Mapeo de claves del JSON de tema a nombres de CSS custom properties.
- * Las claves en la BD usan guion bajo (primario_hover),
+ * Las claves en BD usan guion bajo (primario_hover),
  * las CSS variables usan guion medio (--color-primario-hover).
  */
 function aplicarColores(colores: Record<string, string>) {
@@ -53,18 +49,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   }, [usuario?.tema])
 
-  // Extraer logo y nombre desde el tema del grupo, con fallback al tema por defecto
-  const temaGrupo = usuario?.tema as {
-    logo?: { url: string; alt: string; ancho: number; alto: number }
-    app?: { nombre: string; nombre_corto: string }
-  } | null
-
-  const logo = temaGrupo?.logo ?? temaDefault.logo
-  const appNombre = temaGrupo?.app?.nombre ?? temaDefault.app.nombre
-  const appNombreCorto = temaGrupo?.app?.nombre_corto ?? temaDefault.app.nombreCorto
+  // Logo: del tema del grupo (parametros_*.APARIENCIA/LOGO) con fallback al estático
+  const temaGrupo = usuario?.tema as { logo?: { url?: string } } | null
+  const urlGrupo = temaGrupo?.logo?.url
+  const logo = urlGrupo
+    ? { ...temaDefault.logo, url: urlGrupo, alt: temaDefault.logo.alt }
+    : temaDefault.logo
 
   return (
-    <ThemeContext.Provider value={{ tema: usuario?.tema ?? null, logo, appNombre, appNombreCorto }}>
+    <ThemeContext.Provider value={{ tema: usuario?.tema ?? null, logo }}>
       {children}
     </ThemeContext.Provider>
   )

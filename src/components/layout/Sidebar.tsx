@@ -36,7 +36,7 @@ function TooltipPortal({ texto, rect }: { texto: string; rect: DOMRect }) {
 export function Sidebar() {
   const pathname = usePathname()
   const { usuario } = useAuth()
-  const { logo, appNombreCorto } = useTema()
+  const { logo } = useTema()
   const { colapsado, setColapsado } = useSidebar()
   const [tooltip, setTooltip] = useState<{ texto: string; rect: DOMRect } | null>(null)
   const [busqueda, setBusqueda] = useState('')
@@ -130,7 +130,6 @@ export function Sidebar() {
                 }
               }}
             />
-            <span className="font-bold text-lg ml-2 hidden">{appNombreCorto}</span>
           </Link>
         )}
         <button
