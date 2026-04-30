@@ -9,10 +9,14 @@ export const tema = {
     version: '1.0.0',
   },
   logo: {
-    url: '/serverlm_logo.png',
+    // Fallback estático para el primer render (login, pre-auth). En runtime el
+    // sidebar y demás superficies post-auth usan parametros_*.APARIENCIA/LOGO
+    // (ver theme_engine.resolver_tema). Se mantiene alineado con el default
+    // global de parametros_generales para evitar discrepancias visuales.
+    url: '/serverlm_isotipo.png',
     alt: 'Server LM',
-    ancho: 284,
-    alto: 92,
+    ancho: 60,
+    alto: 60,
   },
   // Los colores de Tailwind se configuran en globals.css bajo @theme
   // Referencia para uso en estilos inline si fuera necesario:
