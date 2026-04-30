@@ -108,13 +108,10 @@ export function Sidebar() {
         colapsado ? 'w-16' : 'w-60'
       )}
     >
-      {/* Cabecera: logo + botón colapsar */}
-      <div className={cn(
-        'flex items-center border-b border-sidebar-texto/40 min-h-[64px]',
-        colapsado ? 'justify-center px-2' : 'justify-between px-4'
-      )}>
+      {/* Cabecera: logo centrado + botón colapsar absolute a la derecha */}
+      <div className="relative flex items-center justify-center border-b border-sidebar-texto/40 min-h-[64px] px-2">
         {!colapsado && (
-          <Link href="/dashboard" className="flex items-center min-w-0">
+          <Link href="/dashboard" className="flex items-center">
             <Image
               src={logo.url}
               alt={logo.alt}
@@ -134,7 +131,7 @@ export function Sidebar() {
         )}
         <button
           onClick={() => setColapsado(!colapsado)}
-          className="p-1.5 rounded-lg hover:bg-sidebar-hover text-texto-muted hover:text-sidebar-texto transition-colors shrink-0"
+          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-sidebar-hover text-texto-muted hover:text-sidebar-texto transition-colors"
           title={colapsado ? 'Expandir menú' : 'Colapsar menú'}
         >
           {colapsado
