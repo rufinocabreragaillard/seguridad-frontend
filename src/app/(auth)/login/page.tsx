@@ -127,16 +127,12 @@ export default function PaginaLogin() {
         />
 
         <div className="relative z-10 flex flex-col items-center text-center gap-1 max-w-sm">
-          <Image
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
             src="/serverlm_logo.png"
             alt="Server LM"
-            width={284}
-            height={92}
+            style={{ width: 284, height: 'auto' }}
             className="object-contain"
-            onError={(e) => {
-              const t = e.target as HTMLImageElement
-              t.style.display = 'none'
-            }}
           />
           <p className="font-semibold tracking-wide" style={{ fontSize: '1.45rem', color: '#5a5a5a', textAlign: 'center' }}>
             {t('tagline')}
@@ -149,16 +145,12 @@ export default function PaginaLogin() {
         <div className="w-full max-w-md">
           {/* Logo mobile */}
           <div className="lg:hidden flex justify-center mb-8">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/serverlm_logo.png"
               alt="Server LM"
-              width={180}
-              height={58}
+              style={{ width: 180, height: 'auto' }}
               className="object-contain"
-              onError={(e) => {
-                const t = e.target as HTMLImageElement
-                t.style.display = 'none'
-              }}
             />
           </div>
 
