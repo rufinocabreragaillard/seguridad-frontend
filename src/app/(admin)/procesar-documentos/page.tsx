@@ -1554,7 +1554,9 @@ function PaginaProcesarDocumentosInterna() {
                   {!yaCargado
                     ? t('escribirFiltro')
                     : documentos.length === 0
-                    ? (pasoActual?.estado_origen || estadoFiltro)
+                    ? esCargar
+                      ? 'Sin documentos cargados aún. Presiona Ejecutar para escanear el directorio.'
+                      : (pasoActual?.estado_origen || estadoFiltro)
                       ? t('sinDocumentosEnEstado', { estado: estadoFiltro || pasoActual?.estado_origen || 'origen' })
                       : 'No hay documentos que coincidan con los filtros'
                     : t('sinResultadosBusqueda')}
