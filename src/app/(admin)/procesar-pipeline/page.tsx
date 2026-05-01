@@ -700,7 +700,7 @@ export default function PaginaCargaDocsUsuario() {
             {/* Selector: árbol de ubicaciones (izquierda) + directorio físico (derecha, mismo borde) */}
             <div className="flex items-center gap-3 flex-wrap">
               {/* Dropdown árbol de ubicaciones */}
-              <div className="relative flex-1 min-w-[200px]" ref={ubicDocDropdownRef}>
+              <div className="relative w-1/3 min-w-[180px]" ref={ubicDocDropdownRef}>
                 <button
                   type="button"
                   onClick={() => !ejecutando && setUbicDocDropdownOpen(!ubicDocDropdownOpen)}
