@@ -332,9 +332,16 @@ export default function PaginaChatUsuario() {
     try {
       const data = await ubicacionesDocsApi.listar()
       setUbicaciones(data)
-      setAreas(data.filter((u) => u.tipo_ubicacion === 'AREA'))
+      const areasData = data.filter((u) => u.tipo_ubicacion === 'AREA')
+      setAreas(areasData)
+      // Pre-seleccionar el área del usuario si tiene una asignada y existe en la lista
+      const areaDefecto = usuario?.codigo_area
+      if (areaDefecto) {
+        const areaUsuario = areasData.find((a) => a.codigo_ubicacion === areaDefecto)
+        if (areaUsuario) setAreaSel(areaDefecto)
+      }
     } catch { /* */ }
-  }, [])
+  }, [usuario?.codigo_area])
 
   const cargarEspacios = useCallback(async () => {
     try {
