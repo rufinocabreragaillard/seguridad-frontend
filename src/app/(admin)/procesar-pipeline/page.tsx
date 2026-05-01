@@ -628,18 +628,18 @@ export default function PaginaCargaDocsUsuario() {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex gap-2 flex-wrap items-start">
               <div className="flex flex-col items-center">
-                <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbIndividual}>
-                  <FolderPlus size={16} />
-                  {t('cargarUbicacion')}
-                </Boton>
-                <span className="text-[11px] text-texto-muted mt-0.5">{t('soloUnDirectorio')}</span>
-              </div>
-              <div className="flex flex-col items-center">
                 <Boton variante="contorno" onClick={iniciarEscaneoDir} cargando={escaneandoDir}>
                   <FolderInput size={16} />
                   {t('cargarUbicacionesDesdeDirectorio')}
                 </Boton>
                 <span className="text-[11px] text-texto-muted mt-0.5">{t('yTodosSubdirectorios')}</span>
+              </div>
+              <div className="flex flex-col items-center">
+                <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbIndividual}>
+                  <FolderPlus size={16} />
+                  {t('cargarUbicacion')}
+                </Boton>
+                <span className="text-[11px] text-texto-muted mt-0.5">{t('soloUnDirectorio')}</span>
               </div>
               <Boton variante="contorno" className="h-[38px]" onClick={() => setExpandidos(new Set(ubicaciones.map((u) => u.codigo_ubicacion)))} disabled={!ubicaciones.length}>
                 {t('expandirTodo')}
