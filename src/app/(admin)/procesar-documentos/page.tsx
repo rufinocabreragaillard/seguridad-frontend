@@ -335,16 +335,6 @@ function PaginaProcesarDocumentosInterna() {
         .sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0))
       setProcesosCorregir(procsCorregir)
 
-      // Si venimos del dashboard con ?estado=XXX, seleccionar el proceso cuyo
-      // estado_origen coincide. Primero buscar en PROCESAR, luego en CORREGIR.
-      if (estadoDesdeUrl) {
-        const matchProcesar = procs.find((p: ProcesoCatalogo) => p.estado_origen === estadoDesdeUrl)
-        const matchCorregir = procsCorregir.find((p: ProcesoCatalogo) => p.estado_origen === estadoDesdeUrl)
-        if (matchProcesar) setProcesoSel(matchProcesar.codigo_proceso)
-        else if (matchCorregir) setProcesoSel(matchCorregir.codigo_proceso)
-        else if (procs.length > 0) setProcesoSel(procs[0].codigo_proceso)
-      }
-
       setUbicaciones(
         (u as UbicacionOption[])
           .filter((x: UbicacionOption) => x)
@@ -361,6 +351,17 @@ function PaginaProcesarDocumentosInterna() {
   useEffect(() => {
     cargarDatosIniciales()
   }, [cargarDatosIniciales])
+
+  // Seleccionar proceso según ?estado=XXX del dashboard, una vez cargados los catálogos
+  useEffect(() => {
+    if (!estadoDesdeUrl || cargandoInicial) return
+    const matchProcesar = procesos.find((p) => p.estado_origen === estadoDesdeUrl)
+    const matchCorregir = procesosCorregir.find((p) => p.estado_origen === estadoDesdeUrl)
+    if (matchProcesar) setProcesoSel(matchProcesar.codigo_proceso)
+    else if (matchCorregir) setProcesoSel(matchCorregir.codigo_proceso)
+    else if (procesos.length > 0) setProcesoSel(procesos[0].codigo_proceso)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [estadoDesdeUrl, cargandoInicial])
 
   // Click-outside para cerrar dropdown de ubicación
   useEffect(() => {
