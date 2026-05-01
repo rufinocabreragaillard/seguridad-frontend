@@ -808,21 +808,6 @@ export default function PaginaCargaDocsUsuario() {
                   </div>
                 )}
               </div>
-
-              {/* Directorio físico (para leer archivos del disco) */}
-              <button
-                onClick={async () => {
-                  try {
-                    const h = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker()
-                    setDirHandleState(h); await setDirectoryHandle(h)
-                  } catch { /* cancelado */ }
-                }}
-                className="flex items-center gap-2 rounded-lg border border-primario bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors shrink-0"
-                title={t('seleccionarCarpetaRaizTitulo')}
-              >
-                <FolderOpen size={15} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
-                {dirHandle ? dirHandle.name : t('carpeta')}
-              </button>
             </div>
 
             {mensajeError && (
