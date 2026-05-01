@@ -191,6 +191,8 @@ export function TabRevertir() {
     }
   }
 
+  const esEliminacion = pasoActual?.estado_destino === 'ELIMINADO'
+
   const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
 
   // Agrupar procesos por categoría de transición para el select
@@ -445,16 +447,20 @@ export function TabRevertir() {
               Buscar
             </Boton>
             <span className="text-sm text-texto-muted">
-              {conteo !== null ? `${conteo} documento${conteo !== 1 ? 's' : ''} a revertir` : ''}
+              {conteo !== null ? `${conteo} documento${conteo !== 1 ? 's' : ''} a ${esEliminacion ? 'eliminar' : 'revertir'}` : ''}
             </span>
             <div className="ml-auto flex items-center gap-3">
               <Boton
-                variante="primario"
+                variante={esEliminacion ? 'peligro' : 'primario'}
                 onClick={() => setConfirmEjecutar(true)}
                 disabled={ejecutando || !procesoSel || conteo === null || conteo === 0}
               >
                 {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                {ejecutando ? 'Ejecutando…' : conteo !== null && conteo > 0 ? `Ejecutar (${conteo})` : 'Ejecutar'}
+                {ejecutando
+                  ? (esEliminacion ? 'Eliminando…' : 'Ejecutando…')
+                  : conteo !== null && conteo > 0
+                    ? (esEliminacion ? `Eliminar (${conteo})` : `Ejecutar (${conteo})`)
+                    : (esEliminacion ? 'Eliminar' : 'Ejecutar')}
               </Boton>
               <Boton variante="contorno" onClick={() => {}} disabled={!ejecutando}>
                 <Square size={14} />Detener
@@ -471,8 +477,13 @@ export function TabRevertir() {
           <div>
             <p className="font-medium text-texto">Proceso completado</p>
             <p className="text-sm text-texto-muted">
-              {resultado} documento{resultado !== 1 ? 's' : ''} revertido{resultado !== 1 ? 's' : ''}
-              {pasoActual ? ` de ${pasoActual.estado_origen || '—'} a ${pasoActual.estado_destino}` : ''}.
+              {esEliminacion
+                ? `${resultado} documento${resultado !== 1 ? 's' : ''} eliminado${resultado !== 1 ? 's' : ''} desde ${pasoActual?.estado_origen || '—'}.`
+                : <>
+                    {resultado} documento{resultado !== 1 ? 's' : ''} revertido{resultado !== 1 ? 's' : ''}
+                    {pasoActual ? ` de ${pasoActual.estado_origen || '—'} a ${pasoActual.estado_destino}` : ''}.
+                  </>
+              }
             </p>
           </div>
         </div>
@@ -492,9 +503,13 @@ export function TabRevertir() {
             <div className="flex items-center">
               <span className="text-xs text-texto-muted">
                 {conteo !== null
-                  ? `${conteo} documento${conteo !== 1 ? 's' : ''} que se revertirán`
+                  ? `${conteo} documento${conteo !== 1 ? 's' : ''} que se ${esEliminacion ? 'eliminarán' : 'revertirán'}`
                   : `${documentos.length} documentos`}
-                {pasoActual ? ` de ${pasoActual.estado_origen} → ${pasoActual.estado_destino}` : ''}
+                {pasoActual
+                  ? esEliminacion
+                    ? ` desde ${pasoActual.estado_origen}`
+                    : ` de ${pasoActual.estado_origen} → ${pasoActual.estado_destino}`
+                  : ''}
               </span>
             </div>
           )}
@@ -562,8 +577,12 @@ export function TabRevertir() {
 
       <ModalConfirmar
         abierto={confirmEjecutar}
-        titulo="Confirmar reversa"
-        mensaje={`¿Revertir ${conteo ?? 0} documento${(conteo ?? 0) !== 1 ? 's' : ''}${pasoActual ? ` de "${pasoActual.estado_origen}" a "${pasoActual.estado_destino}"` : ''}? Esta acción no se puede deshacer.`}
+        titulo={esEliminacion ? 'Confirmar eliminación' : 'Confirmar reversa'}
+        mensaje={
+          esEliminacion
+            ? `¿ELIMINAR ${conteo ?? 0} documento${(conteo ?? 0) !== 1 ? 's' : ''} en estado "${pasoActual?.estado_origen}"? Se borrarán también su texto extraído, chunks, embeddings y características. Esta acción no se puede deshacer.`
+            : `¿Revertir ${conteo ?? 0} documento${(conteo ?? 0) !== 1 ? 's' : ''}${pasoActual ? ` de "${pasoActual.estado_origen}" a "${pasoActual.estado_destino}"` : ''}? Esta acción no se puede deshacer.`
+        }
         alConfirmar={ejecutar}
         alCerrar={() => setConfirmEjecutar(false)}
         cargando={ejecutando}
