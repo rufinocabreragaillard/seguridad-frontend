@@ -12,7 +12,7 @@ import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Modal } from '@/components/ui/modal'
-import { documentosApi, ubicacionesDocsApi, colaEstadosDocsApi, procesosApi, parametrosApi } from '@/lib/api'
+import { documentosApi, ubicacionesDocsApi, colaEstadosDocsApi, procesosApi, parametrosApi, cargaDocumentosApi } from '@/lib/api'
 import { getEstadosDocs, getProcesosDocs } from '@/lib/catalogos'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -24,6 +24,7 @@ import { abrirDocumento, descargarDocumento } from '@/lib/abrir-documento'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
+import { escanearArchivosDirectorio } from '@/lib/escanear-directorio'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TextoCifrado } from '@/components/ui/texto-cifrado'
@@ -173,6 +174,7 @@ function PaginaProcesarDocumentosInterna() {
   const usaLLM = !!(pasoActual?.id_modelo)
   const esRestablecer = procesoSel === PROCESO_RESTABLECER
   const esResetearCargado = procesoSel === PROCESO_RESETEAR_CARGADO
+  const esCargar = pasoActual?.estado_origen === 'FILESYSTEM' && pasoActual?.estado_destino === 'CARGADO'
   const esExtraer = pasoActual?.estado_origen === 'CARGADO' && pasoActual?.estado_destino === 'METADATA'
 
   // Documentos candidatos
@@ -393,7 +395,19 @@ function PaginaProcesarDocumentosInterna() {
         ? ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)?.ruta_completa
         : undefined
 
-      if (esExtraer || esRestablecer || esResetearCargado) {
+      if (esCargar) {
+        // CARGAR (FILESYSTEM → CARGADO): los docs vienen del filesystem, no de BD.
+        // La tabla se llena al ejecutar; aquí solo mostramos CARGADO existentes como referencia.
+        const todos = await documentosApi.listar({ codigo_estado_doc: 'CARGADO', q: qBackend })
+        if (rutaPrefijo) {
+          setDocumentos(todos.filter((d) => d.ubicacion_documento?.startsWith(rutaPrefijo)))
+        } else {
+          setDocumentos(todos)
+        }
+        setTotalDocs(todos.length)
+        setTotalPaginasDoc(Math.max(1, Math.ceil(todos.length / DOCS_POR_PAGINA_DEFAULT)))
+        setPaginaDoc(1)
+      } else if (esExtraer || esRestablecer || esResetearCargado) {
         // EXTRAER necesita todos los docs para el matching con el filesystem.
         // RESTABLECER/RESETEAR también carga todo (son lotes pequeños de estados terminales).
         let todos: Documento[]
@@ -437,7 +451,7 @@ function PaginaProcesarDocumentosInterna() {
     } finally {
       setCargando(false)
     }
-  }, [procesoSel, esExtraer, esRestablecer, esResetearCargado, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro, filtroLibre])
+  }, [procesoSel, esCargar, esExtraer, esRestablecer, esResetearCargado, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro, filtroLibre])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
   // Si se seleccionó un estado explícito, auto-cargar inmediatamente.
@@ -674,6 +688,73 @@ function PaginaProcesarDocumentosInterna() {
         setProcesados(res.restablecidos)
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Error al restablecer'
+        setCola([{ id_cola: 0, codigo_documento: 0, nombre_documento: msg, estado_cola: 'ERROR' }])
+      }
+      setEjecutando(false)
+      cargarDocumentos()
+      return
+    }
+
+    // ── CARGAR (client-side): FILESYSTEM → CARGADO ───────────────────────
+    if (esCargar) {
+      let handleEfectivo: FileSystemDirectoryHandle | null = dirHandle
+      if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
+        const stored = await idbGetHandle()
+        if (stored && (await ensureReadPermission(stored))) {
+          handleEfectivo = stored
+          setDirHandle(stored)
+        }
+        // Si no hay handle guardado, escanearArchivosDirectorio abrirá el picker
+      }
+
+      setEscaneandoDir(true)
+      let scan: Awaited<ReturnType<typeof escanearArchivosDirectorio>>
+      try {
+        scan = await escanearArchivosDirectorio(handleEfectivo ?? undefined, nivelesDirectorio)
+      } finally {
+        setEscaneandoDir(false)
+      }
+      if (!scan) {
+        setEjecutando(false)
+        return
+      }
+
+      // Guardar handle para reutilizar sin volver a pedir permisos
+      setDirHandle(scan.dirHandle)
+      idbSetHandle(scan.dirHandle)
+      // Actualizar set de nombres para filtro visual
+      setArchivosEnDir(new Set(scan.archivos.map((a) => a.nombre)))
+
+      const archivosParaCargar = tope
+        ? scan.archivos.slice(0, parseInt(tope))
+        : scan.archivos
+
+      // Códigos de ubicaciones escaneadas (para detección de huérfanos en BD)
+      const codigosUbicacionEscaneadas = ubicaciones
+        .filter((u) => u.ruta_completa && scan!.rutasEscaneadas.includes(u.ruta_completa))
+        .map((u) => u.codigo_ubicacion)
+
+      setCola([{
+        id_cola: 0,
+        codigo_documento: 0,
+        nombre_documento: `Cargando ${archivosParaCargar.length} archivos desde ${scan.nombreRaiz}…`,
+        estado_cola: 'EN_PROCESO',
+      }])
+
+      try {
+        const res = await cargaDocumentosApi.cargar({
+          archivos: archivosParaCargar,
+          codigos_ubicacion_escaneadas: codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined,
+        })
+        setCola([{
+          id_cola: 0,
+          codigo_documento: 0,
+          nombre_documento: `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`,
+          estado_cola: 'COMPLETADO',
+        }])
+        setProcesados(res.insertados + res.actualizados)
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : 'Error al cargar'
         setCola([{ id_cola: 0, codigo_documento: 0, nombre_documento: msg, estado_cola: 'ERROR' }])
       }
       setEjecutando(false)
