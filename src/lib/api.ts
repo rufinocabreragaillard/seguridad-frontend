@@ -1355,8 +1355,20 @@ export const cargaDocumentosApi = {
       tamano_kb?: number
       fecha_modificacion?: string
     }[]
+    /**
+     * Lista de codigo_ubicacion que el cliente acaba de escanear. Si se envía,
+     * los documentos de esas ubicaciones que NO aparezcan en `archivos` se
+     * eliminan (hard delete cascada). Si se omite, no se borra nada.
+     */
+    codigos_ubicacion_escaneadas?: string[]
   }) =>
-    api.post<{ insertados: number; actualizados: number; total: number }>(
+    api.post<{
+      insertados: number
+      actualizados: number
+      revertidos: number
+      eliminados: number
+      total: number
+    }>(
       '/documentos/cargar-desde-ubicaciones', datos, { timeout: 60000 }
     ).then((r) => r.data),
 }

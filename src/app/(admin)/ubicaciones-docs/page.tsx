@@ -403,9 +403,16 @@ export default function PaginaUbicacionesDocs() {
     carpetasSinMatch: string[]
     archivosConMatch: ArchivoEscaneado[]
     archivosEnNoHabilitadas: ArchivoEscaneado[]
+    codigosUbicacionEscaneadas: string[]
   } | null>(null)
   const [cdCargando, setCdCargando] = useState(false)
-  const [cdResultado, setCdResultado] = useState<{ insertados: number; actualizados: number; total: number } | null>(null)
+  const [cdResultado, setCdResultado] = useState<{
+    insertados: number
+    actualizados: number
+    revertidos: number
+    eliminados: number
+    total: number
+  } | null>(null)
   const [cdBusqueda, setCdBusqueda] = useState('')
 
   useEffect(() => {
@@ -441,11 +448,16 @@ export default function PaginaUbicacionesDocs() {
     const rutasHabilitadas = new Set<string>()
     const rutasNoHabilitadas = new Set<string>()
     const todasRutasBD = new Set<string>()
+    const rutaToCodigoHabilitado = new Map<string, string>()
     for (const u of ubicacionesAct) {
       if (u.ruta_completa) {
         todasRutasBD.add(u.ruta_completa)
-        if (u.ubicacion_habilitada) rutasHabilitadas.add(u.ruta_completa)
-        else rutasNoHabilitadas.add(u.ruta_completa)
+        if (u.ubicacion_habilitada) {
+          rutasHabilitadas.add(u.ruta_completa)
+          rutaToCodigoHabilitado.set(u.ruta_completa, u.codigo_ubicacion)
+        } else {
+          rutasNoHabilitadas.add(u.ruta_completa)
+        }
       }
     }
     const archivosConMatch: ArchivoEscaneado[] = []
@@ -459,7 +471,25 @@ export default function PaginaUbicacionesDocs() {
       }
     }
     const carpetasSinMatch = scan.rutasEscaneadas.map(remapear).filter((ruta) => !todasRutasBD.has(ruta))
-    return { nombreRaiz: scan.nombreRaiz, archivos: scan.archivos, carpetasSinMatch, archivosConMatch, archivosEnNoHabilitadas }
+    // Códigos de ubicaciones HABILITADAS que el usuario acaba de escanear.
+    // El backend usa esto para detectar documentos huérfanos (en BD bajo esas
+    // ubicaciones pero ya no presentes en el filesystem) y eliminarlos.
+    const codigosUbicacionEscaneadas = Array.from(
+      new Set(
+        scan.rutasEscaneadas
+          .map(remapear)
+          .map((ruta) => rutaToCodigoHabilitado.get(ruta))
+          .filter((c): c is string => Boolean(c))
+      )
+    )
+    return {
+      nombreRaiz: scan.nombreRaiz,
+      archivos: scan.archivos,
+      carpetasSinMatch,
+      archivosConMatch,
+      archivosEnNoHabilitadas,
+      codigosUbicacionEscaneadas,
+    }
   }, [])
 
   const cdEjecutarEscaneo = useCallback(async (handle: FileSystemDirectoryHandle) => {
@@ -509,6 +539,7 @@ export default function PaginaUbicacionesDocs() {
           tamano_kb: a.tamano_kb,
           fecha_modificacion: a.fecha_modificacion,
         })),
+        codigos_ubicacion_escaneadas: cdDatos.codigosUbicacionEscaneadas,
       })
       setCdResultado(res)
     } catch (e: unknown) {
@@ -1227,7 +1258,7 @@ export default function PaginaUbicacionesDocs() {
               <CheckCircle size={32} className="mx-auto text-green-600 mb-2" />
               <p className="text-lg font-medium text-green-800">{tcd('cargaCompletada')}</p>
             </div>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               <div className="border border-borde rounded-lg p-3 text-center">
                 <p className="stat-number text-green-600">{cdResultado.insertados}</p>
                 <p className="text-xs text-texto-muted">{tcd('nuevos')}</p>
@@ -1235,6 +1266,14 @@ export default function PaginaUbicacionesDocs() {
               <div className="border border-borde rounded-lg p-3 text-center">
                 <p className="stat-number text-primario">{cdResultado.actualizados}</p>
                 <p className="text-xs text-texto-muted">{tcd('actualizados')}</p>
+              </div>
+              <div className="border border-borde rounded-lg p-3 text-center">
+                <p className="stat-number text-amber-600">{cdResultado.revertidos}</p>
+                <p className="text-xs text-texto-muted">Modificados</p>
+              </div>
+              <div className="border border-borde rounded-lg p-3 text-center">
+                <p className="stat-number text-red-600">{cdResultado.eliminados}</p>
+                <p className="text-xs text-texto-muted">Eliminados</p>
               </div>
               <div className="border border-borde rounded-lg p-3 text-center">
                 <p className="stat-number text-texto-muted">{cdResultado.total}</p>
