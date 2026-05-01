@@ -196,6 +196,7 @@ function PaginaProcesarDocumentosInterna() {
   const abortRef = useRef(false)
   const resolveColaRef = useRef<(() => void) | null>(null)
   const scanAbortRef = useRef<AbortController | null>(null)
+  const estadoUrlAplicadoRef = useRef(false)
 
   // Modal confirmación carga: guarda el resultado del escaneo hasta que el usuario confirme
   type ScanResult = NonNullable<Awaited<ReturnType<typeof escanearArchivosDirectorio>>>
@@ -354,14 +355,16 @@ function PaginaProcesarDocumentosInterna() {
 
   // Seleccionar proceso según ?estado=XXX del dashboard, una vez cargados los catálogos
   useEffect(() => {
-    if (!estadoDesdeUrl || cargandoInicial) return
+    if (!estadoDesdeUrl || estadoUrlAplicadoRef.current) return
+    if (cargandoInicial || (procesos.length === 0 && procesosCorregir.length === 0)) return
+    estadoUrlAplicadoRef.current = true
     const matchProcesar = procesos.find((p) => p.estado_origen === estadoDesdeUrl)
     const matchCorregir = procesosCorregir.find((p) => p.estado_origen === estadoDesdeUrl)
     if (matchProcesar) setProcesoSel(matchProcesar.codigo_proceso)
     else if (matchCorregir) setProcesoSel(matchCorregir.codigo_proceso)
     else if (procesos.length > 0) setProcesoSel(procesos[0].codigo_proceso)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [estadoDesdeUrl, cargandoInicial])
+  }, [estadoDesdeUrl, cargandoInicial, procesos, procesosCorregir])
 
   // Click-outside para cerrar dropdown de ubicación
   useEffect(() => {
