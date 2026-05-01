@@ -195,6 +195,16 @@ function PaginaProcesarDocumentosInterna() {
   const [nivelesDirectorio, setNivelesDirectorio] = useState(5)
   const abortRef = useRef(false)
   const resolveColaRef = useRef<(() => void) | null>(null)
+  const scanAbortRef = useRef<AbortController | null>(null)
+
+  // Modal confirmación carga: guarda el resultado del escaneo hasta que el usuario confirme
+  type ScanResult = NonNullable<Awaited<ReturnType<typeof escanearArchivosDirectorio>>>
+  type PendingCarga = {
+    scan: ScanResult
+    archivosParaCargar: ScanResult['archivos']
+    codigosUbicacionEscaneadas: string[]
+  }
+  const [pendingCarga, setPendingCarga] = useState<PendingCarga | null>(null)
 
   // Realtime: notificación push cuando cambia la cola (reemplaza polling 3s)
   const handleColaChange = useCallback(() => {
@@ -490,7 +500,6 @@ function PaginaProcesarDocumentosInterna() {
   const seleccionarDirectorio = async () => {
     try {
       const opts: Record<string, unknown> = { mode: 'read', id: 'cab-procesar-docs' }
-      if (dirHandle) opts.startIn = dirHandle
       const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
       setDirHandle(handle)
       idbSetHandle(handle)
@@ -707,14 +716,20 @@ function PaginaProcesarDocumentosInterna() {
         // Si no hay handle guardado, escanearArchivosDirectorio abrirá el picker
       }
 
+      // Crear AbortController para poder cancelar el escaneo con Detener
+      const scanAbort = new AbortController()
+      scanAbortRef.current = scanAbort
+
       setEscaneandoDir(true)
       let scan: Awaited<ReturnType<typeof escanearArchivosDirectorio>>
       try {
-        scan = await escanearArchivosDirectorio(handleEfectivo ?? undefined, nivelesDirectorio)
+        scan = await escanearArchivosDirectorio(handleEfectivo ?? undefined, nivelesDirectorio, scanAbort.signal)
       } finally {
         setEscaneandoDir(false)
+        scanAbortRef.current = null
       }
-      if (!scan) {
+
+      if (!scan || abortRef.current) {
         setEjecutando(false)
         return
       }
@@ -734,31 +749,10 @@ function PaginaProcesarDocumentosInterna() {
         .filter((u) => u.ruta_completa && scan!.rutasEscaneadas.includes(u.ruta_completa))
         .map((u) => u.codigo_ubicacion)
 
-      setCola([{
-        id_cola: 0,
-        codigo_documento: 0,
-        nombre_documento: `Cargando ${archivosParaCargar.length} archivos desde ${scan.nombreRaiz}…`,
-        estado_cola: 'EN_PROCESO',
-      }])
-
-      try {
-        const res = await cargaDocumentosApi.cargar({
-          archivos: archivosParaCargar,
-          codigos_ubicacion_escaneadas: codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined,
-        })
-        setCola([{
-          id_cola: 0,
-          codigo_documento: 0,
-          nombre_documento: `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`,
-          estado_cola: 'COMPLETADO',
-        }])
-        setProcesados(res.insertados + res.actualizados)
-      } catch (e) {
-        const msg = e instanceof Error ? e.message : 'Error al cargar'
-        setCola([{ id_cola: 0, codigo_documento: 0, nombre_documento: msg, estado_cola: 'ERROR' }])
-      }
+      // Pausar y mostrar modal de confirmación con el conteo de archivos encontrados.
+      // La ejecución continúa solo cuando el usuario confirma (ver confirmarCarga).
+      setPendingCarga({ scan, archivosParaCargar, codigosUbicacionEscaneadas })
       setEjecutando(false)
-      cargarDocumentos()
       return
     }
 
@@ -1037,13 +1031,54 @@ function PaginaProcesarDocumentosInterna() {
   }
 
   const detener = () => {
-    // Corta el loop Realtime y el loop client-side de EXTRAER.
+    // Corta el escaneo en curso, el loop Realtime y el loop client-side de EXTRAER.
     // El worker backend sigue corriendo; el usuario puede ver el avance en la tab Cola.
     abortRef.current = true
+    if (scanAbortRef.current) {
+      scanAbortRef.current.abort()
+      scanAbortRef.current = null
+    }
     if (resolveColaRef.current) {
       resolveColaRef.current()
       resolveColaRef.current = null
     }
+  }
+
+  const confirmarCarga = async () => {
+    if (!pendingCarga) return
+    const { scan, archivosParaCargar, codigosUbicacionEscaneadas } = pendingCarga
+    setPendingCarga(null)
+    setEjecutando(true)
+    abortRef.current = false
+    setCola([{
+      id_cola: 0,
+      codigo_documento: 0,
+      nombre_documento: `Cargando ${archivosParaCargar.length} archivos desde ${scan.nombreRaiz}…`,
+      estado_cola: 'EN_PROCESO',
+    }])
+    try {
+      const res = await cargaDocumentosApi.cargar({
+        archivos: archivosParaCargar,
+        codigos_ubicacion_escaneadas: codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined,
+      })
+      setCola([{
+        id_cola: 0,
+        codigo_documento: 0,
+        nombre_documento: `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`,
+        estado_cola: 'COMPLETADO',
+      }])
+      setProcesados(res.insertados + res.actualizados)
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Error al cargar'
+      setCola([{ id_cola: 0, codigo_documento: 0, nombre_documento: msg, estado_cola: 'ERROR' }])
+    }
+    setEjecutando(false)
+    cargarDocumentos()
+  }
+
+  const cancelarCarga = () => {
+    setPendingCarga(null)
+    setCola([])
   }
 
   const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
@@ -1394,11 +1429,11 @@ function PaginaProcesarDocumentosInterna() {
                 </Boton>
               )}
               <Boton variante="primario" onClick={ejecutar}
-                disabled={ejecutando || !procesoSel}>
-                {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                {ejecutando ? t('ejecutando') : t('ejecutar')}
+                disabled={ejecutando || escaneandoDir || !procesoSel}>
+                {(ejecutando || escaneandoDir) ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+                {escaneandoDir ? 'Escaneando…' : ejecutando ? t('ejecutando') : t('ejecutar')}
               </Boton>
-              <Boton variante="contorno" onClick={detener} disabled={!ejecutando}>
+              <Boton variante="contorno" onClick={detener} disabled={!ejecutando && !escaneandoDir}>
                 <Square size={14} />{t('detener')}
               </Boton>
             </div>
@@ -1801,6 +1836,18 @@ function PaginaProcesarDocumentosInterna() {
           if (ubicacion) setUbicacionSel(ubicacion)
           if (topeVal) setTope(String(topeVal))
         }}
+      />
+
+      {/* ── Modal confirmación antes de cargar documentos desde filesystem ── */}
+      <ModalConfirmar
+        abierto={!!pendingCarga}
+        alCerrar={cancelarCarga}
+        alConfirmar={confirmarCarga}
+        titulo="Confirmar carga de documentos"
+        mensaje={pendingCarga
+          ? `Se encontraron ${pendingCarga.archivosParaCargar.length.toLocaleString()} archivos en "${pendingCarga.scan.nombreRaiz}". ¿Continuar con la carga?`
+          : ''}
+        textoConfirmar="Cargar"
       />
 
       <ModalConfirmar

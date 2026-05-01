@@ -169,6 +169,7 @@ export interface ArchivoEscaneado {
 export async function escanearArchivosDirectorio(
   handleExterno?: FileSystemDirectoryHandle | null,
   maxNiveles = 5,
+  signal?: AbortSignal,
 ): Promise<{
   nombreRaiz: string
   archivos: ArchivoEscaneado[]
@@ -195,16 +196,19 @@ export async function escanearArchivosDirectorio(
     rutaActual: string,
     nivel: number,
   ): Promise<void> {
+    if (signal?.aborted) return
     rutasEscaneadas.push(rutaActual)
 
     const entries: { handle: FileSystemHandle; kind: string }[] = []
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     for await (const entry of (handle as any).values()) {
+      if (signal?.aborted) return
       entries.push({ handle: entry, kind: entry.kind })
     }
 
     // Archivos de este directorio
     for (const entry of entries) {
+      if (signal?.aborted) return
       if (entry.kind === 'file') {
         const nombre = entry.handle.name
         if (nombre.startsWith('.')) continue
@@ -226,6 +230,7 @@ export async function escanearArchivosDirectorio(
     // Recursión en subdirectorios (respeta límite de niveles)
     if (nivel < maxNiveles) {
       for (const entry of entries) {
+        if (signal?.aborted) return
         if (entry.kind === 'directory') {
           const nombre = entry.handle.name
           if (nombre.startsWith('.') || nombre === 'node_modules' || nombre === '__pycache__') continue
@@ -240,6 +245,8 @@ export async function escanearArchivosDirectorio(
   }
 
   await recorrerArchivos(dirHandle, `/${nombreRaiz}`, 0)
+
+  if (signal?.aborted) return null
 
   return { nombreRaiz, archivos, carpetasSinMatch: [], rutasEscaneadas, dirHandle }
 }
