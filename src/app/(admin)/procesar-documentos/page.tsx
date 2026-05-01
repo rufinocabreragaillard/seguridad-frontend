@@ -139,6 +139,7 @@ function PaginaProcesarDocumentosInterna() {
   const [errorCargaInicial, setErrorCargaInicial] = useState(false)
   const [cargandoInicial, setCargandoInicial] = useState(true)
   const [procesoSel, setProcesoSel] = useState<string>('')   // codigo_proceso del catálogo o PROCESO_RESTABLECER
+  const [categoriaSel, setCategoriaSel] = useState<'PROCESAR' | 'CORREGIR' | null>(null)
   const [nParallelEdit, setNParallelEdit] = useState<number>(10)
   const [guardandoParalel, setGuardandoParalel] = useState(false)
   const [tope, setTope] = useState<string>('')  // vacío = sin tope (procesa todo)
@@ -154,13 +155,18 @@ function PaginaProcesarDocumentosInterna() {
   const ubicDropdownRef = useRef<HTMLDivElement>(null)
 
   // Proceso seleccionado (contiene estado_origen, estado_destino, id_modelo directamente).
-  // Busca en PROCESAR primero, luego en CORREGIR.
+  // Si categoriaSel es CORREGIR, busca en procesosCorregir primero para evitar colisión de códigos.
   const pasoActual = useMemo(() => {
     if (procesoSel === PROCESO_RESTABLECER || procesoSel === PROCESO_RESETEAR_CARGADO) return null
+    if (categoriaSel === 'CORREGIR') {
+      return procesosCorregir.find((x) => x.codigo_proceso === procesoSel)
+        ?? procesos.find((x) => x.codigo_proceso === procesoSel)
+        ?? null
+    }
     return procesos.find((x) => x.codigo_proceso === procesoSel)
       ?? procesosCorregir.find((x) => x.codigo_proceso === procesoSel)
       ?? null
-  }, [procesos, procesosCorregir, procesoSel])
+  }, [procesos, procesosCorregir, procesoSel, categoriaSel])
 
   // Sincronizar n_parallel con el proceso seleccionado
   useEffect(() => {
@@ -360,8 +366,8 @@ function PaginaProcesarDocumentosInterna() {
     estadoUrlAplicadoRef.current = true
     const matchProcesar = procesos.find((p) => p.estado_origen === estadoDesdeUrl)
     const matchCorregir = procesosCorregir.find((p) => p.estado_origen === estadoDesdeUrl)
-    if (matchProcesar) setProcesoSel(matchProcesar.codigo_proceso)
-    else if (matchCorregir) setProcesoSel(matchCorregir.codigo_proceso)
+    if (matchProcesar) { setProcesoSel(matchProcesar.codigo_proceso); setCategoriaSel('PROCESAR') }
+    else if (matchCorregir) { setProcesoSel(matchCorregir.codigo_proceso); setCategoriaSel('CORREGIR') }
     else if (procesos.length > 0) setProcesoSel(procesos[0].codigo_proceso)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estadoDesdeUrl, cargandoInicial, procesos, procesosCorregir])
@@ -1159,7 +1165,21 @@ function PaginaProcesarDocumentosInterna() {
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             <div className="flex flex-col gap-1.5 min-w-0">
               <label className="text-sm font-medium text-texto">{t('etiquetaProceso')}</label>
-              <select value={procesoSel} onChange={(e) => setProcesoSel(e.target.value)} className={selectClass} disabled={ejecutando || cargandoInicial}>
+              <select
+                value={categoriaSel === 'CORREGIR' ? `CORREGIR:${procesoSel}` : procesoSel}
+                onChange={(e) => {
+                  const val = e.target.value
+                  if (val.startsWith('CORREGIR:')) {
+                    setProcesoSel(val.slice('CORREGIR:'.length))
+                    setCategoriaSel('CORREGIR')
+                  } else {
+                    setProcesoSel(val)
+                    setCategoriaSel('PROCESAR')
+                  }
+                }}
+                className={selectClass}
+                disabled={ejecutando || cargandoInicial}
+              >
                 <option value="">— Sin valor —</option>
                 <optgroup label="Procesar">
                   {procesos.map((p) => {
@@ -1176,7 +1196,7 @@ function PaginaProcesarDocumentosInterna() {
                     {procesosCorregir.map((p) => {
                       const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
                       return (
-                        <option key={p.codigo_proceso} value={p.codigo_proceso}>
+                        <option key={`CORREGIR:${p.codigo_proceso}`} value={`CORREGIR:${p.codigo_proceso}`}>
                           {p.nombre_proceso} ({flecha})
                         </option>
                       )
@@ -1196,9 +1216,10 @@ function PaginaProcesarDocumentosInterna() {
                   setYaCargado(false)
                   // Auto-seleccionar proceso cuyo estado_origen coincida (PROCESAR primero, luego CORREGIR)
                   if (nuevoEstado && !procesoSel) {
-                    const match = procesos.find((p) => p.estado_origen === nuevoEstado)
-                      ?? procesosCorregir.find((p) => p.estado_origen === nuevoEstado)
-                    if (match) setProcesoSel(match.codigo_proceso)
+                    const matchP = procesos.find((p) => p.estado_origen === nuevoEstado)
+                    const matchC = procesosCorregir.find((p) => p.estado_origen === nuevoEstado)
+                    if (matchP) { setProcesoSel(matchP.codigo_proceso); setCategoriaSel('PROCESAR') }
+                    else if (matchC) { setProcesoSel(matchC.codigo_proceso); setCategoriaSel('CORREGIR') }
                   }
                 }}
                 className={selectClass}
@@ -1829,14 +1850,17 @@ function PaginaProcesarDocumentosInterna() {
         onAbiertoChange={setChatAbierto}
         onEjecutar={(proceso, tope, ubicacion) => {
           setProcesoSel(proceso)
+          setCategoriaSel('PROCESAR')
           if (tope) setTope(String(tope))
           if (ubicacion) setUbicacionSel(ubicacion)
           ejecutar()
         }}
         onCambiarEstado={(estadoOrigen, estadoDestino, ubicacion, topeVal) => {
           setEstadoFiltro(estadoOrigen)
-          const match = procesos.find((p) => p.estado_origen === estadoOrigen && p.estado_destino === estadoDestino)
-          if (match) setProcesoSel(match.codigo_proceso)
+          const matchP = procesos.find((p) => p.estado_origen === estadoOrigen && p.estado_destino === estadoDestino)
+          const matchC = procesosCorregir.find((p) => p.estado_origen === estadoOrigen && p.estado_destino === estadoDestino)
+          if (matchP) { setProcesoSel(matchP.codigo_proceso); setCategoriaSel('PROCESAR') }
+          else if (matchC) { setProcesoSel(matchC.codigo_proceso); setCategoriaSel('CORREGIR') }
           if (ubicacion) setUbicacionSel(ubicacion)
           if (topeVal) setTope(String(topeVal))
         }}
