@@ -115,6 +115,9 @@ export default function PaginaChatUsuario() {
   const [spCopiado, setSpCopiado] = useState(false)
   const esSuperAdmin = grupoActivo === 'ADMIN'
 
+  // ── Modal visor de documento (desde links del chat) ──
+  const [modalDocCodigo, setModalDocCodigo] = useState<number | null>(null)
+
   const verSystemPrompt = async () => {
     if (convActivaId == null) return
     setModalSpAbierto(true)
@@ -681,7 +684,7 @@ export default function PaginaChatUsuario() {
                   ) : (
                     <>
                       {mensajes.map((m) => (
-                        <Mensaje key={m.id_mensaje} mensaje={m} />
+                        <Mensaje key={m.id_mensaje} mensaje={m} onAbrirDoc={setModalDocCodigo} />
                       ))}
                       {respuestaEnCurso && (
                         <Mensaje
@@ -693,6 +696,7 @@ export default function PaginaChatUsuario() {
                             fecha_creacion: new Date().toISOString(),
                           }}
                           streaming
+                          onAbrirDoc={setModalDocCodigo}
                         />
                       )}
                       {enviando && actividad && (
@@ -1359,13 +1363,64 @@ export default function PaginaChatUsuario() {
           </div>
         ) : null}
       </Modal>
+      <ModalVisorDocumento codigoDoc={modalDocCodigo} onCerrar={() => setModalDocCodigo(null)} />
     </div>
+  )
+}
+
+// ── Modal visor de documento (abre desde links del chat) ──────────────────────
+
+function ModalVisorDocumento({ codigoDoc, onCerrar }: { codigoDoc: number | null; onCerrar: () => void }) {
+  const [doc, setDoc] = useState<Documento | null>(null)
+  const [cargando, setCargando] = useState(false)
+  const [error, setError] = useState('')
+
+  useEffect(() => {
+    if (codigoDoc == null) { setDoc(null); setError(''); return }
+    setCargando(true)
+    setError('')
+    documentosApi.obtener(codigoDoc)
+      .then(setDoc)
+      .catch(() => setError('No se pudo cargar el documento.'))
+      .finally(() => setCargando(false))
+  }, [codigoDoc])
+
+  return (
+    <Modal abierto={codigoDoc != null} alCerrar={onCerrar} titulo="Documento" className="max-w-2xl">
+      {cargando && <p className="text-sm text-texto-muted p-4">Cargando…</p>}
+      {error && <p className="text-sm text-error p-4">{error}</p>}
+      {doc && !cargando && (
+        <div className="p-6 flex flex-col gap-4 overflow-y-auto">
+          <div>
+            <p className="text-xs text-texto-muted uppercase tracking-wide mb-1">Nombre</p>
+            <p className="text-sm font-medium">{doc.nombre_documento}</p>
+          </div>
+          {doc.ubicacion_documento && (
+            <div>
+              <p className="text-xs text-texto-muted uppercase tracking-wide mb-1">Ubicación</p>
+              <p className="text-sm font-mono text-texto-muted break-all">{doc.ubicacion_documento}</p>
+            </div>
+          )}
+          {doc.resumen_documento && (
+            <div>
+              <p className="text-xs text-texto-muted uppercase tracking-wide mb-1">Resumen</p>
+              <p className="text-sm leading-relaxed">{doc.resumen_documento}</p>
+            </div>
+          )}
+          <div className="flex gap-4 text-xs text-texto-muted border-t border-borde pt-3">
+            {doc.codigo_estado_doc && <span>Estado: {doc.codigo_estado_doc}</span>}
+            {doc.tamano_kb != null && <span>Tamaño: {doc.tamano_kb} KB</span>}
+            {doc.fecha_modificacion && <span>Modificado: {new Date(doc.fecha_modificacion).toLocaleDateString()}</span>}
+          </div>
+        </div>
+      )}
+    </Modal>
   )
 }
 
 // ── Subcomponente Mensaje ──────────────────────────────────────────────────────
 
-function Mensaje({ mensaje, streaming = false }: { mensaje: ChatMensaje; streaming?: boolean }) {
+function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMensaje; streaming?: boolean; onAbrirDoc?: (codigo: number) => void }) {
   const esUser = mensaje.rol === 'user'
   const tieneTabla = !esUser && /(^|\n)\s*\|.*\|.*\n\s*\|[-:| ]+\|/.test(mensaje.contenido)
   return (
@@ -1399,9 +1454,23 @@ function Mensaje({ mensaje, streaming = false }: { mensaje: ChatMensaje; streami
                 ),
                 a: ({ href, children, ...props }) => {
                   const hrefSeguro = typeof href === 'string' && /^(https?:\/\/|\/)/i.test(href) ? href : '#'
-                  const esInterno = hrefSeguro.startsWith('/')
+                  // Detectar link a documento: /documentos?codigo=X
+                  const matchDoc = hrefSeguro.match(/^\/documentos[?&]codigo=(\d+)/)
+                  if (matchDoc && onAbrirDoc) {
+                    const codigo = parseInt(matchDoc[1], 10)
+                    return (
+                      <button
+                        type="button"
+                        onClick={() => onAbrirDoc(codigo)}
+                        className="text-primario underline hover:text-primario-hover cursor-pointer bg-transparent border-0 p-0 font-inherit text-inherit"
+                      >
+                        {children}
+                      </button>
+                    )
+                  }
+                  // Links externos: abrir en pestaña nueva
                   return (
-                    <a href={hrefSeguro} target={esInterno ? undefined : '_blank'} rel={esInterno ? undefined : 'noopener noreferrer'} className="text-primario underline hover:text-primario-hover" {...props}>
+                    <a href={hrefSeguro} target="_blank" rel="noopener noreferrer" className="text-primario underline hover:text-primario-hover" {...props}>
                       {children}
                     </a>
                   )
