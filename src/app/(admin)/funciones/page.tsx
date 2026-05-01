@@ -358,40 +358,64 @@ export default function PaginaFunciones() {
                 <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><InsigniaTipo tipo={f.tipo_acceso} /></TablaTd>
                 <TablaTd className="text-sm" onDoubleClick={() => abrirEditarFuncion(f)}>{f.alias_de_funcion || '—'}</TablaTd>
                 <TablaTd className="font-medium" onDoubleClick={() => abrirEditarFuncion(f)}>
-                  <span className="inline-flex items-center gap-1.5">
-                    {f.nombre}
-                    {f.traducir_registros && !f.tabla_traducible && (
-                      <span
-                        title={'"Traducir registros del mantenedor" está activo pero falta asignar la tabla. La generación omitirá esta función.'}
-                        className="text-amber-500 cursor-help"
-                        aria-label="Configuración de traducción incompleta"
-                      >
-                        ⚠️
-                      </span>
-                    )}
-                  </span>
+                  {f.nombre}
                 </TablaTd>
                 <TablaTd className="text-xs">{f.url_funcion ? <a href={f.url_funcion} target="_blank" rel="noopener noreferrer" className="text-primario hover:underline">{f.url_funcion}</a> : <span className="text-texto-muted">—</span>}</TablaTd>
                 <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>
                 <TablaTd>
                   <div className="flex items-center justify-end gap-1">
+                    {/* Botón Traducir — amarillo si traducir_registros=true pero falta tabla_traducible */}
                     <button
                       onClick={() => traducirFuncion(f)}
                       disabled={traduciendo === f.codigo_funcion || f.traducir === false}
-                      className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                      title={f.traducir === false ? 'Traducción desactivada para esta función' : 'Traducir esta función a todos los idiomas destino'}
+                      className={`p-1.5 rounded-lg hover:bg-primario-muy-claro transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                        f.traducir_registros && !f.tabla_traducible
+                          ? 'text-amber-500 hover:text-amber-600'
+                          : 'text-texto-muted hover:text-primario'
+                      }`}
+                      title={
+                        f.traducir === false
+                          ? 'Traducción desactivada para esta función'
+                          : f.traducir_registros && !f.tabla_traducible
+                          ? '⚠ Configuración incompleta: "Tabla a traducir" no asignada. La generación omitirá esta función.'
+                          : 'Traducir esta función a todos los idiomas destino'
+                      }
                     >
                       {traduciendo === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <Languages size={14} />}
                     </button>
+                    {/* Botón Brain — amarillo si python_editado_manual=true (código puede estar desfasado del prompt) */}
                     {grupoActivo === 'ADMIN' && (
-                      <button onClick={() => abrirEditarFuncion(f, 'programacion_insert')} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editor de contexto"><Brain size={14} /></button>
+                      <button
+                        onClick={() => abrirEditarFuncion(f, 'programacion_insert')}
+                        className={`p-1.5 rounded-lg hover:bg-primario-muy-claro transition-colors ${
+                          f.python_editado_manual
+                            ? 'text-amber-500 hover:text-amber-600'
+                            : 'text-texto-muted hover:text-primario'
+                        }`}
+                        title={
+                          f.python_editado_manual
+                            ? '⚠ Código Python editado manualmente — puede estar desincronizado respecto al prompt'
+                            : 'Editor de programación (triggers Python)'
+                        }
+                      >
+                        <Brain size={14} />
+                      </button>
                     )}
+                    {/* Botón Sincronizar — amarillo si sincronizacion_pendiente=true */}
                     {grupoActivo === 'ADMIN' && (
                       <button
                         onClick={() => sincronizarFuncion(f)}
                         disabled={sincronizando === f.codigo_funcion}
-                        className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                        title="Sincronizar (refrescar grafo de dependencias + doc virtual + APIs)"
+                        className={`p-1.5 rounded-lg hover:bg-primario-muy-claro transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
+                          f.sincronizacion_pendiente
+                            ? 'text-amber-500 hover:text-amber-600'
+                            : 'text-texto-muted hover:text-primario'
+                        }`}
+                        title={
+                          f.sincronizacion_pendiente
+                            ? '⚠ Sincronización pendiente — hay cambios sin aplicar al grafo de dependencias'
+                            : 'Sincronizar (refrescar grafo de dependencias + APIs)'
+                        }
                       >
                         {sincronizando === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                       </button>

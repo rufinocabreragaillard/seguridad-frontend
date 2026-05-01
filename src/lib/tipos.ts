@@ -246,6 +246,7 @@ export interface Funcion {
   traducir_registros?: boolean       // si true, los registros de la tabla asociada se traducen
   tabla_traducible?: string | null   // nombre de la tabla cuyas filas se traducen
   campos_traducibles?: string[] | null // columnas a traducir (NULL = inferir)
+  sincronizacion_pendiente?: boolean  // true si fue modificada y no se sincronizó el grafo aún
 }
 
 // ─── API Endpoints ───────────────────────────────────────────────────────────
