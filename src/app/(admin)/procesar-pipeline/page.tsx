@@ -417,8 +417,13 @@ export default function PaginaCargaDocsUsuario() {
 
     setPaso('EXTRAER', { total: docs.length, completados: 0, estado: 'activo' })
     let completados = 0
-    for (const doc of docs) {
-      if (abortRef.current) return false
+
+    // Sliding window: N workers concurrentes que toman docs de la cola.
+    // Reemplaza el for...of secuencial → ~Nx mejora de wall-clock.
+    const N_CONCURRENTE = 10
+    let nextIdx = 0
+    const procesarUno = async (doc: typeof docs[0]) => {
+      if (abortRef.current) return
       try {
         const t0 = Date.now()
         if (!doc.ubicacion_documento) {
@@ -469,6 +474,15 @@ export default function PaginaCargaDocsUsuario() {
       completados++
       setPaso('EXTRAER', { completados })
     }
+    const worker = async () => {
+      while (!abortRef.current) {
+        const myIdx = nextIdx++
+        if (myIdx >= docs.length) return
+        await procesarUno(docs[myIdx])
+      }
+    }
+    await Promise.all(Array.from({ length: N_CONCURRENTE }, () => worker()))
+
     setPaso('EXTRAER', { completados: docs.length, estado: 'listo' })
     return true
   }

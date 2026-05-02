@@ -191,8 +191,13 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
     setPaso('EXTRAER', { total: docsFinal.length, completados: 0, estado: 'activo' })
     let completados = 0
-    for (const doc of docsFinal) {
-      if (abortRef.current) return false
+
+    // Sliding window: N workers concurrentes que toman docs de la cola.
+    // Reemplaza el for...of secuencial → ~Nx mejora de wall-clock.
+    const N_CONCURRENTE = 10
+    let nextIdx = 0
+    const procesarUno = async (doc: typeof docsFinal[0]) => {
+      if (abortRef.current) return
       try {
         const t0 = Date.now()
         if (!doc.ubicacion_documento) {
@@ -245,6 +250,15 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       completados++
       setPaso('EXTRAER', { completados })
     }
+    const worker = async () => {
+      while (!abortRef.current) {
+        const myIdx = nextIdx++
+        if (myIdx >= docsFinal.length) return
+        await procesarUno(docsFinal[myIdx])
+      }
+    }
+    await Promise.all(Array.from({ length: N_CONCURRENTE }, () => worker()))
+
     setPaso('EXTRAER', { completados: docsFinal.length, estado: 'listo' })
     return true
   }

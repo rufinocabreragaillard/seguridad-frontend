@@ -814,10 +814,11 @@ function PaginaProcesarDocumentosInterna() {
       }))
       setCola(colaInicial)
 
-      // Número de extracciones concurrentes. PDF.js usa su propio worker interno
-      // por lo que varias extracciones pueden correr en paralelo sin bloquear el
-      // hilo principal. El upload a Railway también beneficia del paralelismo.
-      const N_CONCURRENTE = 6
+      // Número de extracciones concurrentes con SLIDING WINDOW (no batch).
+      // PDF.js usa su propio worker interno → varias extracciones en paralelo
+      // sin bloquear el hilo principal. El upload a Railway también beneficia
+      // del paralelismo. Sliding window evita que un PDF lento detenga al lote.
+      const N_CONCURRENTE = 10
 
       const procesarItemExtraer = async (item: ItemCola, idx: number) => {
         if (abortRef.current) return
@@ -911,12 +912,18 @@ function PaginaProcesarDocumentosInterna() {
         setProcesados((p) => p + 1)
       }
 
-      // Procesar en lotes concurrentes
-      for (let i = 0; i < colaInicial.length; i += N_CONCURRENTE) {
-        if (abortRef.current) break
-        const lote = colaInicial.slice(i, i + N_CONCURRENTE)
-        await Promise.all(lote.map((item, bIdx) => procesarItemExtraer(item, i + bIdx)))
+      // Procesar con sliding window: mantiene N_CONCURRENTE workers activos.
+      // Apenas un slot termina, agarra el siguiente PENDIENTE de la cola.
+      // Evita que un doc lento (ej. PDF jurídico de 19s) bloquee a otros 5 slots.
+      let nextIdx = 0
+      const worker = async () => {
+        while (!abortRef.current) {
+          const myIdx = nextIdx++
+          if (myIdx >= colaInicial.length) return
+          await procesarItemExtraer(colaInicial[myIdx], myIdx)
+        }
       }
+      await Promise.all(Array.from({ length: N_CONCURRENTE }, () => worker()))
 
       setEjecutando(false)
       // Solo recargar si el proceso terminó normalmente Y sin errores.

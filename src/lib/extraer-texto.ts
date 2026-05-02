@@ -5,8 +5,10 @@
 
 /** Timeout máximo por archivo (ms). Archivos con firma digital o cifrado complejo
  *  pueden bloquear el parser varios segundos. Con este límite se marca NO_ESCANEABLE
- *  en vez de bloquear toda la cola. */
-const TIMEOUT_EXTRACCION_MS = 8_000
+ *  en vez de bloquear toda la cola.
+ *  Subido a 25s (de 8s original) porque PDFs jurídicos densos legítimos pueden
+ *  tardar 15-20s. Con sliding window el timeout largo no bloquea otros docs. */
+const TIMEOUT_EXTRACCION_MS = 25_000
 
 /**
  * Envuelve una promesa con un timeout.
@@ -143,20 +145,30 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
     throw new ArchivoNoEscaneable(`PDF inválido: ${msg}`)
   }
 
-  const paginas: string[] = []
-  const numsPaginaImagen: number[] = []  // páginas con < CHARS_MINIMOS_PAGINA de texto
-
+  // Paralelizar extracción de páginas. PDF.js maneja la concurrencia interna
+  // dentro del worker compartido. Para PDFs densos (jurídicos, balances) baja
+  // wall-clock de páginas serial → cap por la página más lenta.
+  const numsPaginaImagen: number[] = []
+  const promesas: Promise<{ idx: number; texto: string }>[] = []
   for (let i = 1; i <= pdf.numPages; i++) {
-    const pagina = await pdf.getPage(i)
-    const contenido = await pagina.getTextContent()
-    const texto = contenido.items
-      .map((item) => ('str' in item ? item.str : ''))
-      .join(' ')
-    paginas.push(texto)
-    if (texto.trim().length < CHARS_MINIMOS_PAGINA) {
-      numsPaginaImagen.push(i)
-    }
+    const idx = i
+    promesas.push((async () => {
+      const pagina = await pdf.getPage(idx)
+      const contenido = await pagina.getTextContent()
+      const texto = contenido.items
+        .map((item) => ('str' in item ? item.str : ''))
+        .join(' ')
+      return { idx, texto }
+    })())
   }
+  const resultados = await Promise.all(promesas)
+  resultados.sort((a, b) => a.idx - b.idx)
+  const paginas: string[] = resultados.map((r) => r.texto)
+  resultados.forEach((r) => {
+    if (r.texto.trim().length < CHARS_MINIMOS_PAGINA) {
+      numsPaginaImagen.push(r.idx)
+    }
+  })
 
   // \f (form feed) = separador de página. El backend chunking.py lo usa
   // para dividir exactamente 1 chunk por página en PDFs nativos.
@@ -366,10 +378,10 @@ async function extraerTextoPPTX(file: File): Promise<string> {
       throw new ArchivoNoEscaneable('Plantilla PowerPoint sin contenido de texto (no contiene slides)')
     }
 
-    const partes: string[] = []
-    for (const slidePath of slideFiles) {
+    // Paralelizar extracción de slides (cada slide es un async unzip).
+    // PPTX grandes (>10 MB, decenas de slides) bajan ~3-5x con esto.
+    const promesasSlide = slideFiles.map(async (slidePath) => {
       const xml = await zip.files[slidePath].async('text')
-      // Extraer texto de nodos <a:t>...</a:t> (texto dentro de shapes)
       const textos: string[] = []
       const regex = /<a:t>(.*?)<\/a:t>/gs
       let match
@@ -382,9 +394,16 @@ async function extraerTextoPPTX(file: File): Promise<string> {
           .replace(/&apos;/g, "'")
         if (texto.trim()) textos.push(texto)
       }
-      if (textos.length > 0) {
-        const numSlide = slidePath.match(/slide(\d+)/)?.[1] || '?'
-        partes.push(`### Slide ${numSlide}\n${textos.join(' ')}`)
+      const numSlide = parseInt(slidePath.match(/slide(\d+)/)?.[1] || '0')
+      return { numSlide, slidePath, textos }
+    })
+    const resultadosSlide = await Promise.all(promesasSlide)
+    resultadosSlide.sort((a, b) => a.numSlide - b.numSlide)
+    const partes: string[] = []
+    for (const r of resultadosSlide) {
+      if (r.textos.length > 0) {
+        const num = r.numSlide || '?'
+        partes.push(`### Slide ${num}\n${r.textos.join(' ')}`)
       }
     }
 
