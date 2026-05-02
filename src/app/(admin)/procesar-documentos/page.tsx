@@ -109,6 +109,7 @@ interface UbicacionOption {
   nivel: number
   tipo_ubicacion?: 'AREA' | 'CONTENIDO'
   codigo_ubicacion_superior?: string
+  ubicacion_habilitada?: boolean
 }
 
 interface ItemCola {
@@ -730,10 +731,17 @@ function PaginaProcesarDocumentosInterna() {
       const scanAbort = new AbortController()
       scanAbortRef.current = scanAbort
 
+      // Rutas deshabilitadas en BD: no se deben escanear ni contar sus archivos
+      const rutasDeshabilitadas = new Set(
+        ubicaciones
+          .filter((u) => u.ubicacion_habilitada === false && u.ruta_completa)
+          .map((u) => u.ruta_completa)
+      )
+
       setEscaneandoDir(true)
       let scan: Awaited<ReturnType<typeof escanearArchivosDirectorio>>
       try {
-        scan = await escanearArchivosDirectorio(handleEfectivo ?? undefined, nivelesDirectorio, scanAbort.signal)
+        scan = await escanearArchivosDirectorio(handleEfectivo ?? undefined, nivelesDirectorio, scanAbort.signal, rutasDeshabilitadas)
       } finally {
         setEscaneandoDir(false)
         scanAbortRef.current = null

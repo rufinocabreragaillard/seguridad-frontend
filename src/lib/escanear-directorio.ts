@@ -165,11 +165,14 @@ export interface ArchivoEscaneado {
  *
  * @param handleExterno - FileSystemDirectoryHandle ya obtenido (con permisos). Si es null/undefined, abre el picker.
  * @param maxNiveles - Profundidad máxima a recorrer (default 5).
+ * @param signal - AbortSignal para cancelar el escaneo.
+ * @param rutasDeshabilitadas - Set de rutas completas (e.g. "/MiMusica/Cubase") que deben omitirse junto con sus hijos.
  */
 export async function escanearArchivosDirectorio(
   handleExterno?: FileSystemDirectoryHandle | null,
   maxNiveles = 5,
   signal?: AbortSignal,
+  rutasDeshabilitadas?: Set<string>,
 ): Promise<{
   nombreRaiz: string
   archivos: ArchivoEscaneado[]
@@ -197,6 +200,8 @@ export async function escanearArchivosDirectorio(
     nivel: number,
   ): Promise<void> {
     if (signal?.aborted) return
+    // Si esta ruta está deshabilitada en BD, omitir completamente (incluyendo hijos)
+    if (rutasDeshabilitadas?.has(rutaActual)) return
     rutasEscaneadas.push(rutaActual)
 
     const entries: { handle: FileSystemHandle; kind: string }[] = []
