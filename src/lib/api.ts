@@ -1275,13 +1275,10 @@ export const colaEstadosDocsApi = {
   cerrar: () =>
     api.post<{ eliminados: number }>('/cola-estados-docs/cerrar').then((r) => r.data),
   eliminar: (id: number) => api.delete(`/cola-estados-docs/${id}`),
-  // Dispara el worker backend (BackgroundTasks). Retorna inmediato; el
-  // procesamiento corre en el servidor. El cliente hace polling de listar().
-  ejecutar: (estadoDestino?: string, opts?: { codigo_proceso?: string; codigo_funcion?: string }) =>
-    api.post<{ mensaje: string; pendientes_al_iniciar: number }>(
-      '/cola-estados-docs/ejecutar',
-      { estado_destino: estadoDestino || null, ...(opts || {}) },
-    ).then((r) => r.data),
+  // Fase 2: el endpoint POST /cola-estados-docs/ejecutar fue eliminado.
+  // El procesamiento ahora corre en un service Railway separado (worker.py)
+  // que reacciona a INSERTs vía Supabase Realtime + polling cada 30s.
+  // Para encolar trabajo basta con llamar inicializar() o inicializarPorEstado().
   recuperarHuerfanos: (minutos = 5) =>
     api.post<{ recuperados: number }>(
       '/cola-estados-docs/recuperar-huerfanos',

@@ -971,15 +971,9 @@ function PaginaProcesarDocumentosInterna() {
     })
     setCola(colaInicial)
 
-    // 3. Disparar worker backend
-    try {
-      await colaEstadosDocsApi.ejecutar(estadoDestino, { codigo_proceso: procesoSel || undefined })
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : 'Error al disparar el worker'
-      setCola((prev) => prev.map((c) => ({ ...c, estado_cola: 'ERROR', resultado: msg })))
-      setEjecutando(false)
-      return
-    }
+    // 3. (Fase 2) Ya no se dispara el worker desde acá. El worker corre en su
+    //    propio service Railway y reacciona al INSERT de /inicializar via
+    //    Supabase Realtime. Polling de respaldo cada 30 s en el worker.
 
     // 4. Espera via Realtime (reemplaza polling 3s).
     // Cuando llega una notificación, refresca el estado de la cola.

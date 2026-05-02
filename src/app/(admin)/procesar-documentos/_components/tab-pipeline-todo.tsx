@@ -260,7 +260,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     setPaso(key, { total: docs.length, completados: 0, estado: 'activo' })
     const items = docs.map((d) => ({ codigo_documento: d.codigo_documento, codigo_estado_doc_destino: estadoDestino }))
     await colaEstadosDocsApi.inicializar(items, { codigo_proceso: key })
-    await colaEstadosDocsApi.ejecutar(estadoDestino, { codigo_proceso: key })
+    // Fase 2: el worker arranca solo (Realtime + polling). Ya no se llama /ejecutar.
 
     const idsSet = new Set(docs.map((d) => d.codigo_documento))
 

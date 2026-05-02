@@ -479,7 +479,7 @@ export default function PaginaCargaDocsUsuario() {
     setPaso(key, { total: docs.length, completados: 0, estado: 'activo' })
     const items = docs.map((d) => ({ codigo_documento: d.codigo_documento, codigo_estado_doc_destino: estadoDestino }))
     await colaEstadosDocsApi.inicializar(items)
-    await colaEstadosDocsApi.ejecutar(estadoDestino)
+    // Fase 2: el worker arranca solo (Realtime + polling). Ya no se llama /ejecutar.
     const idsSet = new Set(docs.map((d) => d.codigo_documento))
     const refrescarCola = async () => {
       const cola = await colaEstadosDocsApi.listar(undefined, estadoDestino)
