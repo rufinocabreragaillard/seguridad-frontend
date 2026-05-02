@@ -157,8 +157,8 @@ export default function PaginaProcesosGrupo() {
         alCerrar={crud.cerrarModal}
         titulo={
           crud.editando
-            ? t('editarTitulo', { nombre: crud.editando.nombre_proceso_grupo })
-            : t('nuevoTitulo')
+            ? `Editar Proceso: ${crud.editando.nombre_proceso_grupo} - ${crud.editando.codigo_proceso_grupo}`
+            : 'Nuevo proceso'
         }
         className="max-w-lg"
       >

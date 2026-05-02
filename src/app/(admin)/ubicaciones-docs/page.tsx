@@ -843,7 +843,7 @@ export default function PaginaUbicacionesDocs() {
       <Modal
         abierto={modal}
         alCerrar={() => setModal(false)}
-        titulo={editando ? t('editarTitulo', { nombre: editando.nombre_ubicacion }) : ''}
+        titulo={editando ? `Editar Ubicación: ${editando.nombre_ubicacion} - ${editando.codigo_ubicacion}` : 'Nueva ubicación'}
         className="max-w-3xl"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">

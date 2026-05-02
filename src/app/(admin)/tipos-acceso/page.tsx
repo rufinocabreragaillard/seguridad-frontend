@@ -200,7 +200,7 @@ export default function PaginaTiposAcceso() {
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_tipo_acceso }) : t('nuevoTitulo')}
+        titulo={crud.editando ? `Editar Tipo Acceso: ${crud.editando.nombre_tipo_acceso} - ${crud.editando.codigo_tipo_acceso}` : 'Nuevo tipo de acceso'}
         className="max-w-md"
       >
         <div className="flex flex-col gap-4 min-w-[360px]">

@@ -183,8 +183,8 @@ export default function PaginaCategoriasTarea() {
         alCerrar={crud.cerrarModal}
         titulo={
           crud.editando
-            ? t('editarTitulo', { nombre: crud.editando.nombre_categoria_tarea })
-            : t('nuevoTitulo')
+            ? `Editar Categoría Tarea: ${crud.editando.nombre_categoria_tarea} - ${crud.editando.codigo_categoria_tarea}`
+            : 'Nueva categoría de tarea'
         }
         className="max-w-2xl"
       >

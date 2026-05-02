@@ -243,7 +243,7 @@ export default function PaginaTiposTarea() {
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_tipo_tarea }) : t('nuevoTitulo')}
+        titulo={crud.editando ? `Editar Tipo Tarea: ${crud.editando.nombre_tipo_tarea} - ${crud.editando.codigo_tipo_tarea}` : 'Nuevo tipo de tarea'}
         className="max-w-2xl"
       >
         <div className="flex border-b border-borde mb-4">

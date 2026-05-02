@@ -140,7 +140,7 @@ export default function PaginaTiposDocumentoPersona() {
         textoVacio={t('sinTipos')}
       />
 
-      <Modal abierto={crud.modal} alCerrar={crud.cerrarModal} titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre }) : t('nuevoTitulo')} className="max-w-2xl">
+      <Modal abierto={crud.modal} alCerrar={crud.cerrarModal} titulo={crud.editando ? `Editar Tipo Doc.: ${crud.editando.nombre} - ${crud.editando.codigo_tipo_doc}` : 'Nuevo tipo de documento'} className="max-w-2xl">
         <div className="flex flex-col gap-4 min-w-[480px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">

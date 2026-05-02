@@ -181,8 +181,8 @@ export default function PaginaTareasMantenedor() {
         alCerrar={crud.cerrarModal}
         titulo={
           crud.editando
-            ? t('editarTitulo', { nombre: crud.editando.nombre_tarea })
-            : t('nuevoTitulo')
+            ? `Editar Tarea: ${crud.editando.nombre_tarea} - ${crud.editando.id_tarea}`
+            : 'Nueva tarea'
         }
         className="max-w-lg"
       >

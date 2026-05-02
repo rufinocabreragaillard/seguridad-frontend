@@ -195,7 +195,7 @@ export default function PaginaEstadosDocs() {
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_estado }) : t('nuevoTitulo')}
+        titulo={crud.editando ? `Editar Estado Doc.: ${crud.editando.nombre_estado} - ${crud.editando.codigo_estado_doc}` : 'Nuevo estado de documento'}
         className="w-[520px] max-w-[95vw]"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">

@@ -229,7 +229,7 @@ export default function PaginaEstadosTarea() {
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_estado_tarea }) : t('nuevoTitulo')}
+        titulo={crud.editando ? `Editar Estado Tarea: ${crud.editando.nombre_estado_tarea} - ${crud.editando.codigo_estado_tarea}` : 'Nuevo estado de tarea'}
         className="max-w-xl"
       >
         <div className="flex flex-col gap-4 min-w-[480px]">

@@ -157,8 +157,8 @@ export default function PaginaTareasGrupo() {
         alCerrar={crud.cerrarModal}
         titulo={
           crud.editando
-            ? t('editarTitulo', { nombre: crud.editando.nombre_tarea_grupo })
-            : t('nuevoTitulo')
+            ? `Editar Tarea: ${crud.editando.nombre_tarea_grupo} - ${crud.editando.codigo_tarea_grupo}`
+            : 'Nueva tarea'
         }
         className="max-w-lg"
       >

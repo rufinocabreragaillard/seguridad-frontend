@@ -321,7 +321,7 @@ export default function PaginaPersonas() {
 
       {/* ═══ Modal detalle persona ═══ */}
       <Modal abierto={modal} alCerrar={() => setModal(false)}
-        titulo={editando ? t('editarTitulo', { nombre: editando.nombre }) : t('nuevoTitulo')}>
+        titulo={editando ? `Editar Persona: ${editando.nombre} - ${editando.id_persona}` : 'Nueva persona'}>
         <div className="flex flex-col gap-4 min-w-[500px] min-h-[500px]">
           {/* Tabs dentro del modal */}
           {editando && (
