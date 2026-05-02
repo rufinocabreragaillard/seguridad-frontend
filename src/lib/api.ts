@@ -786,6 +786,74 @@ export const procesosApi = {
     api.put('/procesos/reordenar', orden).then((r) => r.data),
 }
 
+// ─── Instancias de Proceso ───────────────────────────────────────────────────
+
+export interface ProcesoInstancia {
+  [key: string]: unknown
+  codigo_proceso: string
+  codigo_categoria_proceso: string | null
+  codigo_tipo_proceso: string | null
+  codigo_estado: string | null
+  codigo_usuario: string | null
+  codigo_usuario_asignado: string | null
+  codigo_grupo: string | null
+  codigo_entidad: string | null
+  datos: unknown | null
+  fecha_inicio: string | null
+  fecha_fin: string | null
+  fecha_comprometida: string | null
+  costo: number | null
+  nombre_proceso: string | null
+  alias_proceso: string | null
+  descripcion_proceso: string | null
+  comentarios_proceso: string | null
+  created_at: string | null
+  updated_at: string | null
+}
+
+export const procesosInstanciasApi = {
+  listar: (params?: {
+    codigo_categoria_proceso?: string
+    codigo_tipo_proceso?: string
+    codigo_estado?: string
+    codigo_grupo?: string
+    codigo_entidad?: string
+    codigo_usuario?: string
+    q?: string
+    limit?: number
+  }) => api.get<ProcesoInstancia[]>('/procesos-instancias', { params }).then((r) => r.data),
+  obtener: (codigo: string) =>
+    api.get<ProcesoInstancia>(`/procesos-instancias/${codigo}`).then((r) => r.data),
+  crear: (data: {
+    codigo_categoria_proceso: string
+    codigo_tipo_proceso: string
+    codigo_estado: string
+    codigo_grupo?: string
+    codigo_entidad?: string
+    codigo_usuario_asignado?: string
+    datos?: unknown
+    fecha_comprometida?: string
+    costo?: number
+    nombre_proceso?: string
+    alias_proceso?: string
+    descripcion_proceso?: string
+    comentarios_proceso?: string
+  }) => api.post<ProcesoInstancia>('/procesos-instancias', data).then((r) => r.data),
+  actualizar: (codigo: string, data: Partial<{
+    codigo_estado: string
+    codigo_usuario_asignado: string
+    datos: unknown
+    fecha_comprometida: string
+    fecha_fin: string
+    costo: number
+    nombre_proceso: string
+    alias_proceso: string
+    descripcion_proceso: string
+    comentarios_proceso: string
+  }>) => api.patch<ProcesoInstancia>(`/procesos-instancias/${codigo}`, data).then((r) => r.data),
+  eliminar: (codigo: string) => api.delete(`/procesos-instancias/${codigo}`),
+}
+
 // ─── Procesos del Grupo ──────────────────────────────────────────────────────
 
 export interface ProcesoGrupo {
