@@ -22,6 +22,7 @@ import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
+import { SelectorAreaJerarquico } from '@/components/ui/selector-area-jerarquico'
 
 type RolAsignado = {
   codigo_grupo: string
@@ -826,17 +827,13 @@ export default function PaginaUsuarios() {
                 {/* Área por defecto */}
                 <div className="flex flex-col gap-1.5">
                   <label className="text-sm font-medium text-texto">Área por defecto <span className="text-texto-muted font-normal">(opcional)</span></label>
-                  <select
-                    value={form.codigo_area}
-                    onChange={(e) => setForm({ ...form, codigo_area: e.target.value })}
-                    disabled={!form.entidad_por_defecto || cargandoAreasDefault}
-                    className={selectClass}
-                  >
-                    <option value="">Sin área</option>
-                    {areasParaDefault.map((a) => (
-                      <option key={a.codigo_area} value={a.codigo_area}>{a.nombre}</option>
-                    ))}
-                  </select>
+                  <SelectorAreaJerarquico
+                    areas={areasParaDefault}
+                    valor={form.codigo_area}
+                    onChange={(codigo) => setForm({ ...form, codigo_area: codigo })}
+                    deshabilitado={!form.entidad_por_defecto}
+                    cargando={cargandoAreasDefault}
+                  />
                 </div>
 
                 {/* Rol principal */}
@@ -960,17 +957,12 @@ export default function PaginaUsuarios() {
                 </div>
                 {/* Selector de área (opcional) */}
                 {entidadNueva && (
-                  <select
-                    value={areaNueva}
-                    onChange={(e) => setAreaNueva(e.target.value)}
-                    disabled={cargandoAreas}
-                    className={selectClass}
-                  >
-                    <option value="">Área (opcional)...</option>
-                    {areasParaEntidad.map((a) => (
-                      <option key={a.codigo_area} value={a.codigo_area}>{a.nombre}</option>
-                    ))}
-                  </select>
+                  <SelectorAreaJerarquico
+                    areas={areasParaEntidad}
+                    valor={areaNueva}
+                    onChange={setAreaNueva}
+                    cargando={cargandoAreas}
+                  />
                 )}
               </div>
 
