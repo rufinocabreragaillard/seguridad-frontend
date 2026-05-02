@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap } from 'lucide-react'
+import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -12,9 +12,10 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi, habilidadesApi } from '@/lib/api'
+import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi } from '@/lib/api'
+import { abrirDocumento, descargarDocumento } from '@/lib/abrir-documento'
 import { useAuth } from '@/context/AuthContext'
-import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio, Habilidad } from '@/lib/tipos'
+import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio } from '@/lib/tipos'
 
 const CODIGO_FUNCION = 'CHAT-USUARIO'
 
@@ -356,7 +357,6 @@ export default function PaginaChatUsuario() {
   useEffect(() => {
     cargarUbicaciones()
     cargarEspacios()
-    habilidadesApi.listar().then(setHabilidades).catch(() => {})
   }, [cargarUbicaciones, cargarEspacios, grupoActivo])
 
   const areasFiltradas = useMemo(
@@ -465,7 +465,6 @@ export default function PaginaChatUsuario() {
   const [cargandoDocsEspacio, setCargandoDocsEspacio] = useState(false)
   const [confirmEliminarEspacio, setConfirmEliminarEspacio] = useState<EspacioTrabajo | null>(null)
   const [reaplicando, setReaplicando] = useState(false)
-  const [habilidades, setHabilidades] = useState<Habilidad[]>([])
 
   const espacioActivoObj = useMemo(
     () => espacios.find((e) => e.id_espacio === espacioActivoId),
@@ -1150,23 +1149,20 @@ export default function PaginaChatUsuario() {
                         <TablaTh>Ubicación</TablaTh>
                         <TablaTh>Estado área</TablaTh>
                         <TablaTh>Estado cola</TablaTh>
-                        <TablaTh>Habilidad</TablaTh>
-                        <TablaTh>Modelo</TablaTh>
-                        <TablaTh className="text-right">Tokens in/out</TablaTh>
-                        <TablaTh>Inicio</TablaTh>
                         <TablaTh>Fin</TablaTh>
+                        <TablaTh className="text-right">Acciones</TablaTh>
                       </tr>
                     </TablaCabecera>
                     <TablaCuerpo>
                       {cargandoDocsEspacio ? (
                         <TablaFila>
-                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={9 as never}>
+                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>
                             Cargando documentos…
                           </TablaTd>
                         </TablaFila>
                       ) : docsEspacio.length === 0 ? (
                         <TablaFila>
-                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={9 as never}>
+                          <TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>
                             <div className="flex flex-col items-center gap-2">
                               <FileText size={32} className="opacity-30" />
                               <span>Sin documentos. Edita el criterio y refresca para poblarlos.</span>
@@ -1174,13 +1170,16 @@ export default function PaginaChatUsuario() {
                           </TablaTd>
                         </TablaFila>
                       ) : (
-                        docsEspacio.map((d) => (
+                        docsEspacio.map((d) => {
+                          const ubic = d.ubicacion_documento || ''
+                          const esUrl = !!ubic && /^https?:\/\//i.test(ubic)
+                          return (
                           <TablaFila key={d.id_cola}>
                             <TablaTd>
                               <span className="font-medium text-sm">{d.nombre_documento}</span>
                             </TablaTd>
-                            <TablaTd className="text-xs text-texto-muted max-w-[280px] truncate" title={d.ubicacion_documento || ''}>
-                              {d.ubicacion_documento || '—'}
+                            <TablaTd className="text-xs text-texto-muted max-w-[280px] truncate" title={ubic}>
+                              {ubic || '—'}
                             </TablaTd>
                             <TablaTd>
                               <Insignia variante={iconoEstadoArea(d.estado_area)}>
@@ -1193,31 +1192,46 @@ export default function PaginaChatUsuario() {
                               </Insignia>
                             </TablaTd>
                             <TablaTd className="text-xs text-texto-muted">
-                              {d.codigo_habilidad ? (
-                                <div className="flex items-center gap-1">
-                                  <Zap size={11} className="text-primario shrink-0" />
-                                  <span title={d.codigo_habilidad}>
-                                    {habilidades.find((h) => h.codigo_habilidad === d.codigo_habilidad)?.alias_habilidad
-                                      || habilidades.find((h) => h.codigo_habilidad === d.codigo_habilidad)?.nombre_habilidad
-                                      || d.codigo_habilidad}
-                                  </span>
-                                </div>
-                              ) : '—'}
-                            </TablaTd>
-                            <TablaTd className="text-xs text-texto-muted">{d.modelo_usado || '—'}</TablaTd>
-                            <TablaTd className="text-right text-xs tabular-nums">
-                              {d.tokens_input != null || d.tokens_output != null
-                                ? `${d.tokens_input ?? 0} / ${d.tokens_output ?? 0}`
-                                : '—'}
-                            </TablaTd>
-                            <TablaTd className="text-xs text-texto-muted">
-                              {d.fecha_inicio ? new Date(d.fecha_inicio).toLocaleString('es-CL') : '—'}
-                            </TablaTd>
-                            <TablaTd className="text-xs text-texto-muted">
                               {d.fecha_fin ? new Date(d.fecha_fin).toLocaleString('es-CL') : '—'}
                             </TablaTd>
+                            <TablaTd>
+                              <div className="flex items-center justify-end gap-1">
+                                {ubic && esUrl && (
+                                  <a
+                                    href={ubic}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    title="Abrir URL"
+                                    className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
+                                  >
+                                    <ExternalLink size={15} />
+                                  </a>
+                                )}
+                                {ubic && !esUrl && (
+                                  <button
+                                    type="button"
+                                    title="Abrir archivo"
+                                    onClick={() => abrirDocumento(ubic)}
+                                    className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
+                                  >
+                                    <FileText size={15} />
+                                  </button>
+                                )}
+                                {ubic && !esUrl && (
+                                  <button
+                                    type="button"
+                                    title="Descargar"
+                                    onClick={() => descargarDocumento(ubic, d.nombre_documento)}
+                                    className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
+                                  >
+                                    <Download size={15} />
+                                  </button>
+                                )}
+                              </div>
+                            </TablaTd>
                           </TablaFila>
-                        ))
+                          )
+                        })
                       )}
                     </TablaCuerpo>
                   </Tabla>
