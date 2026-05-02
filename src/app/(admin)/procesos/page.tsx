@@ -20,6 +20,7 @@ import {
 import type { ProcesoInstancia } from '@/lib/api'
 import type { CategoriaProceso, TipoProceso, EstadoProceso, Usuario } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
+import { useAuth } from '@/context/AuthContext'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { SelectorBuscable } from '@/components/ui/selector-buscable'
 
@@ -54,6 +55,7 @@ const FORM_INICIAL: FormInstancia = {
 }
 
 export default function PaginaProcesoInstancias() {
+  const { usuario } = useAuth()
   const [categorias, setCategorias] = useState<CategoriaProceso[]>([])
   const [tiposProc, setTiposProc] = useState<TipoProceso[]>([])
   const [estadosProc, setEstadosProc] = useState<EstadoProceso[]>([])
@@ -289,47 +291,68 @@ export default function PaginaProcesoInstancias() {
 
           {/* Tab Datos */}
           {tab === 'datos' && (
-            <div className="grid grid-cols-2 gap-4">
-              <SelectorBuscable
-                etiqueta="Categoría"
-                valor={crud.form.codigo_categoria_proceso}
-                opciones={opcionesCategorias}
-                onSeleccionar={(v) => {
-                  crud.updateForm('codigo_categoria_proceso', v)
-                  crud.updateForm('codigo_tipo_proceso', '')
-                  crud.updateForm('codigo_estado', '')
-                }}
-                placeholder="Buscar categoría..."
-                disabled={!!crud.editando}
-              />
-              <SelectorBuscable
-                etiqueta="Tipo de proceso"
-                valor={crud.form.codigo_tipo_proceso}
-                opciones={opcionesTipos}
-                onSeleccionar={(v) => {
-                  crud.updateForm('codigo_tipo_proceso', v)
-                  crud.updateForm('codigo_estado', '')
-                }}
-                placeholder={crud.form.codigo_categoria_proceso ? 'Buscar tipo...' : 'Seleccione categoría primero'}
-                disabled={!crud.form.codigo_categoria_proceso || !!crud.editando}
-              />
-              {crud.editando && (
-                <Input etiqueta="Código" value={crud.editando.codigo_proceso} onChange={() => {}} disabled />
-              )}
-              <Input
-                etiqueta="Nombre"
-                value={crud.form.nombre_proceso}
-                onChange={(e) => crud.updateForm('nombre_proceso', e.target.value)}
-                placeholder="Nombre del proceso"
-                autoFocus={!crud.editando}
-              />
-              <SelectorBuscable
-                etiqueta="Estado"
-                valor={crud.form.codigo_estado}
-                opciones={opcionesEstados}
-                onSeleccionar={(v) => crud.updateForm('codigo_estado', v)}
-                placeholder={crud.form.codigo_tipo_proceso ? 'Buscar estado...' : 'Seleccione tipo primero'}
-                disabled={!crud.form.codigo_tipo_proceso}
+            <div className="flex flex-col gap-4">
+              <div className="grid grid-cols-2 gap-4">
+                <SelectorBuscable
+                  etiqueta="Categoría"
+                  valor={crud.form.codigo_categoria_proceso}
+                  opciones={opcionesCategorias}
+                  onSeleccionar={(v) => {
+                    crud.updateForm('codigo_categoria_proceso', v)
+                    crud.updateForm('codigo_tipo_proceso', '')
+                    crud.updateForm('codigo_estado', '')
+                  }}
+                  placeholder="Buscar categoría..."
+                  disabled={!!crud.editando}
+                />
+                <SelectorBuscable
+                  etiqueta="Tipo de proceso"
+                  valor={crud.form.codigo_tipo_proceso}
+                  opciones={opcionesTipos}
+                  onSeleccionar={(v) => {
+                    crud.updateForm('codigo_tipo_proceso', v)
+                    crud.updateForm('codigo_estado', '')
+                  }}
+                  placeholder={crud.form.codigo_categoria_proceso ? 'Buscar tipo...' : 'Seleccione categoría primero'}
+                  disabled={!crud.form.codigo_categoria_proceso || !!crud.editando}
+                />
+                <Input
+                  etiqueta="Grupo"
+                  value={crud.editando?.codigo_grupo ?? usuario?.grupo_activo ?? ''}
+                  onChange={() => {}}
+                  disabled
+                />
+                <Input
+                  etiqueta="Entidad"
+                  value={crud.editando?.codigo_entidad ?? usuario?.entidad_activa ?? ''}
+                  onChange={() => {}}
+                  disabled
+                />
+                {crud.editando && (
+                  <Input etiqueta="Código" value={crud.editando.codigo_proceso} onChange={() => {}} disabled />
+                )}
+                <Input
+                  etiqueta="Nombre"
+                  value={crud.form.nombre_proceso}
+                  onChange={(e) => crud.updateForm('nombre_proceso', e.target.value)}
+                  placeholder="Nombre del proceso"
+                  autoFocus={!crud.editando}
+                />
+                <SelectorBuscable
+                  etiqueta="Estado"
+                  valor={crud.form.codigo_estado}
+                  opciones={opcionesEstados}
+                  onSeleccionar={(v) => crud.updateForm('codigo_estado', v)}
+                  placeholder={crud.form.codigo_tipo_proceso ? 'Buscar estado...' : 'Seleccione tipo primero'}
+                  disabled={!crud.form.codigo_tipo_proceso}
+                />
+              </div>
+              <Textarea
+                etiqueta="Descripción"
+                value={crud.form.descripcion_proceso}
+                onChange={(e) => crud.updateForm('descripcion_proceso', e.target.value)}
+                placeholder="Descripción del proceso"
+                rows={3}
               />
             </div>
           )}
@@ -373,13 +396,6 @@ export default function PaginaProcesoInstancias() {
                   placeholder="0.0000"
                 />
               </div>
-              <Textarea
-                etiqueta="Descripción"
-                value={crud.form.descripcion_proceso}
-                onChange={(e) => crud.updateForm('descripcion_proceso', e.target.value)}
-                placeholder="Descripción del proceso"
-                rows={3}
-              />
               <Textarea
                 etiqueta="Comentarios"
                 value={crud.form.comentarios_proceso}
