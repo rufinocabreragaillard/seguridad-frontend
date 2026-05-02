@@ -474,11 +474,13 @@ function PaginaProcesarDocumentosInterna() {
   }, [procesoSel, esCargar, esExtraer, esRestablecer, esResetearCargado, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro, filtroLibre])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
-  // No cargar mientras los datos iniciales (catálogo de procesos) aún están cargando.
+  // No cargar mientras los datos iniciales (catálogo de procesos) aún están cargando,
+  // ni si no hay proceso seleccionado (evita query innecesario al entrar).
   // Nota: a proposito NO incluimos `busqueda` en las deps; eso lo maneja el
   // boton/Enter del filtro para no re-cargar con cada tecla.
   useEffect(() => {
     if (cargandoInicial) return
+    if (!procesoSel && !estadoFiltro) return
     setDocumentos([])
     setYaCargado(false)
     cargarDocumentos()
