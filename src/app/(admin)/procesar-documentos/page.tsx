@@ -384,7 +384,7 @@ function PaginaProcesarDocumentosInterna() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Restaurar dirHandle persistido al entrar
+  // Restaurar dirHandle persistido al entrar (solo escanea filesystem; cargarDocumentos lo maneja el efecto de filtros)
   useEffect(() => {
     (async () => {
       const h = await idbGetHandle()
@@ -401,7 +401,6 @@ function PaginaProcesarDocumentosInterna() {
         } finally {
           setEscaneandoDir(false)
         }
-        cargarDocumentos()
       } catch { /* ignore */ }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -475,16 +474,16 @@ function PaginaProcesarDocumentosInterna() {
   }, [procesoSel, esCargar, esExtraer, esRestablecer, esResetearCargado, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro, filtroLibre])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
-  // Si se seleccionó un estado explícito, auto-cargar inmediatamente.
+  // No cargar mientras los datos iniciales (catálogo de procesos) aún están cargando.
   // Nota: a proposito NO incluimos `busqueda` en las deps; eso lo maneja el
   // boton/Enter del filtro para no re-cargar con cada tecla.
   useEffect(() => {
+    if (cargandoInicial) return
     setDocumentos([])
     setYaCargado(false)
-    // Siempre recargar (sin proceso/estado mostramos todos los docs activos).
     cargarDocumentos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [procesoSel, ubicacionSel, estadoFiltro, filtroLibre])
+  }, [procesoSel, ubicacionSel, estadoFiltro, filtroLibre, cargandoInicial])
 
   // Separar en dos grupos: encontrados en disco y no encontrados.
   // Si no hay directorio escaneado, todos van al grupo "enDisco".
