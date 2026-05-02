@@ -274,8 +274,10 @@ export default function PaginaUbicacionesDocs() {
     if (!datosEscaneo) return
     setSincronizando(true)
     try {
+      const raiz = datosEscaneo.directorios.find((d) => !d.codigo_ubicacion_superior)
       const res = await ubicacionesDocsApi.sincronizar({
         directorios: datosEscaneo.directorios,
+        codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
       })
       setResultadoSync(res)
       cargar()
@@ -362,7 +364,35 @@ export default function PaginaUbicacionesDocs() {
     const codigosActuales = new Set(ubicaciones.map((u) => u.codigo_ubicacion))
     const codigosEscaneados = new Set(dirsFiltrados.map((d) => d.codigo_ubicacion))
     const nuevas = dirsFiltrados.filter((d) => !codigosActuales.has(d.codigo_ubicacion)).length
-    const aEliminar = ubicaciones.filter((u) => !codigosEscaneados.has(u.codigo_ubicacion)).length
+    // Acotar "a eliminar" al subárbol de la raíz escaneada — coincide con la
+    // lógica del backend (Opción A): sólo se borran descendientes (o la raíz
+    // misma) que estén en BD pero no en el escaneo.
+    const codigoRaiz = datosEscaneo.directorios.find((d) => !d.codigo_ubicacion_superior)?.codigo_ubicacion
+    const enSubarbol = new Set<string>()
+    if (codigoRaiz && codigosActuales.has(codigoRaiz)) {
+      const hijosDe = new Map<string, string[]>()
+      for (const u of ubicaciones) {
+        if (u.codigo_ubicacion_superior) {
+          const arr = hijosDe.get(u.codigo_ubicacion_superior) ?? []
+          arr.push(u.codigo_ubicacion)
+          hijosDe.set(u.codigo_ubicacion_superior, arr)
+        }
+      }
+      const pila: string[] = [codigoRaiz]
+      enSubarbol.add(codigoRaiz)
+      while (pila.length) {
+        const cur = pila.pop()!
+        for (const h of hijosDe.get(cur) ?? []) {
+          if (!enSubarbol.has(h)) {
+            enSubarbol.add(h)
+            pila.push(h)
+          }
+        }
+      }
+    }
+    const aEliminar = ubicaciones.filter(
+      (u) => enSubarbol.has(u.codigo_ubicacion) && !codigosEscaneados.has(u.codigo_ubicacion)
+    ).length
     const sinCambio = dirsFiltrados.length - nuevas
     return { nuevas, aEliminar, sinCambio, excluidas: excluidos }
   }

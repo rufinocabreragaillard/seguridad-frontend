@@ -1329,7 +1329,7 @@ export const ubicacionesDocsApi = {
   desactivar: (codigo: string) => api.delete(`/ubicaciones-docs/${codigo}`),
   generarMd: (codigo: string) =>
     api.post<{ md: string }>(`/ubicaciones-docs/${codigo}/generar-md`).then((r) => r.data),
-  sincronizar: (datos: { codigo_entidad?: string; directorios: { codigo_ubicacion: string; nombre_ubicacion: string; codigo_ubicacion_superior: string | null; ruta_completa: string; nivel: number }[] }) =>
+  sincronizar: (datos: { codigo_entidad?: string; codigo_ubicacion_raiz?: string; directorios: { codigo_ubicacion: string; nombre_ubicacion: string; codigo_ubicacion_superior: string | null; ruta_completa: string; nivel: number }[] }) =>
     api.post<{ insertadas: number; eliminadas: number; actualizadas: number; total: number; excluidas: number }>('/ubicaciones-docs/sincronizar', datos).then((r) => r.data),
   // Documentos en ubicación
   listarDocumentos: (codigo: string) =>
