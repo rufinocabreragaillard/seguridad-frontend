@@ -1,6 +1,5 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { Search, RefreshCw, Download } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
@@ -11,31 +10,17 @@ import { auditoriaApi } from '@/lib/api'
 import type { RegistroAuditoria } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { useListadoSimple } from '@/hooks/useListadoSimple'
 
 export default function PaginaAuditoriaUsuarios() {
   const t = useTranslations('auditoriaUsuarios')
   const tc = useTranslations('common')
-  const [registros, setRegistros] = useState<RegistroAuditoria[]>([])
-  const [cargando, setCargando] = useState(true)
-  const [busqueda, setBusqueda] = useState('')
 
-  const cargar = async () => {
-    setCargando(true)
-    try {
-      const r = await auditoriaApi.listar({ tipo: 'usuarios', por_pagina: 100 })
-      setRegistros(r)
-    } finally {
-      setCargando(false)
-    }
-  }
-
-  useEffect(() => { cargar() }, [])
-
-  const filtrados = registros.filter((r) =>
-    r.codigo_usuario.toLowerCase().includes(busqueda.toLowerCase()) ||
-    r.operacion.toLowerCase().includes(busqueda.toLowerCase()) ||
-    r.codigo_registro.toLowerCase().includes(busqueda.toLowerCase())
-  )
+  const { items: registros, filtrados, cargando, busqueda, setBusqueda, recargar } =
+    useListadoSimple<RegistroAuditoria>({
+      cargarFn: () => auditoriaApi.listar({ tipo: 'usuarios', por_pagina: 100 }),
+      camposBusqueda: r => [r.codigo_usuario, r.operacion, r.codigo_registro],
+    })
 
   const varianteOperacion = (op: string) => {
     if (op === 'INSERT') return 'exito'
@@ -67,7 +52,7 @@ export default function PaginaAuditoriaUsuarios() {
             <Download size={15} />
             {tc('exportarExcel')}
           </Boton>
-          <Boton variante="contorno" onClick={cargar} cargando={cargando}>
+          <Boton variante="contorno" onClick={recargar} cargando={cargando}>
             <RefreshCw size={15} />
             {tc('actualizar')}
           </Boton>
