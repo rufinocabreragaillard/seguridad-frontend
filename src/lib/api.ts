@@ -803,6 +803,7 @@ export interface ProcesoInstancia {
   fecha_fin: string | null
   fecha_comprometida: string | null
   costo: number | null
+  costo_en_tiempo: string | null
   nombre_proceso: string | null
   alias_proceso: string | null
   descripcion_proceso: string | null
@@ -846,6 +847,7 @@ export const procesosInstanciasApi = {
     fecha_comprometida: string
     fecha_fin: string
     costo: number
+    costo_en_tiempo: string
     nombre_proceso: string
     alias_proceso: string
     descripcion_proceso: string
