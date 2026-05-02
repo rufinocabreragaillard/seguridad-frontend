@@ -420,7 +420,9 @@ export default function PaginaCargaDocsUsuario() {
 
     // Sliding window: N workers concurrentes que toman docs de la cola.
     // Reemplaza el for...of secuencial → ~Nx mejora de wall-clock.
-    const N_CONCURRENTE = 10
+    // N=6: balance paralelismo vs contención backend (sweet spot validado
+    // empíricamente — N=10 saturaba el endpoint POST /documentos/{id}/texto).
+    const N_CONCURRENTE = 6
     let nextIdx = 0
     const procesarUno = async (doc: typeof docs[0]) => {
       if (abortRef.current) return

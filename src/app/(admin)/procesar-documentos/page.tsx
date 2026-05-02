@@ -816,9 +816,10 @@ function PaginaProcesarDocumentosInterna() {
 
       // Número de extracciones concurrentes con SLIDING WINDOW (no batch).
       // PDF.js usa su propio worker interno → varias extracciones en paralelo
-      // sin bloquear el hilo principal. El upload a Railway también beneficia
-      // del paralelismo. Sliding window evita que un PDF lento detenga al lote.
-      const N_CONCURRENTE = 10
+      // sin bloquear el hilo principal. Sliding window evita que un PDF lento
+      // detenga al lote. N=6: balance entre paralelismo y contención del
+      // backend (POST /documentos/{id}/texto se serializa con N>6 en Railway).
+      const N_CONCURRENTE = 6
 
       const procesarItemExtraer = async (item: ItemCola, idx: number) => {
         if (abortRef.current) return
