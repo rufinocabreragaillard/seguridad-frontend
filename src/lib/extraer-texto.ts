@@ -49,32 +49,28 @@ export type ExtraccionMixta = { texto: string; paginasImagen: PaginaImagen[] }
  * Retorna null si el formato no es soportado.
  * Para PDFs mixtos (páginas nativas + páginas imagen), retorna ExtraccionMixta.
  */
-export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle): Promise<string | typeof NECESITA_OCR | ExtraccionMixta | null> {
+export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle, timeoutMs?: number): Promise<string | typeof NECESITA_OCR | ExtraccionMixta | null> {
+  const ms = (timeoutMs && timeoutMs > 0) ? timeoutMs : TIMEOUT_EXTRACCION_MS
   const file = await fileHandle.getFile()
   const nombre = file.name.toLowerCase()
   const ext = nombre.split('.').pop() || ''
 
-  // PDF
   if (ext === 'pdf') {
-    return conTimeout(extraerTextoPDF(file), TIMEOUT_EXTRACCION_MS, file.name)
+    return conTimeout(extraerTextoPDF(file), ms, file.name)
   }
 
-  // Word (.docx). Nota: .doc binario antiguo NO soportado.
   if (ext === 'docx') {
-    return conTimeout(extraerTextoDOCX(file), TIMEOUT_EXTRACCION_MS, file.name)
+    return conTimeout(extraerTextoDOCX(file), ms, file.name)
   }
 
-  // Excel (.xlsx / .xls / .xlsm)
   if (ext === 'xlsx' || ext === 'xls' || ext === 'xlsm') {
-    return conTimeout(extraerTextoExcel(file), TIMEOUT_EXTRACCION_MS, file.name)
+    return conTimeout(extraerTextoExcel(file), ms, file.name)
   }
 
-  // PowerPoint (.pptx / .potx / .ppsx) — son ZIP con XML internos
   if (EXTENSIONES_PPTX.has(ext)) {
-    return conTimeout(extraerTextoPPTX(file), TIMEOUT_EXTRACCION_MS, file.name)
+    return conTimeout(extraerTextoPPTX(file), ms, file.name)
   }
 
-  // Archivos de texto plano
   if (EXTENSIONES_TEXTO.has(ext)) {
     return file.text()
   }

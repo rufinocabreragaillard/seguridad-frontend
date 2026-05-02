@@ -16,7 +16,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi } from '@/lib/api'
+import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi } from '@/lib/api'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { abrirDocumento } from '@/lib/abrir-documento'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
@@ -58,6 +58,18 @@ export default function PaginaCargaDocsUsuario() {
   const t = useTranslations('procesarPipeline')
   const tc = useTranslations('common')
   const { grupoActivo } = useAuth()
+
+  const [nParaleloExtraer, setNParaleloExtraer] = useState(6)
+  const [timeoutExtraccionMs, setTimeoutExtraccionMs] = useState<number | undefined>(undefined)
+
+  useEffect(() => {
+    procesosApi.listar('PROCESAR').then((procs) => {
+      const p = procs.find((x) => x.estado_origen === 'CARGADO' && x.estado_destino === 'METADATA')
+      if (p?.n_parallel) setNParaleloExtraer(p.n_parallel)
+      if (p?.timeout_extraccion_seg) setTimeoutExtraccionMs(p.timeout_extraccion_seg * 1000)
+    }).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [grupoActivo])
 
   // ════════════════════════════════════════════════════════════════════════════
   // ETAPA 1 — Cargar Ubicaciones
@@ -418,11 +430,7 @@ export default function PaginaCargaDocsUsuario() {
     setPaso('EXTRAER', { total: docs.length, completados: 0, estado: 'activo' })
     let completados = 0
 
-    // Sliding window: N workers concurrentes que toman docs de la cola.
-    // Reemplaza el for...of secuencial → ~Nx mejora de wall-clock.
-    // N=6: balance paralelismo vs contención backend (sweet spot validado
-    // empíricamente — N=10 saturaba el endpoint POST /documentos/{id}/texto).
-    const N_CONCURRENTE = 6
+    const N_CONCURRENTE = nParaleloExtraer
     let nextIdx = 0
     const procesarUno = async (doc: typeof docs[0]) => {
       if (abortRef.current) return
@@ -437,7 +445,7 @@ export default function PaginaCargaDocsUsuario() {
           } else {
             const ext = (doc.ubicacion_documento.split('.').pop() || '').toLowerCase()
             const tExtraccion = Date.now()
-            const contenidoRaw = await extraerTextoDeArchivo(fh)
+            const contenidoRaw = await extraerTextoDeArchivo(fh, timeoutExtraccionMs)
             const subDuracionMs = Date.now() - tExtraccion
             let contenido: string | typeof NECESITA_OCR | null
             let paginasImagen: ExtraccionMixta['paginasImagen'] | undefined

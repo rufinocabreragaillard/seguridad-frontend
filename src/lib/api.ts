@@ -752,6 +752,7 @@ export interface Proceso {
   n_parallel: number
   batch_size?: number | null
   batch_timeout_seg?: number | null
+  timeout_extraccion_seg?: number | null
   codigo_funcion?: string | null
   /** Campos desde rel_transiciones_estado */
   estado_origen?: string | null

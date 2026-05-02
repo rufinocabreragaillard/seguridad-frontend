@@ -824,12 +824,9 @@ function PaginaProcesarDocumentosInterna() {
       }))
       setCola(colaInicial)
 
-      // Número de extracciones concurrentes con SLIDING WINDOW (no batch).
-      // PDF.js usa su propio worker interno → varias extracciones en paralelo
-      // sin bloquear el hilo principal. Sliding window evita que un PDF lento
-      // detenga al lote. N=6: balance entre paralelismo y contención del
-      // backend (POST /documentos/{id}/texto se serializa con N>6 en Railway).
-      const N_CONCURRENTE = 6
+      const procesoExtraer = procesos.find((p) => p.estado_origen === 'CARGADO' && p.estado_destino === 'METADATA')
+      const N_CONCURRENTE = procesoExtraer?.n_parallel ?? 6
+      const timeoutExtraccionMs = procesoExtraer?.timeout_extraccion_seg ? procesoExtraer.timeout_extraccion_seg * 1000 : undefined
 
       const procesarItemExtraer = async (item: ItemCola, idx: number) => {
         if (abortRef.current) return
@@ -849,7 +846,7 @@ function PaginaProcesarDocumentosInterna() {
             } else {
               const ext = (item.ubicacion_documento.split('.').pop() || '').toLowerCase()
               const tExtraccion = Date.now()
-              const contenidoRaw = await extraerTextoDeArchivo(fileHandle)
+              const contenidoRaw = await extraerTextoDeArchivo(fileHandle, timeoutExtraccionMs)
               const subDuracionMs = Date.now() - tExtraccion
               // Normalizar ExtraccionMixta (PDF con páginas imagen) al mismo flujo
               let contenido: string | typeof NECESITA_OCR | null

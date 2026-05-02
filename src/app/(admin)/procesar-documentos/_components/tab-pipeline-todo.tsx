@@ -192,11 +192,9 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     setPaso('EXTRAER', { total: docsFinal.length, completados: 0, estado: 'activo' })
     let completados = 0
 
-    // Sliding window: N workers concurrentes que toman docs de la cola.
-    // Reemplaza el for...of secuencial → ~Nx mejora de wall-clock.
-    // N=6: balance paralelismo vs contención backend (sweet spot validado
-    // empíricamente — N=10 saturaba el endpoint POST /documentos/{id}/texto).
-    const N_CONCURRENTE = 6
+    const procesoExtraer = procesos.find((p) => p.estado_origen === 'CARGADO' && p.estado_destino === 'METADATA')
+    const N_CONCURRENTE = procesoExtraer?.n_parallel ?? 6
+    const timeoutExtraccionMs = procesoExtraer?.timeout_extraccion_seg ? procesoExtraer.timeout_extraccion_seg * 1000 : undefined
     let nextIdx = 0
     const procesarUno = async (doc: typeof docsFinal[0]) => {
       if (abortRef.current) return
@@ -211,7 +209,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           } else {
             const ext = (doc.ubicacion_documento.split('.').pop() || '').toLowerCase()
             const tExtraccion = Date.now()
-            const contenidoRaw = await extraerTextoDeArchivo(fileHandle)
+            const contenidoRaw = await extraerTextoDeArchivo(fileHandle, timeoutExtraccionMs)
             const subDuracionMs = Date.now() - tExtraccion
             // Normalizar ExtraccionMixta (PDF con páginas imagen)
             let contenido: string | typeof NECESITA_OCR | null
