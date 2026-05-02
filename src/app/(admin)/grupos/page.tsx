@@ -897,7 +897,7 @@ export default function PaginaGrupos() {
       {/* ═══════════ MODALES ═══════════ */}
 
       {/* Modal grupo */}
-      <Modal abierto={modalGrupo} alCerrar={() => setModalGrupo(false)} titulo={grupoEditando ? 'Editar grupo' : 'Nuevo grupo'} className="max-w-3xl">
+      <Modal abierto={modalGrupo} alCerrar={() => setModalGrupo(false)} titulo={grupoEditando ? `Editar Grupo: ${grupoEditando.nombre} - ${grupoEditando.codigo_grupo}` : 'Nuevo grupo'} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           <div className="flex border-b border-borde">
             {(['datos', ...(grupoEditando ? ['usuarios', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] : [])] as const).map((tab) => (
@@ -1108,7 +1108,7 @@ export default function PaginaGrupos() {
       </Modal>
 
       {/* Modal entidad */}
-      <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? `Editar entidad: ${entidadEditando.nombre}` : 'Nueva entidad'} className="max-w-3xl">
+      <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? `Editar Entidad: ${entidadEditando.nombre} - ${entidadEditando.codigo_entidad}` : 'Nueva entidad'} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {entidadEditando && (
             <div className="flex border-b border-borde -mx-1 overflow-x-auto">

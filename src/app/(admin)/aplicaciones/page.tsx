@@ -252,7 +252,7 @@ export default function PaginaAplicaciones() {
       </SortableDndContext>
 
       {/* ── MODAL APLICACION ── */}
-      <Modal abierto={modalApp} alCerrar={() => setModalApp(false)} titulo={appEditando ? `Editar aplicacion: ${appEditando.nombre}` : 'Nueva aplicacion'} className="max-w-[806px] min-h-[680px]">
+      <Modal abierto={modalApp} alCerrar={() => setModalApp(false)} titulo={appEditando ? `Editar Aplicación: ${appEditando.nombre} - ${appEditando.codigo_aplicacion}` : 'Nueva aplicacion'} className="max-w-[806px] min-h-[680px]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {appEditando && (
             <div className="flex border-b border-borde -mx-1 overflow-x-auto">

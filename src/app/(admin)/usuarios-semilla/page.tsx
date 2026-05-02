@@ -664,7 +664,7 @@ export default function PaginaUsuariosSemilla() {
       <Modal
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
-        titulo={usuarioEditando ? `Editar: ${usuarioEditando.nombre}${usuarioEditando.grupo_por_defecto ? ` - ${usuarioEditando.grupo_por_defecto}` : ''}` : 'Nuevo usuario'}
+        titulo={usuarioEditando ? `Editar Usuario: ${usuarioEditando.nombre} - ${usuarioEditando.codigo_usuario}` : 'Nuevo usuario'}
         className="max-w-2xl"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">

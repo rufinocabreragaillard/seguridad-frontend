@@ -498,7 +498,7 @@ export default function PaginaEntidades() {
       )}
 
       {/* Modal entidad */}
-      <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? `Editar entidad: ${entidadEditando.nombre}` : 'Nueva entidad'} className="max-w-3xl">
+      <Modal abierto={modalEntidad} alCerrar={() => setModalEntidad(false)} titulo={entidadEditando ? `Editar Entidad: ${entidadEditando.nombre} - ${entidadEditando.codigo_entidad}` : 'Nueva entidad'} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
@@ -705,7 +705,7 @@ export default function PaginaEntidades() {
 
       {/* Modal área / ubicación */}
       <Modal abierto={modalArea} alCerrar={() => setModalArea(false)}
-        titulo={areaEditando ? `Editar Ubicación: ${areaEditando.nombre}` : 'Nueva ubicación'}
+        titulo={areaEditando ? `Editar Ubicación: ${areaEditando.nombre} - ${areaEditando.codigo_area}` : 'Nueva ubicación'}
         descripcion={`Entidad: ${entidadSeleccionada?.nombre}`}
         className="max-w-2xl"
       >

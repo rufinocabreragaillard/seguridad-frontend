@@ -795,7 +795,7 @@ export default function PaginaTareasDatosBasicos() {
       )}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('catEditarTitulo', { nombre: catEditando.nombre_categoria_tarea }) : t('catNuevoTitulo')}>
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar Categoría Tarea: ${catEditando.nombre_categoria_tarea} - ${catEditando.codigo_categoria_tarea}` : t('catNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(catEditando ? ['md'] : [])] as const).map((tab) => (
@@ -877,7 +877,7 @@ export default function PaginaTareasDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo */}
-      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? t('tipoEditarTitulo', { nombre: tipoEditando.nombre_tipo_tarea }) : t('tipoNuevoTitulo')}>
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? `Editar Tipo Tarea: ${tipoEditando.nombre_tipo_tarea} - ${tipoEditando.codigo_tipo_tarea}` : t('tipoNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(tipoEditando ? ['md'] : [])] as const).map((tab) => (
@@ -979,7 +979,7 @@ export default function PaginaTareasDatosBasicos() {
       </Modal>
 
       {/* Modal Estado */}
-      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? t('estEditarTitulo', { nombre: estEditando.nombre_estado_tarea }) : t('estNuevoTitulo')}>
+      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? `Editar Estado Tarea: ${estEditando.nombre_estado_tarea} - ${estEditando.codigo_estado_tarea}` : t('estNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(estEditando ? ['md'] : [])] as const).map((tab) => (
@@ -1090,7 +1090,7 @@ export default function PaginaTareasDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo Canónico */}
-      <Modal abierto={modalTC} alCerrar={() => setModalTC(false)} titulo={tcEditando ? t('tcEditarTitulo') : t('tcNuevoTitulo')}>
+      <Modal abierto={modalTC} alCerrar={() => setModalTC(false)} titulo={tcEditando ? `Editar Tipo Canónico: ${tcEditando.nombre} - ${tcEditando.codigo_tipo_canonico}` : t('tcNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-w-[400px]">
           {!tcEditando && (
             <Input etiqueta={t('etiquetaCodigoAutogenerar')} value={formTC.codigo_tipo_canonico}

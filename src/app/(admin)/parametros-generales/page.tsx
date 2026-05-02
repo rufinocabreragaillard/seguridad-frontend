@@ -395,7 +395,7 @@ export default function PaginaParametrosGenerales() {
       <Modal
         abierto={modalCat}
         alCerrar={() => setModalCat(false)}
-        titulo={catEditando ? t('editarCategoriaTitulo', { nombre: catEditando.nombre }) : t('nuevaCategoriaTitulo')}
+        titulo={catEditando ? `Editar Categoría Parámetro: ${catEditando.nombre} - ${catEditando.categoria_parametro}` : t('nuevaCategoriaTitulo')}
         className="w-[853px] max-w-[95vw]"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">
@@ -605,7 +605,7 @@ export default function PaginaParametrosGenerales() {
       <Modal
         abierto={modalTipo}
         alCerrar={() => setModalTipo(false)}
-        titulo={tipoEditando ? t('editarTipoTitulo', { nombre: tipoEditando.nombre }) : t('nuevoTipoTitulo')}
+        titulo={tipoEditando ? `Editar Tipo Parámetro: ${tipoEditando.nombre} - ${tipoEditando.tipo_parametro}` : t('nuevoTipoTitulo')}
         className="w-[683px] max-w-[95vw]"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">

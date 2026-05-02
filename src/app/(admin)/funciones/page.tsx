@@ -431,7 +431,7 @@ export default function PaginaFunciones() {
       </SortableDndContext>
 
       {/* ── MODAL FUNCION ── */}
-      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar función: ${funcionEditando.nombre}` : 'Nueva función'} className="w-[960px] max-w-[95vw]">
+      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar Función: ${funcionEditando.nombre} - ${funcionEditando.codigo_funcion}` : 'Nueva función'} className="w-[960px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">

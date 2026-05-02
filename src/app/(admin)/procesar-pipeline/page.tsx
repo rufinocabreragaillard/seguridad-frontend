@@ -975,7 +975,7 @@ export default function PaginaCargaDocsUsuario() {
       ══════════════════════════════════════════════════════════════════════ */}
 
       {/* Modal CRUD ubicación */}
-      <Modal abierto={modalUb} alCerrar={() => setModalUb(false)} titulo={editandoUb ? t('modalUbEditarTitulo', { nombre: editandoUb.nombre_ubicacion }) : t('modalUbNuevoTitulo')} className="max-w-3xl">
+      <Modal abierto={modalUb} alCerrar={() => setModalUb(false)} titulo={editandoUb ? `Editar Ubicación: ${editandoUb.nombre_ubicacion} - ${editandoUb.codigo_ubicacion}` : t('modalUbNuevoTitulo')} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {editandoUb?.tipo_ubicacion === 'AREA' && (
             <div className="flex border-b border-borde">

@@ -991,7 +991,7 @@ export default function PaginaProcesosDatosBasicos() {
       )}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('modalCategoriaEditar', { nombre: catEditando.nombre_categoria_proceso }) : t('modalCategoriaNueva')} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar Categoría Proceso: ${catEditando.nombre_categoria_proceso} - ${catEditando.codigo_categoria_proceso}` : t('modalCategoriaNueva')} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -1185,7 +1185,7 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo */}
-      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? t('modalTipoEditar', { nombre: tipoEditando.nombre_tipo_proceso }) : t('modalTipoNuevo')} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? `Editar Tipo Proceso: ${tipoEditando.nombre_tipo_proceso} - ${tipoEditando.codigo_tipo_proceso}` : t('modalTipoNuevo')} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -1382,7 +1382,7 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Estado */}
-      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? t('modalEstadoEditar', { nombre: estEditando.nombre_estado }) : t('modalEstadoNuevo')} className="w-[880px] max-w-[95vw]">
+      <Modal abierto={modalEst} alCerrar={() => setModalEst(false)} titulo={estEditando ? `Editar Estado Proceso: ${estEditando.nombre_estado} - ${estEditando.codigo_estado_proceso}` : t('modalEstadoNuevo')} className="w-[880px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -1616,7 +1616,7 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Canónico */}
-      <Modal abierto={modalCan} alCerrar={() => setModalCan(false)} titulo={canEditando ? t('modalCanonicoEditar', { nombre: canEditando.nombre }) : t('modalCanonicoNuevo')}>
+      <Modal abierto={modalCan} alCerrar={() => setModalCan(false)} titulo={canEditando ? `Editar Estado Canónico: ${canEditando.nombre} - ${canEditando.codigo_estado_canonico}` : t('modalCanonicoNuevo')}>
         <div className="flex flex-col gap-4 min-w-[440px]">
           <Input etiqueta={t('etiquetaCodigo')} value={formCan.codigo_estado_canonico}
             onChange={(e) => setFormCan({ ...formCan, codigo_estado_canonico: e.target.value })}
