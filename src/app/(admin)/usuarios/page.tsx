@@ -680,7 +680,7 @@ export default function PaginaUsuarios() {
                       : 'text-texto-muted hover:text-texto'
                   }`}
                 >
-                  {tab === 'datos' ? t('tabDatos') : tab === 'inicializacion' ? 'Inicialización' : tab === 'entidades' ? t('tabEntidades') : t('tabRoles')}
+                  {tab === 'datos' ? t('tabDatos') : tab === 'inicializacion' ? 'Otros datos' : tab === 'entidades' ? t('tabEntidades') : t('tabRoles')}
                 </button>
               ))}
             </div>
