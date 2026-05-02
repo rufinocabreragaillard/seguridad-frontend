@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useState, useCallback } from 'react'
 import { Pencil, Search } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -11,72 +11,45 @@ import { ubicacionesDocsApi } from '@/lib/api'
 import type { UbicacionDoc } from '@/lib/tipos'
 import { useAuth } from '@/context/AuthContext'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { useListadoSimple } from '@/hooks/useListadoSimple'
+import { useFormSubmit } from '@/hooks/useFormSubmit'
 
 export default function PaginaAreas() {
   useAuth()
   const t = useTranslations('areas')
   const tc = useTranslations('common')
 
-  const [areas, setAreas] = useState<UbicacionDoc[]>([])
-  const [cargando, setCargando] = useState(true)
-  const [busqueda, setBusqueda] = useState('')
+  const { filtrados, cargando, busqueda, setBusqueda, recargar } =
+    useListadoSimple<UbicacionDoc>({
+      cargarFn: () => ubicacionesDocsApi.listar({ tipo: 'AREA' }),
+      camposBusqueda: a => [a.nombre_ubicacion, a.alias_ubicacion, a.ruta_completa, a.codigo_entidad],
+    })
+
   const [modal, setModal] = useState(false)
   const [editando, setEditando] = useState<UbicacionDoc | null>(null)
   const [form, setForm] = useState({ nombre_ubicacion: '', alias_ubicacion: '' })
-  const [guardando, setGuardando] = useState(false)
-  const [error, setError] = useState('')
 
-  const cargar = useCallback(async () => {
-    setCargando(true)
-    try {
-      setAreas(await ubicacionesDocsApi.listar({ tipo: 'AREA' }))
-    } finally {
-      setCargando(false)
-    }
-  }, [])
-
-  useEffect(() => { cargar() }, [cargar])
+  const { guardando, error, setError, enviar } = useFormSubmit<void>()
 
   const abrirEditar = (u: UbicacionDoc) => {
     setEditando(u)
-    setForm({
-      nombre_ubicacion: u.nombre_ubicacion,
-      alias_ubicacion: u.alias_ubicacion || '',
-    })
+    setForm({ nombre_ubicacion: u.nombre_ubicacion, alias_ubicacion: u.alias_ubicacion || '' })
     setError('')
     setModal(true)
   }
 
-  const guardar = async (cerrar = true) => {
+  const guardar = useCallback(async (cerrar = true) => {
     if (!editando) return
-    if (!form.nombre_ubicacion.trim()) {
-      setError(t('errorNombreObligatorio'))
-      return
-    }
-    setGuardando(true)
-    try {
+    if (!form.nombre_ubicacion.trim()) { setError(t('errorNombreObligatorio')); return }
+    await enviar(async () => {
       await ubicacionesDocsApi.actualizar(editando.codigo_ubicacion, {
         nombre_ubicacion: form.nombre_ubicacion,
         alias_ubicacion: form.alias_ubicacion || undefined,
       })
       if (cerrar) setModal(false)
-      cargar()
-    } catch (e) {
-      setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
-    } finally {
-      setGuardando(false)
-    }
-  }
-
-  const filtrados = busqueda
-    ? areas.filter(
-        (a) =>
-          a.nombre_ubicacion.toLowerCase().includes(busqueda.toLowerCase()) ||
-          (a.alias_ubicacion || '').toLowerCase().includes(busqueda.toLowerCase()) ||
-          (a.ruta_completa || '').toLowerCase().includes(busqueda.toLowerCase()) ||
-          (a.codigo_entidad || '').toLowerCase().includes(busqueda.toLowerCase())
-      )
-    : areas
+      recargar()
+    })
+  }, [editando, form, enviar, recargar, setError, t])
 
   return (
     <div className="relative flex flex-col gap-6 max-w-6xl">
@@ -141,7 +114,7 @@ export default function PaginaAreas() {
       <Modal
         abierto={modal}
         alCerrar={() => setModal(false)}
-        titulo={editando ? t('editarTitulo', { nombre: editando.nombre_ubicacion }) : t('editarTitulo', { nombre: '' })}
+        titulo={editando ? `Editar Área: ${editando.nombre_ubicacion} - ${editando.codigo_ubicacion}` : 'Nueva área'}
       >
         <div className="flex flex-col gap-4 min-w-[450px]">
           <Input

@@ -242,7 +242,7 @@ export default function PaginaCargosAdmin() {
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? t('editarTitulo', { nombre: crud.editando.nombre_cargo }) : t('nuevoTitulo')}
+        titulo={crud.editando ? `Editar Cargo: ${crud.editando.nombre_cargo} - ${crud.editando.codigo_cargo}` : 'Nuevo cargo'}
         className="max-w-3xl"
       >
         <div className="flex flex-col gap-0 min-w-[520px] min-h-[420px]">
