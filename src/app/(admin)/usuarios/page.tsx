@@ -662,7 +662,7 @@ export default function PaginaUsuarios() {
       <Modal
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
-        titulo={usuarioEditando ? `Editar: ${usuarioEditando.nombre}${usuarioEditando.grupo_por_defecto ? ` - ${usuarioEditando.grupo_por_defecto}` : ''}` : 'Nuevo usuario'}
+        titulo={usuarioEditando ? `Editar Usuario: ${usuarioEditando.nombre} - ${usuarioEditando.codigo_usuario}` : 'Nuevo usuario'}
         descripcion={usuarioEditando ? undefined : 'El usuario recibirá una invitación por correo'}
         className="w-[min(95vw,42rem)] max-w-none min-h-[32rem]"
       >
