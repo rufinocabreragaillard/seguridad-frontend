@@ -744,9 +744,9 @@ export default function PaginaUbicacionesDocs() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 flex-wrap">
+      <div className="flex items-start gap-3 flex-wrap">
         {/* Búsqueda */}
-        <div className="relative">
+        <div className="relative mt-0.5">
           <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
           <input
             type="text"
@@ -779,35 +779,43 @@ export default function PaginaUbicacionesDocs() {
             </Boton>
             <span className="text-[11px] text-texto-muted mt-0.5">y todos los sub-directorios</span>
           </div>
-          <Boton variante="contorno" className="h-[38px]" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
-            {t('expandirTodo')}
-          </Boton>
-          <Boton variante="contorno" className="h-[38px]" onClick={colapsarTodos} disabled={ubicaciones.length === 0}>
-            {t('colapsarTodo')}
-          </Boton>
-          <Boton
-            variante="contorno"
-            className="h-[38px]"
-            onClick={() =>
-              exportarExcel(
-                filtrados as unknown as Record<string, unknown>[],
-                [
-                  { titulo: 'Código', campo: 'codigo_ubicacion' },
-                  { titulo: 'Nombre', campo: 'nombre_ubicacion' },
-                  { titulo: 'Ruta', campo: 'ruta_completa' },
-                  { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
-                  { titulo: 'Nivel', campo: 'nivel' },
-                  { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
-                ],
-                'ubicaciones-docs'
-              )
-            }
-            disabled={filtrados.length === 0}
-          >
-            <Download size={15} />
-            Excel
-          </Boton>
+          <div className="flex flex-col items-center">
+            <Boton variante="contorno" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
+              {t('expandirTodo')}
+            </Boton>
+            <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <Boton variante="contorno" onClick={colapsarTodos} disabled={ubicaciones.length === 0}>
+              {t('colapsarTodo')}
+            </Boton>
+            <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <Boton
+              variante="contorno"
+              onClick={() =>
+                exportarExcel(
+                  filtrados as unknown as Record<string, unknown>[],
+                  [
+                    { titulo: 'Código', campo: 'codigo_ubicacion' },
+                    { titulo: 'Nombre', campo: 'nombre_ubicacion' },
+                    { titulo: 'Ruta', campo: 'ruta_completa' },
+                    { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
+                    { titulo: 'Nivel', campo: 'nivel' },
+                    { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
+                    { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
+                  ],
+                  'ubicaciones-docs'
+                )
+              }
+              disabled={filtrados.length === 0}
+            >
+              <Download size={15} />
+              Excel
+            </Boton>
+            <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
+          </div>
         </div>
       </div>
 
