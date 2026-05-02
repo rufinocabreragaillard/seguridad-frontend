@@ -413,7 +413,7 @@ function TabRolesGlobales() {
       <Modal
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
-        titulo={editando ? `Editando rol: ${editando.alias_de_rol || editando.nombre}` : 'Nuevo rol'}
+        titulo={editando ? `Editar Rol: ${editando.alias_de_rol || editando.nombre} - ${editando.codigo_rol}` : 'Nuevo rol'}
         className="w-[900px] max-w-[95vw]"
       >
         <div className="flex flex-col gap-4 min-h-[600px]">

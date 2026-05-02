@@ -502,7 +502,7 @@ export default function PaginaDocumentos() {
       <Modal
         abierto={modal}
         alCerrar={() => setModal(false)}
-        titulo={editando ? `Documento: ${editando.nombre_documento}` : t('nuevoDocumento')}
+        titulo={editando ? `Editar Documento: ${editando.nombre_documento} - ${editando.codigo_documento}` : t('nuevoDocumento')}
       >
         <div className="flex flex-col gap-4 w-[900px] max-w-full min-h-[500px]">
           {/* Tabs dentro del modal */}

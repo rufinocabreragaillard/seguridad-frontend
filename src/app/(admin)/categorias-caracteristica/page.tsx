@@ -559,7 +559,7 @@ export default function PaginaCategoriasCaracteristica() {
       {/* ═══ MODALES ═══ */}
 
       {/* Modal Categoría */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? t('editarCategoriaTitulo', { nombre: catEditando.nombre_cat_pers }) : t('nuevaCategoriaTitulo')} className="max-w-3xl">
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar Categoría: ${catEditando.nombre_cat_pers} - ${catEditando.codigo_cat_pers}` : t('nuevaCategoriaTitulo')} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde">
@@ -731,7 +731,7 @@ export default function PaginaCategoriasCaracteristica() {
       </Modal>
 
       {/* Modal Tipo */}
-      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? t('editarTipoTitulo', { nombre: tipoEditando.nombre_tipo_pers }) : t('nuevoTipoTitulo')}>
+      <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? `Editar Tipo: ${tipoEditando.nombre_tipo_pers} - ${tipoEditando.codigo_tipo_pers}` : t('nuevoTipoTitulo')}>
         <div className="flex flex-col gap-4">
           <Input etiqueta={t('etiquetaNombreTipo')} value={formTipo.nombre_tipo_pers}
             onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_pers: e.target.value })}

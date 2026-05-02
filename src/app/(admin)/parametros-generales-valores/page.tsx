@@ -335,7 +335,7 @@ export default function PaginaValoresParametrosGenerales() {
         abierto={modal}
         alCerrar={() => setModal(false)}
         titulo={editando
-          ? t('editarTitulo', { categoria: editando.categoria_parametro, tipo: editando.tipo_parametro })
+          ? `Editar Parámetro: ${editando.categoria_parametro} / ${editando.tipo_parametro}`
           : t('nuevoTitulo')}
         className={form.tipo_widget === 'TEXTAREA' ? 'w-[920px] max-w-[95vw]' : 'w-[620px] max-w-[95vw]'}
       >

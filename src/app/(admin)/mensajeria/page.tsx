@@ -295,7 +295,7 @@ function TabPlantillas() {
         <Modal
           abierto={true}
           alCerrar={() => setEditando(null)}
-          titulo={modoCrear ? 'Nueva plantilla' : `Editar: ${editando.codigo_plantilla}`}
+          titulo={modoCrear ? 'Nueva plantilla' : `Editar Plantilla: ${editando.codigo_plantilla}`}
           className="max-w-3xl"
         >
           {/* Lenguetas */}
@@ -621,7 +621,7 @@ function TabCanales() {
         <Modal
           abierto={true}
           alCerrar={() => setEditando(null)}
-          titulo={`Editar canal: ${editando.codigo_canal}`}
+          titulo={`Editar Canal: ${editando.nombre_canal} - ${editando.codigo_canal}`}
           className="max-w-2xl"
         >
           <div className="grid grid-cols-2 gap-3">

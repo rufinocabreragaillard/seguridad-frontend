@@ -335,7 +335,7 @@ export default function PaginaHabilidades() {
       <Modal
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
-        titulo={editando ? `Editar habilidad: ${editando.nombre_habilidad}` : 'Nueva habilidad'}
+        titulo={editando ? `Editar Habilidad: ${editando.nombre_habilidad} - ${editando.codigo_habilidad}` : 'Nueva habilidad'}
         ancho="lg"
       >
         {/* Tabs */}

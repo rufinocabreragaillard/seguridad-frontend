@@ -486,7 +486,7 @@ export default function PaginaRegistroLLM() {
             </TablaCuerpo>
           </Tabla>
 
-          <Modal abierto={modalModelo} alCerrar={() => setModalModelo(false)} titulo={editandoModelo ? t('editarTitulo', { nombre: editandoModelo.nombre_visible }) : t('nuevoTitulo')} className="max-w-2xl">
+          <Modal abierto={modalModelo} alCerrar={() => setModalModelo(false)} titulo={editandoModelo ? `Editar Modelo: ${editandoModelo.nombre_visible} - ${editandoModelo.nombre_tecnico}` : t('nuevoTitulo')} className="max-w-2xl">
             <div className="flex flex-col gap-4 min-h-[500px]">
               {editandoModelo && (
                 <div className="flex border-b border-borde -mx-1">
@@ -830,7 +830,7 @@ export default function PaginaRegistroLLM() {
           )}
 
           {modalCredencial && (
-            <Modal abierto={modalCredencial} alCerrar={() => setModalCredencial(false)} titulo={editandoCredencial ? tConfig('editarTitulo') : tConfig('nuevoTitulo')}>
+            <Modal abierto={modalCredencial} alCerrar={() => setModalCredencial(false)} titulo={editandoCredencial ? `Editar Credencial: ${editandoCredencial.proveedor} - ${editandoCredencial.alias}` : tConfig('nuevoTitulo')}>
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">{tConfig('etiquetaProveedor')}</label>
