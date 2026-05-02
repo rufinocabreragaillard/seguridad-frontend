@@ -213,6 +213,7 @@ function PaginaProcesarDocumentosInterna() {
     codigosUbicacionEscaneadas: string[]
   }
   const [pendingCarga, setPendingCarga] = useState<PendingCarga | null>(null)
+  const [mensajeCarga, setMensajeCarga] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null)
 
   // Realtime: notificación push cuando cambia la cola (reemplaza polling 3s)
   const handleColaChange = useCallback(() => {
@@ -1082,18 +1083,23 @@ function PaginaProcesarDocumentosInterna() {
         archivos: archivosParaCargar,
         codigos_ubicacion_escaneadas: codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined,
       })
+      const resumen = `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`
       setCola([{
         id_cola: 0,
         codigo_documento: 0,
-        nombre_documento: `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`,
+        nombre_documento: resumen,
         estado_cola: 'COMPLETADO',
       }])
       setProcesados(res.insertados + res.actualizados)
+      setMensajeCarga({ tipo: 'exito', texto: resumen })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error al cargar'
       setCola([{ id_cola: 0, codigo_documento: 0, nombre_documento: msg, estado_cola: 'ERROR' }])
+      console.error('[CARGAR] error:', e)
+      setMensajeCarga({ tipo: 'error', texto: msg })
     }
     setEjecutando(false)
+    // Llamar directamente sin pasar por el useEffect (que requiere procesoSel)
     cargarDocumentos()
   }
 
@@ -1159,6 +1165,14 @@ function PaginaProcesarDocumentosInterna() {
 
       {tabPrincipal === 'procesar' && (<>
       <BotonChat className="top-0 right-0" />
+      {/* Resultado de carga masiva */}
+      {mensajeCarga && (
+        <div className={`flex items-center gap-3 p-3 border rounded-lg text-sm ${mensajeCarga.tipo === 'exito' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-red-50 border-red-200 text-error'}`}>
+          {mensajeCarga.tipo === 'exito' ? <CheckCircle size={16} className="shrink-0 text-exito" /> : <AlertTriangle size={16} className="shrink-0" />}
+          <span>{mensajeCarga.texto}</span>
+          <button onClick={() => setMensajeCarga(null)} className="ml-auto text-texto-muted hover:text-texto">✕</button>
+        </div>
+      )}
       {/* Error carga inicial */}
       {errorCargaInicial && (
         <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-error">
