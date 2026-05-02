@@ -1434,7 +1434,7 @@ export const cargaDocumentosApi = {
       eliminados: number
       total: number
     }>(
-      '/documentos/cargar-desde-ubicaciones', datos, { timeout: 60000 }
+      '/documentos/cargar-desde-ubicaciones', datos, { timeout: 120000 }
     ).then((r) => r.data),
 }
 
