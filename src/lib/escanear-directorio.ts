@@ -111,7 +111,7 @@ export async function escanearDirectorio(): Promise<{
   directorios: DirectorioEscaneado[]
 } | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dirHandle = await (window as any).showDirectoryPicker().catch(() => null)
+  const dirHandle = await (window as any).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' }).catch(() => null)
   if (!dirHandle) return null
 
   const nombreRaiz = dirHandle.name
@@ -182,7 +182,7 @@ export async function escanearArchivosDirectorio(
     dirHandle = handleExterno
   } else {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const picked = await (window as any).showDirectoryPicker().catch(() => null)
+    const picked = await (window as any).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' }).catch(() => null)
     if (!picked) return null
     dirHandle = picked
   }
@@ -256,7 +256,7 @@ export async function escanearDirectorioSinHijos(): Promise<{
   directorio: DirectorioEscaneado
 } | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dirHandle = await (window as any).showDirectoryPicker().catch(() => null)
+  const dirHandle = await (window as any).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' }).catch(() => null)
   if (!dirHandle) return null
 
   const nombreRaiz = dirHandle.name

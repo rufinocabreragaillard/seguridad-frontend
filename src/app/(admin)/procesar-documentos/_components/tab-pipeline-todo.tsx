@@ -150,7 +150,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
   const seleccionarDirectorio = async () => {
     try {
-      const handle = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker()
+      const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' })
       setDirHandleState(handle)
       await setDirectoryHandle(handle)
     } catch { /* usuario canceló */ }
@@ -176,7 +176,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
         handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored)
       } else {
         try {
-          handle = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker()
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' })
           setDirHandleState(handle); await setDirectoryHandle(handle)
         } catch {
           // Sin permiso: marcar todos como no encontrados

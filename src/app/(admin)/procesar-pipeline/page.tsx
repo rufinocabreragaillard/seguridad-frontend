@@ -402,7 +402,7 @@ export default function PaginaCargaDocsUsuario() {
         handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored)
       } else {
         try {
-          handle = await (window as unknown as { showDirectoryPicker: () => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker()
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' })
           setDirHandleState(handle); await setDirectoryHandle(handle)
         } catch {
           // Sin permiso: marcar todos como no encontrados
