@@ -17,6 +17,55 @@ async function abrirViaApiLocal(ruta: string): Promise<boolean> {
   }
 }
 
+function _escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => (
+    c === '&' ? '&amp;' :
+    c === '<' ? '&lt;' :
+    c === '>' ? '&gt;' :
+    c === '"' ? '&quot;' : '&#39;'
+  ))
+}
+
+// Tipos que el browser puede renderizar inline; el resto se entrega como descarga
+// para evitar mostrar una pestaña en blanco con título correcto pero sin contenido.
+const _INLINE_EXT = new Set([
+  'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'svg', 'bmp', 'ico',
+  'txt', 'md', 'csv', 'log', 'json', 'xml', 'html', 'htm',
+  'mp3', 'wav', 'ogg', 'mp4', 'webm', 'mov',
+])
+
+function _abrirEnPestanaConNombre(blob: Blob, nombre: string): void {
+  const url = URL.createObjectURL(blob)
+  const ext = (nombre.split('.').pop() || '').toLowerCase()
+  const inline = _INLINE_EXT.has(ext)
+
+  if (!inline) {
+    // No renderizable inline: forzar descarga con el nombre correcto
+    _triggerDownload(blob, nombre)
+    return
+  }
+
+  const win = window.open('', '_blank')
+  if (!win) {
+    // Popup bloqueado: fallback directo (mostrará UUID, pero abrirá)
+    window.open(url, '_blank', 'noopener,noreferrer')
+    setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
+    return
+  }
+
+  const titulo = _escapeHtml(nombre)
+  const src = _escapeHtml(url)
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${titulo}</title></head>
+<body style="margin:0;background:#1f1f1f">
+<iframe src="${src}" style="width:100vw;height:100vh;border:0" title="${titulo}"></iframe>
+</body>
+</html>`)
+  win.document.close()
+  setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
+}
+
 async function abrirViaFileSystemApi(ubicacion: string): Promise<void> {
   const handle = await getDirectoryHandle()
   if (!handle) {
@@ -28,9 +77,7 @@ async function abrirViaFileSystemApi(ubicacion: string): Promise<void> {
   const fileHandle = await abrirArchivoPorRuta(handle, ubicacion)
   if (!fileHandle) { alert(`No se encontró: ${ubicacion}`); return }
   const file = await fileHandle.getFile()
-  const url = URL.createObjectURL(file)
-  window.open(url, '_blank', 'noopener,noreferrer')
-  setTimeout(() => URL.revokeObjectURL(url), 60_000)
+  _abrirEnPestanaConNombre(file, file.name)
 }
 
 export async function abrirDocumento(ubicacion: string | null | undefined): Promise<void> {
