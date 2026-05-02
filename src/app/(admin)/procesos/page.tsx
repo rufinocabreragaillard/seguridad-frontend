@@ -289,6 +289,9 @@ export default function PaginaProcesoInstancias() {
             ))}
           </div>
 
+          {/* Contenedor altura fija para que el modal no cambie de tamaño al cambiar de tab */}
+          <div className="min-h-[420px] flex flex-col">
+
           {/* Tab Datos */}
           {tab === 'datos' && (
             <div className="flex flex-col gap-4">
@@ -405,6 +408,8 @@ export default function PaginaProcesoInstancias() {
               />
             </div>
           )}
+
+          </div>{/* fin contenedor altura fija */}
 
           {crud.error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
