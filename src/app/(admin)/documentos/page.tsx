@@ -19,9 +19,7 @@ import { getEstadosDocs } from '@/lib/catalogos'
 import type { Documento, CategoriaConCaracteristicasDocs, CaracteristicaDocumento, TipoCaractDocs, EstadoDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
-import { abrirArchivoPorRuta } from '@/lib/extraer-texto'
-import { getDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { descargarDocumento } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento } from '@/lib/abrir-documento'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TextoCifrado } from '@/components/ui/texto-cifrado'
 
@@ -308,47 +306,7 @@ export default function PaginaDocumentos() {
     cargarCaracteristicas(editando.codigo_documento)
   }
 
-  // ── Abrir documento original desde el filesystem local ─────────────────
-  // Usa el FileSystemDirectoryHandle persistido en IndexedDB cuando el usuario
-  // pickeo la carpeta raiz en /procesar-documentos. NO replica los archivos
-  // en ningun storage remoto: simplemente lee del disco del propio usuario.
-  const abrirDocumentoLocal = async (d: Documento) => {
-    if (!d.ubicacion_documento) {
-      alert('Este documento no tiene ubicacion registrada.')
-      return
-    }
-    const handle = await getDirectoryHandle()
-    if (!handle) {
-      alert(
-        'No hay carpeta raiz seleccionada. Ve a "Procesar Documentos" y ' +
-        'selecciona el directorio raiz una vez para habilitar esta funcion.'
-      )
-      return
-    }
-    const ok = await ensureReadPermission(handle)
-    if (!ok) {
-      alert('Permiso de lectura denegado para la carpeta seleccionada.')
-      return
-    }
-    try {
-      const fileHandle = await abrirArchivoPorRuta(handle, d.ubicacion_documento)
-      if (!fileHandle) {
-        alert(
-          `No se encontro el archivo:\n${d.ubicacion_documento}\n\n` +
-          'Verifica que el directorio raiz seleccionado sea el correcto.'
-        )
-        return
-      }
-      const file = await fileHandle.getFile()
-      const url = URL.createObjectURL(file)
-      window.open(url, '_blank', 'noopener,noreferrer')
-      // Liberar el blob URL despues de un rato (el browser ya tiene el
-      // archivo abierto en la pestania nueva, no lo necesita en memoria).
-      setTimeout(() => URL.revokeObjectURL(url), 60_000)
-    } catch (e) {
-      alert(`Error al abrir el documento: ${e instanceof Error ? e.message : e}`)
-    }
-  }
+  const abrirDocumentoLocal = (d: Documento) => abrirDocumento(d.ubicacion_documento)
 
   // ── Filtro: backend hace la búsqueda y orden, dejamos la lista tal cual ──
   const filtrados = documentos
