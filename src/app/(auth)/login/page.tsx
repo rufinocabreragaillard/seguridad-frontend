@@ -21,7 +21,14 @@ function cambiarLocale(nuevoLocale: Locale) {
 
 export default function PaginaLogin() {
   const t = useTranslations('login')
-  const { login, loginConGoogle, loginConMicrosoft, cargando, error } = useAuth()
+  const { login, loginConGoogle, loginConMicrosoft, error } = useAuth()
+  // Loading local: solo se activa durante el click del usuario en cada acción.
+  // NO usar el `cargando` global del AuthContext para deshabilitar botones aquí —
+  // ese flag depende de `/auth/me` y, si el backend está colgado, dejaba toda
+  // la UI inutilizable (incluso los botones OAuth, que no necesitan backend).
+  const [cargandoEmail, setCargandoEmail] = useState(false)
+  const [cargandoGoogle, setCargandoGoogle] = useState(false)
+  const [cargandoMicrosoft, setCargandoMicrosoft] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [verPassword, setVerPassword] = useState(false)
@@ -35,6 +42,8 @@ export default function PaginaLogin() {
   const [enviandoRegistro, setEnviandoRegistro] = useState(false)
   const [mensajeRegistro, setMensajeRegistro] = useState('')
 
+  const algunLoading = cargandoEmail || cargandoGoogle || cargandoMicrosoft
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorLocal('')
@@ -42,28 +51,35 @@ export default function PaginaLogin() {
       setErrorLocal('Ingresa tu correo y contraseña')
       return
     }
+    setCargandoEmail(true)
     try {
       await login(email, password)
     } catch (err) {
       setErrorLocal(err instanceof Error ? err.message : 'Error al iniciar sesión')
+    } finally {
+      setCargandoEmail(false)
     }
   }
 
   const handleGoogle = async () => {
     setErrorLocal('')
+    setCargandoGoogle(true)
     try {
       await loginConGoogle()
     } catch (err) {
       setErrorLocal(err instanceof Error ? err.message : 'Error con Google')
+      setCargandoGoogle(false)
     }
   }
 
   const handleMicrosoft = async () => {
     setErrorLocal('')
+    setCargandoMicrosoft(true)
     try {
       await loginConMicrosoft()
     } catch (err) {
       setErrorLocal(err instanceof Error ? err.message : 'Error con Microsoft')
+      setCargandoMicrosoft(false)
     }
   }
 
@@ -300,7 +316,8 @@ export default function PaginaLogin() {
                     className="w-full"
                     onClick={handleGoogle}
                     type="button"
-                    disabled={cargando}
+                    cargando={cargandoGoogle}
+                    disabled={algunLoading}
                   >
                     <svg className="w-4 h-4 shrink-0" viewBox="0 0 24 24">
                       <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
@@ -316,7 +333,8 @@ export default function PaginaLogin() {
                     className="w-full"
                     onClick={handleMicrosoft}
                     type="button"
-                    disabled={cargando}
+                    cargando={cargandoMicrosoft}
+                    disabled={algunLoading}
                   >
                     <svg className="w-4 h-4 shrink-0" viewBox="0 0 21 21">
                       <rect x="1" y="1" width="9" height="9" fill="#F25022"/>
@@ -345,7 +363,7 @@ export default function PaginaLogin() {
                     placeholder="tu@correo.com"
                     autoComplete="email"
                     icono={<Mail size={16} />}
-                    disabled={cargando}
+                    disabled={cargandoEmail}
                   />
 
                   <div className="flex flex-col gap-1.5">
@@ -359,7 +377,7 @@ export default function PaginaLogin() {
                         placeholder="••••••••"
                         autoComplete="current-password"
                         icono={<Lock size={16} />}
-                        disabled={cargando}
+                        disabled={cargandoEmail}
                         className="pr-10"
                       />
                       <button
@@ -383,8 +401,8 @@ export default function PaginaLogin() {
                     variante="primario"
                     className="w-full mt-2"
                     style={{ backgroundColor: '#1A1E2E', borderColor: '#1A1E2E' }}
-                    cargando={cargando}
-                    disabled={cargando}
+                    cargando={cargandoEmail}
+                    disabled={algunLoading}
                   >
                     {t('entrar')}
                   </Boton>
