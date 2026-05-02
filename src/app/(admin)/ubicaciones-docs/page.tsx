@@ -14,6 +14,7 @@ import { ubicacionesDocsApi, cargaDocumentosApi, parametrosApi, promptsApi } fro
 import type { UbicacionDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
+import { useFuncionActual } from '@/hooks/useFuncionActual'
 import { escanearDirectorio, escanearDirectorioSinHijos, soportaDirectoryPicker, type DirectorioEscaneado, escanearArchivosDirectorio, type ArchivoEscaneado } from '@/lib/escanear-directorio'
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle } from '@/lib/file-handle-store'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -22,6 +23,7 @@ import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 export default function PaginaUbicacionesDocs() {
   const { grupoActivo } = useAuth()
+  const funcion = useFuncionActual()
   const t = useTranslations('ubicacionesDocs')
   const tc = useTranslations('common')
   const tcd = useTranslations('cargarDocumentos')
@@ -739,8 +741,10 @@ export default function PaginaUbicacionesDocs() {
       <BotonChat className="top-0 right-0" />
       {/* Header */}
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <h2 className="page-heading">{funcion?.nombre ?? t('titulo')}</h2>
+        {(funcion?.ayuda || t('subtitulo')) && (
+          <p className="text-sm text-texto-muted mt-1">{funcion?.ayuda ?? t('subtitulo')}</p>
+        )}
       </div>
 
       {/* Toolbar */}

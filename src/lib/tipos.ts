@@ -36,6 +36,8 @@ export interface EntidadResumen {
 export interface FuncionMenu {
   codigo_funcion: string
   alias: string
+  nombre: string | null
+  ayuda: string | null
   icono: string | null
   url: string | null
   orden: number
