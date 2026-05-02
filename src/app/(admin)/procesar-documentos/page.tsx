@@ -1463,11 +1463,11 @@ function PaginaProcesarDocumentosInterna() {
                 </Boton>
               )}
               <Boton variante="primario" onClick={ejecutar}
-                disabled={ejecutando || escaneandoDir || !procesoSel}>
-                {(ejecutando || escaneandoDir) ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                {escaneandoDir ? 'Escaneando…' : ejecutando ? t('ejecutando') : t('ejecutar')}
+                disabled={ejecutando || (!!procesoSel && escaneandoDir) || !procesoSel}>
+                {(ejecutando || (!!procesoSel && escaneandoDir)) ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+                {(!!procesoSel && escaneandoDir) ? 'Escaneando…' : ejecutando ? t('ejecutando') : t('ejecutar')}
               </Boton>
-              <Boton variante="contorno" onClick={detener} disabled={!ejecutando && !escaneandoDir}>
+              <Boton variante="contorno" onClick={detener} disabled={!ejecutando && !(!!procesoSel && escaneandoDir)}>
                 <Square size={14} />{t('detener')}
               </Boton>
             </div>
