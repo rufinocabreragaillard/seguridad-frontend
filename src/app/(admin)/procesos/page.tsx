@@ -349,6 +349,13 @@ export default function PaginaProcesoInstancias() {
                   placeholder={crud.form.codigo_tipo_proceso ? 'Buscar estado...' : 'Seleccione tipo primero'}
                   disabled={!crud.form.codigo_tipo_proceso}
                 />
+                <SelectorBuscable
+                  etiqueta="Usuario asignado"
+                  valor={crud.form.codigo_usuario_asignado}
+                  opciones={opcionesUsuarios}
+                  onSeleccionar={(v) => crud.updateForm('codigo_usuario_asignado', v)}
+                  placeholder="Buscar usuario..."
+                />
               </div>
               <Textarea
                 etiqueta="Descripción"
@@ -364,14 +371,6 @@ export default function PaginaProcesoInstancias() {
           {tab === 'detalle' && (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
-                <SelectorBuscable
-                  etiqueta="Usuario asignado"
-                  valor={crud.form.codigo_usuario_asignado}
-                  opciones={opcionesUsuarios}
-                  onSeleccionar={(v) => crud.updateForm('codigo_usuario_asignado', v)}
-                  placeholder="Buscar usuario..."
-                />
-                <div />
                 <Input
                   etiqueta="Fecha comprometida"
                   type="datetime-local"
