@@ -1794,6 +1794,11 @@ export const jerarquiasApi = {
     api.post<{ resultados: { tabla: string; filas: number; ok: boolean; error?: string }[] }>('/jerarquias/grafos/refrescar-todos').then((r) => r.data),
 }
 
+export interface FuncionPlan {
+  codigo_funcion: string
+  nombre_funcion?: string | null
+}
+
 export const planesApi = {
   listar: () => api.get<Plan[]>('/planes').then((r) => r.data),
   crear: (datos: Partial<Plan>) => api.post<Plan>('/planes', datos).then((r) => r.data),
@@ -1802,6 +1807,12 @@ export const planesApi = {
   eliminar: (codigo: string) => api.delete(`/planes/${codigo}`),
   generarMd: (codigo: string) =>
     api.post<{ md: string }>(`/planes/${codigo}/generar-md`).then((r) => r.data),
+  listarFunciones: (codigo: string) =>
+    api.get<FuncionPlan[]>(`/planes/${codigo}/funciones`).then((r) => r.data),
+  asignarFuncion: (codigo: string, codigoFuncion: string) =>
+    api.post(`/planes/${codigo}/funciones`, { codigo_funcion: codigoFuncion }).then((r) => r.data),
+  quitarFuncion: (codigo: string, codigoFuncion: string) =>
+    api.delete(`/planes/${codigo}/funciones/${codigoFuncion}`).then((r) => r.data),
 }
 
 export const promptsApi = {

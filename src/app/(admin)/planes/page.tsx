@@ -11,9 +11,10 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { planesApi, promptsApi, type Plan } from '@/lib/api'
+import { planesApi, promptsApi, funcionesApi, type Plan } from '@/lib/api'
+import type { Funcion } from '@/lib/tipos'
 
-type TabModal = 'datos' | 'features' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
+type TabModal = 'datos' | 'features' | 'funciones' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
 const PLAN_VACIO: Partial<Plan> = {
   codigo_plan: '',
@@ -66,6 +67,10 @@ export default function PaginaPlanes() {
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
   const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [md, setMd] = useState('')
+  const [todasFunciones, setTodasFunciones] = useState<Funcion[]>([])
+  const [funcionesAsignadas, setFuncionesAsignadas] = useState<Set<string>>(new Set())
+  const [filtroFunciones, setFiltroFunciones] = useState('')
+  const [cargandoFunciones, setCargandoFunciones] = useState(false)
 
   const cargar = useCallback(async () => {
     setCargando(true)
@@ -123,6 +128,40 @@ export default function PaginaPlanes() {
       await cargar()
     } finally {
       setConfirmacion(null)
+    }
+  }
+
+  const cargarFuncionesDelPlan = useCallback(async (codigoPlan: string) => {
+    setCargandoFunciones(true)
+    try {
+      const [todas, asignadas] = await Promise.all([
+        todasFunciones.length ? Promise.resolve(todasFunciones) : funcionesApi.listar(),
+        planesApi.listarFunciones(codigoPlan),
+      ])
+      if (!todasFunciones.length) setTodasFunciones(todas)
+      setFuncionesAsignadas(new Set(asignadas.map((a) => a.codigo_funcion)))
+    } finally {
+      setCargandoFunciones(false)
+    }
+  }, [todasFunciones])
+
+  useEffect(() => {
+    if (modal && tab === 'funciones' && editando) {
+      cargarFuncionesDelPlan(editando.codigo_plan)
+    }
+  }, [modal, tab, editando, cargarFuncionesDelPlan])
+
+  async function toggleFuncionPlan(codigoFuncion: string, asignar: boolean) {
+    if (!editando) return
+    const set = new Set(funcionesAsignadas)
+    if (asignar) {
+      set.add(codigoFuncion)
+      setFuncionesAsignadas(set)
+      await planesApi.asignarFuncion(editando.codigo_plan, codigoFuncion)
+    } else {
+      set.delete(codigoFuncion)
+      setFuncionesAsignadas(set)
+      await planesApi.quitarFuncion(editando.codigo_plan, codigoFuncion)
     }
   }
 
@@ -192,6 +231,7 @@ export default function PaginaPlanes() {
                 { key: 'datos', label: t('tabDatos') },
                 { key: 'features', label: t('tabFeatures') },
                 ...(editando ? [
+                  { key: 'funciones' as TabModal, label: 'Funciones' },
                   { key: 'system_prompt' as TabModal, label: t('tabSystemPrompt') },
                   { key: 'programacion_insert' as TabModal, label: t('tabProgramacionInsert') },
                   { key: 'programacion_update' as TabModal, label: t('tabProgramacionUpdate') },
@@ -313,6 +353,57 @@ export default function PaginaPlanes() {
                 </div>
                 {error && <div className="bg-red-50 border border-red-200 rounded px-3 py-2 text-sm text-error">{error}</div>}
                 <PieBotonesModal editando={!!editando} onGuardar={() => guardar(false)} onGuardarYSalir={() => guardar(true)} onCerrar={() => setModal(false)} cargando={guardando} />
+              </div>
+            )}
+
+            {tab === 'funciones' && editando && (
+              <div className="flex flex-col gap-3">
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={filtroFunciones}
+                    onChange={(e) => setFiltroFunciones(e.target.value)}
+                    placeholder="Buscar función..."
+                    className="flex-1"
+                  />
+                  <span className="text-xs text-texto-muted whitespace-nowrap">
+                    {funcionesAsignadas.size} / {todasFunciones.length} asignadas
+                  </span>
+                </div>
+                {cargandoFunciones ? (
+                  <p className="text-sm text-texto-muted">{tc('cargando')}</p>
+                ) : (
+                  <div className="border border-borde rounded max-h-[400px] overflow-y-auto">
+                    {todasFunciones
+                      .filter((f) => {
+                        if (!filtroFunciones) return true
+                        const q = filtroFunciones.toLowerCase()
+                        return (
+                          f.codigo_funcion.toLowerCase().includes(q) ||
+                          (f.nombre || '').toLowerCase().includes(q)
+                        )
+                      })
+                      .map((f) => {
+                        const asignada = funcionesAsignadas.has(f.codigo_funcion)
+                        return (
+                          <label
+                            key={f.codigo_funcion}
+                            className="flex items-center gap-3 px-3 py-2 text-sm border-b border-borde last:border-b-0 hover:bg-gris-fondo cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={asignada}
+                              onChange={(e) => toggleFuncionPlan(f.codigo_funcion, e.target.checked)}
+                            />
+                            <span className="font-mono text-xs text-texto-muted w-48 truncate">{f.codigo_funcion}</span>
+                            <span className="flex-1">{f.nombre || '—'}</span>
+                          </label>
+                        )
+                      })}
+                  </div>
+                )}
+                <div className="flex justify-end pt-2">
+                  <Boton variante="contorno" onClick={() => setModal(false)}>{tc('salir')}</Boton>
+                </div>
               </div>
             )}
 
