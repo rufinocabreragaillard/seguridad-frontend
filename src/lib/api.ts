@@ -356,7 +356,7 @@ export const funcionesApi = {
   quitarAplicacion: (id: string, codigoApp: string) =>
     api.delete(`/funciones/${id}/aplicaciones/${codigoApp}`),
   listarRoles: (id: string) =>
-    api.get<{ id_rol: number; orden: number; roles: { codigo_rol: string; nombre: string; codigo_grupo: string | null } | null }[]>(
+    api.get<{ id_rol: number; orden: number; roles: { codigo_rol: string; nombre_rol: string; codigo_grupo: string | null } | null }[]>(
       `/funciones/${id}/roles`
     ).then((r) => r.data),
   asignarRol: (id: string, idRol: number) =>

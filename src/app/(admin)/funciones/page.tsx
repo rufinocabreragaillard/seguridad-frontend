@@ -99,7 +99,7 @@ export default function PaginaFunciones() {
   const [cargandoApisFuncion, setCargandoApisFuncion] = useState(false)
 
   // Roles de la funcion
-  type RolDeFuncion = { id_rol: number; orden: number; roles: { codigo_rol: string; nombre: string; codigo_grupo: string | null } | null }
+  type RolDeFuncion = { id_rol: number; orden: number; roles: { codigo_rol: string; nombre_rol: string; codigo_grupo: string | null } | null }
   const [rolesDeFuncion, setRolesDeFuncion] = useState<RolDeFuncion[]>([])
   const [cargandoRolesFuncion, setCargandoRolesFuncion] = useState(false)
   const [rolesDisponibles, setRolesDisponibles] = useState<Rol[]>([])
@@ -680,7 +680,7 @@ export default function PaginaFunciones() {
                       {rolesDeFuncion.map((rf) => (
                         <div key={rf.id_rol} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
                           <div>
-                            <span className="text-sm font-medium text-texto">{rf.roles?.nombre || `Rol #${rf.id_rol}`}</span>
+                            <span className="text-sm font-medium text-texto">{rf.roles?.nombre_rol || `Rol #${rf.id_rol}`}</span>
                             <span className="ml-2 text-xs text-texto-muted">{rf.roles?.codigo_rol}</span>
                             {rf.roles?.codigo_grupo
                               ? <span className="ml-2 text-xs text-texto-muted">· {rf.roles.codigo_grupo}</span>
