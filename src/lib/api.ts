@@ -355,6 +355,14 @@ export const funcionesApi = {
     api.post(`/funciones/${id}/aplicaciones`, { codigo_aplicacion: codigoApp }),
   quitarAplicacion: (id: string, codigoApp: string) =>
     api.delete(`/funciones/${id}/aplicaciones/${codigoApp}`),
+  listarRoles: (id: string) =>
+    api.get<{ id_rol: number; orden: number; roles: { codigo_rol: string; nombre: string; codigo_grupo: string | null } | null }[]>(
+      `/funciones/${id}/roles`
+    ).then((r) => r.data),
+  asignarRol: (id: string, idRol: number) =>
+    api.post(`/funciones/${id}/roles`, { id_rol: idRol }),
+  quitarRol: (id: string, idRol: number) =>
+    api.delete(`/funciones/${id}/roles/${idRol}`),
   reordenar: (orden: { codigo_funcion: string; orden: number }[]) =>
     api.put('/funciones/reordenar', orden),
   traducir: (codigo: string) =>

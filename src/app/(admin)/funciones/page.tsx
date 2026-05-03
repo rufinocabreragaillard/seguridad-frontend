@@ -14,9 +14,9 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { aplicacionesApi, funcionesApi, registroLLMApi, promptsApi } from '@/lib/api'
+import { aplicacionesApi, funcionesApi, rolesApi, registroLLMApi, promptsApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM } from '@/lib/tipos'
+import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM, Rol } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { TIPOS_ELEMENTO, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
@@ -78,7 +78,7 @@ export default function PaginaFunciones() {
     traducir: true,
     traducir_registros: false, tabla_traducible: '', campos_traducibles: '',
   })
-  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
+  const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'roles' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
   const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
@@ -97,6 +97,14 @@ export default function PaginaFunciones() {
   // APIs de la funcion
   const [apisDeFuncion, setApisDeFuncion] = useState<ApiEndpoint[]>([])
   const [cargandoApisFuncion, setCargandoApisFuncion] = useState(false)
+
+  // Roles de la funcion
+  type RolDeFuncion = { id_rol: number; orden: number; roles: { codigo_rol: string; nombre: string; codigo_grupo: string | null } | null }
+  const [rolesDeFuncion, setRolesDeFuncion] = useState<RolDeFuncion[]>([])
+  const [cargandoRolesFuncion, setCargandoRolesFuncion] = useState(false)
+  const [rolesDisponibles, setRolesDisponibles] = useState<Rol[]>([])
+  const [rolNuevoFuncion, setRolNuevoFuncion] = useState('')
+  const [asignandoRolFuncion, setAsignandoRolFuncion] = useState(false)
 
   // Confirmar eliminacion
   const [confirmacion, setConfirmacion] = useState<Funcion | null>(null)
@@ -139,7 +147,7 @@ export default function PaginaFunciones() {
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
-  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
+  const abrirEditarFuncion = (f: Funcion, tabInicial: 'datos' | 'otros' | 'roles' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm' = 'datos') => {
     setFuncionEditando(f)
     setFormFuncion({
       codigo_funcion: f.codigo_funcion,
@@ -177,6 +185,7 @@ export default function PaginaFunciones() {
     setTabModalFuncion(tabInicial)
     cargarAppsDeFuncion(f.codigo_funcion)
     cargarApisDeFuncion(f.codigo_funcion)
+    cargarRolesDeFuncion(f.codigo_funcion)
     setModalFuncion(true)
   }
   const guardarFuncion = async (cerrar: boolean) => {
@@ -253,6 +262,39 @@ export default function PaginaFunciones() {
     catch (e) { setErrorFuncion(e instanceof Error ? e.message : 'Error') }
   }
 
+  // ── Funcion: roles ────────────────────────────────────────────────────────
+  const cargarRolesDeFuncion = useCallback(async (c: string) => {
+    setCargandoRolesFuncion(true)
+    try {
+      const [roles, todosRoles] = await Promise.all([
+        funcionesApi.listarRoles(c),
+        rolesApi.listar(),
+      ])
+      setRolesDeFuncion(roles)
+      setRolesDisponibles(todosRoles)
+    } catch { setRolesDeFuncion([]) }
+    finally { setCargandoRolesFuncion(false) }
+  }, [])
+
+  const asignarRolAFuncion = async () => {
+    if (!rolNuevoFuncion || !funcionEditando) return
+    setAsignandoRolFuncion(true)
+    try {
+      await funcionesApi.asignarRol(funcionEditando.codigo_funcion, parseInt(rolNuevoFuncion))
+      setRolNuevoFuncion('')
+      cargarRolesDeFuncion(funcionEditando.codigo_funcion)
+    } catch (e) { setErrorFuncion(e instanceof Error ? e.message : 'Error') }
+    finally { setAsignandoRolFuncion(false) }
+  }
+
+  const quitarRolDeFuncion = async (idRol: number) => {
+    if (!funcionEditando) return
+    try {
+      await funcionesApi.quitarRol(funcionEditando.codigo_funcion, idRol)
+      cargarRolesDeFuncion(funcionEditando.codigo_funcion)
+    } catch (e) { setErrorFuncion(e instanceof Error ? e.message : 'Error') }
+  }
+
   // ── Eliminacion ───────────────────────────────────────────────────────────
   const ejecutarEliminacion = async () => {
     if (!confirmacion) return; setEliminando(true)
@@ -317,6 +359,7 @@ export default function PaginaFunciones() {
     { key: 'datos', label: t('tabDatos') },
     { key: 'otros', label: t('tabOtros') },
     ...(funcionEditando ? [
+      { key: 'roles', label: `Roles (${rolesDeFuncion.length})` },
       { key: 'aplicaciones', label: `${t('tabAplicaciones')} (${appsDeFuncion.length})` },
       ...(esAdmin ? [
         { key: 'system_prompt', label: t('tabSystemPrompt') },
@@ -608,6 +651,50 @@ export default function PaginaFunciones() {
               cargando={guardandoFuncion}
             />
           </>)}
+
+          {/* Tab Roles */}
+          {tabModalFuncion === 'roles' && funcionEditando && (
+            <div className="flex flex-col gap-4">
+              <div className="flex gap-2">
+                <div className="flex-1">
+                  <select value={rolNuevoFuncion} onChange={(e) => setRolNuevoFuncion(e.target.value)} className={selectClass}>
+                    <option value="">Seleccionar rol para asignar...</option>
+                    {rolesDisponibles
+                      .filter((r) => !rolesDeFuncion.some((rf) => rf.id_rol === r.id_rol))
+                      .map((r) => (
+                        <option key={r.id_rol} value={r.id_rol}>
+                          {r.nombre}{r.codigo_grupo ? ` (${r.codigo_grupo})` : ' (global)'}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <Boton variante="primario" onClick={asignarRolAFuncion} cargando={asignandoRolFuncion} disabled={!rolNuevoFuncion}>
+                  <Plus size={14} />Asignar rol
+                </Boton>
+              </div>
+              {cargandoRolesFuncion
+                ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+                : rolesDeFuncion.length === 0
+                  ? <p className="text-sm text-texto-muted text-center py-4">Esta función no está asignada a ningún rol</p>
+                  : <div className="flex flex-col gap-2">
+                      {rolesDeFuncion.map((rf) => (
+                        <div key={rf.id_rol} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
+                          <div>
+                            <span className="text-sm font-medium text-texto">{rf.roles?.nombre || `Rol #${rf.id_rol}`}</span>
+                            <span className="ml-2 text-xs text-texto-muted">{rf.roles?.codigo_rol}</span>
+                            {rf.roles?.codigo_grupo
+                              ? <span className="ml-2 text-xs text-texto-muted">· {rf.roles.codigo_grupo}</span>
+                              : <span className="ml-2 text-xs text-blue-500">· global</span>}
+                          </div>
+                          <button onClick={() => quitarRolDeFuncion(rf.id_rol)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar">
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>}
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
+            </div>
+          )}
 
           {/* Tab Aplicaciones */}
           {tabModalFuncion === 'aplicaciones' && funcionEditando && (
