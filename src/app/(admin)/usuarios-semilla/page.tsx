@@ -13,7 +13,7 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Search, Trash2, X, Star } from 'lucide-react'
+import { Plus, Pencil, Search, Trash2, X, Star, FolderOpen } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -929,8 +929,10 @@ export default function PaginaUsuariosSemilla() {
                           {areasEntidad.filter((a) => !busquedaAreaForm || a.nombre.toLowerCase().includes(busquedaAreaForm.toLowerCase())).slice(0, 20).map((a) => (
                             <button key={a.codigo_area} type="button"
                               onClick={() => { setForm({ ...form, codigo_area: a.codigo_area }); setBusquedaAreaForm(a.nombre); setDropdownAreaFormAbierto(false) }}
-                              className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors">
-                              <span className="font-medium">{a.nombre}</span>
+                              className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors flex items-center gap-2">
+                              <FolderOpen size={13} className="shrink-0 text-amber-400" />
+                              <span className="font-medium truncate flex-1">{a.nombre}</span>
+                              <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 bg-amber-100 text-amber-700">Área</span>
                             </button>
                           ))}
                           {areasEntidad.length === 0 && <div className="px-3 py-2 text-sm text-texto-muted">Sin áreas en esta entidad</div>}

@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
-import { Search, ChevronDown, X } from 'lucide-react'
+import { Search, ChevronDown, X, FolderOpen } from 'lucide-react'
 import type { Area } from '@/lib/tipos'
 
 interface Props {
@@ -162,18 +162,22 @@ export function SelectorAreaJerarquico({ areas, valor, onChange, deshabilitado, 
                   key={area.codigo_area}
                   type="button"
                   onClick={() => seleccionar(area.codigo_area)}
-                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-primario/10 transition-colors flex items-center gap-1 ${
+                  className={`w-full text-left px-3 py-1.5 text-sm hover:bg-primario/10 transition-colors flex items-center gap-2 ${
                     seleccionada ? 'bg-primario/10 font-medium text-primario' : 'text-texto'
                   }`}
                   style={{ paddingLeft: `${12 + indent}px` }}
                 >
-                  {(area.nivel ?? 0) > 0 && (
-                    <span className="text-texto-muted mr-1">{'└'}</span>
-                  )}
-                  <span>{area.nombre}</span>
+                  <FolderOpen
+                    size={13}
+                    className={`shrink-0 ${seleccionada ? 'text-primario' : 'text-amber-400'}`}
+                  />
+                  <span className="truncate flex-1">{area.nombre}</span>
                   {area.alias && (
-                    <span className="text-xs text-texto-muted ml-1">({area.alias})</span>
+                    <span className="text-xs text-texto-muted">({area.alias})</span>
                   )}
+                  <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 bg-amber-100 text-amber-700">
+                    Área
+                  </span>
                 </button>
               )
             })}
