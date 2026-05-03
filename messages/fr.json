@@ -1094,7 +1094,24 @@
     "gruposAcceso": "Groupes d'entités qui ont accès à cette application.",
     "agregarGrupo": "Ajouter",
     "tabFunciones": "Fonctions",
-    "tabGrupos": "Groupes"
+    "tabGrupos": "Groupes",
+    "subtitulo": "Gérez les applications du système, leurs fonctions et groupes",
+    "etiquetaAlias": "Alias (nom court pour la barre supérieure)",
+    "placeholderAlias": "Ex: Documents",
+    "etiquetaTipo": "Type *",
+    "etiquetaDescripcion": "Description",
+    "etiquetaSidebar": "Barre latérale étendue au démarrage",
+    "etiquetaSidebarAyuda": "(décocher pour les apps à usage unique comme Chat)",
+    "tabDatos": "Données",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tituloEditar": "Modifier l'application",
+    "tituloNueva": "Nouvelle application",
+    "sinFuncionesAsignadas": "Aucune fonction assignée",
+    "sinGruposAsignados": "Aucun groupe assigné",
+    "seleccionarGrupo": "Sélectionner un groupe..."
   },
   "funciones": {
     "titulo": "Fonctions",
@@ -1123,7 +1140,22 @@
     "tabApps": "Applications",
     "etiquetaTipo": "Type",
     "etiquetaAppOrigen": "Application d'origine",
-    "sinAsignar": "— non assigné —"
+    "sinAsignar": "— non assigné —",
+    "etiquetaDescripcion": "Description",
+    "subtitulo": "Gérez les fonctions du système et leurs relations avec les applications",
+    "tabOtros": "Autres données",
+    "tabAplicaciones": "Applications",
+    "tabSystemPrompt": "System Prompt",
+    "tabVista": "Vue",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tabLlm": "LLM",
+    "sinFuncionesAsignadas": "Aucune application assignée",
+    "seleccionarAplicacion": "Sélectionner une application...",
+    "tituloEditar": "Modifier la fonction",
+    "tituloCodigo": "Code",
+    "tituloNueva": "Nouvelle fonction"
   },
   "auditoria": {
     "titulo": "Audit Sécurité",
@@ -2030,6 +2062,9 @@
   "tipoElemento": {
     "USUARIO": "Utilisateur",
     "ADMINISTRADOR": "Administration",
-    "SISTEMA": "Système"
+    "SISTEMA": "Système",
+    "USUARIO_desc": "Utilisateur — disponible pour tout rôle d'utilisateur final",
+    "ADMINISTRADOR_desc": "Administration — administrateurs de groupe uniquement",
+    "SISTEMA_desc": "Système — seul le super-admin peut attribuer"
   }
 }

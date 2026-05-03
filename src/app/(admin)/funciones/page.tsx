@@ -314,17 +314,17 @@ export default function PaginaFunciones() {
 
   const esAdmin = grupoActivo === 'ADMIN'
   const TABS_MODAL = [
-    { key: 'datos', label: 'Datos' },
-    { key: 'otros', label: 'Otros Datos' },
+    { key: 'datos', label: t('tabDatos') },
+    { key: 'otros', label: t('tabOtros') },
     ...(funcionEditando ? [
-      { key: 'aplicaciones', label: `Aplicaciones (${appsDeFuncion.length})` },
+      { key: 'aplicaciones', label: `${t('tabAplicaciones')} (${appsDeFuncion.length})` },
       ...(esAdmin ? [
-        { key: 'system_prompt', label: 'System Prompt' },
-        { key: 'vista', label: 'Vista' },
-        { key: 'programacion_insert', label: 'Prog. Insert' },
-        { key: 'programacion_update', label: 'Prog. Update' },
-        { key: 'md', label: '.md' },
-        { key: 'llm', label: 'LLM' },
+        { key: 'system_prompt', label: t('tabSystemPrompt') },
+        { key: 'vista', label: t('tabVista') },
+        { key: 'programacion_insert', label: t('tabProgInsert') },
+        { key: 'programacion_update', label: t('tabProgUpdate') },
+        { key: 'md', label: t('tabMd') },
+        { key: 'llm', label: t('tabLlm') },
       ] : []),
     ] : []),
   ] as { key: typeof tabModalFuncion; label: string }[]
@@ -334,7 +334,7 @@ export default function PaginaFunciones() {
       <BotonChat />
       <div>
         <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">Gestiona las funciones del sistema y sus relaciones con aplicaciones</p>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -431,7 +431,7 @@ export default function PaginaFunciones() {
       </SortableDndContext>
 
       {/* ── MODAL FUNCION ── */}
-      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `Editar Función: ${funcionEditando.nombre} - ${funcionEditando.codigo_funcion}` : 'Nueva función'} className="w-[960px] max-w-[95vw]">
+      <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `${t('tituloEditar')}: ${funcionEditando.nombre} - ${funcionEditando.codigo_funcion}` : t('tituloNueva')} className="w-[960px] max-w-[95vw]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
@@ -612,9 +612,9 @@ export default function PaginaFunciones() {
           {/* Tab Aplicaciones */}
           {tabModalFuncion === 'aplicaciones' && funcionEditando && (
             <div className="flex flex-col gap-4">
-              <div className="flex gap-2"><div className="flex-1"><select value={appNuevaFuncion} onChange={(e) => setAppNuevaFuncion(e.target.value)} className={selectClass}><option value="">Seleccionar aplicación...</option>{appsDisponiblesFuncion.map((a) => (<option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre}</option>))}</select></div><Boton variante="primario" onClick={asignarAppAFuncion} cargando={asignandoAppFuncion} disabled={!appNuevaFuncion}><Plus size={14} />Asignar</Boton></div>
+              <div className="flex gap-2"><div className="flex-1"><select value={appNuevaFuncion} onChange={(e) => setAppNuevaFuncion(e.target.value)} className={selectClass}><option value="">{t('seleccionarAplicacion')}</option>{appsDisponiblesFuncion.map((a) => (<option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre}</option>))}</select></div><Boton variante="primario" onClick={asignarAppAFuncion} cargando={asignandoAppFuncion} disabled={!appNuevaFuncion}><Plus size={14} />{t('asignarApp')}</Boton></div>
               {cargandoAppsFuncion ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-              : appsDeFuncion.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene aplicaciones asignadas</p>
+              : appsDeFuncion.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">{t('sinFuncionesAsignadas')}</p>
               : <div className="flex flex-col gap-2">{appsDeFuncion.map((af) => (<div key={af.codigo_aplicacion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface"><div><span className="text-sm font-medium text-texto">{af.aplicaciones?.nombre_aplicacion || af.codigo_aplicacion}</span><span className="ml-2 text-xs text-texto-muted">{af.codigo_aplicacion}</span></div><button onClick={() => quitarAppDeFuncion(af.codigo_aplicacion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button></div>))}</div>}
               <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalFuncion(false)}>{tc('salir')}</Boton></div>
             </div>

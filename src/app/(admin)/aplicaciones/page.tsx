@@ -15,7 +15,7 @@ import { useAuth } from '@/context/AuthContext'
 import type { Aplicacion, Funcion, Grupo } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
-import { TIPOS_ELEMENTO, DESCRIPCION_TIPO, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { TIPOS_ELEMENTO, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
 import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
@@ -213,7 +213,7 @@ export default function PaginaAplicaciones() {
       <BotonChat />
       <div>
         <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">Gestiona las aplicaciones del sistema, sus funciones y grupos</p>
+        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
       </div>
 
       <div className="flex items-center gap-3">
@@ -252,18 +252,18 @@ export default function PaginaAplicaciones() {
       </SortableDndContext>
 
       {/* ── MODAL APLICACION ── */}
-      <Modal abierto={modalApp} alCerrar={() => setModalApp(false)} titulo={appEditando ? `Editar Aplicación: ${appEditando.nombre} - ${appEditando.codigo_aplicacion}` : 'Nueva aplicacion'} className="max-w-[806px] min-h-[680px]">
+      <Modal abierto={modalApp} alCerrar={() => setModalApp(false)} titulo={appEditando ? `${t('tituloEditar')}: ${appEditando.nombre} - ${appEditando.codigo_aplicacion}` : t('tituloNueva')} className="max-w-[806px] min-h-[680px]">
         <div className="flex flex-col gap-4 min-h-[500px]">
           {appEditando && (
             <div className="flex border-b border-borde -mx-1 overflow-x-auto">
               {([
-                { key: 'datos', label: 'Datos' },
+                { key: 'datos', label: t('tabDatos') },
                 { key: 'funciones', label: `${t('tabFunciones')} (${funcionesApp.length})` },
                 { key: 'grupos', label: `${t('tabGrupos')} (${gruposApp.length})` },
-                { key: 'system_prompt', label: 'System Prompt' },
-                { key: 'programacion_insert', label: 'Prog. Insert' },
-                { key: 'programacion_update', label: 'Prog. Update' },
-                { key: 'md', label: '.md' },
+                { key: 'system_prompt', label: t('tabSystemPrompt') },
+                { key: 'programacion_insert', label: t('tabProgInsert') },
+                { key: 'programacion_update', label: t('tabProgUpdate') },
+                { key: 'md', label: t('tabMd') },
               ] as { key: typeof tabModalApp; label: string }[]).map((tab) => (
                 <button key={tab.key} onClick={() => setTabModalApp(tab.key)} className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalApp === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
                   {tab.label}
@@ -274,19 +274,19 @@ export default function PaginaAplicaciones() {
           {tabModalApp === 'datos' && (<>
             <Input etiqueta={t('etiquetaCodigo')} value={formApp.codigo_aplicacion} onChange={(e) => setFormApp({ ...formApp, codigo_aplicacion: e.target.value.toUpperCase() })} disabled={!!appEditando} placeholder={t('placeholderCodigo')} />
             <Input etiqueta={t('etiquetaNombre')} value={formApp.nombre} onChange={(e) => setFormApp({ ...formApp, nombre: e.target.value })} placeholder={t('placeholderNombre')} />
-            <Input etiqueta="Alias (nombre corto para la barra superior)" value={formApp.alias} onChange={(e) => setFormApp({ ...formApp, alias: e.target.value })} placeholder="Ej: Documentos" />
+            <Input etiqueta={t('etiquetaAlias')} value={formApp.alias} onChange={(e) => setFormApp({ ...formApp, alias: e.target.value })} placeholder={t('placeholderAlias')} />
             <div>
-              <label className="block text-sm font-medium text-texto mb-1">Tipo *</label>
+              <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaTipo')}</label>
               <select value={formApp.tipo_acceso} onChange={(e) => setFormApp({ ...formApp, tipo_acceso: e.target.value as TipoElemento })} className={selectClass}>
-                {TIPOS_ELEMENTO.map((t) => (
-                  <option key={t} value={t}>{DESCRIPCION_TIPO[t]}</option>
+                {TIPOS_ELEMENTO.map((tipo) => (
+                  <option key={tipo} value={tipo}>{tte(`${tipo}_desc` as Parameters<typeof tte>[0])}</option>
                 ))}
               </select>
             </div>
-            <Input etiqueta="Descripcion" value={formApp.descripcion} onChange={(e) => setFormApp({ ...formApp, descripcion: e.target.value })} />
+            <Input etiqueta={t('etiquetaDescripcion')} value={formApp.descripcion} onChange={(e) => setFormApp({ ...formApp, descripcion: e.target.value })} />
             <div className="flex items-center gap-3">
               <input type="checkbox" id="sidebar_ancho" checked={formApp.sidebar_ancho} onChange={(e) => setFormApp({ ...formApp, sidebar_ancho: e.target.checked })} className="w-4 h-4 rounded accent-primario cursor-pointer" />
-              <label htmlFor="sidebar_ancho" className="text-sm text-texto cursor-pointer">Sidebar expandido al iniciar <span className="text-texto-muted">(desmarcar para apps de uso único como Chat)</span></label>
+              <label htmlFor="sidebar_ancho" className="text-sm text-texto cursor-pointer">{t('etiquetaSidebar')} <span className="text-texto-muted">{t('etiquetaSidebarAyuda')}</span></label>
             </div>
             {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
             <PieBotonesModal editando={!!appEditando} onGuardar={() => guardarApp(false)} onGuardarYSalir={() => guardarApp(true)} onCerrar={() => setModalApp(false)} cargando={guardandoApp} />
@@ -333,7 +333,7 @@ export default function PaginaAplicaciones() {
               {cargandoFuncionesApp ? (
                 <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
               ) : funcionesApp.length === 0 ? (
-                <p className="text-sm text-texto-muted text-center py-4">No tiene funciones asignadas</p>
+                <p className="text-sm text-texto-muted text-center py-4">{t('sinFuncionesAsignadas')}</p>
               ) : (
                 <SortableDndContext items={funcionesApp as unknown as Record<string,unknown>[]} getId={(f) => (f as {codigo_funcion:string}).codigo_funcion} onReorder={(n) => reordenarFuncionesApp(n as typeof funcionesApp)}>
                   <ul className="divide-y divide-borde border border-borde rounded-lg overflow-hidden">
@@ -367,7 +367,7 @@ export default function PaginaAplicaciones() {
                   </ul>
                 </SortableDndContext>
               )}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Salir</Boton></div>
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('salir')}</Boton></div>
             </div>
           )}
           {tabModalApp === 'system_prompt' && appEditando && (
@@ -529,7 +529,7 @@ export default function PaginaAplicaciones() {
                     Sincronizar
                   </Boton>
                 </div>
-                <Boton variante="contorno" onClick={() => setModalApp(false)}>Salir</Boton>
+                <Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('salir')}</Boton>
               </div>
             </div>
           )}
@@ -539,14 +539,14 @@ export default function PaginaAplicaciones() {
               <div className="flex gap-2">
                 <div className="flex-1">
                   <select value={grupoNuevoApp} onChange={(e) => setGrupoNuevoApp(e.target.value)} className={selectClass}>
-                    <option value="">Seleccionar grupo...</option>
+                    <option value="">{t('seleccionarGrupo')}</option>
                     {gruposDisponiblesApp.map((g) => (<option key={g.codigo_grupo} value={g.codigo_grupo}>{g.nombre} ({g.codigo_grupo})</option>))}
                   </select>
                 </div>
                 <Boton variante="primario" onClick={asignarGrupoApp} cargando={asignandoGrupoApp} disabled={!grupoNuevoApp}><Plus size={14} />{t('agregarGrupo')}</Boton>
               </div>
               {cargandoGruposApp ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-              : gruposApp.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">No tiene grupos asignados</p>
+              : gruposApp.length === 0 ? <p className="text-sm text-texto-muted text-center py-4">{t('sinGruposAsignados')}</p>
               : <div className="flex flex-col gap-2">{gruposApp.map((g) => (
                 <div key={g.codigo_grupo} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
                   <div className="flex-1 min-w-0">
@@ -557,7 +557,7 @@ export default function PaginaAplicaciones() {
                 </div>
               ))}</div>}
               {errorApp && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorApp}</p></div>}
-              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>Salir</Boton></div>
+              <div className="flex justify-end pt-2"><Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('salir')}</Boton></div>
             </div>
           )}
         </div>

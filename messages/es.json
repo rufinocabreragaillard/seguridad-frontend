@@ -1154,7 +1154,24 @@
     "gruposAcceso": "Grupos de entidades que tienen acceso a esta aplicación.",
     "agregarGrupo": "Agregar",
     "tabFunciones": "Funciones",
-    "tabGrupos": "Grupos"
+    "tabGrupos": "Grupos",
+    "subtitulo": "Gestiona las aplicaciones del sistema, sus funciones y grupos",
+    "etiquetaAlias": "Alias (nombre corto para la barra superior)",
+    "placeholderAlias": "Ej: Documentos",
+    "etiquetaTipo": "Tipo *",
+    "etiquetaDescripcion": "Descripción",
+    "etiquetaSidebar": "Sidebar expandido al iniciar",
+    "etiquetaSidebarAyuda": "(desmarcar para apps de uso único como Chat)",
+    "tabDatos": "Datos",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tituloEditar": "Editar Aplicación",
+    "tituloNueva": "Nueva aplicación",
+    "sinFuncionesAsignadas": "No tiene funciones asignadas",
+    "sinGruposAsignados": "No tiene grupos asignados",
+    "seleccionarGrupo": "Seleccionar grupo..."
   },
   "funciones": {
     "titulo": "Funciones",
@@ -1183,7 +1200,22 @@
     "tabApps": "Aplicaciones",
     "etiquetaTipo": "Tipo",
     "etiquetaAppOrigen": "Aplicación origen",
-    "sinAsignar": "— sin asignar —"
+    "sinAsignar": "— sin asignar —",
+    "etiquetaDescripcion": "Descripción",
+    "subtitulo": "Gestiona las funciones del sistema y sus relaciones con aplicaciones",
+    "tabOtros": "Otros Datos",
+    "tabAplicaciones": "Aplicaciones",
+    "tabSystemPrompt": "System Prompt",
+    "tabVista": "Vista",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tabLlm": "LLM",
+    "sinFuncionesAsignadas": "No tiene aplicaciones asignadas",
+    "seleccionarAplicacion": "Seleccionar aplicación...",
+    "tituloEditar": "Editar Función",
+    "tituloCodigo": "Código",
+    "tituloNueva": "Nueva función"
   },
   "auditoria": {
     "titulo": "Auditoría Seguridad",
@@ -2053,6 +2085,9 @@
   "tipoElemento": {
     "USUARIO": "Usuario",
     "ADMINISTRADOR": "Administración",
-    "SISTEMA": "Sistema"
+    "SISTEMA": "Sistema",
+    "USUARIO_desc": "Usuario — disponible para cualquier rol de usuario final",
+    "ADMINISTRADOR_desc": "Administración — solo administradores de grupo",
+    "SISTEMA_desc": "Sistema — solo super-admin puede asignar"
   }
 }

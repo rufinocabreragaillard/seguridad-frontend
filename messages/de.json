@@ -1094,7 +1094,24 @@
     "gruposAcceso": "Entitätsgruppen, die Zugriff auf diese Anwendung haben.",
     "agregarGrupo": "Hinzufügen",
     "tabFunciones": "Funktionen",
-    "tabGrupos": "Gruppen"
+    "tabGrupos": "Gruppen",
+    "subtitulo": "Verwalten Sie die Systemanwendungen, ihre Funktionen und Gruppen",
+    "etiquetaAlias": "Alias (Kurzname für die obere Leiste)",
+    "placeholderAlias": "z.B.: Dokumente",
+    "etiquetaTipo": "Typ *",
+    "etiquetaDescripcion": "Beschreibung",
+    "etiquetaSidebar": "Seitenleiste beim Start erweitert",
+    "etiquetaSidebarAyuda": "(für Einzelzweck-Apps wie Chat deaktivieren)",
+    "tabDatos": "Daten",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tituloEditar": "Anwendung bearbeiten",
+    "tituloNueva": "Neue Anwendung",
+    "sinFuncionesAsignadas": "Keine Funktionen zugewiesen",
+    "sinGruposAsignados": "Keine Gruppen zugewiesen",
+    "seleccionarGrupo": "Gruppe auswählen..."
   },
   "funciones": {
     "titulo": "Funktionen",
@@ -1123,7 +1140,22 @@
     "tabApps": "Anwendungen",
     "etiquetaTipo": "Typ",
     "etiquetaAppOrigen": "Ursprungsanwendung",
-    "sinAsignar": "— nicht zugewiesen —"
+    "sinAsignar": "— nicht zugewiesen —",
+    "etiquetaDescripcion": "Beschreibung",
+    "subtitulo": "Verwalten Sie die Systemfunktionen und ihre Beziehungen zu Anwendungen",
+    "tabOtros": "Weitere Daten",
+    "tabAplicaciones": "Anwendungen",
+    "tabSystemPrompt": "System Prompt",
+    "tabVista": "Ansicht",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tabLlm": "LLM",
+    "sinFuncionesAsignadas": "Keine Anwendungen zugewiesen",
+    "seleccionarAplicacion": "Anwendung auswählen...",
+    "tituloEditar": "Funktion bearbeiten",
+    "tituloCodigo": "Code",
+    "tituloNueva": "Neue Funktion"
   },
   "auditoria": {
     "titulo": "Sicherheitsaudit",
@@ -2030,6 +2062,9 @@
   "tipoElemento": {
     "USUARIO": "Benutzer",
     "ADMINISTRADOR": "Verwaltung",
-    "SISTEMA": "System"
+    "SISTEMA": "System",
+    "USUARIO_desc": "Benutzer — für jede Endbenutzerrolle verfügbar",
+    "ADMINISTRADOR_desc": "Verwaltung — nur Gruppenadministratoren",
+    "SISTEMA_desc": "System — nur Super-Admin kann zuweisen"
   }
 }

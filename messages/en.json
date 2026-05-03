@@ -1138,7 +1138,24 @@
     "gruposAcceso": "Entity groups that have access to this application.",
     "agregarGrupo": "Add",
     "tabFunciones": "Functions",
-    "tabGrupos": "Groups"
+    "tabGrupos": "Groups",
+    "subtitulo": "Manage system applications, their functions and groups",
+    "etiquetaAlias": "Alias (short name for the top bar)",
+    "placeholderAlias": "e.g.: Documents",
+    "etiquetaTipo": "Type *",
+    "etiquetaDescripcion": "Description",
+    "etiquetaSidebar": "Sidebar expanded on start",
+    "etiquetaSidebarAyuda": "(uncheck for single-use apps like Chat)",
+    "tabDatos": "Data",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tituloEditar": "Edit Application",
+    "tituloNueva": "New application",
+    "sinFuncionesAsignadas": "No functions assigned",
+    "sinGruposAsignados": "No groups assigned",
+    "seleccionarGrupo": "Select group..."
   },
   "funciones": {
     "titulo": "Functions",
@@ -1167,7 +1184,22 @@
     "tabApps": "Applications",
     "etiquetaTipo": "Type",
     "etiquetaAppOrigen": "Origin app",
-    "sinAsignar": "— not assigned —"
+    "sinAsignar": "— not assigned —",
+    "etiquetaDescripcion": "Description",
+    "subtitulo": "Manage system functions and their relationships with applications",
+    "tabOtros": "Other Data",
+    "tabAplicaciones": "Applications",
+    "tabSystemPrompt": "System Prompt",
+    "tabVista": "View",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tabLlm": "LLM",
+    "sinFuncionesAsignadas": "No applications assigned",
+    "seleccionarAplicacion": "Select application...",
+    "tituloEditar": "Edit Function",
+    "tituloCodigo": "Code",
+    "tituloNueva": "New function"
   },
   "auditoria": {
     "titulo": "Security Audit",
@@ -2037,6 +2069,9 @@
   "tipoElemento": {
     "USUARIO": "User",
     "ADMINISTRADOR": "Administration",
-    "SISTEMA": "System"
+    "SISTEMA": "System",
+    "USUARIO_desc": "User — available for any end-user role",
+    "ADMINISTRADOR_desc": "Administration — group administrators only",
+    "SISTEMA_desc": "System — only super-admin can assign"
   }
 }
