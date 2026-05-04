@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { CreditCard, Plus, Pencil, Trash2, CheckCircle2, Circle } from 'lucide-react'
+import { CreditCard, Plus, Pencil, Trash2, X } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -14,7 +14,7 @@ import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '
 import { planesApi, promptsApi, funcionesApi, type Plan } from '@/lib/api'
 import type { Funcion } from '@/lib/tipos'
 
-type TabModal = 'datos' | 'features' | 'funciones' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
+type TabModal = 'datos' | 'funciones' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
 const PLAN_VACIO: Partial<Plan> = {
   codigo_plan: '',
@@ -27,19 +27,8 @@ const PLAN_VACIO: Partial<Plan> = {
   precio_anual_usd: null,
   tokens_mensuales: null,
   documentos_maximos: null,
-  tokens_extras_disponibles: false,
   dias_duracion: null,
   dias_gracia_renovacion: 60,
-  conversacion_documentos: true,
-  focos_lenguaje_natural: true,
-  control_por_area: false,
-  control_por_cargo: false,
-  servidor_cliente_local: false,
-  personalizacion: false,
-  eleccion_llms: false,
-  multi_entidad_holdings: false,
-  storage_propio: false,
-  es_plan_de_prueba: false,
   orden: 0,
   prompt_insert: '',
   prompt_update: '',
@@ -69,7 +58,8 @@ export default function PaginaPlanes() {
   const [md, setMd] = useState('')
   const [todasFunciones, setTodasFunciones] = useState<Funcion[]>([])
   const [funcionesAsignadas, setFuncionesAsignadas] = useState<Set<string>>(new Set())
-  const [filtroFunciones, setFiltroFunciones] = useState('')
+  const [funcionNueva, setFuncionNueva] = useState('')
+  const [asignandoFuncion, setAsignandoFuncion] = useState(false)
   const [cargandoFunciones, setCargandoFunciones] = useState(false)
 
   const cargar = useCallback(async () => {
@@ -151,18 +141,24 @@ export default function PaginaPlanes() {
     }
   }, [modal, tab, editando, cargarFuncionesDelPlan])
 
-  async function toggleFuncionPlan(codigoFuncion: string, asignar: boolean) {
-    if (!editando) return
-    const set = new Set(funcionesAsignadas)
-    if (asignar) {
-      set.add(codigoFuncion)
-      setFuncionesAsignadas(set)
-      await planesApi.asignarFuncion(editando.codigo_plan, codigoFuncion)
-    } else {
-      set.delete(codigoFuncion)
-      setFuncionesAsignadas(set)
-      await planesApi.quitarFuncion(editando.codigo_plan, codigoFuncion)
+  async function asignarFuncion() {
+    if (!editando || !funcionNueva) return
+    setAsignandoFuncion(true)
+    try {
+      await planesApi.asignarFuncion(editando.codigo_plan, funcionNueva)
+      setFuncionesAsignadas(new Set(funcionesAsignadas).add(funcionNueva))
+      setFuncionNueva('')
+    } finally {
+      setAsignandoFuncion(false)
     }
+  }
+
+  async function quitarFuncion(codigoFuncion: string) {
+    if (!editando) return
+    await planesApi.quitarFuncion(editando.codigo_plan, codigoFuncion)
+    const set = new Set(funcionesAsignadas)
+    set.delete(codigoFuncion)
+    setFuncionesAsignadas(set)
   }
 
   return (
@@ -194,7 +190,6 @@ export default function PaginaPlanes() {
               <TablaTh className="text-right">{t('colUsdMes')}</TablaTh>
               <TablaTh className="text-right">{t('colUsdAnio')}</TablaTh>
               <TablaTh className="text-right">{t('colDiasDur')}</TablaTh>
-              <TablaTh className="text-center">{t('colPrueba')}</TablaTh>
               <TablaTh className="text-right w-24">{tc('acciones')}</TablaTh>
             </TablaFila>
           </TablaCabecera>
@@ -209,7 +204,6 @@ export default function PaginaPlanes() {
                 <TablaTd className="text-right">{p.precio_mensual_usd != null ? `$${p.precio_mensual_usd}` : '—'}</TablaTd>
                 <TablaTd className="text-right">{p.precio_anual_usd != null ? `$${p.precio_anual_usd}` : '—'}</TablaTd>
                 <TablaTd className="text-right">{p.dias_duracion ?? '—'}</TablaTd>
-                <TablaTd className="text-center">{p.es_plan_de_prueba ? <CheckCircle2 size={14} className="mx-auto text-green-600" /> : <Circle size={14} className="mx-auto text-texto-muted" />}</TablaTd>
                 <TablaTd className="text-right">
                   <div className="flex gap-1 justify-end">
                     <button onClick={() => abrirEdicion(p)} className="p-1 hover:text-primario" title={tc('editar')}><Pencil size={14} /></button>
@@ -229,9 +223,8 @@ export default function PaginaPlanes() {
             <div className="flex gap-2 border-b border-borde">
               {([
                 { key: 'datos', label: t('tabDatos') },
-                { key: 'features', label: t('tabFeatures') },
                 ...(editando ? [
-                  { key: 'funciones' as TabModal, label: 'Funciones' },
+                  { key: 'funciones' as TabModal, label: `Funciones (${funcionesAsignadas.size})` },
                   { key: 'system_prompt' as TabModal, label: t('tabSystemPrompt') },
                   { key: 'programacion_insert' as TabModal, label: t('tabProgramacionInsert') },
                   { key: 'programacion_update' as TabModal, label: t('tabProgramacionUpdate') },
@@ -325,87 +318,65 @@ export default function PaginaPlanes() {
               </div>
             )}
 
-            {tab === 'features' && (
-              <div className="flex flex-col gap-3">
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    ['conversacion_documentos', t('featureConversacionDocumentos')],
-                    ['focos_lenguaje_natural', t('featureFocosLenguajeNatural')],
-                    ['control_por_area', t('featureControlPorArea')],
-                    ['control_por_cargo', t('featureControlPorCargo')],
-                    ['servidor_cliente_local', t('featureServidorClienteLocal')],
-                    ['personalizacion', t('featurePersonalizacion')],
-                    ['eleccion_llms', t('featureEleccionLlms')],
-                    ['multi_entidad_holdings', t('featureMultiEntidadHoldings')],
-                    ['storage_propio', t('featureStoragePropio')],
-                    ['tokens_extras_disponibles', t('featureTokensExtrasDisponibles')],
-                    ['es_plan_de_prueba', t('featureEsPlanDePrueba')],
-                  ].map(([key, label]) => (
-                    <label key={key} className="flex items-center gap-2 text-sm p-2 border border-borde rounded hover:bg-gris-fondo">
-                      <input
-                        type="checkbox"
-                        checked={!!(form as Record<string, unknown>)[key]}
-                        onChange={(e) => setForm({ ...form, [key]: e.target.checked })}
-                      />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-                {error && <div className="bg-red-50 border border-red-200 rounded px-3 py-2 text-sm text-error">{error}</div>}
-                <PieBotonesModal editando={!!editando} onGuardar={() => guardar(false)} onGuardarYSalir={() => guardar(true)} onCerrar={() => setModal(false)} cargando={guardando} />
-              </div>
-            )}
-
-            {tab === 'funciones' && editando && (
-              <div className="flex flex-col gap-3">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={filtroFunciones}
-                    onChange={(e) => setFiltroFunciones(e.target.value)}
-                    placeholder="Buscar función..."
-                    className="flex-1"
-                  />
-                  <span className="text-xs text-texto-muted whitespace-nowrap">
-                    {funcionesAsignadas.size} / {todasFunciones.length} asignadas
-                  </span>
-                </div>
-                {cargandoFunciones ? (
-                  <p className="text-sm text-texto-muted">{tc('cargando')}</p>
-                ) : (
-                  <div className="border border-borde rounded max-h-[400px] overflow-y-auto">
-                    {todasFunciones
-                      .filter((f) => {
-                        if (!filtroFunciones) return true
-                        const q = filtroFunciones.toLowerCase()
-                        return (
-                          f.codigo_funcion.toLowerCase().includes(q) ||
-                          (f.nombre || '').toLowerCase().includes(q)
-                        )
-                      })
-                      .map((f) => {
-                        const asignada = funcionesAsignadas.has(f.codigo_funcion)
-                        return (
-                          <label
-                            key={f.codigo_funcion}
-                            className="flex items-center gap-3 px-3 py-2 text-sm border-b border-borde last:border-b-0 hover:bg-gris-fondo cursor-pointer"
-                          >
-                            <input
-                              type="checkbox"
-                              checked={asignada}
-                              onChange={(e) => toggleFuncionPlan(f.codigo_funcion, e.target.checked)}
-                            />
-                            <span className="font-mono text-xs text-texto-muted w-48 truncate">{f.codigo_funcion}</span>
-                            <span className="flex-1">{f.nombre || '—'}</span>
-                          </label>
-                        )
-                      })}
+            {tab === 'funciones' && editando && (() => {
+              const esPlanSistema = editando.codigo_plan === 'SISTEMA'
+              const funcionesElegibles = todasFunciones.filter((f) => esPlanSistema || f.tipo_acceso !== 'SISTEMA')
+              const funcionesAsignadasOrdenadas = funcionesElegibles
+                .filter((f) => funcionesAsignadas.has(f.codigo_funcion))
+                .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+              const funcionesDisponibles = funcionesElegibles
+                .filter((f) => !funcionesAsignadas.has(f.codigo_funcion))
+                .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+              return (
+                <div className="flex flex-col gap-4">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <select
+                        value={funcionNueva}
+                        onChange={(e) => setFuncionNueva(e.target.value)}
+                        className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                      >
+                        <option value="">Seleccionar función...</option>
+                        {funcionesDisponibles.map((f) => (
+                          <option key={f.codigo_funcion} value={f.codigo_funcion}>
+                            {f.nombre || f.codigo_funcion} — {f.codigo_funcion}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <Boton variante="primario" onClick={asignarFuncion} cargando={asignandoFuncion} disabled={!funcionNueva}>
+                      <Plus size={14} /> Asignar
+                    </Boton>
                   </div>
-                )}
-                <div className="flex justify-end pt-2">
-                  <Boton variante="contorno" onClick={() => setModal(false)}>{tc('salir')}</Boton>
+                  {cargandoFunciones ? (
+                    <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+                  ) : funcionesAsignadasOrdenadas.length === 0 ? (
+                    <p className="text-sm text-texto-muted text-center py-4">Sin funciones asignadas</p>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {funcionesAsignadasOrdenadas.map((f) => (
+                        <div key={f.codigo_funcion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
+                          <div>
+                            <span className="text-sm font-medium text-texto">{f.nombre || f.codigo_funcion}</span>
+                            <span className="ml-2 text-xs text-texto-muted">{f.codigo_funcion}</span>
+                          </div>
+                          <button
+                            onClick={() => quitarFuncion(f.codigo_funcion)}
+                            className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                            title="Quitar"
+                          >
+                            <X size={14} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div className="flex justify-end pt-2">
+                    <Boton variante="contorno" onClick={() => setModal(false)}>{tc('salir')}</Boton>
+                  </div>
                 </div>
-              </div>
-            )}
+              )
+            })()}
 
             {tab === 'system_prompt' && editando && (
               <div className="flex flex-col gap-3">

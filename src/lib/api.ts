@@ -1757,19 +1757,8 @@ export interface Plan {
   precio_anual_usd?: number | null
   tokens_mensuales?: number | null
   documentos_maximos?: number | null
-  tokens_extras_disponibles: boolean
   dias_duracion?: number | null
   dias_gracia_renovacion: number
-  conversacion_documentos: boolean
-  focos_lenguaje_natural: boolean
-  control_por_area: boolean
-  control_por_cargo: boolean
-  servidor_cliente_local: boolean
-  personalizacion: boolean
-  eleccion_llms: boolean
-  multi_entidad_holdings: boolean
-  storage_propio: boolean
-  es_plan_de_prueba: boolean
   orden: number
   prompt_insert?: string | null
   prompt_update?: string | null
