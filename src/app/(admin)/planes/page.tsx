@@ -11,6 +11,7 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { planesApi, promptsApi, funcionesApi, type Plan } from '@/lib/api'
 import type { Funcion } from '@/lib/tipos'
 
@@ -321,12 +322,21 @@ export default function PaginaPlanes() {
             {tab === 'funciones' && editando && (() => {
               const esPlanSistema = editando.codigo_plan === 'SISTEMA'
               const funcionesElegibles = todasFunciones.filter((f) => esPlanSistema || f.tipo_acceso !== 'SISTEMA')
+              const ordenarPorApp = (a: Funcion, b: Funcion) => {
+                const appA = a.codigo_aplicacion_origen || ''
+                const appB = b.codigo_aplicacion_origen || ''
+                if (appA !== appB) return appA.localeCompare(appB)
+                const ordenA = a.orden ?? 0
+                const ordenB = b.orden ?? 0
+                if (ordenA !== ordenB) return ordenA - ordenB
+                return a.codigo_funcion.localeCompare(b.codigo_funcion)
+              }
               const funcionesAsignadasOrdenadas = funcionesElegibles
                 .filter((f) => funcionesAsignadas.has(f.codigo_funcion))
-                .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+                .sort(ordenarPorApp)
               const funcionesDisponibles = funcionesElegibles
                 .filter((f) => !funcionesAsignadas.has(f.codigo_funcion))
-                .sort((a, b) => (a.nombre || '').localeCompare(b.nombre || ''))
+                .sort(ordenarPorApp)
               return (
                 <div className="flex flex-col gap-4">
                   <div className="flex gap-2">
@@ -356,13 +366,14 @@ export default function PaginaPlanes() {
                     <div className="flex flex-col gap-2">
                       {funcionesAsignadasOrdenadas.map((f) => (
                         <div key={f.codigo_funcion} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
-                          <div>
-                            <span className="text-sm font-medium text-texto">{f.nombre || f.codigo_funcion}</span>
-                            <span className="ml-2 text-xs text-texto-muted">{f.codigo_funcion}</span>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-sm font-medium text-texto truncate">{f.nombre || f.codigo_funcion}</span>
+                            <span className="text-xs text-texto-muted truncate">{f.codigo_funcion}</span>
+                            <InsigniaTipo tipo={f.tipo_acceso} />
                           </div>
                           <button
                             onClick={() => quitarFuncion(f.codigo_funcion)}
-                            className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors"
+                            className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0"
                             title="Quitar"
                           >
                             <X size={14} />
