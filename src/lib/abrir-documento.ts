@@ -80,6 +80,45 @@ export function abrirVentanaLoading(): Window | null {
   return win
 }
 
+// Carga el archivo desde el filesystem y llama onBlob(blobUrl, nombre).
+// Útil cuando el caller quiere renderizar el blob en su propio contenedor (ej. modal con iframe)
+// en lugar de abrir una ventana nueva.
+export async function cargarBlobDocumento(
+  ubicacion: string,
+  onBlob: (blobUrl: string, nombre: string) => void,
+  onError: (msg: string) => void,
+): Promise<void> {
+  if (IS_CLIENT_MODE) {
+    try {
+      const res = await fetch(`${API_LOCAL}/descargar?ruta=${encodeURIComponent(ubicacion)}`)
+      if (res.ok) {
+        const blob = await res.blob()
+        const nombre = ubicacion.split(/[\\/]/).pop() || 'documento'
+        const url = URL.createObjectURL(blob)
+        onBlob(url, nombre)
+        return
+      }
+    } catch { /* fallback */ }
+  }
+
+  let handle = await getDirectoryHandle()
+  if (!handle) {
+    const picker = (window as WinWithPicker).showDirectoryPicker
+    if (!picker) { onError('Selecciona primero una carpeta raíz en Adm. Indexación Docs.'); return }
+    try {
+      handle = await picker({ mode: 'read' })
+      await setDirectoryHandle(handle)
+    } catch { return }
+  }
+  const ok = await ensureReadPermission(handle)
+  if (!ok) { onError('Permiso de lectura denegado.'); return }
+  const fileHandle = await abrirArchivoPorRuta(handle, ubicacion)
+  if (!fileHandle) { onError(`No se encontró el archivo.`); return }
+  const file = await fileHandle.getFile()
+  const url = URL.createObjectURL(file)
+  onBlob(url, file.name)
+}
+
 async function abrirViaFileSystemApi(ubicacion: string, winPreAbierta?: Window | null): Promise<void> {
   let handle = await getDirectoryHandle()
 

@@ -13,7 +13,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi } from '@/lib/api'
-import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
+import { descargarDocumento, cargarBlobDocumento } from '@/lib/abrir-documento'
 import { useAuth } from '@/context/AuthContext'
 import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio } from '@/lib/tipos'
 
@@ -116,17 +116,26 @@ export default function PaginaChatUsuario() {
   const [spCopiado, setSpCopiado] = useState(false)
   const esSuperAdmin = grupoActivo === 'ADMIN'
 
-  // ── Abrir documento desde links del chat ──
-  // La ventana se abre síncronamente en el click para evitar el popup blocker.
-  // El fetch posterior carga el archivo y lo renderiza dentro de esa ventana.
+  // ── Visor de documento en modal (evita popup blocker) ──
+  const [visorBlobUrl, setVisorBlobUrl] = useState<string | null>(null)
+  const [visorNombre, setVisorNombre] = useState<string>('')
+
+  const cerrarVisor = useCallback(() => {
+    if (visorBlobUrl) URL.revokeObjectURL(visorBlobUrl)
+    setVisorBlobUrl(null)
+    setVisorNombre('')
+  }, [visorBlobUrl])
+
   const abrirDocDesdeLink = useCallback(async (codigo: number) => {
-    const win = abrirVentanaLoading()
     try {
       const doc = await documentosApi.obtener(codigo)
-      await abrirDocumento(doc.ubicacion_documento, win)
-    } catch {
-      if (win && !win.closed) win.close()
-    }
+      if (!doc.ubicacion_documento) return
+      await cargarBlobDocumento(
+        doc.ubicacion_documento,
+        (url, nombre) => { setVisorBlobUrl(url); setVisorNombre(nombre) },
+        (msg) => alert(msg),
+      )
+    } catch { /* silencioso */ }
   }, [])
 
   const verSystemPrompt = async () => {
@@ -1387,6 +1396,24 @@ export default function PaginaChatUsuario() {
           </div>
         ) : null}
       </Modal>
+
+      {/* Visor de documento en modal — evita popup blocker */}
+      {visorBlobUrl && (
+        <div className="fixed inset-0 z-50 flex flex-col bg-black/80" onClick={cerrarVisor}>
+          <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-borde" onClick={e => e.stopPropagation()}>
+            <span className="text-sm font-medium text-texto truncate max-w-[80vw]">{visorNombre}</span>
+            <button onClick={cerrarVisor} className="p-1.5 rounded hover:bg-fondo text-texto-muted hover:text-texto">
+              <X size={18} />
+            </button>
+          </div>
+          <iframe
+            src={visorBlobUrl}
+            className="flex-1 w-full border-0"
+            title={visorNombre}
+            onClick={e => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   )
 }
