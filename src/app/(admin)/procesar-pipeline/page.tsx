@@ -6,7 +6,7 @@ import {
   FolderOpen, Folder, FolderInput, FolderPlus, FolderTree,
   CheckCircle, AlertTriangle, RefreshCw, Upload, Download,
   ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
-  Eye, FileText, XCircle,
+  Eye, FileText, XCircle, ExternalLink,
 } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { Boton } from '@/components/ui/boton'
@@ -1254,7 +1254,20 @@ export default function PaginaCargaDocsUsuario() {
               <span className="text-texto-muted font-medium">{t('thEstado')}</span>
               <span><Insignia variante={['CHUNKEADO','VECTORIZADO'].includes(docDetalle.codigo_estado_doc ?? '') ? 'exito' : ['NO_ANALIZABLE','NO_ESCANEABLE'].includes(docDetalle.codigo_estado_doc ?? '') ? 'error' : 'primario'}>{docDetalle.codigo_estado_doc ?? '—'}</Insignia></span>
               <span className="text-texto-muted font-medium">{t('thUbicacion')}</span>
-              <span className="text-texto text-xs break-all">{docDetalle.ubicacion_documento || '—'}</span>
+              <span className="flex items-start gap-1">
+                <span className="text-texto text-xs break-all flex-1">{docDetalle.ubicacion_documento || '—'}</span>
+                {docDetalle.ubicacion_documento && (/^https?:\/\//i.test(docDetalle.ubicacion_documento) ? (
+                  <a href={docDetalle.ubicacion_documento} target="_blank" rel="noopener noreferrer"
+                    className="shrink-0 p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir URL">
+                    <ExternalLink size={13} />
+                  </a>
+                ) : (
+                  <button onClick={() => abrirDocumento(docDetalle.ubicacion_documento)}
+                    className="shrink-0 p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
+                    <FileText size={13} />
+                  </button>
+                ))}
+              </span>
               {docDetalle.resumen_documento && (<>
                 <span className="text-texto-muted font-medium">{t('resumen')}</span>
                 <span className="text-texto text-xs">{docDetalle.resumen_documento}</span>

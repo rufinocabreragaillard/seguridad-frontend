@@ -1993,9 +1993,15 @@ function PaginaProcesarDocumentosInterna() {
                         </a>
                       )}
                       {docDetalle.ubicacion_documento && !/^https?:\/\//i.test(docDetalle.ubicacion_documento) && (
+                        <button onClick={() => abrirDocumento(docDetalle.ubicacion_documento)}
+                          className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
+                          <FileText size={14} />
+                        </button>
+                      )}
+                      {docDetalle.ubicacion_documento && !/^https?:\/\//i.test(docDetalle.ubicacion_documento) && (
                         <button onClick={() => descargarDocumento(docDetalle.ubicacion_documento, docDetalle.nombre_documento)}
                           className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Descargar archivo">
-                          <FileText size={14} />
+                          <Download size={14} />
                         </button>
                       )}
                     </div>

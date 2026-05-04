@@ -1412,7 +1412,24 @@ function ModalVisorDocumento({ codigoDoc, onCerrar }: { codigoDoc: number | null
           {doc.ubicacion_documento && (
             <div>
               <p className="text-xs text-texto-muted uppercase tracking-wide mb-1">Ubicación</p>
-              <p className="text-sm font-mono text-texto-muted break-all">{doc.ubicacion_documento}</p>
+              <div className="flex items-start gap-2">
+                <p className="text-sm font-mono text-texto-muted break-all flex-1">{doc.ubicacion_documento}</p>
+                {/^https?:\/\//i.test(doc.ubicacion_documento) ? (
+                  <a href={doc.ubicacion_documento} target="_blank" rel="noopener noreferrer"
+                    className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir URL">
+                    <ExternalLink size={14} />
+                  </a>
+                ) : (
+                  <button onClick={() => abrirDocumento(doc.ubicacion_documento)}
+                    className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
+                    <FileText size={14} />
+                  </button>
+                )}
+                <button onClick={() => descargarDocumento(doc.ubicacion_documento, doc.nombre_documento)}
+                  className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Descargar">
+                  <Download size={14} />
+                </button>
+              </div>
             </div>
           )}
           {doc.resumen_documento && (
