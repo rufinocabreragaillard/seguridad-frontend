@@ -663,7 +663,7 @@ export default function PaginaFunciones() {
                       .filter((r) => !rolesDeFuncion.some((rf) => rf.id_rol === r.id_rol))
                       .map((r) => (
                         <option key={r.id_rol} value={r.id_rol}>
-                          {r.nombre}{r.codigo_grupo ? ` (${r.codigo_grupo})` : ' (global)'}
+                          {r.nombre}{r.codigo_grupo ? ` (${r.codigo_grupo})` : ' (sistema)'}
                         </option>
                       ))}
                   </select>
