@@ -1673,6 +1673,28 @@ export const traduccionesApi = {
       { es_json, idiomas },
       { timeout: 300_000 },  // 5 minutos — puede tardar con muchos idiomas
     ).then((r) => r.data),
+
+  // Genera Glosario.md desde Server_LM.md usando la función TRADUCCIONES.
+  // Ver .claude/docs/PLAN_I18N.md sección 3.3.
+  regenerarGlosario: () =>
+    api.post<{
+      ruta: string;
+      archivo: string;
+      tamano_bytes: number;
+      fecha_generacion: string;
+      modelo_usado: string;
+    }>('/traducciones/regenerar-glosario', {}, { timeout: 120_000 }).then((r) => r.data),
+
+  // Lee el Glosario.md actual y devuelve metadata + contenido.
+  obtenerGlosario: () =>
+    api.get<{
+      existe: boolean;
+      ruta: string;
+      archivo: string;
+      tamano_bytes?: number;
+      fecha_modificacion?: string;
+      contenido?: string;
+    }>('/traducciones/glosario').then((r) => r.data),
 }
 
 // ─── Espacios de Trabajo ─────────────────────────────────────────────────────

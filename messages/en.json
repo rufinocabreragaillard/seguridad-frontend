@@ -2064,7 +2064,17 @@
     "placeholderNombreNativo": "e.g. Italiano, 中文, العربية",
     "etiquetaNombreEs": "Name in Spanish",
     "placeholderNombreEs": "e.g. Italiano, Chino, Árabe",
-    "notaIdiomaNuevo": "The language will be created. To use it in the system, you must first add its message file to the project and deploy."
+    "notaIdiomaNuevo": "The language will be created. To use it in the system, you must first add its message file to the project and deploy.",
+    "seccionGlosarioTitulo": "Glossary",
+    "seccionGlosarioDescripcion": "The glossary is generated from Server_LM.md (product document) and injected as context for all system translations. It is the terminological source of truth.",
+    "regenerarGlosario": "Regenerate Glossary",
+    "glosarioGeneradoEn": "Last generation: {fecha}",
+    "glosarioInexistente": "No glossary yet. Click \"Regenerate Glossary\" to generate it from Server_LM.md.",
+    "glosarioGenerando": "Generating glossary…",
+    "glosarioGenerado": "Glossary generated successfully ({tamano} bytes, model {modelo}).",
+    "errorRegenerarGlosario": "Error regenerating glossary",
+    "verGlosario": "View glossary",
+    "descripcionGeneracionConHabilidad": "Translations use the TRADUCIR_TEXTOS skill (configurable model in /habilidades). The skill's system prompt references Server_LM.md and Glosario.md."
   },
   "tipoElemento": {
     "USUARIO": "User",

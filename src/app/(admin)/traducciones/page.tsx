@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   Languages, RefreshCw, Play, CheckCircle2, AlertCircle,
-  Globe, Plus, Trash2, Loader2, XCircle,
+  Globe, Plus, Trash2, Loader2, XCircle, BookOpen, Eye,
 } from 'lucide-react'
 import { traduccionesApi } from '@/lib/api'
 import { Boton } from '@/components/ui/boton'
@@ -84,6 +84,103 @@ function BarraProgreso({ estado, onCancelar }: { estado: EstadoTraducciones; onC
           )
         })}
       </div>
+    </div>
+  )
+}
+
+// ─── Sección Glosario ─────────────────────────────────────────────────────────
+// Permite regenerar Glosario.md desde Server_LM.md y verlo. El glosario es la
+// fuente terminológica que la habilidad TRADUCIR_TEXTOS usa como contexto.
+// Ver .claude/docs/PLAN_I18N.md sección 3.3.
+
+function SeccionGlosario() {
+  const t = useTranslations('traducciones')
+  const [glosario, setGlosario] = useState<{
+    existe: boolean
+    fecha_modificacion?: string
+    tamano_bytes?: number
+    contenido?: string
+  } | null>(null)
+  const [generando, setGenerando] = useState(false)
+  const [mensaje, setMensaje] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+  const [verContenido, setVerContenido] = useState(false)
+
+  const cargar = useCallback(async () => {
+    try {
+      const data = await traduccionesApi.obtenerGlosario()
+      setGlosario(data)
+    } catch (e) {
+      // ignorar — el endpoint puede 404 si falta config
+      console.warn('No se pudo cargar el glosario', e)
+    }
+  }, [])
+
+  useEffect(() => { cargar() }, [cargar])
+
+  const regenerar = async () => {
+    setGenerando(true)
+    setMensaje(null)
+    try {
+      const r = await traduccionesApi.regenerarGlosario()
+      setMensaje({
+        tipo: 'ok',
+        texto: t('glosarioGenerado', { tamano: r.tamano_bytes, modelo: r.modelo_usado }),
+      })
+      await cargar()
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : t('errorRegenerarGlosario')
+      setMensaje({ tipo: 'error', texto: msg })
+    } finally {
+      setGenerando(false)
+    }
+  }
+
+  return (
+    <div className="bg-surface border border-borde rounded-xl p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <BookOpen size={16} className="text-primario" />
+        <h2 className="text-sm font-semibold text-texto">{t('seccionGlosarioTitulo')}</h2>
+      </div>
+      <p className="text-xs text-texto-muted mb-4">{t('seccionGlosarioDescripcion')}</p>
+
+      {glosario?.existe && glosario.fecha_modificacion && (
+        <p className="text-xs text-texto-muted mb-3">
+          {t('glosarioGeneradoEn', { fecha: formatFecha(glosario.fecha_modificacion) })}
+        </p>
+      )}
+      {glosario && !glosario.existe && (
+        <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">
+          {t('glosarioInexistente')}
+        </p>
+      )}
+      {mensaje && (
+        <div className={`text-xs px-3 py-2 rounded-lg mb-3 ${
+          mensaje.tipo === 'ok'
+            ? 'bg-green-50 border border-green-200 text-green-700'
+            : 'bg-red-50 border border-red-200 text-error'
+        }`}>
+          {mensaje.texto}
+        </div>
+      )}
+
+      <div className="flex gap-3">
+        <Boton variante="primario" onClick={regenerar} cargando={generando} className="gap-2">
+          <RefreshCw size={14} /> {t('regenerarGlosario')}
+        </Boton>
+        {glosario?.existe && glosario.contenido && (
+          <Boton variante="contorno" onClick={() => setVerContenido(true)} className="gap-2">
+            <Eye size={14} /> {t('verGlosario')}
+          </Boton>
+        )}
+      </div>
+
+      {verContenido && glosario?.contenido && (
+        <Modal abierto={verContenido} alCerrar={() => setVerContenido(false)} titulo="Glosario.md" className="max-w-4xl">
+          <pre className="text-xs font-mono whitespace-pre-wrap bg-fondo border border-borde rounded-lg p-4 max-h-[60vh] overflow-auto">
+            {glosario.contenido}
+          </pre>
+        </Modal>
+      )}
     </div>
   )
 }
@@ -334,11 +431,14 @@ export default function TraduccionesPage() {
         </div>
       )}
 
+      {/* ── Sección Glosario ──────────────────────────────────────────────── */}
+      <SeccionGlosario />
+
       {/* ── Acciones de generación ─────────────────────────────────────────── */}
       <div className="bg-surface border border-borde rounded-xl p-5">
         <h2 className="text-sm font-semibold text-texto mb-1">{t('seccionGeneracionTitulo')}</h2>
         <p className="text-xs text-texto-muted mb-4">
-          {t('seccionGeneracionDescripcion')}
+          {t('descripcionGeneracionConHabilidad')}
         </p>
         <div className="flex gap-3">
           <Boton

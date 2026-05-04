@@ -2020,7 +2020,17 @@
     "placeholderNombreNativo": "ex: Italiano, 中文, العربية",
     "etiquetaNombreEs": "Nome em espanhol",
     "placeholderNombreEs": "ex: Italiano, Chinês, Árabe",
-    "notaIdiomaNuevo": "O idioma será criado. Para usá-lo no sistema, primeiro você precisará adicionar seu arquivo de mensagens ao projeto e fazer o deploy."
+    "notaIdiomaNuevo": "O idioma será criado. Para usá-lo no sistema, primeiro você precisará adicionar seu arquivo de mensagens ao projeto e fazer o deploy.",
+    "seccionGlosarioTitulo": "Glossário",
+    "seccionGlosarioDescripcion": "O glossário é gerado a partir de Server_LM.md (documento do produto) e injetado como contexto em todas as traduções do sistema. É a fonte única de verdade terminológica.",
+    "regenerarGlosario": "Regenerar Glossário",
+    "glosarioGeneradoEn": "Última geração: {fecha}",
+    "glosarioInexistente": "Sem glossário ainda. Clique em \"Regenerar Glossário\" para gerá-lo a partir de Server_LM.md.",
+    "glosarioGenerando": "Gerando glossário…",
+    "glosarioGenerado": "Glossário gerado com sucesso ({tamano} bytes, modelo {modelo}).",
+    "errorRegenerarGlosario": "Erro ao regenerar o glossário",
+    "verGlosario": "Ver glossário",
+    "descripcionGeneracionConHabilidad": "As traduções usam a habilidade TRADUCIR_TEXTOS (modelo configurável em /habilidades). O system prompt da habilidade referencia Server_LM.md e Glosario.md."
   },
   "espaciosTrabajo": {
     "titulo": "Espaços de Trabalho",

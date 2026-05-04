@@ -1,13 +1,25 @@
 #!/usr/bin/env python3
 """
 Genera archivos de mensajes traducidos para i18n.
-Lee messages/es.json como fuente y genera messages/{locale}.json para cada idioma destino.
-Usa Google Gemini Flash para la traducción.
+
+Wrapper que llama al endpoint POST /traducciones/generar-mensajes del backend
+de Server LM. El endpoint usa la habilidad TRADUCIR_TEXTOS (que tiene su
+system_prompt configurable desde /habilidades, con contexto del producto y
+glosario inyectado vía {{include:...}}).
+
+Ver .claude/docs/PLAN_I18N.md sección 3.1 para el flujo completo.
 
 Uso:
-  python scripts/traducir-mensajes.py [--idiomas pt,fr,de] [--api-key KEY]
+  python scripts/traducir-mensajes.py [--idiomas pt,fr,de] [--backend URL] [--token JWT]
 
-La API key se lee de GOOGLE_API_KEY del entorno o del argumento --api-key.
+Por defecto:
+  - Backend: https://seguridad-backend-production-6250.up.railway.app
+  - Idiomas: en,pt,fr,de
+  - Token: se lee de SERVERLM_TOKEN del entorno
+
+El JWT se obtiene haciendo login con un usuario super-admin (ver CLAUDE.md
+para credenciales). Puedes obtenerlo desde la pantalla de login del frontend
+(localStorage `serverlm_token`) o con curl al endpoint /auth/login.
 """
 
 import json
@@ -15,131 +27,92 @@ import os
 import sys
 import argparse
 import urllib.request
+import urllib.error
+import time
 
 MESSAGES_DIR = os.path.join(os.path.dirname(__file__), "..", "messages")
 
-IDIOMAS_DEFAULT = ["pt", "fr", "de"]
+IDIOMAS_DEFAULT = ["en", "pt", "fr", "de"]
 
-NOMBRES_IDIOMAS = {
-    "en": "English",
-    "pt": "Portuguese (Brazilian)",
-    "fr": "French",
-    "de": "German",
-    "it": "Italian",
-    "ja": "Japanese",
-    "zh": "Chinese (Simplified)",
-}
+BACKEND_DEFAULT = "https://seguridad-backend-production-6250.up.railway.app"
 
 
-def traducir_con_anthropic(texto_json: dict, idioma_destino: str, api_key: str) -> dict:
-    """Traduce un JSON de mensajes usando Claude Haiku (Anthropic)."""
-    nombre_idioma = NOMBRES_IDIOMAS.get(idioma_destino, idioma_destino)
-
-    prompt = (
-        f"Translate the following JSON file of UI messages from Spanish to {nombre_idioma}.\n"
-        f"Return ONLY the complete translated JSON. Keep the same structure and keys.\n"
-        f"Keep variable placeholders like {{name}} and {{count}} unchanged.\n"
-        f"Keep technical terms unchanged.\n"
-        f"For short UI labels, keep translations concise and natural.\n\n"
-        f"{json.dumps(texto_json, ensure_ascii=False, indent=2)}"
-    )
-
-    body = json.dumps({
-        "model": "claude-haiku-4-5-20251001",
-        "max_tokens": 8192,
-        "system": "You are a professional UI translator. Return only valid JSON, no markdown fences, no explanation.",
-        "messages": [{"role": "user", "content": prompt}],
-    }).encode("utf-8")
-
-    url = "https://api.anthropic.com/v1/messages"
-
+def llamar_endpoint(backend: str, token: str, es_json: dict, idiomas: list[str]) -> dict:
+    """Invoca POST /traducciones/generar-mensajes y retorna el dict de resultado."""
+    url = f"{backend.rstrip('/')}/traducciones/generar-mensajes"
+    body = json.dumps({"es_json": es_json, "idiomas": idiomas}).encode("utf-8")
     req = urllib.request.Request(url, data=body, headers={
         "Content-Type": "application/json",
-        "x-api-key": api_key,
-        "anthropic-version": "2023-06-01",
+        "Authorization": f"Bearer {token}",
     })
-
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        data = json.loads(resp.read().decode("utf-8"))
-
-    text = data["content"][0]["text"]
-
-    # Limpiar markdown fences si las hay
-    text = text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else text[3:]
-        if text.endswith("```"):
-            text = text[:-3]
-        text = text.strip()
-
-    return json.loads(text)
+    print(f"  → POST {url} (idiomas={idiomas})...")
+    t0 = time.time()
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {e.code} desde backend: {body[:300]}")
+    dur = int(time.time() - t0)
+    print(f"  ← respuesta en {dur}s")
+    return data
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Genera archivos de mensajes traducidos")
-    parser.add_argument("--idiomas", default=",".join(IDIOMAS_DEFAULT), help="Idiomas destino separados por coma")
-    parser.add_argument("--api-key", default=os.environ.get("ANTHROPIC_API_KEY"), help="Anthropic API key")
+    parser = argparse.ArgumentParser(description="Genera archivos de mensajes traducidos vía backend")
+    parser.add_argument("--idiomas", default=",".join(IDIOMAS_DEFAULT),
+                        help=f"Idiomas destino separados por coma (default: {','.join(IDIOMAS_DEFAULT)})")
+    parser.add_argument("--backend", default=os.environ.get("SERVERLM_BACKEND", BACKEND_DEFAULT),
+                        help="URL del backend (default: producción)")
+    parser.add_argument("--token", default=os.environ.get("SERVERLM_TOKEN"),
+                        help="JWT de super-admin (env SERVERLM_TOKEN)")
     args = parser.parse_args()
 
-    if not args.api_key:
-        print("ERROR: Se necesita ANTHROPIC_API_KEY en el entorno o --api-key", file=sys.stderr)
+    if not args.token:
+        print(
+            "ERROR: Se necesita JWT de super-admin.\n"
+            "  Opción 1: export SERVERLM_TOKEN=<jwt>\n"
+            "  Opción 2: pasar --token <jwt>\n"
+            "El JWT se obtiene de localStorage('serverlm_token') desde una sesión activa\n"
+            "en la pantalla de login del frontend, o haciendo curl a /auth/login.",
+            file=sys.stderr,
+        )
         sys.exit(1)
 
     idiomas = [l.strip() for l in args.idiomas.split(",") if l.strip()]
 
-    # Leer fuente
     es_path = os.path.join(MESSAGES_DIR, "es.json")
     with open(es_path, "r", encoding="utf-8") as f:
         es_json = json.load(f)
 
     print(f"Fuente: {es_path} ({len(es_json)} namespaces)")
     print(f"Idiomas destino: {', '.join(idiomas)}")
+    print(f"Backend: {args.backend}")
     print()
 
-    import time
+    try:
+        resultado = llamar_endpoint(args.backend, args.token, es_json, idiomas)
+    except Exception as e:
+        print(f"ERROR llamando al backend: {e}", file=sys.stderr)
+        sys.exit(1)
 
+    # Escribir cada idioma
     for idioma in idiomas:
+        traducido = resultado.get(idioma)
+        if not traducido:
+            print(f"  ✗ {idioma}: backend no devolvió datos", file=sys.stderr)
+            continue
+        if isinstance(traducido, dict) and "error" in traducido:
+            print(f"  ✗ {idioma}: error backend → {traducido['error']}", file=sys.stderr)
+            continue
+
         dest_path = os.path.join(MESSAGES_DIR, f"{idioma}.json")
-        nombre = NOMBRES_IDIOMAS.get(idioma, idioma)
-        print(f"Traduciendo a {nombre} ({idioma})...")
+        with open(dest_path, "w", encoding="utf-8") as f:
+            json.dump(traducido, f, ensure_ascii=False, indent=2)
+            f.write("\n")
+        print(f"  ✓ Escrito: {dest_path} ({len(traducido)} namespaces)")
 
-        # Traducir por bloques de namespaces para evitar rate limiting
-        namespaces = list(es_json.keys())
-        traducido = {}
-        BATCH_SIZE = 8
-        for i in range(0, len(namespaces), BATCH_SIZE):
-            batch_keys = namespaces[i:i + BATCH_SIZE]
-            batch = {k: es_json[k] for k in batch_keys}
-            try:
-                if i > 0:
-                    time.sleep(4)  # pausa entre batches para evitar 429
-                result = traducir_con_anthropic(batch, idioma, args.api_key)
-                traducido.update(result)
-                print(f"  batch {i // BATCH_SIZE + 1}: {', '.join(batch_keys[:3])}... ✓")
-            except Exception as e:
-                print(f"  batch {i // BATCH_SIZE + 1}: ✗ Error: {e}", file=sys.stderr)
-                # Retry once after 10s
-                try:
-                    time.sleep(10)
-                    result = traducir_con_anthropic(batch, idioma, args.api_key)
-                    traducido.update(result)
-                    print(f"  batch {i // BATCH_SIZE + 1}: retry ✓")
-                except Exception as e2:
-                    print(f"  batch {i // BATCH_SIZE + 1}: retry ✗ {e2}", file=sys.stderr)
-
-        if traducido:
-            with open(dest_path, "w", encoding="utf-8") as f:
-                json.dump(traducido, f, ensure_ascii=False, indent=2)
-                f.write("\n")
-            print(f"  ✓ Escrito: {dest_path} ({len(traducido)}/{len(es_json)} namespaces)")
-        else:
-            print(f"  ✗ No se pudo traducir a {idioma}", file=sys.stderr)
-
-        # Pausa entre idiomas
-        if idioma != idiomas[-1]:
-            time.sleep(5)
-
-    print("\nListo.")
+    print("\nListo. Revisa los diffs y commitea cuando estés conforme.")
 
 
 if __name__ == "__main__":

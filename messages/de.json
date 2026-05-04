@@ -2020,7 +2020,17 @@
     "placeholderNombreNativo": "z.B.: Italiano, 中文, العربية",
     "etiquetaNombreEs": "Name auf Spanisch",
     "placeholderNombreEs": "z.B.: Italienisch, Chinesisch, Arabisch",
-    "notaIdiomaNuevo": "Die Sprache wird erstellt. Um sie im System zu verwenden, müssen Sie zuerst ihre Nachrichtendatei zum Projekt hinzufügen und deployen."
+    "notaIdiomaNuevo": "Die Sprache wird erstellt. Um sie im System zu verwenden, müssen Sie zuerst ihre Nachrichtendatei zum Projekt hinzufügen und deployen.",
+    "seccionGlosarioTitulo": "Glossar",
+    "seccionGlosarioDescripcion": "Das Glossar wird aus Server_LM.md (Produktdokument) generiert und als Kontext in alle Systemübersetzungen eingespeist. Es ist die einzige terminologische Wahrheitsquelle.",
+    "regenerarGlosario": "Glossar neu generieren",
+    "glosarioGeneradoEn": "Letzte Generierung: {fecha}",
+    "glosarioInexistente": "Noch kein Glossar. Klicken Sie auf „Glossar neu generieren\", um es aus Server_LM.md zu generieren.",
+    "glosarioGenerando": "Generiere Glossar…",
+    "glosarioGenerado": "Glossar erfolgreich generiert ({tamano} Bytes, Modell {modelo}).",
+    "errorRegenerarGlosario": "Fehler beim Neugenerieren des Glossars",
+    "verGlosario": "Glossar ansehen",
+    "descripcionGeneracionConHabilidad": "Übersetzungen nutzen die Fähigkeit TRADUCIR_TEXTOS (Modell konfigurierbar in /habilidades). Der System-Prompt der Fähigkeit referenziert Server_LM.md und Glosario.md."
   },
   "espaciosTrabajo": {
     "titulo": "Arbeitsbereiche",
