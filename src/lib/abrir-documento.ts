@@ -50,30 +50,32 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
     return
   }
 
-  // Wrapper HTML con <title> real + <embed> del PDF.
-  // iframe bloquea blob:// anidados en Chrome; embed no tiene esa restricción.
-  const titulo = _escapeHtml(nombre)
-  const src = _escapeHtml(url)
-  const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>${titulo}</title></head>
-<body style="margin:0;padding:0;overflow:hidden;background:#1f1f1f">
-<embed src="${src}" type="application/pdf" style="width:100vw;height:100vh" title="${titulo}">
-</body>
-</html>`
-  const wrapperBlob = new Blob([html], { type: 'text/html' })
-  const wrapperUrl = URL.createObjectURL(wrapperBlob)
-  setTimeout(() => URL.revokeObjectURL(wrapperUrl), 5 * 60_000)
+  // Abre la ventana directamente con el blob del PDF, luego sobreescribe el título.
+  // Chrome no renderiza blobs anidados (embed/iframe con src blob: dentro de otro blob:),
+  // así que abrimos el PDF directamente y corregimos el título vía document.title.
+  const openAndSetTitle = (win: Window) => {
+    // Esperar a que el PDF cargue para setear el título (el PDF sobreescribe el título al cargar)
+    const trySetTitle = (attempts: number) => {
+      if (win.closed) return
+      win.document.title = nombre
+      // Reintentar hasta que el título quede fijo (el visor PDF puede sobrescribirlo)
+      if (attempts > 0) setTimeout(() => trySetTitle(attempts - 1), 300)
+    }
+    win.addEventListener('load', () => trySetTitle(5), { once: true })
+    trySetTitle(5)
+  }
 
   if (winPreAbierta && !winPreAbierta.closed) {
-    winPreAbierta.location.replace(wrapperUrl)
+    winPreAbierta.location.replace(url)
+    openAndSetTitle(winPreAbierta)
     return
   }
 
-  const win = window.open(wrapperUrl, '_blank')
+  const win = window.open(url, '_blank')
   if (!win) {
-    // Popup bloqueado: descargar como fallback
     _triggerDownload(blob, nombre)
+  } else {
+    openAndSetTitle(win)
   }
 }
 
