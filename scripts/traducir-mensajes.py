@@ -45,17 +45,51 @@ def llamar_endpoint(backend: str, token: str, es_json: dict, idiomas: list[str])
         "Content-Type": "application/json",
         "Authorization": f"Bearer {token}",
     })
-    print(f"  → POST {url} (idiomas={idiomas})...")
     t0 = time.time()
     try:
-        with urllib.request.urlopen(req, timeout=300) as resp:
+        with urllib.request.urlopen(req, timeout=120) as resp:
             data = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
-        body = e.read().decode("utf-8", errors="replace")
-        raise RuntimeError(f"HTTP {e.code} desde backend: {body[:300]}")
+        body_resp = e.read().decode("utf-8", errors="replace")
+        raise RuntimeError(f"HTTP {e.code} desde backend: {body_resp[:300]}")
     dur = int(time.time() - t0)
-    print(f"  ← respuesta en {dur}s")
-    return data
+    return data, dur
+
+
+def traducir_por_batches(backend: str, token: str, es_json: dict, idioma: str,
+                         batch_size: int = 4) -> tuple[dict, int]:
+    """Traduce el JSON completo a UN idioma, batchando namespaces desde el cliente.
+
+    Cada llamada al backend lleva pocos namespaces para no exceder el
+    timeout HTTP de Railway (~60-120s). Retorna (resultado_completo, num_lotes_ok).
+    """
+    namespaces = list(es_json.keys())
+    total_lotes = (len(namespaces) + batch_size - 1) // batch_size
+    print(f"  {idioma}: {len(namespaces)} namespaces → {total_lotes} lotes de ≤{batch_size}")
+
+    resultado: dict = {}
+    fallidos: list[str] = []
+
+    for i in range(0, len(namespaces), batch_size):
+        lote_keys = namespaces[i:i + batch_size]
+        lote_es = {k: es_json[k] for k in lote_keys}
+        n = i // batch_size + 1
+        try:
+            data, dur = llamar_endpoint(backend, token, lote_es, [idioma])
+            traducido = data.get(idioma, {})
+            if isinstance(traducido, dict) and "error" in traducido and not any(
+                k in traducido for k in lote_keys
+            ):
+                print(f"    lote {n}/{total_lotes} ✗ ({dur}s) — backend: {traducido['error'][:100]}")
+                fallidos.extend(lote_keys)
+            else:
+                resultado.update(traducido)
+                print(f"    lote {n}/{total_lotes} ✓ ({dur}s) — {','.join(lote_keys[:2])}{'...' if len(lote_keys)>2 else ''}")
+        except Exception as e:
+            print(f"    lote {n}/{total_lotes} ✗ — {e}", file=sys.stderr)
+            fallidos.extend(lote_keys)
+
+    return resultado, len(namespaces) - len(fallidos)
 
 
 def main():
@@ -90,27 +124,23 @@ def main():
     print(f"Backend: {args.backend}")
     print()
 
-    try:
-        resultado = llamar_endpoint(args.backend, args.token, es_json, idiomas)
-    except Exception as e:
-        print(f"ERROR llamando al backend: {e}", file=sys.stderr)
-        sys.exit(1)
-
-    # Escribir cada idioma
     for idioma in idiomas:
-        traducido = resultado.get(idioma)
-        if not traducido:
-            print(f"  ✗ {idioma}: backend no devolvió datos", file=sys.stderr)
+        try:
+            traducido, ok_count = traducir_por_batches(args.backend, args.token, es_json, idioma)
+        except Exception as e:
+            print(f"  ✗ {idioma}: error global — {e}", file=sys.stderr)
             continue
-        if isinstance(traducido, dict) and "error" in traducido:
-            print(f"  ✗ {idioma}: error backend → {traducido['error']}", file=sys.stderr)
+
+        if not traducido:
+            print(f"  ✗ {idioma}: ningún lote tradujo datos", file=sys.stderr)
             continue
 
         dest_path = os.path.join(MESSAGES_DIR, f"{idioma}.json")
         with open(dest_path, "w", encoding="utf-8") as f:
             json.dump(traducido, f, ensure_ascii=False, indent=2)
             f.write("\n")
-        print(f"  ✓ Escrito: {dest_path} ({len(traducido)} namespaces)")
+        print(f"  ✓ {idioma}: escrito {dest_path} ({len(traducido)} namespaces, {ok_count}/{len(es_json)} ok)")
+        print()
 
     print("\nListo. Revisa los diffs y commitea cuando estés conforme.")
 
