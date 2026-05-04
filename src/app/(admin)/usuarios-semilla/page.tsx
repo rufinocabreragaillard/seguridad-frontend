@@ -1087,14 +1087,14 @@ export default function PaginaUsuariosSemilla() {
                               key={r.id_rol}
                               onClick={() => {
                                 setRolNuevo(String(r.id_rol))
-                                setBusquedaRol(`${r.nombre} (${r.codigo_rol})${r.codigo_grupo == null ? ` [sistema]` : ''}`)
+                                setBusquedaRol(`${r.nombre} (${r.codigo_rol})${r.codigo_grupo == null ? ` [${tc('sistema')}]` : ''}`)
                                 setDropdownRolAbierto(false)
                               }}
                               className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro hover:text-primario transition-colors"
                             >
                               <span className="font-medium">{r.nombre}</span>
                               <span className="ml-2 text-texto-muted text-xs">{r.codigo_rol}</span>
-                              {r.codigo_grupo == null && <span className="ml-2 text-xs bg-red-100 text-red-500 px-1.5 py-0.5 rounded">sistema</span>}
+                              {r.codigo_grupo == null && <span className="ml-2 text-xs bg-red-100 text-red-500 px-1.5 py-0.5 rounded">{tc('sistema')}</span>}
                             </button>
                           ))}
                         </div>

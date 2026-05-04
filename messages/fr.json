@@ -71,7 +71,8 @@
     "nuevo": "Nouveau",
     "codigo": "Code",
     "global": "Global",
-    "crearYSalir": "Créer et Quitter"
+    "crearYSalir": "Créer et Quitter",
+    "sistema": "Système"
   },
   "layout": {
     "cargando": "Chargement...",

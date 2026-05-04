@@ -663,7 +663,7 @@ export default function PaginaFunciones() {
                       .filter((r) => !rolesDeFuncion.some((rf) => rf.id_rol === r.id_rol))
                       .map((r) => (
                         <option key={r.id_rol} value={r.id_rol}>
-                          {r.nombre}{r.codigo_grupo ? ` (${r.codigo_grupo})` : ' (sistema)'}
+                          {r.nombre}{r.codigo_grupo ? ` (${r.codigo_grupo})` : ` (${tc('sistema')})`}
                         </option>
                       ))}
                   </select>
@@ -684,7 +684,7 @@ export default function PaginaFunciones() {
                             <span className="ml-2 text-xs text-texto-muted">{rf.roles?.codigo_rol}</span>
                             {rf.roles?.codigo_grupo
                               ? <span className="ml-2 text-xs text-texto-muted">· {rf.roles.codigo_grupo}</span>
-                              : <span className="ml-2 text-xs text-red-500">· sistema</span>}
+                              : <span className="ml-2 text-xs text-red-500">· {tc('sistema')}</span>}
                           </div>
                           <button onClick={() => quitarRolDeFuncion(rf.id_rol)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar">
                             <X size={14} />

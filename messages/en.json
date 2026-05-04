@@ -71,7 +71,8 @@
     "nuevo": "New",
     "codigo": "Code",
     "global": "Global",
-    "crearYSalir": "Create and Exit"
+    "crearYSalir": "Create and Exit",
+    "sistema": "System"
   },
   "layout": {
     "cargando": "Loading...",

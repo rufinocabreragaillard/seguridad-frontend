@@ -71,7 +71,8 @@
     "nuevo": "Nuevo",
     "codigo": "Código",
     "global": "Global",
-    "crearYSalir": "Crear y Salir"
+    "crearYSalir": "Crear y Salir",
+    "sistema": "Sistema"
   },
   "layout": {
     "cargando": "Cargando...",
