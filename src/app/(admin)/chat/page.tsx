@@ -13,7 +13,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi } from '@/lib/api'
-import { abrirDocumento, descargarDocumento } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import { useAuth } from '@/context/AuthContext'
 import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio } from '@/lib/tipos'
 
@@ -117,12 +117,15 @@ export default function PaginaChatUsuario() {
   const esSuperAdmin = grupoActivo === 'ADMIN'
 
   // ── Abrir documento desde links del chat ──
+  // La ventana se abre síncronamente en el click para evitar el popup blocker.
+  // El fetch posterior carga el archivo y lo renderiza dentro de esa ventana.
   const abrirDocDesdeLink = useCallback(async (codigo: number) => {
+    const win = abrirVentanaLoading()
     try {
       const doc = await documentosApi.obtener(codigo)
-      await abrirDocumento(doc.ubicacion_documento)
+      await abrirDocumento(doc.ubicacion_documento, win)
     } catch {
-      // silencioso: el documento puede no existir o no tener ubicación
+      if (win && !win.closed) win.close()
     }
   }, [])
 

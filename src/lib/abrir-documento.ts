@@ -38,25 +38,8 @@ const _INLINE_EXT = new Set([
   'mp3', 'wav', 'ogg', 'mp4', 'webm', 'mov',
 ])
 
-function _abrirEnPestanaConNombre(blob: Blob, nombre: string): void {
+function _renderEnVentana(win: Window, blob: Blob, nombre: string): void {
   const url = URL.createObjectURL(blob)
-  const ext = (nombre.split('.').pop() || '').toLowerCase()
-  const inline = _INLINE_EXT.has(ext)
-
-  if (!inline) {
-    // No renderizable inline: forzar descarga con el nombre correcto
-    _triggerDownload(blob, nombre)
-    return
-  }
-
-  const win = window.open('', '_blank')
-  if (!win) {
-    // Popup bloqueado: fallback directo (mostrará UUID, pero abrirá)
-    window.open(url, '_blank', 'noopener,noreferrer')
-    setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
-    return
-  }
-
   const titulo = _escapeHtml(nombre)
   const src = _escapeHtml(url)
   win.document.write(`<!DOCTYPE html>
@@ -70,13 +53,52 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
 }
 
-async function abrirViaFileSystemApi(ubicacion: string): Promise<void> {
+function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Window | null): void {
+  const ext = (nombre.split('.').pop() || '').toLowerCase()
+  const inline = _INLINE_EXT.has(ext)
+
+  if (!inline) {
+    if (winPreAbierta) winPreAbierta.close()
+    _triggerDownload(blob, nombre)
+    return
+  }
+
+  const win = winPreAbierta || window.open('', '_blank')
+  if (!win) {
+    // Popup bloqueado: fallback directo (mostrará UUID, pero abrirá)
+    const url = URL.createObjectURL(blob)
+    window.open(url, '_blank', 'noopener,noreferrer')
+    setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
+    return
+  }
+
+  _renderEnVentana(win, blob, nombre)
+}
+
+// Abre una ventana de loading síncronamente (dentro de un click handler)
+// para evitar que el popup blocker la bloquee cuando hay awaits intermedios.
+export function abrirVentanaLoading(): Window | null {
+  const win = window.open('', '_blank')
+  if (!win) return null
+  win.document.write(`<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Abriendo…</title></head>
+<body style="margin:0;background:#1f1f1f;display:flex;align-items:center;justify-content:center;height:100vh">
+<p style="color:#888;font-family:sans-serif;font-size:14px">Cargando documento…</p>
+</body>
+</html>`)
+  win.document.close()
+  return win
+}
+
+async function abrirViaFileSystemApi(ubicacion: string, winPreAbierta?: Window | null): Promise<void> {
   let handle = await getDirectoryHandle()
 
   if (!handle) {
     // No hay carpeta guardada: pedir al usuario que seleccione la raíz
     const picker = (window as WinWithPicker).showDirectoryPicker
     if (!picker) {
+      if (winPreAbierta) winPreAbierta.close()
       alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
       return
     }
@@ -84,31 +106,32 @@ async function abrirViaFileSystemApi(ubicacion: string): Promise<void> {
       handle = await picker({ mode: 'read' })
       await setDirectoryHandle(handle)
     } catch {
-      // El usuario canceló el picker
+      if (winPreAbierta) winPreAbierta.close()
       return
     }
   }
 
   const ok = await ensureReadPermission(handle)
-  if (!ok) { alert('Permiso de lectura denegado.'); return }
+  if (!ok) { if (winPreAbierta) winPreAbierta.close(); alert('Permiso de lectura denegado.'); return }
   const fileHandle = await abrirArchivoPorRuta(handle, ubicacion)
-  if (!fileHandle) { alert(`No se encontró el archivo: ${ubicacion}`); return }
+  if (!fileHandle) { if (winPreAbierta) winPreAbierta.close(); alert(`No se encontró el archivo: ${ubicacion}`); return }
   const file = await fileHandle.getFile()
-  _abrirEnPestanaConNombre(file, file.name)
+  _abrirEnPestanaConNombre(file, file.name, winPreAbierta)
 }
 
-export async function abrirDocumento(ubicacion: string | null | undefined): Promise<void> {
-  if (!ubicacion) { alert('Este documento no tiene ubicación registrada.'); return }
+export async function abrirDocumento(ubicacion: string | null | undefined, winPreAbierta?: Window | null): Promise<void> {
+  if (!ubicacion) { if (winPreAbierta) winPreAbierta.close(); alert('Este documento no tiene ubicación registrada.'); return }
 
   if (IS_CLIENT_MODE) {
     const ok = await abrirViaApiLocal(ubicacion)
-    if (ok) return
+    if (ok) { if (winPreAbierta) winPreAbierta.close(); return }
     // Fallback a File System Access API si la API local no responde
   }
 
   try {
-    await abrirViaFileSystemApi(ubicacion)
+    await abrirViaFileSystemApi(ubicacion, winPreAbierta)
   } catch (e) {
+    if (winPreAbierta) winPreAbierta.close()
     alert(`Error al abrir: ${e instanceof Error ? e.message : e}`)
   }
 }
