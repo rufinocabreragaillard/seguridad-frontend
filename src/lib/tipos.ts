@@ -973,8 +973,8 @@ export interface DocumentoEspacio {
 }
 
 // ─── Habilidades ──────────────────────────────────────────────────────────────
-export type TipoHabilidad = 'DOCUMENTO' | 'CONJUNTO_DOCUMENTOS' | 'ESPACIO'
-export type SalidaDestino = 'DOC_COLUMNA' | 'CHAT_INLINE' | 'CARACTERISTICA' | 'NUEVO_DOC'
+export type TipoHabilidad = 'DOCUMENTO' | 'CONJUNTO_DOCUMENTOS' | 'ESPACIO' | 'TEXTOS'
+export type SalidaDestino = 'DOC_COLUMNA' | 'CHAT_INLINE' | 'CARACTERISTICA' | 'NUEVO_DOC' | 'CUSTOM' | 'ARCHIVO'
 export type FormatoSalida = 'TEXTO' | 'JSON'
 
 export interface Habilidad {

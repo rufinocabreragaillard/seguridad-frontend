@@ -22,6 +22,7 @@ const TIPOS_HABILIDAD: { value: TipoHabilidad; label: string }[] = [
   { value: 'DOCUMENTO', label: 'DOCUMENTO — sobre un doc' },
   { value: 'CONJUNTO_DOCUMENTOS', label: 'CONJUNTO_DOCUMENTOS — sobre varios docs' },
   { value: 'ESPACIO', label: 'ESPACIO — sobre un espacio completo' },
+  { value: 'TEXTOS', label: 'TEXTOS — sobre textos sueltos (sin documento)' },
 ]
 
 const SALIDAS_DESTINO: { value: SalidaDestino; label: string }[] = [
@@ -29,6 +30,8 @@ const SALIDAS_DESTINO: { value: SalidaDestino; label: string }[] = [
   { value: 'CHAT_INLINE', label: 'CHAT_INLINE — responde en el chat' },
   { value: 'CARACTERISTICA', label: 'CARACTERISTICA — guarda como característica' },
   { value: 'NUEVO_DOC', label: 'NUEVO_DOC — genera documento nuevo' },
+  { value: 'CUSTOM', label: 'CUSTOM — destino manejado por la habilidad' },
+  { value: 'ARCHIVO', label: 'ARCHIVO — escribe a un archivo' },
 ]
 
 const FORMATOS: { value: FormatoSalida; label: string }[] = [
