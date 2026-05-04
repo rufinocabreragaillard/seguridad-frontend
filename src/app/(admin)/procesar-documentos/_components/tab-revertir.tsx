@@ -10,7 +10,7 @@ import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { documentosApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
-import type { Documento } from '@/lib/tipos'
+import type { Documento, EstadoDoc } from '@/lib/tipos'
 
 interface UbicacionOption {
   codigo_ubicacion: string
@@ -26,15 +26,17 @@ const DOCS_POR_PAGINA = 20
 interface TabRevertirProps {
   procesos?: ProcesoCatalogo[]
   ubicaciones?: UbicacionOption[]
+  estadosDocs?: EstadoDoc[]
 }
 
-export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacionesProp = [] }: TabRevertirProps) {
-  // Catálogos — recibidos por props desde page.tsx (no se re-fetcha)
+export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacionesProp = [], estadosDocs: estadosDocsProp = [] }: TabRevertirProps) {
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>(procesosProp)
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>(ubicacionesProp)
+  const [estadosDocs, setEstadosDocs] = useState<EstadoDoc[]>(estadosDocsProp)
 
   // Filtros
   const [procesoSel, setProcesoSel] = useState('')
+  const [estadoFiltro, setEstadoFiltro] = useState('')   // override de estado (igual que Paso a Paso)
   const [filtroLibreInput, setFiltroLibreInput] = useState('')
   const [filtroLibre, setFiltroLibre] = useState('')
   const [ubicacionSel, setUbicacionSel] = useState('')
@@ -46,11 +48,11 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
 
   // Documentos candidatos
   const [documentos, setDocumentos] = useState<Documento[]>([])
-  const [conteo, setConteo] = useState<number | null>(null)
+  const [totalDocs, setTotalDocs] = useState(0)
   const [paginaActual, setPaginaActual] = useState(1)
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [cargando, setCargando] = useState(false)
-  const [yaBuscado, setYaBuscado] = useState(false)
+  const [yaCargado, setYaCargado] = useState(false)
 
   // Ejecución
   const [ejecutando, setEjecutando] = useState(false)
@@ -59,8 +61,8 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
   const [confirmEjecutar, setConfirmEjecutar] = useState(false)
 
   const pasoActual = useMemo(() => {
-    const p = procesos.find((x) => x.codigo_proceso === procesoSel)
-    return p ?? null
+    if (!procesoSel) return null
+    return procesos.find((x) => x.codigo_proceso === procesoSel) ?? null
   }, [procesos, procesoSel])
 
   const rutaUbicacion = useMemo(() => {
@@ -68,15 +70,12 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
     return ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)?.ruta_completa
   }, [ubicacionSel, ubicaciones])
 
-  // Sincronizar cuando los props llegan o cambian (ej. cambio de grupo)
-  useEffect(() => {
-    if (procesosProp.length > 0) setProcesos(procesosProp)
-  }, [procesosProp])
+  // Sincronizar props cuando cambian (ej. cambio de grupo)
+  useEffect(() => { if (procesosProp.length > 0) setProcesos(procesosProp) }, [procesosProp])
+  useEffect(() => { if (ubicacionesProp.length > 0) setUbicaciones(ubicacionesProp) }, [ubicacionesProp])
+  useEffect(() => { if (estadosDocsProp.length > 0) setEstadosDocs(estadosDocsProp) }, [estadosDocsProp])
 
-  useEffect(() => {
-    if (ubicacionesProp.length > 0) setUbicaciones(ubicacionesProp)
-  }, [ubicacionesProp])
-
+  // Click-outside dropdown ubicación
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
       if (ubicDropdownRef.current && !ubicDropdownRef.current.contains(e.target as Node)) {
@@ -87,83 +86,52 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  useEffect(() => {
-    setDocumentos([])
-    setConteo(null)
-    setResultado(null)
-    setError(null)
-    setYaBuscado(false)
-    setPaginaActual(1)
-  }, [procesoSel, filtroLibre, ubicacionSel, tope])
-
-  const cargarDocumentos = useCallback(async (pagina: number) => {
-    if (!pasoActual?.estado_origen && !filtroLibre) return
+  const cargarDocumentos = useCallback(async (pagina: number = 1) => {
+    const estadoOrigen = estadoFiltro || pasoActual?.estado_origen || undefined
+    if (!estadoOrigen && !filtroLibre) return
     setCargando(true)
+    setError(null)
     try {
       const data = await documentosApi.listarPaginado({
         page: pagina,
         limit: DOCS_POR_PAGINA,
-        codigo_estado_doc: pasoActual?.estado_origen || undefined,
+        codigo_estado_doc: estadoOrigen,
         q: filtroLibre || undefined,
         ruta_prefijo: rutaUbicacion,
       })
       setDocumentos(data.items || [])
+      setTotalDocs(data.total)
       setPaginaActual(pagina)
       setTotalPaginas(Math.max(1, Math.ceil(data.total / DOCS_POR_PAGINA)))
+      setYaCargado(true)
     } catch {
       setError('Error al cargar la lista de documentos.')
     } finally {
       setCargando(false)
     }
-  }, [pasoActual, filtroLibre, rutaUbicacion])
+  }, [pasoActual, estadoFiltro, filtroLibre, rutaUbicacion])
 
-  const buscar = async () => {
-    if (!pasoActual?.estado_origen && !filtroLibre) return
-    setCargando(true)
-    setConteo(null)
-    setResultado(null)
-    setError(null)
+  // Carga automática al cambiar proceso/estado/ubicación/filtroLibre (igual que Paso a Paso)
+  useEffect(() => {
+    if (!procesoSel && !estadoFiltro && !filtroLibre) return
     setDocumentos([])
-    try {
-      const docsRes = await documentosApi.listarPaginado({
-        page: 1,
-        limit: DOCS_POR_PAGINA,
-        codigo_estado_doc: pasoActual?.estado_origen || undefined,
-        q: filtroLibre || undefined,
-        ruta_prefijo: rutaUbicacion,
-      })
-      setDocumentos(docsRes.items || [])
-      setPaginaActual(1)
-      setTotalPaginas(Math.max(1, Math.ceil(docsRes.total / DOCS_POR_PAGINA)))
-      setYaBuscado(true)
-
-      if (pasoActual?.estado_origen) {
-        const conteoRes = await documentosApi.revertir({
-          estados_origen: [pasoActual.estado_origen],
-          estado_destino: pasoActual.estado_destino || '',
-          q: filtroLibre || undefined,
-          codigo_ubicacion: ubicacionSel || undefined,
-          tope: tope ? parseInt(tope) : undefined,
-          solo_contar: true,
-        })
-        setConteo(conteoRes.conteo)
-      }
-    } catch {
-      setError('Error al consultar los documentos candidatos.')
-    } finally {
-      setCargando(false)
-    }
-  }
+    setResultado(null)
+    setYaCargado(false)
+    cargarDocumentos(1)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [procesoSel, estadoFiltro, ubicacionSel, filtroLibre])
 
   const ejecutar = async () => {
-    if (!pasoActual || conteo === null || conteo === 0) return
+    const estadoOrigen = estadoFiltro || pasoActual?.estado_origen
+    const estadoDestino = pasoActual?.estado_destino
+    if (!estadoOrigen || !estadoDestino) return
     setEjecutando(true)
     setConfirmEjecutar(false)
     setError(null)
     try {
       const r = await documentosApi.revertir({
-        estados_origen: pasoActual.estado_origen ? [pasoActual.estado_origen] : [],
-        estado_destino: pasoActual.estado_destino || '',
+        estados_origen: [estadoOrigen],
+        estado_destino: estadoDestino,
         q: filtroLibre || undefined,
         codigo_ubicacion: ubicacionSel || undefined,
         tope: tope ? parseInt(tope) : undefined,
@@ -171,8 +139,8 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
       })
       setResultado(r.revertidos)
       setDocumentos([])
-      setConteo(null)
-      setYaBuscado(false)
+      setTotalDocs(0)
+      setYaCargado(false)
     } catch {
       setError('Error al ejecutar el proceso de reversa.')
     } finally {
@@ -184,23 +152,6 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
 
   const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
 
-  // Agrupar procesos por categoría de transición para el select
-  const categorias = useMemo(() => {
-    const map = new Map<string, ProcesoCatalogo[]>()
-    for (const p of procesos) {
-      const cat = p.categoria_transicion || 'REVERTIR'
-      if (!map.has(cat)) map.set(cat, [])
-      map.get(cat)!.push(p)
-    }
-    return map
-  }, [procesos])
-
-  const labelCategoria: Record<string, string> = {
-    REVERTIR: 'Revertir',
-    CORREGIR: 'Corregir inválidos',
-    PROCESAR: 'Procesar',
-  }
-
   return (
     <div className="flex flex-col gap-6 w-full overflow-x-hidden">
       <Tarjeta>
@@ -211,43 +162,53 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
               <label className="text-sm font-medium text-texto">Proceso</label>
               <select
                 value={procesoSel}
-                onChange={(e) => setProcesoSel(e.target.value)}
+                onChange={(e) => {
+                  const val = e.target.value
+                  setProcesoSel(val)
+                  // Auto-seleccionar estado_origen del proceso (igual que Paso a Paso al revés)
+                  if (val) {
+                    const p = procesos.find((x) => x.codigo_proceso === val)
+                    if (p?.estado_origen) setEstadoFiltro(p.estado_origen)
+                  } else {
+                    setEstadoFiltro('')
+                  }
+                }}
                 className={selectClass}
                 disabled={ejecutando}
               >
                 <option value="">— Sin valor —</option>
-                {categorias.size > 1
-                  ? Array.from(categorias.entries()).map(([cat, procs]) => (
-                      <optgroup key={cat} label={labelCategoria[cat] || cat}>
-                        {procs.map((p) => (
-                          <option key={p.codigo_proceso} value={p.codigo_proceso}>
-                            {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
-                          </option>
-                        ))}
-                      </optgroup>
-                    ))
-                  : procesos.map((p) => (
-                      <option key={p.codigo_proceso} value={p.codigo_proceso}>
-                        {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
-                      </option>
-                    ))
-                }
+                {procesos.map((p) => (
+                  <option key={p.codigo_proceso} value={p.codigo_proceso}>
+                    {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
+                  </option>
+                ))}
               </select>
             </div>
 
-            {/* Estado (derivado del proceso, solo lectura) */}
+            {/* Estado — editable, igual que Paso a Paso */}
             <div className="flex flex-col gap-1.5 min-w-0">
               <label className="text-sm font-medium text-texto">Estado</label>
-              <div className={selectClass + ' cursor-default bg-fondo flex items-center gap-2 min-h-[38px]'}>
-                {pasoActual?.estado_origen
-                  ? <>
-                      <Insignia variante="advertencia">{pasoActual.estado_origen}</Insignia>
-                      <span className="text-texto-muted">→</span>
-                      <Insignia variante="neutro">{pasoActual.estado_destino}</Insignia>
-                    </>
-                  : <span className="text-texto-muted italic text-sm">— según proceso —</span>
-                }
-              </div>
+              <select
+                value={estadoFiltro}
+                onChange={(e) => {
+                  const nuevoEstado = e.target.value
+                  setEstadoFiltro(nuevoEstado)
+                  // Auto-seleccionar proceso cuyo estado_origen coincida
+                  if (nuevoEstado && !procesoSel) {
+                    const match = procesos.find((p) => p.estado_origen === nuevoEstado)
+                    if (match) setProcesoSel(match.codigo_proceso)
+                  }
+                }}
+                className={selectClass}
+                disabled={ejecutando}
+              >
+                <option value="">— según proceso —</option>
+                {estadosDocs.map((e) => (
+                  <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
+                    {e.nombre_estado || e.codigo_estado_doc}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {/* Ubicación */}
@@ -383,10 +344,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
                   value={filtroLibreInput}
                   onChange={(e) => setFiltroLibreInput(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      setFiltroLibre(filtroLibreInput)
-                      setYaBuscado(false)
-                    }
+                    if (e.key === 'Enter') setFiltroLibre(filtroLibreInput)
                   }}
                   disabled={ejecutando}
                   className="flex-1 text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
@@ -394,7 +352,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
                 {filtroLibreInput && (
                   <button
                     type="button"
-                    onClick={() => { setFiltroLibreInput(''); setFiltroLibre(''); setYaBuscado(false) }}
+                    onClick={() => { setFiltroLibreInput(''); setFiltroLibre('') }}
                     disabled={ejecutando}
                     className="px-2 rounded-lg border border-borde text-texto-muted hover:text-error hover:border-error transition-colors disabled:opacity-50"
                     title="Limpiar filtro"
@@ -418,26 +376,26 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
             </div>
           </div>
 
-          {/* Buscar + count + Ejecutar/Detener */}
+          {/* Barra inferior: conteo + Ejecutar */}
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
-            <Boton variante="contorno" tamano="sm" onClick={buscar} disabled={ejecutando || cargando || (!procesoSel && !filtroLibre)}>
-              {cargando ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-              Buscar
-            </Boton>
             <span className="text-sm text-texto-muted">
-              {conteo !== null ? `${conteo} documento${conteo !== 1 ? 's' : ''} a ${esEliminacion ? 'eliminar' : 'revertir'}` : ''}
+              {cargando
+                ? 'Cargando…'
+                : yaCargado
+                  ? `${totalDocs} documento${totalDocs !== 1 ? 's' : ''} en estado ${estadoFiltro || pasoActual?.estado_origen || '—'}`
+                  : ''}
             </span>
             <div className="ml-auto flex items-center gap-3">
               <Boton
                 variante={esEliminacion ? 'peligro' : 'primario'}
                 onClick={() => setConfirmEjecutar(true)}
-                disabled={ejecutando || !procesoSel || conteo === null || conteo === 0}
+                disabled={ejecutando || !pasoActual || totalDocs === 0 || cargando}
               >
                 {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
                 {ejecutando
                   ? (esEliminacion ? 'Eliminando…' : 'Ejecutando…')
-                  : conteo !== null && conteo > 0
-                    ? (esEliminacion ? `Eliminar (${conteo})` : `Ejecutar (${conteo})`)
+                  : totalDocs > 0
+                    ? (esEliminacion ? `Eliminar (${totalDocs})` : `Ejecutar (${totalDocs})`)
                     : (esEliminacion ? 'Eliminar' : 'Ejecutar')}
               </Boton>
               <Boton variante="contorno" onClick={() => {}} disabled={!ejecutando}>
@@ -457,10 +415,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
             <p className="text-sm text-texto-muted">
               {esEliminacion
                 ? `${resultado} documento${resultado !== 1 ? 's' : ''} eliminado${resultado !== 1 ? 's' : ''} desde ${pasoActual?.estado_origen || '—'}.`
-                : <>
-                    {resultado} documento{resultado !== 1 ? 's' : ''} revertido{resultado !== 1 ? 's' : ''}
-                    {pasoActual ? ` de ${pasoActual.estado_origen || '—'} a ${pasoActual.estado_destino}` : ''}.
-                  </>
+                : `${resultado} documento${resultado !== 1 ? 's' : ''} revertido${resultado !== 1 ? 's' : ''}${pasoActual ? ` de ${pasoActual.estado_origen || '—'} a ${pasoActual.estado_destino}` : ''}.`
               }
             </p>
           </div>
@@ -474,20 +429,14 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
         </div>
       )}
 
-      {/* Lista de documentos candidatos */}
-      {(yaBuscado || cargando) && (
+      {/* Lista de documentos */}
+      {(yaCargado || cargando) && (
         <>
-          {documentos.length > 0 && (
+          {yaCargado && totalDocs > 0 && (
             <div className="flex items-center">
               <span className="text-xs text-texto-muted">
-                {conteo !== null
-                  ? `${conteo} documento${conteo !== 1 ? 's' : ''} que se ${esEliminacion ? 'eliminarán' : 'revertirán'}`
-                  : `${documentos.length} documentos`}
-                {pasoActual
-                  ? esEliminacion
-                    ? ` desde ${pasoActual.estado_origen}`
-                    : ` de ${pasoActual.estado_origen} → ${pasoActual.estado_destino}`
-                  : ''}
+                {totalDocs} documento{totalDocs !== 1 ? 's' : ''}
+                {pasoActual ? (esEliminacion ? ` a eliminar desde ${pasoActual.estado_origen}` : ` de ${pasoActual.estado_origen} → ${pasoActual.estado_destino}`) : ''}
               </span>
             </div>
           )}
@@ -503,13 +452,13 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
               {cargando ? (
                 <TablaFila>
                   <TablaTd colSpan={3 as never} className="py-8 text-center text-texto-muted">
-                    Cargando…
+                    <Loader2 size={16} className="animate-spin inline mr-2" />Cargando…
                   </TablaTd>
                 </TablaFila>
               ) : documentos.length === 0 ? (
                 <TablaFila>
                   <TablaTd colSpan={3 as never} className="py-8 text-center text-texto-muted">
-                    No hay documentos que coincidan con los filtros
+                    No hay documentos en ese estado
                   </TablaTd>
                 </TablaFila>
               ) : (
@@ -521,7 +470,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
                         <span className="font-medium text-sm truncate" title={d.nombre_documento}>{d.nombre_documento}</span>
                       </div>
                     </TablaTd>
-                    <TablaTd className="text-xs text-texto-muted max-w-0 w-[30%] truncate" title={d.ubicacion_documento || ''}>
+                    <TablaTd className="text-xs text-texto-muted max-w-0 w-[35%] truncate" title={d.ubicacion_documento || ''}>
                       {d.ubicacion_documento || '—'}
                     </TablaTd>
                     <TablaTd>
@@ -535,7 +484,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
           {totalPaginas > 1 && (
             <div className="flex items-center justify-between text-xs text-texto-muted mt-1">
               <span>
-                {(paginaActual - 1) * DOCS_POR_PAGINA + 1}–{Math.min(paginaActual * DOCS_POR_PAGINA, (conteo ?? documentos.length))} de {conteo ?? documentos.length}
+                {(paginaActual - 1) * DOCS_POR_PAGINA + 1}–{Math.min(paginaActual * DOCS_POR_PAGINA, totalDocs)} de {totalDocs}
               </span>
               <div className="flex gap-1">
                 <button disabled={paginaActual <= 1} onClick={() => cargarDocumentos(1)}
@@ -558,8 +507,8 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
         titulo={esEliminacion ? 'Confirmar eliminación' : 'Confirmar reversa'}
         mensaje={
           esEliminacion
-            ? `¿ELIMINAR ${conteo ?? 0} documento${(conteo ?? 0) !== 1 ? 's' : ''} en estado "${pasoActual?.estado_origen}"? Se borrarán también su texto extraído, chunks, embeddings y características. Esta acción no se puede deshacer.`
-            : `¿Revertir ${conteo ?? 0} documento${(conteo ?? 0) !== 1 ? 's' : ''}${pasoActual ? ` de "${pasoActual.estado_origen}" a "${pasoActual.estado_destino}"` : ''}? Esta acción no se puede deshacer.`
+            ? `¿ELIMINAR ${totalDocs} documento${totalDocs !== 1 ? 's' : ''} en estado "${estadoFiltro || pasoActual?.estado_origen}"? Se borrarán también su texto extraído, chunks, embeddings y características. Esta acción no se puede deshacer.`
+            : `¿Revertir ${totalDocs} documento${totalDocs !== 1 ? 's' : ''}${pasoActual ? ` de "${estadoFiltro || pasoActual.estado_origen}" a "${pasoActual.estado_destino}"` : ''}? Esta acción no se puede deshacer.`
         }
         alConfirmar={ejecutar}
         alCerrar={() => setConfirmEjecutar(false)}
