@@ -684,7 +684,7 @@ export default function PaginaFunciones() {
                             <span className="ml-2 text-xs text-texto-muted">{rf.roles?.codigo_rol}</span>
                             {rf.roles?.codigo_grupo
                               ? <span className="ml-2 text-xs text-texto-muted">· {rf.roles.codigo_grupo}</span>
-                              : <span className="ml-2 text-xs text-blue-500">· global</span>}
+                              : <span className="ml-2 text-xs text-red-500">· sistema</span>}
                           </div>
                           <button onClick={() => quitarRolDeFuncion(rf.id_rol)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar">
                             <X size={14} />
