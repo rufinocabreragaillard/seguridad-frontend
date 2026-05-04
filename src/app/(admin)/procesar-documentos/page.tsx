@@ -137,6 +137,7 @@ function PaginaProcesarDocumentosInterna() {
   // Config
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([])
   const [procesosCorregir, setProcesosCorregir] = useState<ProcesoCatalogo[]>([])
+  const [procesosRevertir, setProcesosRevertir] = useState<ProcesoCatalogo[]>([])
   const [errorCargaInicial, setErrorCargaInicial] = useState(false)
   const [cargandoInicial, setCargandoInicial] = useState(true)
   const [procesoSel, setProcesoSel] = useState<string>('')   // codigo_proceso del catálogo o PROCESO_RESTABLECER
@@ -322,9 +323,10 @@ function PaginaProcesarDocumentosInterna() {
     setCargandoInicial(true)
     setErrorCargaInicial(false)
     try {
-      const [procsRaw, procsCorregirRaw, u, nivelParam, estados] = await Promise.all([
+      const [procsRaw, procsCorregirRaw, procsRevertirRaw, u, nivelParam, estados] = await Promise.all([
         getProcesosDocs(),
         procesosApi.listar('CORREGIR').catch(() => []),
+        procesosApi.listar('REVERTIR').catch(() => []),
         ubicacionesDocsApi.listar().catch(() => []),
         parametrosApi.obtenerValor('DOCUMENTOS', 'NIVELES_DIRECTORIO').catch(() => null),
         getEstadosDocs().catch(() => []),
@@ -343,6 +345,10 @@ function PaginaProcesarDocumentosInterna() {
         .filter((p: ProcesoCatalogo) => !!p.estado_destino)
         .sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0))
       setProcesosCorregir(procsCorregir)
+      const procsRevertir = (procsRevertirRaw || [])
+        .filter((p: ProcesoCatalogo) => !!p.estado_destino)
+        .sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0))
+      setProcesosRevertir(procsRevertir)
 
       setUbicaciones(
         (u as UbicacionOption[])
@@ -1150,7 +1156,7 @@ function PaginaProcesarDocumentosInterna() {
         </button>
       </div>
 
-      {tabPrincipal === 'revertir' && <TabRevertir />}
+      {tabPrincipal === 'revertir' && <TabRevertir procesos={procesosRevertir} ubicaciones={ubicaciones} />}
 
       {tabPrincipal === 'todo' && (
         <TabPipelineTodo

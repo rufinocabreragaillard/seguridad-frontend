@@ -8,7 +8,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
-import { documentosApi, ubicacionesDocsApi, procesosApi } from '@/lib/api'
+import { documentosApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import type { Documento } from '@/lib/tipos'
 
@@ -23,12 +23,15 @@ interface UbicacionOption {
 
 const DOCS_POR_PAGINA = 20
 
-export function TabRevertir() {
-  // Catálogos
-  const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([])
-  const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>([])
-  const [cargandoInicial, setCargandoInicial] = useState(true)
-  const [errorCargaInicial, setErrorCargaInicial] = useState(false)
+interface TabRevertirProps {
+  procesos?: ProcesoCatalogo[]
+  ubicaciones?: UbicacionOption[]
+}
+
+export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacionesProp = [] }: TabRevertirProps) {
+  // Catálogos — recibidos por props desde page.tsx (no se re-fetcha)
+  const [procesos, setProcesos] = useState<ProcesoCatalogo[]>(procesosProp)
+  const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>(ubicacionesProp)
 
   // Filtros
   const [procesoSel, setProcesoSel] = useState('')
@@ -65,28 +68,14 @@ export function TabRevertir() {
     return ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)?.ruta_completa
   }, [ubicacionSel, ubicaciones])
 
-  const cargarDatosIniciales = useCallback(async () => {
-    setCargandoInicial(true)
-    setErrorCargaInicial(false)
-    try {
-      const [procsRaw, u] = await Promise.all([
-        procesosApi.listar('REVERTIR'),
-        ubicacionesDocsApi.listar().catch(() => []),
-      ])
-      setProcesos((procsRaw || []).sort((a: ProcesoCatalogo, b: ProcesoCatalogo) => (a.orden ?? 0) - (b.orden ?? 0)))
-      setUbicaciones(
-        (u as UbicacionOption[])
-          .filter((x) => x)
-          .sort((a, b) => (a.ruta_completa || '').localeCompare(b.ruta_completa || ''))
-      )
-    } catch {
-      setErrorCargaInicial(true)
-    } finally {
-      setCargandoInicial(false)
-    }
-  }, [])
+  // Sincronizar cuando los props llegan o cambian (ej. cambio de grupo)
+  useEffect(() => {
+    if (procesosProp.length > 0) setProcesos(procesosProp)
+  }, [procesosProp])
 
-  useEffect(() => { cargarDatosIniciales() }, [cargarDatosIniciales])
+  useEffect(() => {
+    if (ubicacionesProp.length > 0) setUbicaciones(ubicacionesProp)
+  }, [ubicacionesProp])
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -214,17 +203,6 @@ export function TabRevertir() {
 
   return (
     <div className="flex flex-col gap-6 w-full overflow-x-hidden">
-      {errorCargaInicial && (
-        <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-error">
-          <AlertTriangle size={16} className="shrink-0" />
-          <span>No se pudieron cargar los procesos del sistema. El servidor puede estar iniciando.</span>
-          <Boton variante="contorno" tamano="sm" onClick={cargarDatosIniciales} disabled={cargandoInicial}>
-            {cargandoInicial ? <Loader2 size={14} className="animate-spin" /> : null}
-            Reintentar
-          </Boton>
-        </div>
-      )}
-
       <Tarjeta>
         <TarjetaContenido>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
@@ -235,7 +213,7 @@ export function TabRevertir() {
                 value={procesoSel}
                 onChange={(e) => setProcesoSel(e.target.value)}
                 className={selectClass}
-                disabled={ejecutando || cargandoInicial}
+                disabled={ejecutando}
               >
                 <option value="">— Sin valor —</option>
                 {categorias.size > 1
