@@ -30,9 +30,9 @@ interface TabRevertirProps {
 }
 
 export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacionesProp = [], estadosDocs: estadosDocsProp = [] }: TabRevertirProps) {
-  const [procesos, setProcesos] = useState<ProcesoCatalogo[]>(procesosProp)
+  const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([...procesosProp].reverse())
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>(ubicacionesProp)
-  const [estadosDocs, setEstadosDocs] = useState<EstadoDoc[]>(estadosDocsProp)
+  const [estadosDocs, setEstadosDocs] = useState<EstadoDoc[]>([...estadosDocsProp].reverse())
 
   // Filtros
   const [procesoSel, setProcesoSel] = useState('')
@@ -71,9 +71,11 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
   }, [ubicacionSel, ubicaciones])
 
   // Sincronizar props cuando cambian (ej. cambio de grupo)
-  useEffect(() => { if (procesosProp.length > 0) setProcesos(procesosProp) }, [procesosProp])
+  // Procesos en orden inverso del pipeline (el más avanzado primero)
+  useEffect(() => { if (procesosProp.length > 0) setProcesos([...procesosProp].reverse()) }, [procesosProp])
   useEffect(() => { if (ubicacionesProp.length > 0) setUbicaciones(ubicacionesProp) }, [ubicacionesProp])
-  useEffect(() => { if (estadosDocsProp.length > 0) setEstadosDocs(estadosDocsProp) }, [estadosDocsProp])
+  // Estados en orden inverso del pipeline
+  useEffect(() => { if (estadosDocsProp.length > 0) setEstadosDocs([...estadosDocsProp].reverse()) }, [estadosDocsProp])
 
   // Click-outside dropdown ubicación
   useEffect(() => {
@@ -104,8 +106,8 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
       setPaginaActual(pagina)
       setTotalPaginas(Math.max(1, Math.ceil(data.total / DOCS_POR_PAGINA)))
       setYaCargado(true)
-    } catch {
-      setError('Error al cargar la lista de documentos.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al cargar la lista de documentos.')
     } finally {
       setCargando(false)
     }
@@ -141,8 +143,8 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
       setDocumentos([])
       setTotalDocs(0)
       setYaCargado(false)
-    } catch {
-      setError('Error al ejecutar el proceso de reversa.')
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al ejecutar el proceso de reversa.')
     } finally {
       setEjecutando(false)
     }
@@ -423,9 +425,9 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
       )}
 
       {error && (
-        <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-error">
-          <AlertTriangle size={16} className="shrink-0" />
-          {error}
+        <div className="flex items-start gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-error">
+          <AlertTriangle size={16} className="shrink-0 mt-0.5" />
+          <span className="whitespace-pre-line">{error}</span>
         </div>
       )}
 

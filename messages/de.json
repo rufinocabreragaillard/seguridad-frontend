@@ -699,7 +699,7 @@
     "xArchivosEncontrados": "{n} Datei(en) gefunden"
   },
   "procesarDocumentos": {
-    "titulo": "Dokumentenverarbeitung",
+    "titulo": "Dokumentenindizierung",
     "subtitulo": "Führt LLM-Prozesse für Dokumente der Gruppe aus",
     "tabPasoAPaso": "Schritt für Schritt",
     "tabTodo": "Alles",

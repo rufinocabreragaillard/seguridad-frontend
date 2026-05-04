@@ -699,7 +699,7 @@
     "xArchivosEncontrados": "{n} arquivo(s) encontrados"
   },
   "procesarDocumentos": {
-    "titulo": "Processamento de Documentos",
+    "titulo": "Indexação de Documentos",
     "subtitulo": "Executa processos LLM sobre documentos do grupo",
     "tabPasoAPaso": "Passo a Passo",
     "tabTodo": "Tudo",
