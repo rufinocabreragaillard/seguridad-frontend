@@ -1,5 +1,9 @@
-import { getDirectoryHandle, ensureReadPermission } from './file-handle-store'
+import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from './file-handle-store'
 import { abrirArchivoPorRuta } from './extraer-texto'
+
+type WinWithPicker = Window & {
+  showDirectoryPicker?: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle>
+}
 
 const IS_CLIENT_MODE = process.env.NEXT_PUBLIC_MODE === 'client'
 const API_LOCAL = 'http://localhost:27182'
@@ -67,15 +71,28 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string): void {
 }
 
 async function abrirViaFileSystemApi(ubicacion: string): Promise<void> {
-  const handle = await getDirectoryHandle()
+  let handle = await getDirectoryHandle()
+
   if (!handle) {
-    alert('No hay carpeta raíz seleccionada. Ve a "Procesar Documentos" y selecciona el directorio raíz primero.')
-    return
+    // No hay carpeta guardada: pedir al usuario que seleccione la raíz
+    const picker = (window as WinWithPicker).showDirectoryPicker
+    if (!picker) {
+      alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
+      return
+    }
+    try {
+      handle = await picker({ mode: 'read' })
+      await setDirectoryHandle(handle)
+    } catch {
+      // El usuario canceló el picker
+      return
+    }
   }
+
   const ok = await ensureReadPermission(handle)
   if (!ok) { alert('Permiso de lectura denegado.'); return }
   const fileHandle = await abrirArchivoPorRuta(handle, ubicacion)
-  if (!fileHandle) { alert(`No se encontró: ${ubicacion}`); return }
+  if (!fileHandle) { alert(`No se encontró el archivo: ${ubicacion}`); return }
   const file = await fileHandle.getFile()
   _abrirEnPestanaConNombre(file, file.name)
 }
