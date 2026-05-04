@@ -50,14 +50,27 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
     return
   }
 
+  // Crear un HTML wrapper con el nombre correcto como <title> e iframe interno.
+  // Así la pestaña/visor muestra el nombre real en vez del UUID del blob.
+  const titulo = _escapeHtml(nombre)
+  const src = _escapeHtml(url)
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${titulo}</title></head>
+<body style="margin:0;background:#1f1f1f">
+<iframe src="${src}" style="width:100vw;height:100vh;border:0" title="${titulo}"></iframe>
+</body>
+</html>`
+  const wrapperBlob = new Blob([html], { type: 'text/html' })
+  const wrapperUrl = URL.createObjectURL(wrapperBlob)
+  setTimeout(() => URL.revokeObjectURL(wrapperUrl), 5 * 60_000)
+
   if (winPreAbierta && !winPreAbierta.closed) {
-    // Navegar la ventana ya abierta al blob URL directamente
-    winPreAbierta.location.replace(url)
+    winPreAbierta.location.replace(wrapperUrl)
     return
   }
 
-  // Sin ventana pre-abierta: intentar abrir normal
-  const win = window.open(url, '_blank', 'noopener,noreferrer')
+  const win = window.open(wrapperUrl, '_blank', 'noopener,noreferrer')
   if (!win) {
     // Popup bloqueado: descargar como fallback
     _triggerDownload(blob, nombre)
