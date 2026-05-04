@@ -50,15 +50,15 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
     return
   }
 
-  // Crear un HTML wrapper con el nombre correcto como <title> e iframe interno.
-  // Así la pestaña/visor muestra el nombre real en vez del UUID del blob.
+  // Wrapper HTML con <title> real + <embed> del PDF.
+  // iframe bloquea blob:// anidados en Chrome; embed no tiene esa restricción.
   const titulo = _escapeHtml(nombre)
   const src = _escapeHtml(url)
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>${titulo}</title></head>
-<body style="margin:0;background:#1f1f1f">
-<iframe src="${src}" style="width:100vw;height:100vh;border:0" title="${titulo}"></iframe>
+<body style="margin:0;padding:0;overflow:hidden;background:#1f1f1f">
+<embed src="${src}" type="application/pdf" style="width:100vw;height:100vh" title="${titulo}">
 </body>
 </html>`
   const wrapperBlob = new Blob([html], { type: 'text/html' })
@@ -70,7 +70,7 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
     return
   }
 
-  const win = window.open(wrapperUrl, '_blank', 'noopener,noreferrer')
+  const win = window.open(wrapperUrl, '_blank')
   if (!win) {
     // Popup bloqueado: descargar como fallback
     _triggerDownload(blob, nombre)
