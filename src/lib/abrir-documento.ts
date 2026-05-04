@@ -38,41 +38,30 @@ const _INLINE_EXT = new Set([
   'mp3', 'wav', 'ogg', 'mp4', 'webm', 'mov',
 ])
 
-function _renderEnVentana(win: Window, blob: Blob, nombre: string): void {
-  const url = URL.createObjectURL(blob)
-  const titulo = _escapeHtml(nombre)
-  const src = _escapeHtml(url)
-  win.document.write(`<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>${titulo}</title></head>
-<body style="margin:0;background:#1f1f1f">
-<iframe src="${src}" style="width:100vw;height:100vh;border:0" title="${titulo}"></iframe>
-</body>
-</html>`)
-  win.document.close()
-  setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
-}
-
 function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Window | null): void {
   const ext = (nombre.split('.').pop() || '').toLowerCase()
   const inline = _INLINE_EXT.has(ext)
+  const url = URL.createObjectURL(blob)
+  setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
 
   if (!inline) {
-    if (winPreAbierta) winPreAbierta.close()
+    if (winPreAbierta && !winPreAbierta.closed) winPreAbierta.close()
     _triggerDownload(blob, nombre)
     return
   }
 
-  const win = winPreAbierta || window.open('', '_blank')
-  if (!win) {
-    // Popup bloqueado: fallback directo (mostrará UUID, pero abrirá)
-    const url = URL.createObjectURL(blob)
-    window.open(url, '_blank', 'noopener,noreferrer')
-    setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
+  if (winPreAbierta && !winPreAbierta.closed) {
+    // Navegar la ventana ya abierta al blob URL directamente
+    winPreAbierta.location.replace(url)
     return
   }
 
-  _renderEnVentana(win, blob, nombre)
+  // Sin ventana pre-abierta: intentar abrir normal
+  const win = window.open(url, '_blank', 'noopener,noreferrer')
+  if (!win) {
+    // Popup bloqueado: descargar como fallback
+    _triggerDownload(blob, nombre)
+  }
 }
 
 // Abre una ventana de loading síncronamente (dentro de un click handler)
