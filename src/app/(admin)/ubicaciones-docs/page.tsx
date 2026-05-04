@@ -72,7 +72,7 @@ export default function PaginaUbicacionesDocs() {
   } | null>(null)
   const [eliminando, setEliminando] = useState(false)
 
-  // ── Cargar Ubicaciones (escaneo) ──────────────────────────────────────────
+  // ── Indexar Ubicaciones (escaneo) ──────────────────────────────────────────
   const [modalCarga, setModalCarga] = useState(false)
   const [escaneando, setEscaneando] = useState(false)
   const [sincronizando, setSincronizando] = useState(false)
@@ -249,7 +249,7 @@ export default function PaginaUbicacionesDocs() {
     }
   }
 
-  // ── Cargar Ubicaciones (escaneo + sincronización) ─────────────────────────
+  // ── Indexar Ubicaciones (escaneo + sincronización) ─────────────────────────
   const iniciarEscaneo = async () => {
     if (!soportaDirectoryPicker()) {
       alert(t('errorBrowserNoSoporta'))
@@ -425,7 +425,7 @@ export default function PaginaUbicacionesDocs() {
     return ubicaciones.filter((u) => visibles.has(u.codigo_ubicacion))
   })()
 
-  // ── Cargar Documentos (sección inferior) ──────────────────────────────────
+  // ── Indexar Documentos (sección inferior) ──────────────────────────────────
   const [cdNiveles, setCdNiveles] = useState(5)
   const [cdDirHandle, setCdDirHandle] = useState<FileSystemDirectoryHandle | null>(null)
   const [cdEscaneando, setCdEscaneando] = useState(false)
@@ -1120,7 +1120,7 @@ export default function PaginaUbicacionesDocs() {
         cargando={cambiandoTipo}
       />
 
-      {/* ── Sección Cargar Documentos ─────────────────────────────────────── */}
+      {/* ── Sección Indexar Documentos ─────────────────────────────────────── */}
       <div className="border-t border-borde pt-6 flex flex-col gap-4">
         <div>
           <h3 className="modal-heading">{tcd('titulo')}</h3>
@@ -1329,7 +1329,7 @@ export default function PaginaUbicacionesDocs() {
         )}
       </div>
 
-      {/* Modal Cargar Ubicaciones */}
+      {/* Modal Indexar Ubicaciones */}
       <Modal
         abierto={modalCarga}
         alCerrar={cerrarModalCarga}

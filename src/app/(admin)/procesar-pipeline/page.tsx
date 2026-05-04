@@ -72,7 +72,7 @@ export default function PaginaCargaDocsUsuario() {
   }, [grupoActivo])
 
   // ════════════════════════════════════════════════════════════════════════════
-  // ETAPA 1 — Cargar Ubicaciones
+  // ETAPA 1 — Indexar Ubicaciones
   // ════════════════════════════════════════════════════════════════════════════
 
   const [ubicaciones, setUbicaciones] = useState<UbicacionDoc[]>([])
@@ -306,7 +306,7 @@ export default function PaginaCargaDocsUsuario() {
   const raices = filtradosUbs.filter((u) => !u.codigo_ubicacion_superior).sort((a, b) => a.orden - b.orden || a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
 
   // ════════════════════════════════════════════════════════════════════════════
-  // ETAPA 2 — Cargar Documentos (pipeline)
+  // ETAPA 2 — Indexar Documentos (pipeline)
   // ════════════════════════════════════════════════════════════════════════════
 
   const [progresos, setProgresos] = useState<Record<string, ProgresoPaso>>(progresosIniciales)
