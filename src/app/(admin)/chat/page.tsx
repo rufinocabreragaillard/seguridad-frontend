@@ -116,8 +116,15 @@ export default function PaginaChatUsuario() {
   const [spCopiado, setSpCopiado] = useState(false)
   const esSuperAdmin = grupoActivo === 'ADMIN'
 
-  // ── Modal visor de documento (desde links del chat) ──
-  const [modalDocCodigo, setModalDocCodigo] = useState<number | null>(null)
+  // ── Abrir documento desde links del chat ──
+  const abrirDocDesdeLink = useCallback(async (codigo: number) => {
+    try {
+      const doc = await documentosApi.obtener(codigo)
+      await abrirDocumento(doc.ubicacion_documento)
+    } catch {
+      // silencioso: el documento puede no existir o no tener ubicación
+    }
+  }, [])
 
   const verSystemPrompt = async () => {
     if (convActivaId == null) return
@@ -683,7 +690,7 @@ export default function PaginaChatUsuario() {
                   ) : (
                     <>
                       {mensajes.map((m) => (
-                        <Mensaje key={m.id_mensaje} mensaje={m} onAbrirDoc={setModalDocCodigo} />
+                        <Mensaje key={m.id_mensaje} mensaje={m} onAbrirDoc={abrirDocDesdeLink} />
                       ))}
                       {respuestaEnCurso && (
                         <Mensaje
@@ -695,7 +702,7 @@ export default function PaginaChatUsuario() {
                             fecha_creacion: new Date().toISOString(),
                           }}
                           streaming
-                          onAbrirDoc={setModalDocCodigo}
+                          onAbrirDoc={abrirDocDesdeLink}
                         />
                       )}
                       {enviando && actividad && (
@@ -1377,58 +1384,7 @@ export default function PaginaChatUsuario() {
           </div>
         ) : null}
       </Modal>
-      <ModalVisorDocumento codigoDoc={modalDocCodigo} onCerrar={() => setModalDocCodigo(null)} />
     </div>
-  )
-}
-
-// ── Modal visor de documento (abre desde links del chat) ──────────────────────
-
-function ModalVisorDocumento({ codigoDoc, onCerrar }: { codigoDoc: number | null; onCerrar: () => void }) {
-  const [doc, setDoc] = useState<Documento | null>(null)
-  const [cargando, setCargando] = useState(false)
-  const [error, setError] = useState('')
-
-  useEffect(() => {
-    if (codigoDoc == null) { setDoc(null); setError(''); return }
-    setCargando(true)
-    setError('')
-    documentosApi.obtener(codigoDoc)
-      .then(setDoc)
-      .catch(() => setError('No se pudo cargar el documento.'))
-      .finally(() => setCargando(false))
-  }, [codigoDoc])
-
-  return (
-    <Modal abierto={codigoDoc != null} alCerrar={onCerrar} titulo="Documento" className="max-w-2xl">
-      {cargando && <p className="text-sm text-texto-muted p-4">Cargando…</p>}
-      {error && <p className="text-sm text-error p-4">{error}</p>}
-      {doc && !cargando && (
-        <div className="p-6 flex flex-col gap-4 overflow-y-auto">
-          <div>
-            <p className="text-xs text-texto-muted uppercase tracking-wide mb-1">Nombre</p>
-            <p className="text-sm font-medium">{doc.nombre_documento}</p>
-          </div>
-          {doc.ubicacion_documento && (
-            <div>
-              <p className="text-xs text-texto-muted uppercase tracking-wide mb-1">Ubicación</p>
-              <p className="text-sm font-mono text-texto-muted break-all">{doc.ubicacion_documento}</p>
-            </div>
-          )}
-          {doc.resumen_documento && (
-            <div>
-              <p className="text-xs text-texto-muted uppercase tracking-wide mb-1">Resumen</p>
-              <p className="text-sm leading-relaxed">{doc.resumen_documento}</p>
-            </div>
-          )}
-          <div className="flex gap-4 text-xs text-texto-muted border-t border-borde pt-3">
-            {doc.codigo_estado_doc && <span>Estado: {doc.codigo_estado_doc}</span>}
-            {doc.tamano_kb != null && <span>Tamaño: {doc.tamano_kb} KB</span>}
-            {doc.fecha_modificacion && <span>Modificado: {new Date(doc.fecha_modificacion).toLocaleDateString()}</span>}
-          </div>
-        </div>
-      )}
-    </Modal>
   )
 }
 
