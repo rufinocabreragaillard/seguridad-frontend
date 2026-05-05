@@ -668,7 +668,7 @@ export default function PaginaChatUsuario() {
           </aside>
 
           {/* Área principal de chat */}
-          <main className="flex-1 flex flex-col border border-borde rounded-lg bg-white overflow-hidden min-w-0">
+          <main className="flex-1 flex flex-col border border-borde rounded-lg bg-fondo overflow-hidden min-w-0">
             <>
               {/* Cabecera del chat: titulo + acciones (debug super-admin) */}
               {esSuperAdmin && convActivaId != null && (
@@ -727,8 +727,8 @@ export default function PaginaChatUsuario() {
                 <div className="px-4 py-2 text-sm text-error bg-red-50">{errorConv}</div>
               )}
 
-              <div className="px-3 pb-3">
-                <div className="relative rounded-xl border border-borde bg-surface focus-within:border-primario focus-within:ring-1 focus-within:ring-primario transition">
+              <div className="px-3 pb-3 bg-fondo">
+                <div className="relative rounded-xl border border-borde bg-white focus-within:border-primario focus-within:ring-1 focus-within:ring-primario transition">
                   <textarea
                     ref={inputRef}
                     value={textoInput}
