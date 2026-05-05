@@ -789,8 +789,6 @@
     "sinDocumentosPendientes": "No hay documentos pendientes de procesar. Si acabas de indexar archivos, presiona",
     "sinDocumentosPendientesBtn": "Indexar Documentos",
     "sinPermisoLectura": "Sin permiso de lectura sobre el directorio.",
-    "tituloPagina": "Indexa tus Ubicaciones y Documentos",
-    "subtituloPagina": "Configura las ubicaciones e indexa tus documentos paso a paso.",
     "cargarUbicacion": "Indexar Ubicación",
     "soloUnDirectorio": "solo un directorio",
     "cargarUbicacionesDesdeDirectorio": "Indexar Ubicaciones desde Directorio",

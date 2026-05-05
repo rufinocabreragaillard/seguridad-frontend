@@ -9,6 +9,7 @@ import {
   Eye, FileText, XCircle, ExternalLink,
 } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Insignia } from '@/components/ui/insignia'
@@ -614,10 +615,7 @@ export default function PaginaCargaDocsUsuario() {
   return (
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
-      <div className="pr-28">
-        <h2 className="page-heading">{t('tituloPagina')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtituloPagina')}</p>
-      </div>
+      <PageHeader className="pr-28" i18nNamespace="processPipeline" />
 
       {/* Tabs */}
       <div className="flex border-b border-borde">

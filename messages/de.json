@@ -789,8 +789,6 @@
     "sinDocumentosPendientes": "Es sind keine Dokumente zur Verarbeitung ausstehend. Wenn Sie gerade Dateien indexiert haben, klicken Sie auf",
     "sinDocumentosPendientesBtn": "Dokumente indexieren",
     "sinPermisoLectura": "Keine Leseberechtigung für das Verzeichnis.",
-    "tituloPagina": "Indexieren Sie Ihre Speicherorte und Dokumente",
-    "subtituloPagina": "Konfigurieren Sie die Speicherorte und indexieren Sie Ihre Dokumente Schritt für Schritt.",
     "cargarUbicacion": "Speicherort indexieren",
     "soloUnDirectorio": "nur ein Verzeichnis",
     "cargarUbicacionesDesdeDirectorio": "Speicherorte aus Verzeichnis indexieren",

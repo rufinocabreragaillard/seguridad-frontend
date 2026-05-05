@@ -789,8 +789,6 @@
     "sinDocumentosPendientes": "There are no pending documents to process. If you have just indexed files, press",
     "sinDocumentosPendientesBtn": "Index Documents",
     "sinPermisoLectura": "No read permission on the directory.",
-    "tituloPagina": "Index Your Locations and Documents",
-    "subtituloPagina": "Configure locations and index your documents step by step.",
     "cargarUbicacion": "Index Location",
     "soloUnDirectorio": "only one directory",
     "cargarUbicacionesDesdeDirectorio": "Index Locations from Directory",

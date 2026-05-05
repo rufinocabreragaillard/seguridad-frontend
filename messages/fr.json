@@ -789,8 +789,6 @@
     "sinDocumentosPendientes": "Aucun document en attente de traitement. Si vous venez d'indexer des fichiers, appuyez sur",
     "sinDocumentosPendientesBtn": "Indexer les documents",
     "sinPermisoLectura": "Aucune permission de lecture sur le répertoire.",
-    "tituloPagina": "Indexez vos emplacements et documents",
-    "subtituloPagina": "Configurez les emplacements et indexez vos documents étape par étape.",
     "cargarUbicacion": "Indexer un emplacement",
     "soloUnDirectorio": "un seul répertoire",
     "cargarUbicacionesDesdeDirectorio": "Indexer les emplacements depuis un répertoire",

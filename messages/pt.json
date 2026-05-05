@@ -789,8 +789,6 @@
     "sinDocumentosPendientes": "Não há documentos pendentes de processamento. Se você acabou de indexar arquivos, pressione",
     "sinDocumentosPendientesBtn": "Indexar Documentos",
     "sinPermisoLectura": "Sem permissão de leitura para o diretório.",
-    "tituloPagina": "Indexe seus Locais e Documentos",
-    "subtituloPagina": "Configure os locais e indexe seus documentos passo a passo.",
     "cargarUbicacion": "Indexar Local",
     "soloUnDirectorio": "somente um diretório",
     "cargarUbicacionesDesdeDirectorio": "Indexar Locais a partir do Diretório",
