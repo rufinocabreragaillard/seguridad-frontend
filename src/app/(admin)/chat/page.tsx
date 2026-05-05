@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, Send, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink } from 'lucide-react'
+import { Plus, Trash2, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink, CornerDownLeft } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -173,7 +173,7 @@ export default function PaginaChatUsuario() {
     } catch { /* */ }
   }
 
-  const cargarLista = useCallback(async () => {
+  const cargarLista = useCallback(async (autoCrear = false) => {
     setCargandoLista(true)
     setErrorLista('')
     try {
@@ -181,6 +181,11 @@ export default function PaginaChatUsuario() {
       setConversaciones(data)
       if (data.length > 0 && convActivaId == null) {
         setConvActivaId(data[0].id_conversacion)
+      } else if (data.length === 0 && autoCrear) {
+        const nueva = await chatApi.crearConversacion(CODIGO_FUNCION)
+        const data2 = await chatApi.listarConversaciones({ codigo_funcion: CODIGO_FUNCION })
+        setConversaciones(data2)
+        setConvActivaId(nueva.id_conversacion)
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error al cargar conversaciones'
@@ -192,7 +197,7 @@ export default function PaginaChatUsuario() {
   }, [])
 
   useEffect(() => {
-    cargarLista()
+    cargarLista(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grupoActivo])
 
@@ -298,7 +303,7 @@ export default function PaginaChatUsuario() {
           })
           setRespuestaEnCurso('')
           setActividad('')
-          cargarLista()
+          cargarLista(false)
         },
         onError: (mensaje) => {
           setErrorConv(mensaje)
@@ -321,6 +326,11 @@ export default function PaginaChatUsuario() {
       e.preventDefault()
       enviarMensaje()
     }
+  }
+
+  const autoResizeTextarea = (el: HTMLTextAreaElement) => {
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 200)}px`
   }
 
   const eliminarConversacion = async (conv: ChatConversacion) => {
@@ -621,16 +631,6 @@ export default function PaginaChatUsuario() {
         <div className="flex flex-1 gap-4 max-w-full overflow-hidden">
           {/* Sidebar de conversaciones */}
           <aside className="w-64 flex-shrink-0 flex flex-col gap-2 border border-borde rounded-lg bg-surface overflow-hidden">
-            <div className="px-3 py-2 border-b border-borde flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-texto">{t('conversaciones')}</h3>
-              <button
-                onClick={nuevaConversacion}
-                className="p-1.5 rounded hover:bg-primario-muy-claro text-primario"
-                title={t('nuevaConversacion')}
-              >
-                <Plus size={16} />
-              </button>
-            </div>
             <div className="flex-1 overflow-y-auto px-2 py-2">
               {cargandoLista ? (
                 <p className="text-xs text-texto-muted text-center py-4">{t('cargando') ?? 'Cargando...'}</p>
@@ -668,92 +668,93 @@ export default function PaginaChatUsuario() {
           </aside>
 
           {/* Área principal de chat */}
-          <main className="flex-1 flex flex-col bg-white overflow-hidden min-w-0">
-            {convActivaId == null ? (
-              <div className="flex-1 flex items-center justify-center text-texto-muted text-sm flex-col gap-3">
-                <MessageCircle size={48} className="opacity-30" />
-                <p>{t('sinConversacionMsg')}</p>
-                <Boton variante="primario" tamano="sm" onClick={nuevaConversacion}>
-                  <Plus size={14} /> {t('nuevaConversacionBoton')}
-                </Boton>
-              </div>
-            ) : (
-              <>
-                {/* Cabecera del chat: titulo + acciones (debug super-admin) */}
-                {esSuperAdmin && (
-                  <div className="border-b border-borde px-4 py-2 flex items-center justify-between gap-2 bg-fondo">
-                    <span className="text-xs text-texto-muted truncate">
-                      {conversaciones.find((c) => c.id_conversacion === convActivaId)?.titulo || ''}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={verSystemPrompt}
-                      title="Ver system prompt enviado al LLM (solo super-admin)"
-                      className="p-1.5 rounded hover:bg-white text-texto-muted hover:text-texto transition-colors flex items-center gap-1"
-                    >
-                      <Eye size={15} />
-                      <span className="text-xs">prompt</span>
-                    </button>
-                  </div>
-                )}
-                <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
-                  {cargandoConv ? (
-                    <p className="text-sm text-texto-muted text-center">{t('cargando') ?? 'Cargando...'}</p>
-                  ) : mensajes.length === 0 && !respuestaEnCurso ? (
-                    <p className="text-sm text-texto-muted text-center py-8">{t('placeholderPrimerMensaje')}</p>
-                  ) : (
-                    <>
-                      {mensajes.map((m) => (
-                        <Mensaje key={m.id_mensaje} mensaje={m} onAbrirDoc={abrirDocDesdeLink} />
-                      ))}
-                      {respuestaEnCurso && (
-                        <Mensaje
-                          mensaje={{
-                            id_mensaje: -1,
-                            id_conversacion: convActivaId,
-                            rol: 'assistant',
-                            contenido: respuestaEnCurso,
-                            fecha_creacion: new Date().toISOString(),
-                          }}
-                          streaming
-                          onAbrirDoc={abrirDocDesdeLink}
-                        />
-                      )}
-                      {enviando && actividad && (
-                        <div className="flex items-center gap-2 text-xs text-texto-muted italic px-2">
-                          <span className="inline-block w-1.5 h-1.5 rounded-full bg-texto-muted/50 animate-pulse" />
-                          <span>{actividad}</span>
-                        </div>
-                      )}
-                    </>
-                  )}
-                  <div ref={mensajesEndRef} />
+          <main className="flex-1 flex flex-col border border-borde rounded-lg bg-white overflow-hidden min-w-0">
+            <>
+              {/* Cabecera del chat: titulo + acciones (debug super-admin) */}
+              {esSuperAdmin && convActivaId != null && (
+                <div className="border-b border-borde px-4 py-2 flex items-center justify-between gap-2 bg-fondo rounded-t-lg">
+                  <span className="text-xs text-texto-muted truncate">
+                    {conversaciones.find((c) => c.id_conversacion === convActivaId)?.titulo || ''}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={verSystemPrompt}
+                    title="Ver system prompt enviado al LLM (solo super-admin)"
+                    className="p-1.5 rounded hover:bg-white text-texto-muted hover:text-texto transition-colors flex items-center gap-1"
+                  >
+                    <Eye size={15} />
+                    <span className="text-xs">prompt</span>
+                  </button>
                 </div>
-
-                {errorConv && (
-                  <div className="px-4 py-2 text-sm text-error bg-red-50 border-t border-red-200">{errorConv}</div>
+              )}
+              <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+                {cargandoLista || cargandoConv ? (
+                  <p className="text-sm text-texto-muted text-center">{t('cargando') ?? 'Cargando...'}</p>
+                ) : convActivaId == null ? (
+                  <p className="text-sm text-texto-muted text-center py-8">{t('sinConversacionMsg')}</p>
+                ) : mensajes.length === 0 && !respuestaEnCurso ? (
+                  <p className="text-sm text-texto-muted text-center py-8">{t('placeholderPrimerMensaje')}</p>
+                ) : (
+                  <>
+                    {mensajes.map((m) => (
+                      <Mensaje key={m.id_mensaje} mensaje={m} onAbrirDoc={abrirDocDesdeLink} />
+                    ))}
+                    {respuestaEnCurso && (
+                      <Mensaje
+                        mensaje={{
+                          id_mensaje: -1,
+                          id_conversacion: convActivaId!,
+                          rol: 'assistant',
+                          contenido: respuestaEnCurso,
+                          fecha_creacion: new Date().toISOString(),
+                        }}
+                        streaming
+                        onAbrirDoc={abrirDocDesdeLink}
+                      />
+                    )}
+                    {enviando && actividad && (
+                      <div className="flex items-center gap-2 text-xs text-texto-muted italic px-2">
+                        <span className="inline-block w-1.5 h-1.5 rounded-full bg-texto-muted/50 animate-pulse" />
+                        <span>{actividad}</span>
+                      </div>
+                    )}
+                  </>
                 )}
+                <div ref={mensajesEndRef} />
+              </div>
 
-                <div className="border-t border-borde p-3 flex gap-2 items-end">
+              {errorConv && (
+                <div className="px-4 py-2 text-sm text-error bg-red-50">{errorConv}</div>
+              )}
+
+              <div className="px-3 pb-3">
+                <div className="relative rounded-xl border border-borde bg-surface focus-within:border-primario focus-within:ring-1 focus-within:ring-primario transition">
                   <textarea
                     ref={inputRef}
                     value={textoInput}
-                    onChange={(e) => setTextoInput(e.target.value)}
+                    onChange={(e) => { setTextoInput(e.target.value); autoResizeTextarea(e.target) }}
                     onKeyDown={handleKeyDown}
                     placeholder={t('placeholderMensaje')}
                     disabled={enviando}
-                    rows={3}
-                    className="flex-1 resize-none rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none disabled:opacity-50"
+                    rows={1}
+                    style={{ minHeight: '44px', maxHeight: '200px' }}
+                    className="w-full resize-none rounded-xl bg-transparent px-3 py-3 pr-10 text-sm text-texto placeholder:text-texto-muted outline-none disabled:opacity-50 overflow-y-auto"
                   />
-                  <Boton variante="primario" onClick={enviarMensaje} disabled={enviando || !textoInput.trim()} cargando={enviando}>
-                    <Send size={16} />
-                  </Boton>
+                  <button
+                    type="button"
+                    onClick={enviarMensaje}
+                    disabled={enviando || !textoInput.trim()}
+                    className="absolute right-2 bottom-2 p-1.5 rounded-lg text-texto-muted hover:text-primario disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Enviar (Enter)"
+                  >
+                    <CornerDownLeft size={16} />
+                  </button>
                 </div>
-              </>
-            )}
+              </div>
+            </>
 
             {/* ── Barra inferior de filtros + Crear Espacio (siempre visible) ── */}
-            <div className="border-t border-borde bg-fondo px-3 py-2 flex flex-wrap items-center gap-2">
+            <div className="bg-fondo px-3 py-2 flex flex-wrap items-center gap-2 rounded-b-lg">
               {/* Selector buscable: Área */}
               <div className="relative">
                 <button
@@ -955,6 +956,17 @@ export default function PaginaChatUsuario() {
                   </div>
                 )}
               </div>
+
+              {/* Botón Nueva Conversación */}
+              <button
+                type="button"
+                onClick={nuevaConversacion}
+                className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-borde text-texto-muted hover:text-primario hover:border-primario/40 hover:bg-primario-muy-claro transition"
+                title={t('nuevaConversacion')}
+              >
+                <Plus size={13} />
+                <span>{t('nuevaConversacionBoton') || 'Nueva conversación'}</span>
+              </button>
 
               {/* Botón Crear Espacio */}
               <button
