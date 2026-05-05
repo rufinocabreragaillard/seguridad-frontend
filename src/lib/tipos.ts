@@ -828,6 +828,7 @@ export interface UbicacionDoc {
   python_insert?: string | null
   python_update?: string | null
   system_prompt?: string | null
+  url?: string | null
 }
 
 // ─── Cargos ───────────────────────────────────────────────────────────────────

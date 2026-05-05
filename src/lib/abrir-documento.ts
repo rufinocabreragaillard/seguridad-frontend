@@ -163,12 +163,20 @@ export async function cargarBlobDocumento(
 
   let handle = await getDirectoryHandle(userId, grupoActivo)
   if (!handle) {
-    const picker = (window as WinWithPicker).showDirectoryPicker
-    if (!picker) { onError('Selecciona primero una carpeta raíz en Adm. Indexación Docs.'); return }
-    try {
-      handle = await picker({ mode: 'read' })
-      await setDirectoryHandle(handle, userId, grupoActivo)
-    } catch { return }
+    if (userId && grupoActivo) {
+      const { obtenerHandleDirectorio } = await import('./seleccionar-directorio')
+      const r = await obtenerHandleDirectorio({ userId, grupoActivo })
+      if (r.error) { onError(r.error); return }
+      if (!r.handle) return
+      handle = r.handle
+    } else {
+      const picker = (window as WinWithPicker).showDirectoryPicker
+      if (!picker) { onError('Selecciona primero una carpeta raíz en Adm. Indexación Docs.'); return }
+      try {
+        handle = await picker({ mode: 'read' })
+        await setDirectoryHandle(handle, userId, grupoActivo)
+      } catch { return }
+    }
   }
   const ok = await ensureReadPermission(handle)
   if (!ok) { onError('Permiso de lectura denegado.'); return }
@@ -188,19 +196,34 @@ async function abrirViaFileSystemApi(
   let handle = await getDirectoryHandle(userId, grupoActivo)
 
   if (!handle) {
-    // No hay carpeta guardada: pedir al usuario que seleccione la raíz
-    const picker = (window as WinWithPicker).showDirectoryPicker
-    if (!picker) {
-      if (winPreAbierta) winPreAbierta.close()
-      alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
-      return
-    }
-    try {
-      handle = await picker({ mode: 'read' })
-      await setDirectoryHandle(handle, userId, grupoActivo)
-    } catch {
-      if (winPreAbierta) winPreAbierta.close()
-      return
+    if (userId && grupoActivo) {
+      const { obtenerHandleDirectorio } = await import('./seleccionar-directorio')
+      const r = await obtenerHandleDirectorio({ userId, grupoActivo })
+      if (r.error) {
+        if (winPreAbierta) winPreAbierta.close()
+        alert(r.error)
+        return
+      }
+      if (!r.handle) {
+        if (winPreAbierta) winPreAbierta.close()
+        return
+      }
+      handle = r.handle
+    } else {
+      // No hay carpeta guardada: pedir al usuario que seleccione la raíz
+      const picker = (window as WinWithPicker).showDirectoryPicker
+      if (!picker) {
+        if (winPreAbierta) winPreAbierta.close()
+        alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
+        return
+      }
+      try {
+        handle = await picker({ mode: 'read' })
+        await setDirectoryHandle(handle, userId, grupoActivo)
+      } catch {
+        if (winPreAbierta) winPreAbierta.close()
+        return
+      }
     }
   }
 
