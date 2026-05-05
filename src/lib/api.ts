@@ -306,35 +306,35 @@ export const usuariosApi = {
 
 export const rolesApi = {
   listar: (codigoGrupo?: string, incluirGlobales?: boolean) =>
-    api.get<Rol[]>('/roles', { params: { ...(codigoGrupo && { codigo_grupo: codigoGrupo }), ...(incluirGlobales !== undefined && { incluir_globales: incluirGlobales }) } }).then((r) => r.data),
-  listarGlobales: () => api.get<Rol[]>('/roles/globales').then((r) => r.data),
-  obtener: (idRol: number) => api.get<Rol>(`/roles/${idRol}`).then((r) => r.data),
-  crear: (datos: Partial<Rol>) => api.post<Rol>('/roles', datos).then((r) => r.data),
+    api.get<Rol[]>('/roles-generales', { params: { ...(codigoGrupo && { codigo_grupo: codigoGrupo }), ...(incluirGlobales !== undefined && { incluir_globales: incluirGlobales }) } }).then((r) => r.data),
+  listarGlobales: () => api.get<Rol[]>('/roles-generales/globales').then((r) => r.data),
+  obtener: (idRol: number) => api.get<Rol>(`/roles-generales/${idRol}`).then((r) => r.data),
+  crear: (datos: Partial<Rol>) => api.post<Rol>('/roles-generales', datos).then((r) => r.data),
   actualizar: (idRol: number, datos: Partial<Rol>) =>
-    api.put<Rol>(`/roles/${idRol}`, datos).then((r) => r.data),
-  eliminar: (idRol: number) => api.delete(`/roles/${idRol}`),
+    api.put<Rol>(`/roles-generales/${idRol}`, datos).then((r) => r.data),
+  eliminar: (idRol: number) => api.delete(`/roles-generales/${idRol}`),
   listarFunciones: (idRol: number) =>
     api.get<{ codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }[]>(
-      `/roles/${idRol}/funciones`
+      `/roles-generales/${idRol}/funciones`
     ).then((r) => r.data),
   asignarFuncion: (idRol: number, codigoFuncion: string) =>
-    api.post(`/roles/${idRol}/funciones`, { codigo_funcion: codigoFuncion }),
+    api.post(`/roles-generales/${idRol}/funciones`, { codigo_funcion: codigoFuncion }),
   reordenarFunciones: (idRol: number, orden: { codigo_funcion: string; orden: number }[]) =>
-    api.put(`/roles/${idRol}/funciones/orden`, orden),
+    api.put(`/roles-generales/${idRol}/funciones/orden`, orden),
   quitarFuncion: (idRol: number, codigoFuncion: string) =>
-    api.delete(`/roles/${idRol}/funciones/${codigoFuncion}`),
+    api.delete(`/roles-generales/${idRol}/funciones/${codigoFuncion}`),
   reordenar: (orden: { id_rol: number; orden: number }[]) =>
-    api.put('/roles/orden', orden),
+    api.put('/roles-generales/orden', orden),
   listarPorGrupo: (codigoGrupo: string, incluirGlobales: boolean = true) =>
-    api.get<Rol[]>('/roles', { params: { codigo_grupo: codigoGrupo, incluir_globales: incluirGlobales } }).then((r) => r.data),
+    api.get<Rol[]>('/roles-generales', { params: { codigo_grupo: codigoGrupo, incluir_globales: incluirGlobales } }).then((r) => r.data),
   copiar: (datos: { id_rol_origen: number; codigo_grupo_destino: string }) =>
-    api.post<Rol>('/roles/copiar', datos).then((r) => r.data),
+    api.post<Rol>('/roles-generales/copiar', datos).then((r) => r.data),
   traducir: (idRol: number) =>
     api.post<{ generadas: number; idiomas: string[]; campos_traducidos?: string[]; mensaje?: string }>(
       '/traducciones/registro', { tabla: 'roles', pk: String(idRol) }
     ).then((r) => r.data),
   generarMd: (idRol: number) =>
-    api.post<{ md: string }>(`/roles/${idRol}/generar-md`).then((r) => r.data),
+    api.post<{ md: string }>(`/roles-generales/${idRol}/generar-md`).then((r) => r.data),
 }
 
 // ─── Funciones ────────────────────────────────────────────────────────────────

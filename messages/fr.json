@@ -137,7 +137,7 @@
     "placeholderAlias": "Alias court (facultatif)",
     "errorNombreObligatorio": "Le nom est obligatoire"
   },
-  "registroLlm": {
+  "llmRegistry": {
     "titulo": "Enregistrement des modèles LLM",
     "subtitulo": "Catalogue global des modèles de langage disponibles dans le système",
     "buscarPlaceholder": "Rechercher un modèle...",
@@ -245,7 +245,7 @@
     "errorAlGuardar": "Erreur lors de l'enregistrement de l'identifiant",
     "errorAlProbar": "Erreur lors du test de la connexion"
   },
-  "parametros": {
+  "parameters": {
     "titulo": "Paramètres",
     "subtitulo": "Configuration des paramètres par groupe, entité et utilisateur",
     "tabGrupo": "Groupe",
@@ -265,7 +265,7 @@
     "eliminarTitulo": "Supprimer le paramètre",
     "eliminarConfirm": "Supprimer le paramètre {cat} / {tipo} ? Cette action est irréversible."
   },
-  "parametrosGenerales": {
+  "systemParameters": {
     "titulo": "Paramètres Généraux",
     "subtitulo": "Configuration globale du système",
     "seccionTitulo": "Paramètres du système",
@@ -352,7 +352,7 @@
     "eliminarCategoriaConfirm": "Supprimer la catégorie \"{nombre}\" ? Ses types seront également supprimés.",
     "eliminarTipoConfirm": "Supprimer le type \"{nombre}\" ?"
   },
-  "personas": {
+  "people": {
     "titulo": "Personnes",
     "subtitulo": "Enregistrement des personnes du groupe actif",
     "buscarPlaceholder": "Rechercher par nom ou document...",
@@ -390,7 +390,7 @@
     "placeholderValorTexto": "Valeur texte",
     "placeholderNumero": "Numéro"
   },
-  "cargos": {
+  "positions": {
     "titulo": "Postes",
     "subtitulo": "Postes organisationnels du groupe actif",
     "buscarPlaceholder": "Rechercher par code, nom ou alias...",
@@ -433,7 +433,7 @@
     "errorAlAsignarRol": "Erreur lors de l'attribution du rôle",
     "errorAlQuitarRol": "Erreur lors du retrait du rôle"
   },
-  "tiposDocumentoPersona": {
+  "personDocumentTypes": {
     "titulo": "Types de document de personne",
     "subtitulo": "Catalogue des types de documents d'identité par groupe",
     "buscarPlaceholder": "Rechercher un type...",
@@ -454,7 +454,7 @@
     "desactivarTitulo": "Désactiver le type de document",
     "desactivarConfirm": "Désactiver le type « {nombre} » ?"
   },
-  "estadosDocs": {
+  "documentStates": {
     "titulo": "États des documents",
     "subtitulo": "Catalogue global des états du cycle de vie des documents",
     "buscarPlaceholder": "Rechercher un état...",
@@ -476,7 +476,7 @@
     "desactivarTitulo": "Désactiver l'état",
     "desactivarConfirm": "Désactiver l'état « {nombre} » ?"
   },
-  "categoriasCaracteristica": {
+  "personCategories": {
     "titulo": "Caractéristiques des personnes",
     "subtitulo": "Catégories et types de caractéristiques pour les personnes du groupe",
     "tabCategorias": "Catégories",
@@ -520,7 +520,7 @@
     "desactivarTipoConfirm": "Désactiver le type « {nombre} » ?",
     "desactivar": "Désactiver"
   },
-  "categoriasCaracteristicaDocs": {
+  "documentCategories": {
     "titulo": "Caractéristiques des documents",
     "subtitulo": "Catégories et types de caractéristiques pour les documents du groupe",
     "tabCategorias": "Catégories",
@@ -599,7 +599,7 @@
     "consultandoSistema": "Consultation du système…",
     "espaciosTrabajo": "Espaces de travail"
   },
-  "documentos": {
+  "documents": {
     "titulo": "Documents",
     "subtitulo": "Gestion des documents du groupe",
     "buscarPlaceholder": "Rechercher par nom ou résumé...",
@@ -648,7 +648,7 @@
     "excelTamano": "Taille Ko",
     "excelEstado": "Statut"
   },
-  "documentosDashboard": {
+  "documentsDashboard": {
     "titulo": "Tableau de bord des documents",
     "subtitulo": "Vue d'ensemble du système de documents du groupe actif",
     "totalDocumentos": "Total des documents",
@@ -698,7 +698,7 @@
     "cambiar": "Changer",
     "xArchivosEncontrados": "{n} fichier(s) trouvé(s)"
   },
-  "procesarDocumentos": {
+  "processDocuments": {
     "titulo": "Indexation des documents",
     "subtitulo": "Exécute des processus LLM sur les documents du groupe",
     "tabPasoAPaso": "Étape par étape",
@@ -759,7 +759,7 @@
     "eliminarItemTitulo": "Supprimer un élément de la file d'attente",
     "eliminarItemConfirm": "Supprimer l'élément #{id} ?"
   },
-  "procesarPipeline": {
+  "processPipeline": {
     "titulo": "Indexer les documents",
     "subtitulo": "Indexez vos emplacements et vos documents",
     "tabUbicaciones": "Emplacements",
@@ -894,7 +894,7 @@
     "alertErrorSincronizar": "Erreur de synchronisation.",
     "alertError": "Erreur."
   },
-  "colaEstadosDocs": {
+  "documentStatesQueue": {
     "titulo": "File d'attente de traitement",
     "subtitulo": "File d'attente de transition des états des documents",
     "buscarPlaceholder": "Rechercher par document ou état...",
@@ -940,7 +940,7 @@
     "excelIntentos": "Tentatives",
     "excelResultado": "Résultat"
   },
-  "ubicacionesDocs": {
+  "documentLocations": {
     "titulo": "Emplacements des documents",
     "subtitulo": "Répertoires et sous-répertoires pour organiser les documents",
     "buscarPlaceholder": "Rechercher par nom, code ou chemin...",
@@ -973,7 +973,7 @@
     "habilitada": "Activé",
     "inhabilitada": "Désactivé"
   },
-  "usuarios": {
+  "users": {
     "etiquetaDescripcion": "Description",
     "titulo": "Utilisateurs",
     "buscarPlaceholder": "Rechercher par nom ou e-mail...",
@@ -1003,7 +1003,7 @@
     "crearUsuario": "Créer un utilisateur",
     "editarUsuario": "Modifier l'utilisateur : {nombre}"
   },
-  "usuariosSemilla": {
+  "seedUsers": {
     "tabDatos": "Données",
     "tabRoles": "Rôles",
     "aviso": "Cet utilisateur est l'administrateur initial du groupe. Ses identifiants ne peuvent pas être modifiés ici.",
@@ -1011,63 +1011,6 @@
     "sinRol": "Aucun rôle assigné"
   },
   "roles": {
-    "titulo": "Rôles et fonctions",
-    "buscarPlaceholder": "Rechercher par nom, code ou alias...",
-    "nuevoRol": "Nouveau rôle",
-    "nuevaFuncion": "Nouvelle fonction",
-    "colOrden": "Ordre",
-    "colAppOrigen": "Application d'origine",
-    "colTipo": "Type",
-    "colAlias": "Alias",
-    "colNombre": "Nom",
-    "colUrlInicio": "URL de démarrage",
-    "colCodigo": "Code",
-    "colInicial": "Initial",
-    "etiquetaInicial": "Rôle initial (attribuer automatiquement aux nouveaux utilisateurs)",
-    "colIcono": "Icône",
-    "colUrl": "URL de fonction",
-    "editarRolTitulo": "Modifier le rôle : {nombre}",
-    "nuevoRolTitulo": "Nouveau rôle",
-    "editarFuncionTitulo": "Modifier la fonction : {nombre}",
-    "nuevaFuncionTitulo": "Nouvelle fonction",
-    "etiquetaNombre": "Nom *",
-    "etiquetaAlias": "Alias",
-    "etiquetaCodigo": "Code *",
-    "etiquetaDescripcion": "Description",
-    "etiquetaUrlInicio": "URL de démarrage",
-    "etiquetaIcono": "Icône",
-    "etiquetaUrlFuncion": "URL de fonction",
-    "placeholderNombreRol": "Administrateur",
-    "placeholderAliasRol": "Admin",
-    "placeholderCodigoRol": "ADMIN",
-    "placeholderDescripcion": "Description du rôle...",
-    "placeholderUrlInicio": "/admin/dashboard",
-    "placeholderNombreFuncion": "Gestion des utilisateurs",
-    "placeholderAliasFuncion": "Utilisateurs",
-    "placeholderIcono": "Users, Shield, Settings...",
-    "placeholderUrlFuncion": "/utilisateurs",
-    "placeholderSystemPrompt": "Ex : Vous êtes un assistant juridique. Répondez avec une précision technique et citez les articles pertinents.",
-    "crearRol": "Créer un rôle",
-    "crearFuncion": "Créer une fonction",
-    "eliminarRol": "Supprimer le rôle",
-    "eliminarFuncion": "Supprimer la fonction",
-    "buscarFuncionPlaceholder": "Rechercher une fonction par nom ou code...",
-    "tabRoles": "Rôles",
-    "tabFunciones": "Fonctions",
-    "tabFuncionesAsignadas": "Fonctions assignées",
-    "tabDatos": "Données",
-    "tabApps": "Applications",
-    "tabLlm": "LLM",
-    "asignar": "Assigner",
-    "exportarColumnas": "Groupe|Code|Alias|Nom|Description|URL de démarrage|Fonction par défaut|Type",
-    "iniAdminGrupo": "Init. Admin Groupe",
-    "iniAdminGeneral": "Init. Admin Général",
-    "etiquetaFuncionPorDefecto": "Fonction par défaut",
-    "etiquetaAppOrigen": "Application d'origine",
-    "sinAsignar": "— non assigné —",
-    "crearRolTitulo": "Nouveau rôle"
-  },
-  "rolesGenerales": {
     "titulo": "Rôles",
     "nuevoRol": "Nouveau rôle",
     "buscarPlaceholder": "Rechercher par nom ou code...",
@@ -1089,7 +1032,7 @@
     "tabDatos": "Données",
     "tabFunciones": "Fonctions"
   },
-  "grupos": {
+  "groups": {
     "titulo": "Groupes d'entités",
     "nuevoGrupo": "Nouveau groupe",
     "filtrarPlaceholder": "Filtrer les groupes...",
@@ -1112,7 +1055,7 @@
     "agregarUsuario": "Ajouter",
     "placeholderNombreEntidad": "Municipalité de..."
   },
-  "entidades": {
+  "entities": {
     "titulo": "Entités et zones",
     "nuevaEntidad": "Nouvelle entité",
     "colCodigo": "Code",
@@ -1135,7 +1078,7 @@
     "seccionEntidades": "Entités",
     "buscarPlaceholder": "Rechercher par nom, code ou responsable..."
   },
-  "aplicaciones": {
+  "applications": {
     "titulo": "Applications",
     "buscarPlaceholder": "Rechercher par nom ou code...",
     "nuevaApp": "Nouvelle application",
@@ -1174,7 +1117,7 @@
     "sinGruposAsignados": "Aucun groupe n'est attribué",
     "seleccionarGrupo": "Sélectionner un groupe..."
   },
-  "funciones": {
+  "functions": {
     "titulo": "Fonctions",
     "buscarPlaceholder": "Rechercher par nom, code ou alias...",
     "nuevaFuncion": "Nouvelle fonction",
@@ -1218,7 +1161,7 @@
     "tituloCodigo": "Code",
     "tituloNueva": "Nouvelle fonction"
   },
-  "auditoria": {
+  "audit": {
     "titulo": "Audit sécurité",
     "filtrarPlaceholder": "Filtrer par table, utilisateur ou opération...",
     "colFecha": "Date et heure",
@@ -1227,7 +1170,7 @@
     "colOperacion": "Opération",
     "colRegistro": "ID d'enregistrement"
   },
-  "auditoriaUsuarios": {
+  "auditUsers": {
     "titulo": "Audit utilisateurs",
     "filtrarPlaceholder": "Filtrer par utilisateur, opération ou enregistrement...",
     "colFecha": "Date et heure",
@@ -1235,7 +1178,7 @@
     "colOperacion": "Opération",
     "colAfectado": "Utilisateur affecté"
   },
-  "auditoriaConfiguracion": {
+  "auditConfiguration": {
     "titulo": "Audit configuration",
     "filtrarPlaceholder": "Filtrer par table, utilisateur ou opération...",
     "colFecha": "Date et heure",
@@ -1266,7 +1209,7 @@
     "entidad": "Entité",
     "rol": "Rôle"
   },
-  "procesos": {
+  "processes": {
     "titulo": "Processus",
     "subtitulo": "Catalogue global des processus du système",
     "buscarPlaceholder": "Rechercher un processus...",
@@ -1297,7 +1240,7 @@
     "errorJsonInvalido": "Le JSON est invalide. Vérifiez la syntaxe.",
     "errorNombreObligatorio": "Le nom est obligatoire"
   },
-  "procesosGrupo": {
+  "groupProcesses": {
     "titulo": "Processus du groupe",
     "subtitulo": "Processus configurables par ce groupe et cette entité",
     "buscarPlaceholder": "Rechercher un processus...",
@@ -1321,7 +1264,7 @@
     "errorNombreObligatorio": "Le nom est obligatoire",
     "confirmarEliminar": "Supprimer le processus \"{nombre}\" ?"
   },
-  "tareasGrupo": {
+  "groupTasks": {
     "titulo": "Tâches du groupe",
     "subtitulo": "Tâches opérationnelles configurables par ce groupe et cette entité",
     "buscarPlaceholder": "Rechercher une tâche...",
@@ -1345,7 +1288,7 @@
     "errorNombreObligatorio": "Le nom est obligatoire",
     "confirmarEliminar": "Supprimer la tâche \"{nombre}\" ?"
   },
-  "tareas": {
+  "tasks": {
     "titulo": "Tâches",
     "subtitulo": "Gestion des tâches du groupe et de l'entité actifs",
     "buscarPlaceholder": "Rechercher par nom ou description...",
@@ -1371,7 +1314,7 @@
     "eliminarTitulo": "Supprimer la tâche",
     "eliminarConfirm": "Supprimer la tâche \"{nombre}\" ? Cette action est irréversible."
   },
-  "categoriasTarea": {
+  "taskCategories": {
     "titulo": "Catégories de tâches",
     "subtitulo": "Catalogue global des catégories pour classer les tâches",
     "buscarPlaceholder": "Rechercher une catégorie...",
@@ -1425,7 +1368,7 @@
     "errorCargarGrupos": "Impossible de charger les groupes.",
     "errorCambiarGrupo": "Erreur lors du changement de groupe."
   },
-  "estadosTarea": {
+  "taskStates": {
     "titulo": "Statuts de tâche",
     "subtitulo": "Statuts par type de tâche pour le groupe actif",
     "buscarPlaceholder": "Rechercher un statut...",
@@ -1461,7 +1404,7 @@
     "eliminarTitulo": "Supprimer le statut de tâche",
     "eliminarConfirm": "Supprimer le statut \"{nombre}\" ?"
   },
-  "limpieza": {
+  "cleanup": {
     "titulo": "Nettoyage des Logs",
     "subtitulo": "Maintenance manuelle des tables de type log. Le nettoyage par <strong>temps</strong> supprime les lignes antérieures à N jours. Le nettoyage par <strong>quantité</strong> conserve les N dernières lignes et supprime le reste.",
     "accesoRestringidoTitulo": "Accès restreint",
@@ -1514,7 +1457,7 @@
     "toastPoliticaDesactivada": "Politique désactivée",
     "toastPoliticaActivada": "Politique activée"
   },
-  "parametrosGeneralesValores": {
+  "systemParameterValues": {
     "titulo": "Valeurs des paramètres généraux",
     "subtitulo": "Gérez les valeurs des paramètres globaux qui contrôlent le comportement du système",
     "buscarPlaceholder": "Rechercher un paramètre...",
@@ -1541,7 +1484,7 @@
     "eliminarTitulo": "Supprimer le paramètre",
     "eliminarConfirm": "Supprimer le paramètre \"{categoria} / {tipo}\" ? Cette action peut affecter le comportement du système."
   },
-  "parametrosGrupo": {
+  "groupParameters": {
     "titulo": "Paramètres du groupe",
     "subtitulo": "Configurez les valeurs des paramètres spécifiques à ce groupe",
     "tabCategorias": "Catégories de paramètre",
@@ -1569,7 +1512,7 @@
     "eliminarTitulo": "Supprimer le paramètre",
     "eliminarConfirm": "Supprimer le paramètre {categoria}/{tipo} ?"
   },
-  "planes": {
+  "plans": {
     "titulo": "Plans clients",
     "subtitulo": "Plans d'abonnement avec fonctionnalités, prix et politique de durée. La logique d'activation est définie dans le prompt.",
     "nuevoPlan": "Nouveau plan",
@@ -1629,7 +1572,7 @@
     "eliminarTitulo": "Supprimer le plan {nombre}",
     "eliminarConfirm": "Êtes-vous sûr de vouloir supprimer le plan \"{nombre}\" ? Les groupes qui lui sont assignés n'auront plus de plan."
   },
-  "procesosDatosBasicos": {
+  "processBasicData": {
     "titulo": "Données de base des processus",
     "subtitulo": "Configuration des catégories, types et états de processus",
     "tabCategorias": "Catégories de processus",
@@ -1843,7 +1786,7 @@
     "mensajesGeneradosOk": "Messages générés pour : {idiomas}.",
     "errorGenerarMensajes": "Erreur lors de la génération des messages"
   },
-  "sqlEjecutados": {
+  "executedSql": {
     "titulo": "Visionneuse de SQL exécutés",
     "subtitulo": "Buffer circulaire avec les ~1000 dernières opérations SQL capturées par le backend.",
     "buscarPlaceholder": "Rechercher par SQL, endpoint, table, opération, utilisateur, fonction ou erreur…",
@@ -1873,7 +1816,7 @@
     "hashTemplate": "Hash (SHA1 du template)",
     "error": "Erreur"
   },
-  "tareasDatosBasicos": {
+  "taskBasicData": {
     "titulo": "Données de base des tâches",
     "subtitulo": "Configuration des catégories, types et états de tâche",
     "tabCategorias": "Catégories de tâches",
@@ -1959,7 +1902,7 @@
     "eliminarTcConfirm": "Supprimer le type canonique \"{nombre}\" ?",
     "eliminarEstConfirm": "Supprimer l'état \"{nombre}\" ?"
   },
-  "tiposAcceso": {
+  "accessTypes": {
     "titulo": "Types d'accès",
     "subtitulo": "Catalogue hiérarchique des niveaux d'accès. Définit les types que chaque niveau peut voir.",
     "buscarPlaceholder": "Rechercher un type d'accès…",
@@ -1983,7 +1926,7 @@
     "eliminarTitulo": "Supprimer le type d'accès",
     "eliminarConfirm": "Supprimer « {nombre} » ? Cette action est irréversible."
   },
-  "tiposTarea": {
+  "taskTypes": {
     "titulo": "Types de tâche",
     "subtitulo": "Types de tâche par catégorie pour le groupe actif",
     "buscarPlaceholder": "Rechercher un type…",
@@ -2027,7 +1970,7 @@
     "eliminarTitulo": "Supprimer le type de tâche",
     "eliminarConfirm": "Supprimer le type « {nombre} » ?"
   },
-  "traducciones": {
+  "translations": {
     "titulo": "Traductions",
     "subtitulo": "Gestion des langues et génération automatique des traductions de catalogues",
     "ultimaGeneracion": "Dernière génération",

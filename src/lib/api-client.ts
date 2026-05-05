@@ -11,8 +11,8 @@
  *   - Misma instancia de axios → hereda interceptores de auth, headers, etc.
  *
  * Ejemplo:
- *   const cargos = await apiClient.get<Cargo[]>('/cargos')
- *   await apiClient.post('/cargos', { nombre_cargo: 'Director' })
+ *   const cargos = await apiClient.get<Cargo[]>('/positions')
+ *   await apiClient.post('/positions', { nombre_cargo: 'Director' })
  */
 
 import axios from 'axios'

@@ -134,9 +134,9 @@ export default function PaginaDashboard() {
             </h3>
             <div className="flex flex-col gap-2">
               {[
-                { nombre: t('nuevoUsuario'), href: '/usuarios', icono: Users },
-                { nombre: t('verEntidades'), href: '/entidades', icono: Building2 },
-                { nombre: t('parametros'), href: '/parametros', icono: ClipboardList },
+                { nombre: t('nuevoUsuario'), href: '/users', icono: Users },
+                { nombre: t('verEntidades'), href: '/entities', icono: Building2 },
+                { nombre: t('parametros'), href: '/parameters', icono: ClipboardList },
               ].map((acc) => {
                 const Icono = acc.icono
                 return (

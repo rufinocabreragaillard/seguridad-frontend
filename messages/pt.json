@@ -137,7 +137,7 @@
     "placeholderAlias": "Apelido curto (opcional)",
     "errorNombreObligatorio": "O nome é obrigatório"
   },
-  "registroLlm": {
+  "llmRegistry": {
     "titulo": "Registro de Modelos LLM",
     "subtitulo": "Catálogo global de modelos de linguagem disponíveis no sistema",
     "buscarPlaceholder": "Buscar modelo...",
@@ -245,7 +245,7 @@
     "errorAlGuardar": "Erro ao salvar a credencial",
     "errorAlProbar": "Erro ao testar a conexão"
   },
-  "parametros": {
+  "parameters": {
     "titulo": "Parâmetros",
     "subtitulo": "Configuração de parâmetros por grupo, entidade e usuário",
     "tabGrupo": "Grupo",
@@ -265,7 +265,7 @@
     "eliminarTitulo": "Excluir parâmetro",
     "eliminarConfirm": "Excluir o parâmetro {cat} / {tipo}? Esta ação não pode ser desfeita."
   },
-  "parametrosGenerales": {
+  "systemParameters": {
     "titulo": "Parâmetros Gerais",
     "subtitulo": "Configuração global do sistema",
     "seccionTitulo": "Parâmetros do sistema",
@@ -352,7 +352,7 @@
     "eliminarCategoriaConfirm": "Excluir a categoria \"{nombre}\"? Seus tipos também serão excluídos.",
     "eliminarTipoConfirm": "Excluir o tipo \"{nombre}\"?"
   },
-  "personas": {
+  "people": {
     "titulo": "Pessoas",
     "subtitulo": "Registro de pessoas do grupo ativo",
     "buscarPlaceholder": "Buscar por nome ou documento...",
@@ -390,7 +390,7 @@
     "placeholderValorTexto": "Valor texto",
     "placeholderNumero": "Número"
   },
-  "cargos": {
+  "positions": {
     "titulo": "Cargos",
     "subtitulo": "Cargos organizacionais do grupo ativo",
     "buscarPlaceholder": "Buscar por código, nome ou apelido...",
@@ -433,7 +433,7 @@
     "errorAlAsignarRol": "Erro ao atribuir papel",
     "errorAlQuitarRol": "Erro ao remover papel"
   },
-  "tiposDocumentoPersona": {
+  "personDocumentTypes": {
     "titulo": "Tipos de Documento de Pessoa",
     "subtitulo": "Catálogo de tipos de documentos de identificação por grupo",
     "buscarPlaceholder": "Buscar tipo...",
@@ -454,7 +454,7 @@
     "desactivarTitulo": "Desativar tipo de documento",
     "desactivarConfirm": "Desativar o tipo \"{nombre}\"?"
   },
-  "estadosDocs": {
+  "documentStates": {
     "titulo": "Status de Documentos",
     "subtitulo": "Catálogo global de status do ciclo de vida de documentos",
     "buscarPlaceholder": "Buscar status...",
@@ -476,7 +476,7 @@
     "desactivarTitulo": "Desativar status",
     "desactivarConfirm": "Desativar o status \"{nombre}\"?"
   },
-  "categoriasCaracteristica": {
+  "personCategories": {
     "titulo": "Características de Pessoas",
     "subtitulo": "Categorias e tipos de características para as pessoas do grupo",
     "tabCategorias": "Categorias",
@@ -520,7 +520,7 @@
     "desactivarTipoConfirm": "Desativar o tipo \"{nombre}\"?",
     "desactivar": "Desativar"
   },
-  "categoriasCaracteristicaDocs": {
+  "documentCategories": {
     "titulo": "Características de Documentos",
     "subtitulo": "Categorias e tipos de características para os documentos do grupo",
     "tabCategorias": "Categorias",
@@ -599,7 +599,7 @@
     "consultandoSistema": "Consultando o sistema…",
     "espaciosTrabajo": "Espaços de Trabalho"
   },
-  "documentos": {
+  "documents": {
     "titulo": "Documentos",
     "subtitulo": "Gestão de documentos do grupo",
     "buscarPlaceholder": "Buscar por nome ou resumo...",
@@ -648,7 +648,7 @@
     "excelTamano": "Tamanho KB",
     "excelEstado": "Estado"
   },
-  "documentosDashboard": {
+  "documentsDashboard": {
     "titulo": "Dashboard de Documentos",
     "subtitulo": "Visão geral do sistema de documentos do grupo ativo",
     "totalDocumentos": "Total de documentos",
@@ -698,7 +698,7 @@
     "cambiar": "Alterar",
     "xArchivosEncontrados": "{n} arquivo(s) encontrados"
   },
-  "procesarDocumentos": {
+  "processDocuments": {
     "titulo": "Indexação de Documentos",
     "subtitulo": "Executa processos LLM sobre documentos do grupo",
     "tabPasoAPaso": "Passo a Passo",
@@ -759,7 +759,7 @@
     "eliminarItemTitulo": "Remover item da fila",
     "eliminarItemConfirm": "Deseja remover o item #{id}?"
   },
-  "procesarPipeline": {
+  "processPipeline": {
     "titulo": "Indexar Documentos",
     "subtitulo": "Indexe seus locais e seus documentos",
     "tabUbicaciones": "Locais",
@@ -894,7 +894,7 @@
     "alertErrorSincronizar": "Erro ao sincronizar.",
     "alertError": "Erro."
   },
-  "colaEstadosDocs": {
+  "documentStatesQueue": {
     "titulo": "Fila de Processamento",
     "subtitulo": "Fila de transição de status de documentos",
     "buscarPlaceholder": "Buscar por documento ou status...",
@@ -940,7 +940,7 @@
     "excelIntentos": "Tentativas",
     "excelResultado": "Resultado"
   },
-  "ubicacionesDocs": {
+  "documentLocations": {
     "titulo": "Localizações de Documentos",
     "subtitulo": "Diretórios e subdiretórios para organizar documentos",
     "buscarPlaceholder": "Buscar por nome, código ou caminho...",
@@ -973,7 +973,7 @@
     "habilitada": "Habilitada",
     "inhabilitada": "Desabilitada"
   },
-  "usuarios": {
+  "users": {
     "etiquetaDescripcion": "Descrição",
     "titulo": "Usuários",
     "buscarPlaceholder": "Buscar por nome ou e-mail...",
@@ -1003,7 +1003,7 @@
     "crearUsuario": "Criar usuário",
     "editarUsuario": "Editar usuário: {nombre}"
   },
-  "usuariosSemilla": {
+  "seedUsers": {
     "tabDatos": "Dados",
     "tabRoles": "Papéis",
     "aviso": "Este usuário é o administrador inicial do grupo. Suas credenciais não podem ser alteradas aqui.",
@@ -1011,63 +1011,6 @@
     "sinRol": "Nenhum papel atribuído"
   },
   "roles": {
-    "titulo": "Papéis e Funções",
-    "buscarPlaceholder": "Buscar por nome, código ou apelido...",
-    "nuevoRol": "Novo papel",
-    "nuevaFuncion": "Nova função",
-    "colOrden": "Ordem",
-    "colAppOrigen": "Aplicativo de origem",
-    "colTipo": "Tipo",
-    "colAlias": "Apelido",
-    "colNombre": "Nome",
-    "colUrlInicio": "URL de início",
-    "colCodigo": "Código",
-    "colInicial": "Inicial",
-    "etiquetaInicial": "Papel inicial (atribuir automaticamente a novos usuários)",
-    "colIcono": "Ícone",
-    "colUrl": "URL da função",
-    "editarRolTitulo": "Editar papel: {nombre}",
-    "nuevoRolTitulo": "Novo papel",
-    "editarFuncionTitulo": "Editar função: {nombre}",
-    "nuevaFuncionTitulo": "Nova função",
-    "etiquetaNombre": "Nome *",
-    "etiquetaAlias": "Apelido",
-    "etiquetaCodigo": "Código *",
-    "etiquetaDescripcion": "Descrição",
-    "etiquetaUrlInicio": "URL de início",
-    "etiquetaIcono": "Ícone",
-    "etiquetaUrlFuncion": "URL da função",
-    "placeholderNombreRol": "Administrador",
-    "placeholderAliasRol": "Admin",
-    "placeholderCodigoRol": "ADMIN",
-    "placeholderDescripcion": "Descrição do papel...",
-    "placeholderUrlInicio": "/admin/dashboard",
-    "placeholderNombreFuncion": "Gerenciamento de usuários",
-    "placeholderAliasFuncion": "Usuários",
-    "placeholderIcono": "Users, Shield, Settings...",
-    "placeholderUrlFuncion": "/usuarios",
-    "placeholderSystemPrompt": "Ex: Você é um assistente jurídico. Responda com precisão técnica e cite os artigos relevantes.",
-    "crearRol": "Criar papel",
-    "crearFuncion": "Criar função",
-    "eliminarRol": "Excluir papel",
-    "eliminarFuncion": "Excluir função",
-    "buscarFuncionPlaceholder": "Buscar função por nome ou código...",
-    "tabRoles": "Papéis",
-    "tabFunciones": "Funções",
-    "tabFuncionesAsignadas": "Funções atribuídas",
-    "tabDatos": "Dados",
-    "tabApps": "Aplicativos",
-    "tabLlm": "LLM",
-    "asignar": "Atribuir",
-    "exportarColumnas": "Grupo|Código|Apelido|Nome|Descrição|URL de início|Função padrão|Tipo",
-    "iniAdminGrupo": "Admin. Inicial do Grupo",
-    "iniAdminGeneral": "Admin. Inicial Geral",
-    "etiquetaFuncionPorDefecto": "Função padrão",
-    "etiquetaAppOrigen": "Aplicativo de origem",
-    "sinAsignar": "— sem atribuição —",
-    "crearRolTitulo": "Novo papel"
-  },
-  "rolesGenerales": {
     "titulo": "Papéis",
     "nuevoRol": "Novo papel",
     "buscarPlaceholder": "Buscar por nome ou código...",
@@ -1089,7 +1032,7 @@
     "tabDatos": "Dados",
     "tabFunciones": "Funções"
   },
-  "grupos": {
+  "groups": {
     "titulo": "Grupos de Entidades",
     "novoGrupo": "Novo grupo",
     "filtrarPlaceholder": "Filtrar grupos...",
@@ -1112,7 +1055,7 @@
     "agregarUsuario": "Adicionar",
     "placeholderNomeEntidade": "Municipalidade de..."
   },
-  "entidades": {
+  "entities": {
     "titulo": "Entidades e Áreas",
     "novaEntidade": "Nova entidade",
     "colCodigo": "Código",
@@ -1135,7 +1078,7 @@
     "seccionEntidades": "Entidades",
     "buscarPlaceholder": "Buscar por nome, código ou responsável..."
   },
-  "aplicaciones": {
+  "applications": {
     "titulo": "Aplicativos",
     "buscarPlaceholder": "Buscar por nome ou código...",
     "novaApp": "Novo aplicativo",
@@ -1174,7 +1117,7 @@
     "sinGruposAsignados": "Não possui grupos atribuídos",
     "seleccionarGrupo": "Selecionar grupo..."
   },
-  "funciones": {
+  "functions": {
     "titulo": "Funções",
     "buscarPlaceholder": "Buscar por nome, código ou alias...",
     "nuevaFuncion": "Nova função",
@@ -1218,7 +1161,7 @@
     "tituloCodigo": "Código",
     "tituloNueva": "Nova função"
   },
-  "auditoria": {
+  "audit": {
     "titulo": "Auditoria de Segurança",
     "filtrarPlaceholder": "Filtrar por tabela, usuário ou operação...",
     "colFecha": "Data e hora",
@@ -1227,7 +1170,7 @@
     "colOperacion": "Operação",
     "colRegistro": "ID do Registro"
   },
-  "auditoriaUsuarios": {
+  "auditUsers": {
     "titulo": "Auditoria de Usuários",
     "filtrarPlaceholder": "Filtrar por usuário, operação ou registro...",
     "colFecha": "Data e hora",
@@ -1235,7 +1178,7 @@
     "colOperacion": "Operação",
     "colAfectado": "Usuário afetado"
   },
-  "auditoriaConfiguracion": {
+  "auditConfiguration": {
     "titulo": "Auditoria de Configuração",
     "filtrarPlaceholder": "Filtrar por tabela, usuário ou operação...",
     "colFecha": "Data e hora",
@@ -1266,7 +1209,7 @@
     "entidad": "Entidade",
     "rol": "Papel"
   },
-  "procesos": {
+  "processes": {
     "titulo": "Processos",
     "subtitulo": "Catálogo global de processos do sistema",
     "buscarPlaceholder": "Buscar processo...",
@@ -1297,7 +1240,7 @@
     "errorJsonInvalido": "O JSON é inválido. Verifique a sintaxe.",
     "errorNombreObligatorio": "O nome é obrigatório"
   },
-  "procesosGrupo": {
+  "groupProcesses": {
     "titulo": "Processos do Grupo",
     "subtitulo": "Processos configuráveis por este grupo e entidade",
     "buscarPlaceholder": "Buscar processo...",
@@ -1321,7 +1264,7 @@
     "errorNombreObligatorio": "O nome é obrigatório",
     "confirmarEliminar": "Remover o processo \"{nombre}\"?"
   },
-  "tareasGrupo": {
+  "groupTasks": {
     "titulo": "Tarefas do Grupo",
     "subtitulo": "Tarefas operacionais configuráveis por este grupo e entidade",
     "buscarPlaceholder": "Buscar tarefa...",
@@ -1345,7 +1288,7 @@
     "errorNombreObligatorio": "O nome é obrigatório",
     "confirmarEliminar": "Remover a tarefa \"{nombre}\"?"
   },
-  "tareas": {
+  "tasks": {
     "titulo": "Tarefas",
     "subtitulo": "Gestão de tarefas do grupo e entidade ativos",
     "buscarPlaceholder": "Buscar por nome ou descrição...",
@@ -1371,7 +1314,7 @@
     "eliminarTitulo": "Excluir tarefa",
     "eliminarConfirm": "Excluir a tarefa \"{nombre}\"? Esta ação não pode ser desfeita."
   },
-  "categoriasTarea": {
+  "taskCategories": {
     "titulo": "Categorias de Tarefa",
     "subtitulo": "Catálogo global de categorias para classificar tarefas",
     "buscarPlaceholder": "Buscar categoria...",
@@ -1425,7 +1368,7 @@
     "errorCargarGrupos": "Não foi possível carregar os grupos.",
     "errorCambiarGrupo": "Erro ao mudar o grupo."
   },
-  "estadosTarea": {
+  "taskStates": {
     "titulo": "Estados de Tarefa",
     "subtitulo": "Estados por tipo de tarefa para o grupo ativo",
     "buscarPlaceholder": "Buscar estado...",
@@ -1461,7 +1404,7 @@
     "eliminarTitulo": "Excluir Estado de Tarefa",
     "eliminarConfirm": "Excluir o estado \"{nombre}\"?"
   },
-  "limpieza": {
+  "cleanup": {
     "titulo": "Limpeza de Logs",
     "subtitulo": "Manutenção manual de tabelas tipo log. A limpeza por <strong>tempo</strong> remove linhas anteriores a N dias. A limpeza por <strong>quantidade</strong> mantém as últimas N linhas e remove o restante.",
     "accesoRestringidoTitulo": "Acesso restrito",
@@ -1514,7 +1457,7 @@
     "toastPoliticaDesactivada": "Política desativada",
     "toastPoliticaActivada": "Política ativada"
   },
-  "parametrosGeneralesValores": {
+  "systemParameterValues": {
     "titulo": "Valores de Parâmetros Gerais",
     "subtitulo": "Gerencie os valores dos parâmetros globais que controlam o comportamento do sistema",
     "buscarPlaceholder": "Buscar parâmetro...",
@@ -1541,7 +1484,7 @@
     "eliminarTitulo": "Excluir parâmetro",
     "eliminarConfirm": "Excluir o parâmetro \"{categoria} / {tipo}\"? Esta ação pode afetar o comportamento do sistema."
   },
-  "parametrosGrupo": {
+  "groupParameters": {
     "titulo": "Parâmetros do Grupo",
     "subtitulo": "Configure os valores de parâmetros específicos para este grupo",
     "tabCategorias": "Categorias de Parâmetro",
@@ -1569,7 +1512,7 @@
     "eliminarTitulo": "Excluir parâmetro",
     "eliminarConfirm": "Excluir o parâmetro {categoria}/{tipo}?"
   },
-  "planes": {
+  "plans": {
     "titulo": "Planos de Clientes",
     "subtitulo": "Planos de assinatura com features, preços e política de duração. A lógica de ativação reside no prompt.",
     "nuevoPlan": "Novo plano",
@@ -1629,7 +1572,7 @@
     "eliminarTitulo": "Excluir plano {nome}",
     "eliminarConfirm": "Tem certeza de que deseja excluir o plano \"{nome}\"? Os grupos que o tiverem atribuído ficarão sem plano."
   },
-  "procesosDatosBasicos": {
+  "processBasicData": {
     "titulo": "Dados Básicos de Processos",
     "subtitulo": "Configuração de categorias, tipos e estados de processo",
     "tabCategorias": "Categorias de Processo",
@@ -1843,7 +1786,7 @@
     "mensajesGeneradosOk": "Mensagens geradas para: {idiomas}.",
     "errorGenerarMensajes": "Erro ao gerar mensagens"
   },
-  "sqlEjecutados": {
+  "executedSql": {
     "titulo": "Visualizador de SQL Executados",
     "subtitulo": "Buffer circular com as últimas ~1000 operações SQL capturadas pelo backend.",
     "buscarPlaceholder": "Buscar por SQL, endpoint, tabela, operação, usuário, função ou erro…",
@@ -1873,7 +1816,7 @@
     "hashTemplate": "Hash (SHA1 do template)",
     "error": "Erro"
   },
-  "tareasDatosBasicos": {
+  "taskBasicData": {
     "titulo": "Dados Básicos de Tarefas",
     "subtitulo": "Configuração de categorias, tipos e estados de tarefa",
     "tabCategorias": "Categorias de Tarefa",
@@ -1959,7 +1902,7 @@
     "eliminarTcConfirm": "Excluir o tipo canônico \"{nombre}\"?",
     "eliminarEstConfirm": "Excluir o estado \"{nombre}\"?"
   },
-  "tiposAcceso": {
+  "accessTypes": {
     "titulo": "Tipos de Acesso",
     "subtitulo": "Catálogo hierárquico de níveis de acesso. Define quais tipos cada nível pode ver.",
     "buscarPlaceholder": "Buscar tipo de acesso…",
@@ -1983,7 +1926,7 @@
     "eliminarTitulo": "Excluir tipo de acesso",
     "eliminarConfirm": "Excluir \"{nombre}\"? Esta ação não pode ser desfeita."
   },
-  "tiposTarea": {
+  "taskTypes": {
     "titulo": "Tipos de Tarefa",
     "subtitulo": "Tipos de tarefa por categoria para o grupo ativo",
     "buscarPlaceholder": "Buscar tipo...",
@@ -2027,7 +1970,7 @@
     "eliminarTitulo": "Excluir Tipo de Tarefa",
     "eliminarConfirm": "Excluir o tipo \"{nombre}\"?"
   },
-  "traducciones": {
+  "translations": {
     "titulo": "Traduções",
     "subtitulo": "Gestão de idiomas e geração automática de traduções de catálogos",
     "ultimaGeneracion": "Última geração",

@@ -4,7 +4,7 @@
  * Diseño cerrado 2026-04-28. Ver .claude/docs/PLAN_MANEJO_ERRORES.md.
  *
  * Uso:
- *   await ErrorService.instancia().reportar(error, { url_pantalla: '/documentos' })
+ *   await ErrorService.instancia().reportar(error, { url_pantalla: '/documents' })
  *
  * Retorna ErrorResponse con codigo_proceso para mostrar al usuario.
  */

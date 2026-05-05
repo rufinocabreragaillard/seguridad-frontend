@@ -725,7 +725,7 @@ export default function PaginaPrompts() {
             onFiltro={setFiltroTraducciones}
             placeholder={t('filtrarCatalogo')}
             acciones={
-              <a href="/traducciones" className="text-primario text-sm underline whitespace-nowrap">
+              <a href="/translations" className="text-primario text-sm underline whitespace-nowrap">
                 {t('irPanelCompleto')}
               </a>
             }
@@ -909,7 +909,7 @@ function TabGrafoFunciones() {
       )}
 
       <div className="text-xs text-texto-muted border-t border-borde pt-3">
-        {t('grafoFooter1')} <RefreshCw className="w-3 h-3 inline" /> {t('grafoFooter2')} <a className="text-primario hover:underline" href="/funciones">/funciones</a>{t('grafoFooter3')} <code>/serverlm-actualizar-funcion CODIGO</code> {t('grafoFooter4')}
+        {t('grafoFooter1')} <RefreshCw className="w-3 h-3 inline" /> {t('grafoFooter2')} <a className="text-primario hover:underline" href="/functions">/funciones</a>{t('grafoFooter3')} <code>/serverlm-actualizar-funcion CODIGO</code> {t('grafoFooter4')}
       </div>
     </div>
   )
