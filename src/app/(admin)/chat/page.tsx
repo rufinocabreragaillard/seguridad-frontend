@@ -248,14 +248,24 @@ export default function PaginaChatUsuario() {
 
   const enviarMensaje = async () => {
     const texto = textoInput.trim()
-    if (!texto || !convActivaId || enviando) return
+    if (!texto || enviando) return
+    let idConv = convActivaId
+    if (!idConv) {
+      try {
+        const nueva = await chatApi.crearConversacion(CODIGO_FUNCION)
+        idConv = nueva.id_conversacion
+        setConvActivaId(idConv)
+        await cargarLista(false)
+      } catch { return }
+    }
+    if (!idConv) return
     setEnviando(true)
     setRespuestaEnCurso('')
     setActividad(t('pensando') ?? 'Pensando…')
     setErrorConv('')
     const tempUserMsg: ChatMensaje = {
       id_mensaje: -Date.now(),
-      id_conversacion: convActivaId,
+      id_conversacion: idConv,
       rol: 'user',
       contenido: texto,
       fecha_creacion: new Date().toISOString(),
@@ -264,7 +274,7 @@ export default function PaginaChatUsuario() {
     setTextoInput('')
     let acumulado = ''
     await chatApi.enviarMensajeStream(
-      convActivaId,
+      idConv,
       texto,
       {
         onChunk: (chunk) => {
@@ -285,16 +295,14 @@ export default function PaginaChatUsuario() {
         onDone: ({ id_mensaje_user, id_mensaje_assistant }) => {
           const ahora = new Date().toISOString()
           setMensajes((prev) => {
-            // Reemplazar mensaje temporal del usuario con ID real
             const sinTemp = prev.filter((m) => m.id_mensaje !== tempUserMsg.id_mensaje)
             const mensajeUser: ChatMensaje = {
               ...tempUserMsg,
               id_mensaje: id_mensaje_user ?? tempUserMsg.id_mensaje,
             }
-            // Agregar respuesta del asistente con ID real
             const mensajeAsistente: ChatMensaje = {
               id_mensaje: id_mensaje_assistant ?? -Date.now(),
-              id_conversacion: convActivaId,
+              id_conversacion: idConv,
               rol: 'assistant',
               contenido: acumulado,
               fecha_creacion: ahora,
