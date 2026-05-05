@@ -12,8 +12,10 @@ test.describe('process-pipeline', () => {
   });
 
   test('muestra las 2 tabs: Ubicaciones y Documentos', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /ubicaciones/i })).toBeVisible({ timeout: 10000 });
-    await expect(page.getByRole('button', { name: /documentos/i })).toBeVisible();
+    // Hay múltiples botones con texto "Ubicaciones" en la página (tab + botones).
+    // Verificamos que al menos uno sea visible.
+    await expect(page.getByRole('button', { name: /ubicaciones/i }).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: /documentos/i }).first()).toBeVisible();
   });
 
   test('tab Ubicaciones muestra contadores de documentos', async ({ page }) => {
@@ -24,7 +26,7 @@ test.describe('process-pipeline', () => {
   });
 
   test('tab Ubicaciones tiene botón Indexar ubicaciones con FolderSync', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /indexar ubicaciones/i })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByRole('button', { name: 'Indexar ubicaciones', exact: true })).toBeVisible({ timeout: 10000 });
   });
 
   test('tab Ubicaciones muestra barras numeradas Paso 1..6', async ({ page }) => {
