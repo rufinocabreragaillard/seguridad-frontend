@@ -1384,16 +1384,32 @@ export const sqlEjecutadosApi = {
 // ─── Ubicaciones Docs ──────────────────────────────────────────────────────
 
 export const ubicacionesDocsApi = {
-  listar: (opciones?: string | { codigo_entidad?: string; tipo?: 'AREA' | 'CONTENIDO' }) => {
+  listar: (opciones?: string | {
+    codigo_entidad?: string
+    tipo?: 'AREA' | 'CONTENIDO' | 'VIRTUAL'
+    padre?: string
+    solo_raices?: boolean
+    q?: string
+    subarbol_de?: string
+  }) => {
     const params: Record<string, string> = {}
     if (typeof opciones === 'string') {
       if (opciones) params.codigo_entidad = opciones
     } else if (opciones) {
       if (opciones.codigo_entidad) params.codigo_entidad = opciones.codigo_entidad
       if (opciones.tipo) params.tipo = opciones.tipo
+      if (opciones.padre) params.padre = opciones.padre
+      if (opciones.solo_raices) params.solo_raices = 'true'
+      if (opciones.q) params.q = opciones.q
+      if (opciones.subarbol_de) params.subarbol_de = opciones.subarbol_de
     }
     return api.get<UbicacionDoc[]>('/ubicaciones-docs', { params: Object.keys(params).length ? params : undefined }).then((r) => r.data)
   },
+  contadores: (codigo_entidad?: string) =>
+    api.get<{ total: number; habilitadas: number }>(
+      '/ubicaciones-docs/contadores',
+      { params: codigo_entidad ? { codigo_entidad } : undefined }
+    ).then((r) => r.data),
   cambiarTipo: (codigo: string, tipo: 'AREA' | 'CONTENIDO') =>
     api.patch<{ mensaje: string; actualizadas: number }>(`/ubicaciones-docs/${codigo}/tipo`, { tipo_ubicacion: tipo }).then((r) => r.data),
   crear: (datos: Partial<UbicacionDoc>) =>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { Pencil, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle, XCircle, Upload, FileText, AlertTriangle, CheckCircle, Search, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
@@ -87,55 +87,145 @@ export default function PaginaUbicacionesDocs() {
     excluidas: number
   } | null>(null)
 
-  // ── Carga ─────────────────────────────────────────────────────────────────
-  const cargar = useCallback(async () => {
+  // ── Lazy loading ──────────────────────────────────────────────────────────
+  // padresCargados: nodos cuyos hijos directos ya fueron traídos del server.
+  const [padresCargados, setPadresCargados] = useState<Set<string>>(new Set())
+  const [cargandoNodo, setCargandoNodo] = useState<Set<string>>(new Set())
+  const [modoBusqueda, setModoBusqueda] = useState(false)
+
+  // Mezcla filas nuevas con el estado existente (deduplica por codigo).
+  const mergeUbicaciones = (nuevas: UbicacionDoc[]) => {
+    setUbicaciones((prev) => {
+      const map = new Map(prev.map((u) => [u.codigo_ubicacion, u]))
+      for (const n of nuevas) map.set(n.codigo_ubicacion, n)
+      return Array.from(map.values())
+    })
+  }
+
+  const cargarRaices = useCallback(async () => {
     setCargando(true)
     try {
-      setUbicaciones(await ubicacionesDocsApi.listar())
+      const raicesData = await ubicacionesDocsApi.listar({ solo_raices: true })
+      setUbicaciones(raicesData)
+      setPadresCargados(new Set())
+      setExpandidos(new Set())
+      setModoBusqueda(false)
     } finally {
       setCargando(false)
     }
   }, [])
 
-  useEffect(() => { cargar() }, [cargar])
+  useEffect(() => { cargarRaices() }, [cargarRaices])
+
+  const cargarHijos = useCallback(async (codigo: string) => {
+    if (padresCargados.has(codigo)) return
+    setCargandoNodo((prev) => new Set(prev).add(codigo))
+    try {
+      const hijos = await ubicacionesDocsApi.listar({ padre: codigo })
+      mergeUbicaciones(hijos)
+      setPadresCargados((prev) => new Set(prev).add(codigo))
+    } finally {
+      setCargandoNodo((prev) => {
+        const next = new Set(prev)
+        next.delete(codigo)
+        return next
+      })
+    }
+  }, [padresCargados])
 
   // ── Expandir/Colapsar ─────────────────────────────────────────────────────
-  const toggleExpandir = (codigo: string) => {
+  const toggleExpandir = (codigo: string, tiene: boolean) => {
     setExpandidos((prev) => {
       const next = new Set(prev)
-      if (next.has(codigo)) next.delete(codigo)
-      else next.add(codigo)
+      if (next.has(codigo)) {
+        next.delete(codigo)
+      } else {
+        next.add(codigo)
+        if (tiene && !padresCargados.has(codigo) && !modoBusqueda) cargarHijos(codigo)
+      }
       return next
     })
   }
 
-  const expandirTodos = () => {
-    setExpandidos(new Set(ubicaciones.map((u) => u.codigo_ubicacion)))
+  const expandirTodos = async () => {
+    if (ubicaciones.length === 0) return
+    setCargando(true)
+    try {
+      // Trae el subárbol completo de cada raíz vía closure table.
+      const raices = ubicaciones.filter((u) => !u.codigo_ubicacion_superior).map((u) => u.codigo_ubicacion)
+      const lotes = await Promise.all(
+        raices.map((cod) => ubicacionesDocsApi.listar({ subarbol_de: cod }))
+      )
+      const todos = lotes.flat()
+      mergeUbicaciones(todos)
+      setExpandidos(new Set(todos.map((u) => u.codigo_ubicacion)))
+      setPadresCargados(new Set(todos.filter((u) => u.tiene_hijos).map((u) => u.codigo_ubicacion)))
+    } finally {
+      setCargando(false)
+    }
   }
 
   const colapsarTodos = () => {
     setExpandidos(new Set())
   }
 
-  // ── Helpers jerarquía ─────────────────────────────────────────────────────
-  const tieneHijos = (codigo: string) =>
-    ubicaciones.some((u) => u.codigo_ubicacion_superior === codigo)
-
-  const opcionesPadre = (excluirCodigo?: string) => {
-    if (!excluirCodigo) return ubicaciones
-    const descendientes = new Set<string>()
-    const buscarDesc = (cod: string) => {
-      for (const u of ubicaciones) {
-        if (u.codigo_ubicacion_superior === cod && !descendientes.has(u.codigo_ubicacion)) {
-          descendientes.add(u.codigo_ubicacion)
-          buscarDesc(u.codigo_ubicacion)
-        }
-      }
+  // ── Búsqueda server-side con debounce ─────────────────────────────────────
+  const debounceBusqueda = useRef<number | null>(null)
+  useEffect(() => {
+    const q = busqueda.trim()
+    if (debounceBusqueda.current) window.clearTimeout(debounceBusqueda.current)
+    if (!q) {
+      // Vuelta al modo árbol: re-cargar raíces.
+      if (modoBusqueda) cargarRaices()
+      return
     }
-    descendientes.add(excluirCodigo)
-    buscarDesc(excluirCodigo)
-    return ubicaciones.filter((u) => !descendientes.has(u.codigo_ubicacion))
-  }
+    debounceBusqueda.current = window.setTimeout(async () => {
+      setCargando(true)
+      try {
+        const data = await ubicacionesDocsApi.listar({ q })
+        setUbicaciones(data)
+        // En búsqueda, todos los nodos retornados están "cargados" (no hay lazy).
+        setPadresCargados(new Set(data.map((u) => u.codigo_ubicacion)))
+        // Auto-expandir todo para que se vean los matches.
+        setExpandidos(new Set(data.map((u) => u.codigo_ubicacion)))
+        setModoBusqueda(true)
+      } finally {
+        setCargando(false)
+      }
+    }, 300)
+    return () => { if (debounceBusqueda.current) window.clearTimeout(debounceBusqueda.current) }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [busqueda])
+
+  // ── Helpers jerarquía ─────────────────────────────────────────────────────
+  // Map padre → hijos[] pre-computado: O(N) una sola vez por render.
+  const hijosPorPadre = useMemo(() => {
+    const m = new Map<string, UbicacionDoc[]>()
+    for (const u of ubicaciones) {
+      const sup = u.codigo_ubicacion_superior || ''
+      const arr = m.get(sup) ?? []
+      arr.push(u)
+      m.set(sup, arr)
+    }
+    for (const arr of m.values()) {
+      arr.sort((a, b) => a.orden - b.orden || a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
+    }
+    return m
+  }, [ubicaciones])
+
+  const tieneHijos = (u: UbicacionDoc) =>
+    u.tiene_hijos === true || (hijosPorPadre.get(u.codigo_ubicacion)?.length ?? 0) > 0
+
+  // Carga completa bajo demanda (sincronización / preview de impacto).
+  const asegurarArbolCompleto = useCallback(async () => {
+    const todas = await ubicacionesDocsApi.listar()
+    setUbicaciones(todas)
+    setPadresCargados(new Set(todas.filter((u) => u.tiene_hijos).map((u) => u.codigo_ubicacion)))
+    return todas
+  }, [])
+
+  // Alias para que el resto del código siga funcionando (CRUD recarga raíces).
+  const cargar = cargarRaices
 
   // ── CRUD ──────────────────────────────────────────────────────────────────
   const abrirEditar = (u: UbicacionDoc) => {
@@ -262,6 +352,8 @@ export default function PaginaUbicacionesDocs() {
         setEscaneando(false)
         return // usuario canceló
       }
+      // El preview/sincronización compara contra TODAS las ubicaciones del grupo.
+      await asegurarArbolCompleto()
       setDatosEscaneo(resultado)
       setModalCarga(true)
     } catch {
@@ -398,31 +490,8 @@ export default function PaginaUbicacionesDocs() {
     return { nuevas, aEliminar, sinCambio, excluidas: excluidos }
   }
 
-  const filtrados = (() => {
-    const q = busqueda.trim().toLowerCase()
-    if (!q) return ubicaciones
-    // Nodos que coinciden con la búsqueda
-    const coinciden = new Set(
-      ubicaciones
-        .filter((u) =>
-          u.nombre_ubicacion.toLowerCase().includes(q) ||
-          u.codigo_ubicacion.toLowerCase().includes(q) ||
-          (u.ruta_completa || '').toLowerCase().includes(q)
-        )
-        .map((u) => u.codigo_ubicacion)
-    )
-    // Para cada coincidencia, incluir todos sus ancestros (por superior)
-    const indexPorCodigo = new Map(ubicaciones.map((u) => [u.codigo_ubicacion, u]))
-    const visibles = new Set<string>(coinciden)
-    for (const cod of coinciden) {
-      let actual = indexPorCodigo.get(cod)
-      while (actual?.codigo_ubicacion_superior) {
-        visibles.add(actual.codigo_ubicacion_superior)
-        actual = indexPorCodigo.get(actual.codigo_ubicacion_superior)
-      }
-    }
-    return ubicaciones.filter((u) => visibles.has(u.codigo_ubicacion))
-  })()
+  // La búsqueda es server-side (modo q en el endpoint). Aquí filtrados === ubicaciones.
+  const filtrados = ubicaciones
 
   // ── Indexar Documentos (sección inferior) ──────────────────────────────────
   const [cdNiveles, setCdNiveles] = useState(5)
@@ -531,10 +600,10 @@ export default function PaginaUbicacionesDocs() {
     try {
       const scan = await escanearArchivosDirectorio(handle, cdNiveles)
       if (!scan) return
-      setUbicaciones((prev) => {
-        setCdDatos(cdClasificar(scan, prev))
-        return prev
-      })
+      // La clasificación necesita TODAS las ubicaciones del grupo (con ruta_completa);
+      // el árbol del lado izquierdo está en modo lazy, así que aquí pedimos full.
+      const todas = await ubicacionesDocsApi.listar()
+      setCdDatos(cdClasificar(scan, todas))
     } catch {
       alert('Error al escanear el directorio.')
     } finally {
@@ -589,10 +658,20 @@ export default function PaginaUbicacionesDocs() {
     setCdBusqueda('')
   }
 
-  const cdUbicacionesHabilitadas = ubicaciones.filter((u) => u.ubicacion_habilitada)
-  const cdCarpetaRaiz = ubicaciones.length > 0
-    ? ubicaciones.reduce((min, u) => (u.nivel ?? 99) < (min.nivel ?? 99) ? u : min, ubicaciones[0])
-    : null
+  // Contadores agregados (vienen del endpoint /contadores; no requieren cargar todo el árbol).
+  const [contadores, setContadores] = useState<{ total: number; habilitadas: number }>({ total: 0, habilitadas: 0 })
+  useEffect(() => {
+    let cancelado = false
+    ubicacionesDocsApi.contadores().then((c) => { if (!cancelado) setContadores(c) }).catch(() => { /* ignore */ })
+    return () => { cancelado = true }
+  }, [grupoActivo, ubicaciones])
+
+  const cdCarpetaRaiz = (() => {
+    const raicesArr = hijosPorPadre.get('') ?? []
+    return raicesArr.length > 0
+      ? raicesArr.reduce((min, u) => (u.nivel ?? 99) < (min.nivel ?? 99) ? u : min, raicesArr[0])
+      : null
+  })()
   const cdArchivosFiltrados = cdDatos
     ? cdBusqueda
       ? cdDatos.archivosConMatch.filter((a) =>
@@ -604,8 +683,9 @@ export default function PaginaUbicacionesDocs() {
 
   // ── Render nodos jerárquicos ──────────────────────────────────────────────
   const renderNodo = (u: UbicacionDoc) => {
-    const hijos = tieneHijos(u.codigo_ubicacion)
+    const hijos = tieneHijos(u)
     const expandido = expandidos.has(u.codigo_ubicacion)
+    const cargandoEste = cargandoNodo.has(u.codigo_ubicacion)
     const indent = u.nivel * 24
     const esArea = u.tipo_ubicacion === 'AREA'
     const q = busqueda.trim().toLowerCase()
@@ -626,10 +706,10 @@ export default function PaginaUbicacionesDocs() {
           style={{ paddingLeft: `${indent + 12}px` }}
         >
           <button
-            onClick={() => toggleExpandir(u.codigo_ubicacion)}
+            onClick={() => toggleExpandir(u.codigo_ubicacion, hijos)}
             className={`p-0.5 rounded transition-colors ${hijos ? 'hover:bg-primario-muy-claro text-texto-muted hover:text-primario' : 'invisible'}`}
           >
-            {expandido ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+            {cargandoEste ? <Loader2 size={14} className="animate-spin" /> : expandido ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
           </button>
 
           {expandido && hijos ? (
@@ -696,42 +776,12 @@ export default function PaginaUbicacionesDocs() {
         </div>
 
         {expandido &&
-          filtrados
-            .filter((h) => h.codigo_ubicacion_superior === u.codigo_ubicacion)
-            .sort((a, b) => a.orden - b.orden || a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
-            .map((h) => renderNodo(h))}
+          (hijosPorPadre.get(u.codigo_ubicacion) ?? []).map((h) => renderNodo(h))}
       </div>
     )
   }
 
-  // Auto-expandir ancestros cuando hay búsqueda activa
-  useEffect(() => {
-    if (!busqueda.trim()) return
-    const q = busqueda.trim().toLowerCase()
-    const coinciden = new Set(
-      ubicaciones
-        .filter((u) =>
-          u.nombre_ubicacion.toLowerCase().includes(q) ||
-          u.codigo_ubicacion.toLowerCase().includes(q) ||
-          (u.ruta_completa || '').toLowerCase().includes(q)
-        )
-        .map((u) => u.codigo_ubicacion)
-    )
-    const indexPorCodigo = new Map(ubicaciones.map((u) => [u.codigo_ubicacion, u]))
-    const aExpandir = new Set<string>()
-    for (const cod of coinciden) {
-      let actual = indexPorCodigo.get(cod)
-      while (actual?.codigo_ubicacion_superior) {
-        aExpandir.add(actual.codigo_ubicacion_superior)
-        actual = indexPorCodigo.get(actual.codigo_ubicacion_superior)
-      }
-    }
-    setExpandidos((prev) => new Set([...prev, ...aExpandir]))
-  }, [busqueda, ubicaciones])
-
-  const raices = filtrados
-    .filter((u) => !u.codigo_ubicacion_superior)
-    .sort((a, b) => a.orden - b.orden || a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
+  const raices = hijosPorPadre.get('') ?? []
 
   const diff = datosEscaneo ? calcularDiferencias() : null
 
@@ -1126,17 +1176,17 @@ export default function PaginaUbicacionesDocs() {
             <Folder size={20} className="text-primario shrink-0" />
             <div>
               <p className="text-sm font-medium text-texto">
-                {cargando ? tc('cargando') : tcd('ubicacionesHabilitadas', { n: cdUbicacionesHabilitadas.length })}
+                {cargando ? tc('cargando') : tcd('ubicacionesHabilitadas', { n: contadores.habilitadas })}
               </p>
               <p className="text-xs text-texto-muted">
-                {!cargando && ubicaciones.length > 0
-                  ? tcd('deTotales', { n: ubicaciones.length })
+                {!cargando && contadores.total > 0
+                  ? tcd('deTotales', { n: contadores.total })
                   : tcd('configUbicaciones')}
               </p>
             </div>
           </div>
-          {!cargando && cdUbicacionesHabilitadas.length > 0 && (
-            <Insignia variante="exito">{tcd('activas', { n: cdUbicacionesHabilitadas.length })}</Insignia>
+          {!cargando && contadores.habilitadas > 0 && (
+            <Insignia variante="exito">{tcd('activas', { n: contadores.habilitadas })}</Insignia>
           )}
         </div>
 
@@ -1152,7 +1202,7 @@ export default function PaginaUbicacionesDocs() {
               <Boton
                 variante="primario"
                 onClick={cdSeleccionarDirectorio}
-                disabled={cdUbicacionesHabilitadas.length === 0 || cdEscaneando}
+                disabled={contadores.habilitadas === 0 || cdEscaneando}
               >
                 {cdEscaneando
                   ? <><Loader2 size={16} className="animate-spin" />{tcd('escaneando')}</>

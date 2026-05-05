@@ -821,6 +821,7 @@ export interface UbicacionDoc {
   orden: number
   ubicacion_habilitada: boolean
   tipo_ubicacion: 'AREA' | 'CONTENIDO'
+  tiene_hijos?: boolean
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null
