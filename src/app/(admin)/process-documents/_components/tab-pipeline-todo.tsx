@@ -3,7 +3,6 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { FolderOpen, X, ChevronDown, ChevronRight } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
-import { CirculoProgreso } from '@/components/ui/circulo-progreso'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
@@ -39,7 +38,7 @@ const ESTADOS_PIPELINE = [
 interface UbicacionOption {
   codigo_ubicacion: string
   nombre_ubicacion: string
-  ruta_completa: string
+  url: string
   nivel: number
   tipo_ubicacion?: 'AREA' | 'CONTENIDO'
   codigo_ubicacion_superior?: string
@@ -49,9 +48,10 @@ interface TabPipelineTodoProps {
   procesos?: ProcesoCatalogo[]
   estadosDocs?: EstadoDoc[]
   ubicaciones?: UbicacionOption[]
+  offsetPaso?: number
 }
 
-export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: ubicacionesProp = [] }: TabPipelineTodoProps) {
+export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: ubicacionesProp = [], offsetPaso = 1 }: TabPipelineTodoProps) {
   const { grupoActivo } = useAuth()
 
   const [progresos, setProgresos] = useState<Record<string, ProgresoPaso>>(progresosIniciales)
@@ -140,9 +140,9 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     cargarConteos()
     ubicacionesDocsApi.listar().then((ubs) => {
       if (!ubs?.length) return
-      const raiz = (ubs as { nivel: number; ruta_completa?: string }[])
-        .reduce((min, u) => u.nivel < min.nivel ? u : min, ubs[0] as { nivel: number; ruta_completa?: string })
-      const nombre = raiz?.ruta_completa?.split('/').filter(Boolean)[0] ?? ''
+      const raiz = (ubs as { nivel: number; url?: string }[])
+        .reduce((min, u) => u.nivel < min.nivel ? u : min, ubs[0] as { nivel: number; url?: string })
+      const nombre = raiz?.url?.split('/').filter(Boolean)[0] ?? ''
       if (nombre) setCarpetaRaiz(nombre)
     }).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -150,7 +150,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
   const seleccionarDirectorio = async () => {
     try {
-      const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' })
+      const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
       setDirHandleState(handle)
       await setDirectoryHandle(handle)
     } catch { /* usuario canceló */ }
@@ -176,7 +176,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
         handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored)
       } else {
         try {
-          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' })
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
           setDirHandleState(handle); await setDirectoryHandle(handle)
         } catch {
           // Sin permiso: marcar todos como no encontrados
@@ -452,10 +452,46 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
   const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
 
+  // Colores por paso (índice base 0 = primer paso del pipeline)
+  const COLORES_PASO = ['#EF4444', '#F97316', '#84CC16', '#22C55E']
+
+  const renderBarrasPasos = (offsetPaso: number) => {
+    return PASOS.map((paso, i) => {
+      const prog = progresos[paso.key]
+      const numeroPaso = offsetPaso + i
+      const pct = prog.total > 0 ? Math.round((prog.completados / prog.total) * 100) : 0
+      const color = COLORES_PASO[i] ?? '#6B7280'
+      const estaActivo = prog.estado === 'activo'
+      const estaListo = prog.estado === 'listo'
+      return (
+        <div key={paso.key} className="flex flex-col gap-1">
+          <div className="flex items-center justify-between text-xs">
+            <span className={`font-semibold ${estaActivo ? 'text-texto' : estaListo ? 'text-texto-muted' : 'text-texto-muted opacity-60'}`}>
+              Paso {numeroPaso}
+            </span>
+            <span className="text-texto-muted tabular-nums">
+              {estaListo ? '✓' : estaActivo ? `${prog.completados}/${prog.total}` : '—'}
+            </span>
+          </div>
+          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#E5E7EB' }}>
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${estaActivo ? 'animate-pulse' : ''}`}
+              style={{
+                width: estaListo ? '100%' : `${pct}%`,
+                backgroundColor: estaListo ? color : estaActivo ? color : '#D1D5DB',
+                opacity: estaListo ? 1 : estaActivo ? 0.85 : 0.4,
+              }}
+            />
+          </div>
+        </div>
+      )
+    })
+  }
+
   return (
     <div className="flex flex-col gap-6">
 
-      {/* ── Filtros (Cambio 2) ─────────────────────────────────────────────── */}
+      {/* ── Filtros ─────────────────────────────────────────────── */}
       <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-4">
         <p className="text-xs font-semibold text-texto-muted uppercase">Filtros del pipeline</p>
 
@@ -503,7 +539,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
                       (() => {
                         const filtradas = ubicacionesProp.filter(u =>
                           u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) ||
-                          (u.ruta_completa || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
+                          (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
                         )
                         if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
                         return filtradas.map(u => {
@@ -633,92 +669,40 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
         </div>
       )}
 
-      {/* ── Pipeline visual ────────────────────────────────────────────────── */}
+      {/* ── Pipeline: barras de progreso numeradas ─────────────────────────── */}
       {!revertir ? (
-        /* Modo normal: 4 círculos hacia adelante */
-        <div className="flex items-center justify-center gap-0 flex-wrap">
-          {PASOS.map((paso, i) => {
-            const prog = progresos[paso.key]
-            return (
-              <div key={paso.key} className="flex items-center">
-                <CirculoProgreso
-                  nombre={paso.nombre}
-                  total={prog.total}
-                  completados={prog.completados}
-                  estado={prog.estado}
-                  colorDisco={paso.colorDisco}
-                  size={99}
-                />
-                {i < PASOS.length - 1 && (
-                  <div className="flex items-center self-center px-1">
-                    <svg width="48" height="24" viewBox="0 0 48 24">
-                      <line x1="0" y1="12" x2="34" y2="12" stroke="#9CA3AF" strokeWidth="6" strokeLinecap="round" />
-                      <polygon points="30,4 46,12 30,20" fill="#9CA3AF" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-            )
-          })}
+        <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-4">
+          {renderBarrasPasos(offsetPaso)}
         </div>
       ) : (
-        /* Modo reversa: indicador VECTORIZADO ← CHUNKEADO */
-        <div className="flex flex-col items-center gap-4">
-          <div className="flex items-center gap-4">
-            {/* Círculo VECTORIZADO (origen) */}
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className={`w-24 h-24 rounded-full flex flex-col items-center justify-center border-4 ${progresoRevertir.estado === 'activo' ? 'animate-pulse' : ''}`}
-                style={{
-                  borderColor: '#22C55E',
-                  backgroundColor: progresoRevertir.estado === 'listo' ? '#F0FDF4' : '#fff',
-                }}
-              >
-                <span className="stat-number" style={{ color: '#22C55E' }}>
-                  {progresoRevertir.estado === 'esperando'
-                    ? ((conteosPorEstado['VECTORIZADO'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0))
-                    : progresoRevertir.total}
-                </span>
-                <span className="text-[9px] font-semibold uppercase tracking-wide text-texto-muted">docs</span>
-              </div>
-              <span className="text-xs font-semibold uppercase" style={{ color: '#22C55E' }}>VECTORIZADO</span>
-              {(conteosPorEstado['NO_VECTORIZADO'] ?? 0) > 0 && progresoRevertir.estado === 'esperando' && (
-                <span className="text-[10px] text-texto-muted mt-0.5">
-                  ({conteosPorEstado['VECTORIZADO'] ?? 0} ok + {conteosPorEstado['NO_VECTORIZADO']} err)
-                </span>
-              )}
-            </div>
-
-            {/* Flecha reversa ← */}
-            <div className="flex items-center self-center">
-              <svg width="64" height="24" viewBox="0 0 64 24">
-                <line x1="64" y1="12" x2="18" y2="12" stroke="#F59E0B" strokeWidth="6" strokeLinecap="round" />
-                <polygon points="22,4 6,12 22,20" fill="#F59E0B" />
-              </svg>
-            </div>
-
-            {/* Círculo CHUNKEADO (destino) */}
-            <div className="flex flex-col items-center gap-1">
-              <div
-                className="w-24 h-24 rounded-full flex flex-col items-center justify-center border-4"
-                style={{ borderColor: '#84CC16', backgroundColor: progresoRevertir.estado === 'listo' ? '#F7FEE7' : '#fff' }}
-              >
-                <span className="stat-number" style={{ color: '#84CC16' }}>
-                  {progresoRevertir.estado === 'listo' ? progresoRevertir.revertidos : '—'}
-                </span>
-                <span className="text-[9px] font-semibold uppercase tracking-wide text-texto-muted">
-                  {progresoRevertir.estado === 'listo' ? 'ok' : 'destino'}
-                </span>
-              </div>
-              <span className="text-xs font-semibold uppercase" style={{ color: '#84CC16' }}>CHUNKEADO</span>
-            </div>
+        /* Modo reversa */
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 flex flex-col gap-3">
+          <div className="flex items-center justify-between text-xs">
+            <span className="font-semibold text-amber-800">Revertir VECTORIZADO → CHUNKEADO</span>
+            <span className="text-amber-700 tabular-nums">
+              {progresoRevertir.estado === 'listo'
+                ? `${progresoRevertir.revertidos} revertidos`
+                : progresoRevertir.estado === 'activo'
+                ? `${progresoRevertir.revertidos}/${progresoRevertir.total}`
+                : `${(conteosPorEstado['VECTORIZADO'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0)} docs`}
+            </span>
           </div>
-
-          {/* Mensaje resultado / progreso */}
+          <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#FEF3C7' }}>
+            <div
+              className={`h-full rounded-full transition-all duration-300 ${progresoRevertir.estado === 'activo' ? 'animate-pulse' : ''}`}
+              style={{
+                width: progresoRevertir.estado === 'listo' ? '100%'
+                  : progresoRevertir.total > 0 ? `${Math.round((progresoRevertir.revertidos / progresoRevertir.total) * 100)}%`
+                  : '0%',
+                backgroundColor: '#F59E0B',
+                opacity: progresoRevertir.estado === 'esperando' ? 0.3 : 0.9,
+              }}
+            />
+          </div>
           {mensajeRevertir && (
-            <div className={`text-sm px-4 py-2 rounded-lg border ${progresoRevertir.estado === 'listo' ? 'bg-green-50 border-green-200 text-green-800' : 'bg-amber-50 border-amber-200 text-amber-800'}`}>
+            <p className={`text-xs ${progresoRevertir.estado === 'listo' ? 'text-green-700' : 'text-amber-700'}`}>
               {mensajeRevertir}
-            </div>
+            </p>
           )}
         </div>
       )}

@@ -25,7 +25,7 @@ import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/a
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
-import { escanearArchivosDirectorio } from '@/lib/escanear-directorio'
+import { escanearArchivosDirectorio, escanearDirectorio as escanearDirectorioUbicaciones } from '@/lib/escanear-directorio'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TextoCifrado } from '@/components/ui/texto-cifrado'
@@ -124,6 +124,107 @@ interface ItemCola {
   modelo_usado?: string | null
 }
 
+interface TabIndexarTodoProps {
+  procesos: import('@/lib/api').Proceso[]
+  estadosDocs: EstadoDoc[]
+  ubicaciones: UbicacionOption[]
+}
+
+function TabIndexarTodo({ procesos, estadosDocs, ubicaciones }: TabIndexarTodoProps) {
+  type EstadoBarra = 'esperando' | 'activo' | 'listo' | 'error'
+  const [paso1Estado, setPaso1Estado] = useState<EstadoBarra>('esperando')
+  const [paso1Total, setPaso1Total] = useState(0)
+  const [paso1Completados, setPaso1Completados] = useState(0)
+  const [paso1Mensaje, setPaso1Mensaje] = useState('')
+  const [pipelineActivo, setPipelineActivo] = useState(false)
+  const [claveReset, setClaveReset] = useState(0)
+
+  const COLORES_PASO1 = '#6B7280'
+
+  const pct1 = paso1Total > 0 ? Math.round((paso1Completados / paso1Total) * 100) : 0
+
+  const ejecutarPaso1 = async () => {
+    setPaso1Estado('activo')
+    setPaso1Total(0)
+    setPaso1Completados(0)
+    setPaso1Mensaje('')
+    try {
+      const resultado = await escanearDirectorioUbicaciones()
+      if (!resultado) {
+        setPaso1Estado('esperando')
+        return false
+      }
+      const total = resultado.directorios.length
+      setPaso1Total(total)
+      const sincronizado = await ubicacionesDocsApi.sincronizar({
+        directorios: resultado.directorios,
+      })
+      setPaso1Completados(total)
+      setPaso1Estado('listo')
+      setPaso1Mensaje(`${sincronizado.insertadas ?? 0} nuevas, ${sincronizado.actualizadas ?? 0} actualizadas, ${sincronizado.eliminadas ?? 0} eliminadas`)
+      return true
+    } catch (e) {
+      setPaso1Estado('error')
+      setPaso1Mensaje(e instanceof Error ? e.message : 'Error al indexar ubicaciones')
+      return false
+    }
+  }
+
+  const iniciar = async () => {
+    const ok = await ejecutarPaso1()
+    if (ok) {
+      setClaveReset(k => k + 1)
+      setPipelineActivo(true)
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-6">
+      {/* Barra Paso 1: Indexar ubicaciones */}
+      <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-3">
+        <div className="flex items-center justify-between text-xs">
+          <span className={`font-semibold ${paso1Estado === 'activo' ? 'text-texto' : paso1Estado === 'listo' ? 'text-texto-muted' : 'text-texto-muted opacity-60'}`}>
+            Paso 1
+          </span>
+          <span className="text-texto-muted tabular-nums">
+            {paso1Estado === 'listo' ? '✓' : paso1Estado === 'activo' ? `${paso1Completados}/${paso1Total || '…'}` : '—'}
+          </span>
+        </div>
+        <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#E5E7EB' }}>
+          <div
+            className={`h-full rounded-full transition-all duration-300 ${paso1Estado === 'activo' ? 'animate-pulse' : ''}`}
+            style={{
+              width: paso1Estado === 'listo' ? '100%' : `${pct1}%`,
+              backgroundColor: paso1Estado === 'error' ? '#EF4444' : COLORES_PASO1,
+              opacity: paso1Estado === 'esperando' ? 0.3 : 0.9,
+            }}
+          />
+        </div>
+        {paso1Mensaje && (
+          <p className={`text-xs ${paso1Estado === 'error' ? 'text-red-600' : 'text-texto-muted'}`}>
+            {paso1Mensaje}
+          </p>
+        )}
+        <div className="flex justify-center pt-1">
+          <Boton variante="primario" onClick={iniciar} disabled={paso1Estado === 'activo'}>
+            {paso1Estado === 'activo' ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+            {paso1Estado === 'activo' ? 'Indexando ubicaciones…' : paso1Estado === 'listo' ? 'Re-indexar ubicaciones' : 'Iniciar — indexar ubicaciones'}
+          </Boton>
+        </div>
+      </div>
+
+      {/* Pasos 2-5: pipeline de documentos */}
+      <TabPipelineTodo
+        key={claveReset}
+        procesos={procesos}
+        estadosDocs={estadosDocs}
+        ubicaciones={ubicaciones}
+        offsetPaso={2}
+      />
+    </div>
+  )
+}
+
 function PaginaProcesarDocumentosInterna() {
   const t = useTranslations('processDocuments')
   const tc = useTranslations('common')
@@ -133,7 +234,7 @@ function PaginaProcesarDocumentosInterna() {
   const estadoDesdeUrl = searchParams.get('estado')
 
   // Tabs
-  const [tabPrincipal, setTabPrincipal] = useState<'procesar' | 'todo' | 'revertir'>('procesar')
+  const [tabPrincipal, setTabPrincipal] = useState<'procesar' | 'todo' | 'indexar-todo' | 'revertir'>('procesar')
 
   // Config
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([])
@@ -535,7 +636,7 @@ function PaginaProcesarDocumentosInterna() {
 
   const seleccionarDirectorio = async () => {
     try {
-      const opts: Record<string, unknown> = { mode: 'read', id: 'cab-procesar-docs' }
+      const opts: Record<string, unknown> = { mode: 'read' }
       const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
       setDirHandle(handle)
       idbSetHandle(handle)
@@ -818,7 +919,7 @@ function PaginaProcesarDocumentosInterna() {
           setDirHandle(stored)
         } else {
           try {
-            const opts: Record<string, unknown> = { mode: 'read', id: 'cab-procesar-docs' }
+            const opts: Record<string, unknown> = { mode: 'read' }
             handleEfectivo = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
             setDirHandle(handleEfectivo)
             idbSetHandle(handleEfectivo)
@@ -1156,7 +1257,7 @@ function PaginaProcesarDocumentosInterna() {
         i18nNamespace="processDocuments"
       />
 
-      {/* Lengüetas Procesar / Todo / Revertir */}
+      {/* Lengüetas Procesar / Indexar documentos / Indexar todo / Revertir */}
       <div className="flex gap-1 border-b border-borde -mt-2">
         <button
           onClick={() => setTabPrincipal('procesar')}
@@ -1168,7 +1269,13 @@ function PaginaProcesarDocumentosInterna() {
           onClick={() => setTabPrincipal('todo')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'todo' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
         >
-          {t('tabTodo')}
+          Indexar documentos
+        </button>
+        <button
+          onClick={() => setTabPrincipal('indexar-todo')}
+          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'indexar-todo' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+        >
+          Indexar todo
         </button>
         <button
           onClick={() => setTabPrincipal('revertir')}
@@ -1182,6 +1289,15 @@ function PaginaProcesarDocumentosInterna() {
 
       {tabPrincipal === 'todo' && (
         <TabPipelineTodo
+          procesos={procesos}
+          estadosDocs={estadosDocs}
+          ubicaciones={ubicaciones}
+          offsetPaso={1}
+        />
+      )}
+
+      {tabPrincipal === 'indexar-todo' && (
+        <TabIndexarTodo
           procesos={procesos}
           estadosDocs={estadosDocs}
           ubicaciones={ubicaciones}
