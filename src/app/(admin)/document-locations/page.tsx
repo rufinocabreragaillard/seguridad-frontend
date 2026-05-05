@@ -22,7 +22,8 @@ import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 export default function PaginaUbicacionesDocs() {
-  const { grupoActivo } = useAuth()
+  const { grupoActivo, usuario } = useAuth()
+  const userId = usuario?.codigo_usuario ?? null
   const t = useTranslations('documentLocations')
   const tc = useTranslations('common')
   const tcd = useTranslations('cargarDocumentos')
@@ -151,7 +152,7 @@ export default function PaginaUbicacionesDocs() {
     if (ubicaciones.length === 0) return
     setCargando(true)
     try {
-      // Modo legacy (CTE recursiva con ruta_completa incremental):
+      // Modo legacy (CTE recursiva con url incremental):
       // más eficiente que armar el subárbol vía grafo cuando hay miles de nodos.
       const todos = await ubicacionesDocsApi.listar()
       setUbicaciones(todos)
@@ -521,7 +522,7 @@ export default function PaginaUbicacionesDocs() {
         const n = parseInt(nivelParam.valor, 10)
         if (!isNaN(n) && n >= 0 && n <= 5) setCdNiveles(n)
       }
-      const h = await idbGetHandle()
+      const h = await idbGetHandle(userId, grupoActivo)
       if (!h) return
       try {
         const perm = await (h as unknown as { queryPermission: (opts: { mode: string }) => Promise<PermissionState> }).queryPermission({ mode: 'read' })
@@ -537,11 +538,11 @@ export default function PaginaUbicacionesDocs() {
   ) => {
     const rutaRaizFS = `/${scan.nombreRaiz}`
     const ubicacionRaiz = ubicacionesAct.find(
-      (u) => u.ruta_completa?.endsWith(`/${scan.nombreRaiz}`) || u.ruta_completa === `/${scan.nombreRaiz}`
+      (u) => u.url?.endsWith(`/${scan.nombreRaiz}`) || u.url === `/${scan.nombreRaiz}`
     )
     let prefijoRemap = ''
-    if (ubicacionRaiz?.ruta_completa) {
-      prefijoRemap = ubicacionRaiz.ruta_completa.slice(0, ubicacionRaiz.ruta_completa.length - rutaRaizFS.length)
+    if (ubicacionRaiz?.url) {
+      prefijoRemap = ubicacionRaiz.url.slice(0, ubicacionRaiz.url.length - rutaRaizFS.length)
     }
     const remapear = (rutaFS: string) => prefijoRemap + rutaFS
     const rutasHabilitadas = new Set<string>()
@@ -549,13 +550,13 @@ export default function PaginaUbicacionesDocs() {
     const todasRutasBD = new Set<string>()
     const rutaToCodigoHabilitado = new Map<string, string>()
     for (const u of ubicacionesAct) {
-      if (u.ruta_completa) {
-        todasRutasBD.add(u.ruta_completa)
+      if (u.url) {
+        todasRutasBD.add(u.url)
         if (u.ubicacion_habilitada) {
-          rutasHabilitadas.add(u.ruta_completa)
-          rutaToCodigoHabilitado.set(u.ruta_completa, u.codigo_ubicacion)
+          rutasHabilitadas.add(u.url)
+          rutaToCodigoHabilitado.set(u.url, u.codigo_ubicacion)
         } else {
-          rutasNoHabilitadas.add(u.ruta_completa)
+          rutasNoHabilitadas.add(u.url)
         }
       }
     }
@@ -599,7 +600,7 @@ export default function PaginaUbicacionesDocs() {
     try {
       const scan = await escanearArchivosDirectorio(handle, cdNiveles)
       if (!scan) return
-      // La clasificación necesita TODAS las ubicaciones del grupo (con ruta_completa);
+      // La clasificación necesita TODAS las ubicaciones del grupo (con url);
       // el árbol del lado izquierdo está en modo lazy, así que aquí pedimos full.
       const todas = await ubicacionesDocsApi.listar()
       setCdDatos(cdClasificar(scan, todas))
@@ -616,12 +617,12 @@ export default function PaginaUbicacionesDocs() {
       return
     }
     try {
-      const opts: Record<string, unknown> = { mode: 'read', id: 'cab-procesar-docs' }
+      const opts: Record<string, unknown> = { mode: 'read' }
       if (cdDirHandle) opts.startIn = cdDirHandle
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const handle = await (window as any).showDirectoryPicker(opts)
       setCdDirHandle(handle)
-      idbSetHandle(handle)
+      idbSetHandle(handle, userId, grupoActivo)
       await cdEjecutarEscaneo(handle)
     } catch { /* cancelado */ }
   }
@@ -691,7 +692,7 @@ export default function PaginaUbicacionesDocs() {
     const coincide = q && (
       u.nombre_ubicacion.toLowerCase().includes(q) ||
       u.codigo_ubicacion.toLowerCase().includes(q) ||
-      (u.ruta_completa || '').toLowerCase().includes(q)
+      (u.url || '').toLowerCase().includes(q)
     )
     const rowBg = coincide
       ? 'bg-yellow-100 hover:bg-yellow-200'
@@ -722,8 +723,8 @@ export default function PaginaUbicacionesDocs() {
             <span className="text-xs text-texto-muted ml-2">({u.codigo_ubicacion})</span>
           </div>
 
-          <span className="text-xs text-texto-muted truncate max-w-[300px] shrink-0 hidden lg:block" title={u.ruta_completa || ''}>
-            {u.ruta_completa || ''}
+          <span className="text-xs text-texto-muted truncate max-w-[300px] shrink-0 hidden lg:block" title={u.url || ''}>
+            {u.url || ''}
           </span>
 
           <Insignia variante={u.tipo_ubicacion === 'AREA' ? 'primario' : 'advertencia'}>
@@ -846,7 +847,7 @@ export default function PaginaUbicacionesDocs() {
                   [
                     { titulo: 'Código', campo: 'codigo_ubicacion' },
                     { titulo: 'Nombre', campo: 'nombre_ubicacion' },
-                    { titulo: 'Ruta', campo: 'ruta_completa' },
+                    { titulo: 'Ruta', campo: 'url' },
                     { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
                     { titulo: 'Nivel', campo: 'nivel' },
                     { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
@@ -1215,8 +1216,8 @@ export default function PaginaUbicacionesDocs() {
               )}
             </div>
             <p className="text-xs text-texto-muted">
-              {cdCarpetaRaiz?.ruta_completa
-                ? <>{tcd('seleccionarCarpetaRaiz')} <strong className="text-texto">{cdCarpetaRaiz.ruta_completa.split('/').filter(Boolean)[0] ?? cdCarpetaRaiz.ruta_completa}</strong> {tcd('noSubcarpetas')} · </>
+              {cdCarpetaRaiz?.url
+                ? <>{tcd('seleccionarCarpetaRaiz')} <strong className="text-texto">{cdCarpetaRaiz.url.split('/').filter(Boolean)[0] ?? cdCarpetaRaiz.url}</strong> {tcd('noSubcarpetas')} · </>
                 : null}
               {cdNiveles === 0 ? tcd('soloRaiz') : tcd('hastaXNiveles', { n: cdNiveles })}
               {' '}· {tcd('configNiveles')}

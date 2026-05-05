@@ -52,7 +52,8 @@ interface TabPipelineTodoProps {
 }
 
 export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: ubicacionesProp = [], offsetPaso = 1 }: TabPipelineTodoProps) {
-  const { grupoActivo } = useAuth()
+  const { grupoActivo, usuario } = useAuth()
+  const userId = usuario?.codigo_usuario ?? null
 
   const [progresos, setProgresos] = useState<Record<string, ProgresoPaso>>(progresosIniciales)
   const [ejecutando, setEjecutando] = useState(false)
@@ -136,7 +137,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   }, [])
 
   useEffect(() => {
-    getDirectoryHandle().then((h) => { if (h) setDirHandleState(h) })
+    getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) setDirHandleState(h) })
     cargarConteos()
     ubicacionesDocsApi.listar().then((ubs) => {
       if (!ubs?.length) return
@@ -152,7 +153,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     try {
       const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
       setDirHandleState(handle)
-      await setDirectoryHandle(handle)
+      await setDirectoryHandle(handle, userId, grupoActivo)
     } catch { /* usuario canceló */ }
   }
 
@@ -171,13 +172,13 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     // Solo pedimos handle cuando hay docs CARGADO que necesitan lectura física
     let handle = dirHandle
     if (!handle || !(await ensureReadPermission(handle))) {
-      const stored = await getDirectoryHandle()
+      const stored = await getDirectoryHandle(userId, grupoActivo)
       if (stored && (await ensureReadPermission(stored))) {
-        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored)
+        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
       } else {
         try {
           handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
-          setDirHandleState(handle); await setDirectoryHandle(handle)
+          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
         } catch {
           // Sin permiso: marcar todos como no encontrados
           for (const doc of docsFinal) {

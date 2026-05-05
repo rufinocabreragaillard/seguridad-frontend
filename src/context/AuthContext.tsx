@@ -15,6 +15,7 @@ import { supabase } from '@/lib/supabase'
 import { authApi, actualizarMapaFunciones, setOverrideSesion, clearOverridesSesion } from '@/lib/api'
 import { invalidarTodosLosCatalogos } from '@/lib/catalogos'
 import type { UsuarioContexto } from '@/lib/tipos'
+import { purgarBaseAntigua } from '@/lib/file-handle-store'
 
 const PUBLIC_ROUTES = ['/login', '/auth/callback', '/auth/reset-password']
 
@@ -55,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // lock de Supabase de 5s en la primera carga).
   const pathnameRef = useRef(pathname)
   useEffect(() => { pathnameRef.current = pathname }, [pathname])
+
+  // Purgar la base de datos legacy `cab-procesar-docs` de IndexedDB.
+  // Solo se ejecuta una vez por sesión gracias al guard interno de `purgarBaseAntigua`.
+  useEffect(() => { purgarBaseAntigua() }, [])
 
   const cargarContexto = useCallback(async () => {
     // Reintentos por si Railway reinicia el contenedor (crash, deploy) o Supabase está lento.

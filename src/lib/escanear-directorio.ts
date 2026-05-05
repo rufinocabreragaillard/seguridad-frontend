@@ -261,7 +261,7 @@ export async function escanearDirectorioSinHijos(): Promise<{
   directorio: DirectorioEscaneado
 } | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dirHandle = await (window as any).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' }).catch(() => null)
+  const dirHandle = await (window as any).showDirectoryPicker({ mode: 'read' }).catch(() => null)
   if (!dirHandle) return null
 
   const nombreRaiz = dirHandle.name

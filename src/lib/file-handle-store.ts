@@ -1,18 +1,27 @@
 /**
- * Persistencia compartida del FileSystemDirectoryHandle del directorio raiz
- * que el usuario seleccionó en /procesar-documentos.
+ * Persistencia compartida del FileSystemDirectoryHandle del directorio raíz
+ * que el usuario seleccionó. Particionado por (userId, grupoActivo) para que
+ * cada combinación usuario/grupo recuerde su propio directorio.
  *
  * Se guarda en IndexedDB para que sobreviva recargas y pueda usarse desde
  * otras pantallas (ej. /documentos para "abrir documento original").
  *
- * El handle queda valido mientras el usuario no limpie la sesion del browser.
+ * El handle queda válido mientras el usuario no limpie la sesión del browser.
  * El permiso de lectura puede caducar y hay que repedirlo con
  * `requestPermission`.
  */
 
-const IDB_NAME = 'cab-procesar-docs'
+const IDB_NAME = 'serverlm-docs'
 const IDB_STORE = 'handles'
-const IDB_KEY = 'dirHandle'
+const IDB_KEY_LEGACY = 'dirHandle' // clave usada por la versión anterior (sin partición)
+const IDB_NAME_LEGACY = 'cab-procesar-docs'
+
+function buildKey(userId?: string | null, grupoActivo?: string | null): string {
+  // Si no hay user/grupo, caer al esquema legacy para no romper consumidores que aún
+  // no propagan el contexto. Se logueará en consola para detectar.
+  if (!userId || !grupoActivo) return IDB_KEY_LEGACY
+  return `dirHandle:${userId}:${grupoActivo}`
+}
 
 function idbOpen(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -23,13 +32,17 @@ function idbOpen(): Promise<IDBDatabase> {
   })
 }
 
-export async function getDirectoryHandle(): Promise<FileSystemDirectoryHandle | null> {
+export async function getDirectoryHandle(
+  userId?: string | null,
+  grupoActivo?: string | null,
+): Promise<FileSystemDirectoryHandle | null> {
   if (typeof indexedDB === 'undefined') return null
   try {
     const db = await idbOpen()
+    const key = buildKey(userId, grupoActivo)
     return await new Promise((resolve) => {
       const tx = db.transaction(IDB_STORE, 'readonly')
-      const req = tx.objectStore(IDB_STORE).get(IDB_KEY)
+      const req = tx.objectStore(IDB_STORE).get(key)
       req.onsuccess = () => resolve((req.result as FileSystemDirectoryHandle) || null)
       req.onerror = () => resolve(null)
     })
@@ -38,13 +51,18 @@ export async function getDirectoryHandle(): Promise<FileSystemDirectoryHandle | 
   }
 }
 
-export async function setDirectoryHandle(handle: FileSystemDirectoryHandle | null) {
+export async function setDirectoryHandle(
+  handle: FileSystemDirectoryHandle | null,
+  userId?: string | null,
+  grupoActivo?: string | null,
+) {
   if (typeof indexedDB === 'undefined') return
   try {
     const db = await idbOpen()
     const tx = db.transaction(IDB_STORE, 'readwrite')
-    if (handle) tx.objectStore(IDB_STORE).put(handle, IDB_KEY)
-    else tx.objectStore(IDB_STORE).delete(IDB_KEY)
+    const key = buildKey(userId, grupoActivo)
+    if (handle) tx.objectStore(IDB_STORE).put(handle, key)
+    else tx.objectStore(IDB_STORE).delete(key)
   } catch {
     /* ignore */
   }
@@ -76,4 +94,20 @@ export async function ensureReadPermission(
     return false
   }
   return false
+}
+
+/**
+ * Elimina la base de datos antigua `cab-procesar-docs` (esquema sin partición).
+ * Se llama una sola vez al cargar la app para liberar el handle huérfano.
+ */
+let _purgaEjecutada = false
+export async function purgarBaseAntigua(): Promise<void> {
+  if (typeof indexedDB === 'undefined') return
+  if (_purgaEjecutada) return
+  _purgaEjecutada = true
+  try {
+    indexedDB.deleteDatabase(IDB_NAME_LEGACY)
+  } catch {
+    /* ignore */
+  }
 }

@@ -462,7 +462,7 @@ export default function PaginaDocumentos() {
                         <ExternalLink size={16} />
                       </a>
                     )}
-                    {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && esVisualizableEnBrowser(d.nombre_documento) && (
+                    {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && (
                       <button
                         onClick={() => abrirDocumentoLocal(d)}
                         className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"

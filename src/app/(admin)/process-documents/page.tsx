@@ -1707,7 +1707,7 @@ function PaginaProcesarDocumentosInterna() {
                             <ExternalLink size={15} />
                           </LinkAccion>
                         )}
-                        {ubic && !esUrl && esVisualizableEnBrowser(c.nombre_documento) && (
+                        {ubic && !esUrl && (
                           <BotonAccion
                             tooltip="Abrir archivo"
                             onClick={() => abrirArchivoDesdeCola(c)}
@@ -1816,7 +1816,7 @@ function PaginaProcesarDocumentosInterna() {
                           <ExternalLink size={15} />
                         </LinkAccion>
                       )}
-                      {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && esVisualizableEnBrowser(d.nombre_documento) && (
+                      {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && (
                         <BotonAccion
                           tooltip="Abrir archivo"
                           onClick={() => abrirDocumentoLocal(d)}
@@ -2135,7 +2135,7 @@ function PaginaProcesarDocumentosInterna() {
                           <ExternalLink size={14} />
                         </a>
                       )}
-                      {docDetalle.ubicacion_documento && !/^https?:\/\//i.test(docDetalle.ubicacion_documento) && esVisualizableEnBrowser(docDetalle.nombre_documento) && (
+                      {docDetalle.ubicacion_documento && !/^https?:\/\//i.test(docDetalle.ubicacion_documento) && (
                         <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(docDetalle.ubicacion_documento, win, userId, grupoActivo) }}
                           className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
                           <FileText size={14} />

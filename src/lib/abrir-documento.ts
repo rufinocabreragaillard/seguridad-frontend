@@ -51,8 +51,28 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
   setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
 
   if (!inline) {
-    if (winPreAbierta && !winPreAbierta.closed) winPreAbierta.close()
-    _triggerDownload(blob, nombre)
+    // Para tipos que el browser no renderiza inline, abrir en pestaña nueva
+    // con un wrapper HTML que muestra el nombre del archivo como título y un
+    // enlace de descarga. No descargar automáticamente — el usuario eligió "ver".
+    const titulo = _escapeHtml(nombre)
+    const src = _escapeHtml(url)
+    const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${titulo}</title></head>
+<body style="margin:0;background:#1f1f1f;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;gap:1rem">
+<p style="color:#ccc;font-size:15px">Este tipo de archivo no se puede previsualizar en el navegador.</p>
+<p style="color:#888;font-size:13px">${titulo}</p>
+<a href="${src}" download="${titulo}" style="color:#6ab0f5;font-size:14px">Descargar archivo</a>
+</body>
+</html>`
+    const wrapperBlob = new Blob([html], { type: 'text/html' })
+    const wrapperUrl = URL.createObjectURL(wrapperBlob)
+    setTimeout(() => URL.revokeObjectURL(wrapperUrl), 5 * 60_000)
+    if (winPreAbierta && !winPreAbierta.closed) {
+      winPreAbierta.location.replace(wrapperUrl)
+    } else {
+      window.open(wrapperUrl, '_blank')
+    }
     return
   }
 

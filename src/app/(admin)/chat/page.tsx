@@ -134,9 +134,11 @@ export default function PaginaChatUsuario() {
         doc.ubicacion_documento,
         (url, nombre) => { setVisorBlobUrl(url); setVisorNombre(nombre) },
         (msg) => alert(msg),
+        codigoUsuario || null,
+        grupoActivo,
       )
     } catch { /* silencioso */ }
-  }, [])
+  }, [codigoUsuario, grupoActivo])
 
   const verSystemPrompt = async () => {
     if (convActivaId == null) return
@@ -1230,7 +1232,7 @@ export default function PaginaChatUsuario() {
                                   <button
                                     type="button"
                                     title="Abrir archivo"
-                                    onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(ubic, win) }}
+                                    onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(ubic, win, codigoUsuario || null, grupoActivo) }}
                                     className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
                                   >
                                     <FileText size={15} />
@@ -1240,7 +1242,7 @@ export default function PaginaChatUsuario() {
                                   <button
                                     type="button"
                                     title="Descargar"
-                                    onClick={() => descargarDocumento(ubic, d.nombre_documento)}
+                                    onClick={() => descargarDocumento(ubic, d.nombre_documento, codigoUsuario || null, grupoActivo)}
                                     className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
                                   >
                                     <Download size={15} />

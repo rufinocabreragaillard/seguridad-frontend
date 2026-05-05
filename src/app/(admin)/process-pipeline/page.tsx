@@ -17,12 +17,12 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi } from '@/lib/api'
+import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi, cargaDocumentosApi } from '@/lib/api'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { abrirDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import {
-  escanearDirectorio, escanearDirectorioSinHijos,
+  escanearDirectorio, escanearDirectorioSinHijos, escanearArchivosDirectorio,
   soportaDirectoryPicker, type DirectorioEscaneado,
 } from '@/lib/escanear-directorio'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -34,11 +34,21 @@ import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
+// Numeración global de pasos:
+//   Paso 1 = INDEXAR_UBICACIONES (solo tab Ubicaciones)
+//   Paso 2 = CARGAR     (filesystem → docs.CARGADO)
+//   Paso 3 = EXTRAER    (CARGADO → METADATA, client-side)
+//   Paso 4 = ANALIZAR   (METADATA → ESCANEADO)
+//   Paso 5 = CHUNKEAR   (ESCANEADO → CHUNKEADO)
+//   Paso 6 = VECTORIZAR (CHUNKEADO → VECTORIZADO)
 
+// PASOS = pasos del pipeline de Documentos (2..6, sin Indexar Ubicaciones).
 const PASOS = [
-  { key: 'EXTRAER',  nombre: 'EXTRAER',  estadoOrigen: 'CARGADO',   estadoDestino: 'METADATA',  colorBarra: '#074B91', clienteSide: true  },
-  { key: 'ANALIZAR', nombre: 'ANALIZAR', estadoOrigen: 'METADATA',  estadoDestino: 'ESCANEADO', colorBarra: '#F97316', clienteSide: false },
-  { key: 'CHUNKEAR', nombre: 'CHUNKEAR', estadoOrigen: 'ESCANEADO', estadoDestino: 'CHUNKEADO', colorBarra: '#22C55E', clienteSide: false },
+  { key: 'CARGAR',     estadoOrigen: '',          estadoDestino: 'CARGADO',     colorBarra: '#0EA5E9', clienteSide: true  },
+  { key: 'EXTRAER',    estadoOrigen: 'CARGADO',   estadoDestino: 'METADATA',    colorBarra: '#074B91', clienteSide: true  },
+  { key: 'ANALIZAR',   estadoOrigen: 'METADATA',  estadoDestino: 'ESCANEADO',   colorBarra: '#F97316', clienteSide: false },
+  { key: 'CHUNKEAR',   estadoOrigen: 'ESCANEADO', estadoDestino: 'CHUNKEADO',   colorBarra: '#84CC16', clienteSide: false },
+  { key: 'VECTORIZAR', estadoOrigen: 'CHUNKEADO', estadoDestino: 'VECTORIZADO', colorBarra: '#22C55E', clienteSide: false },
 ] as const
 
 // Estados válidos (documentos que avanzaron correctamente) e inválidos (rechazados)
@@ -48,8 +58,13 @@ const ESTADOS_INVALIDOS = ['NO_ANALIZABLE', 'NO_ESCANEABLE']
 type EstadoPaso = 'esperando' | 'activo' | 'listo' | 'error'
 interface ProgresoPaso { total: number; completados: number; estado: EstadoPaso }
 
-const progresosIniciales = (): Record<string, ProgresoPaso> =>
-  Object.fromEntries(PASOS.map((p) => [p.key, { total: 0, completados: 0, estado: 'esperando' }]))
+// Clave especial para el paso 1 (solo tab Ubicaciones). No forma parte de PASOS.
+const PASO_INDEXAR = 'INDEXAR_UBICACIONES'
+
+const progresosIniciales = (): Record<string, ProgresoPaso> => ({
+  [PASO_INDEXAR]: { total: 0, completados: 0, estado: 'esperando' },
+  ...Object.fromEntries(PASOS.map((p) => [p.key, { total: 0, completados: 0, estado: 'esperando' }])),
+})
 
 type EstadoEtapa = 'pendiente' | 'activo' | 'completado'
 
@@ -58,7 +73,8 @@ type EstadoEtapa = 'pendiente' | 'activo' | 'completado'
 export default function PaginaCargaDocsUsuario() {
   const t = useTranslations('processPipeline')
   const tc = useTranslations('common')
-  const { grupoActivo } = useAuth()
+  const { grupoActivo, usuario } = useAuth()
+  const userId = usuario?.codigo_usuario ?? null
 
   const [nParaleloExtraer, setNParaleloExtraer] = useState(6)
   const [timeoutExtraccionMs, setTimeoutExtraccionMs] = useState<number | undefined>(undefined)
@@ -398,7 +414,11 @@ export default function PaginaCargaDocsUsuario() {
       const conteos = await documentosApi.contarPorEstado()
       setProgresos((prev) => {
         const next = { ...prev }
-        for (const paso of PASOS) next[paso.key] = { ...next[paso.key], total: conteos[paso.estadoOrigen] ?? 0, completados: 0, estado: 'esperando' }
+        for (const paso of PASOS) {
+          // CARGAR no tiene estadoOrigen (lee del filesystem, no de docs)
+          const totalEstado = paso.estadoOrigen ? (conteos[paso.estadoOrigen] ?? 0) : 0
+          next[paso.key] = { ...next[paso.key], total: totalEstado, completados: 0, estado: 'esperando' }
+        }
         return next
       })
       const validos = ESTADOS_VALIDOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
@@ -427,7 +447,7 @@ export default function PaginaCargaDocsUsuario() {
   }, [ubicacionDocSel, ubicaciones])
 
   useEffect(() => {
-    getDirectoryHandle().then((h) => { if (h) setDirHandleState(h) })
+    getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) setDirHandleState(h) })
     cargarConteos()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grupoActivo])
@@ -442,13 +462,13 @@ export default function PaginaCargaDocsUsuario() {
     // Solo pedimos handle cuando hay docs CARGADO que necesitan lectura física
     let handle = dirHandle
     if (!handle || !(await ensureReadPermission(handle))) {
-      const stored = await getDirectoryHandle()
+      const stored = await getDirectoryHandle(userId, grupoActivo)
       if (stored && (await ensureReadPermission(stored))) {
-        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored)
+        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
       } else {
         try {
           handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
-          setDirHandleState(handle); await setDirectoryHandle(handle)
+          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
         } catch {
           // Sin permiso: marcar todos como no encontrados
           for (const doc of docs) {
@@ -560,12 +580,103 @@ export default function PaginaCargaDocsUsuario() {
     return true
   }
 
+  // Paso 2 — CARGAR: escanear filesystem y subir lista de archivos al backend
+  const ejecutarCargar = async (): Promise<boolean> => {
+    // Solicitar handle si hace falta (igual lógica que extraer)
+    let handle = dirHandle
+    if (!handle || !(await ensureReadPermission(handle))) {
+      const stored = await getDirectoryHandle(userId, grupoActivo)
+      if (stored && (await ensureReadPermission(stored))) {
+        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
+      } else {
+        try {
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
+          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
+        } catch {
+          setPaso('CARGAR', { estado: 'listo' })
+          return true
+        }
+      }
+    }
+    setPaso('CARGAR', { total: 1, completados: 0, estado: 'activo' })
+    try {
+      // Escaneo basado en ubicaciones existentes (la "indexación" ya se hizo).
+      // Si no hay ubicaciones, escaneamos el árbol completo.
+      const rutasDeshabilitadas = new Set(
+        ubicaciones.filter((u) => !u.ubicacion_habilitada).map((u) => u.url || '').filter(Boolean),
+      )
+      const scan = await escanearArchivosDirectorio(handle, 5, undefined, rutasDeshabilitadas)
+      if (!scan) { setPaso('CARGAR', { estado: 'listo' }); return true }
+      const codigosUbicacionEscaneadas = ubicaciones
+        .filter((u) => u.ubicacion_habilitada && (u.url || '').length > 0)
+        .map((u) => u.codigo_ubicacion)
+      const archivos = scan.archivos.map((a) => ({
+        nombre: a.nombre,
+        ruta_completa: a.ruta_completa,
+        ruta_directorio: a.ruta_directorio,
+        tamano_kb: a.tamano_kb,
+        fecha_modificacion: a.fecha_modificacion,
+      }))
+      setPaso('CARGAR', { total: archivos.length || 1, completados: 0, estado: 'activo' })
+      await cargaDocumentosApi.cargar({
+        archivos,
+        codigos_ubicacion_escaneadas: codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined,
+      })
+      setPaso('CARGAR', { total: archivos.length || 1, completados: archivos.length || 1, estado: 'listo' })
+      return true
+    } catch (e) {
+      setPaso('CARGAR', { estado: 'error' })
+      setMensajeError(e instanceof Error ? e.message : t('errorInesperado'))
+      return false
+    }
+  }
+
+  const ejecutarUnPaso = async (key: string): Promise<boolean> => {
+    if (key === 'CARGAR') return ejecutarCargar()
+    if (key === 'EXTRAER') return ejecutarExtraer()
+    const paso = PASOS.find((p) => p.key === key)
+    if (!paso) return true
+    return ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
+  }
+
   const ejecutarPipeline = async () => {
     setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); suscribirCola()
     try {
       for (const paso of PASOS) {
         if (abortRef.current) break
-        const ok = paso.clienteSide ? await ejecutarExtraer() : await ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
+        const ok = await ejecutarUnPaso(paso.key)
+        if (!ok) break
+      }
+    } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
+    finally { desuscribirCola(); setEjecutando(false); await cargarConteos() }
+  }
+
+  // Pipeline completo desde la tab Ubicaciones: incluye Paso 1 (indexar ubicaciones)
+  // antes de ejecutar el pipeline de Documentos.
+  const ejecutarPipelineUbicaciones = async () => {
+    setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); suscribirCola()
+    try {
+      // Paso 1: indexar ubicaciones (escaneo + sincronización)
+      if (!soportaDirectoryPicker()) { setMensajeError(t('alertNavegadorNoSoporta') || 'Navegador no soporta File System Access API'); return }
+      setPaso(PASO_INDEXAR, { total: 1, completados: 0, estado: 'activo' })
+      try {
+        const r = await escanearDirectorio()
+        if (!r) { setPaso(PASO_INDEXAR, { estado: 'listo' }) /* usuario canceló */; return }
+        const res = await ubicacionesDocsApi.sincronizar({ directorios: r.directorios })
+        setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.eliminadas} eliminadas`)
+        setPaso(PASO_INDEXAR, { total: 1, completados: 1, estado: 'listo' })
+        setEtapa1Estado('completado')
+        await cargarUbicaciones()
+      } catch (e) {
+        setPaso(PASO_INDEXAR, { estado: 'error' })
+        setMensajeError(e instanceof Error ? e.message : (t('alertErrorSincronizar') || 'Error al sincronizar'))
+        return
+      }
+      if (abortRef.current) return
+      // Pasos 2-6: pipeline de Documentos
+      for (const paso of PASOS) {
+        if (abortRef.current) break
+        const ok = await ejecutarUnPaso(paso.key)
         if (!ok) break
       }
     } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
@@ -593,18 +704,36 @@ export default function PaginaCargaDocsUsuario() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docsListaPagina, todosListos, ubicacionDocSel])
 
-  // Barra de progreso individual
-  const BarraPaso = ({ pasoKey, color }: { pasoKey: string; color: string }) => {
+  // Barra de progreso individual numerada — etiqueta solo "Paso N" y conteo
+  const BarraPasoNumerada = ({ pasoKey, numero, color }: { pasoKey: string; numero: number; color: string }) => {
     const prog = progresos[pasoKey]
     const estado = prog?.estado ?? 'esperando'
-    const pct = (prog?.total ?? 0) > 0 ? Math.min(100, Math.round(((prog?.completados ?? 0) / (prog?.total ?? 1)) * 100)) : (estado === 'listo' ? 100 : 0)
-    const pulso = estado === 'activo' ? 'animate-pulse' : ''
+    const total = prog?.total ?? 0
+    const completados = prog?.completados ?? 0
+    const pct = total > 0 ? Math.min(100, Math.round((completados / total) * 100)) : (estado === 'listo' ? 100 : 0)
+    const estaActivo = estado === 'activo'
+    const estaListo = estado === 'listo'
+    const estaError = estado === 'error'
     return (
-      <div className="flex-1 h-5 rounded-full overflow-hidden bg-gray-100">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${pulso}`}
-          style={{ width: `${pct}%`, backgroundColor: estado === 'esperando' ? '#D1D5DB' : color }}
-        />
+      <div className="flex flex-col gap-1 flex-1 min-w-0">
+        <div className="flex items-center justify-between text-xs">
+          <span className={`font-semibold ${estaActivo ? 'text-texto' : estaListo ? 'text-texto-muted' : 'text-texto-muted opacity-60'}`}>
+            Paso {numero}
+          </span>
+          <span className="text-texto-muted tabular-nums">
+            {estaError ? '!' : estaListo ? '✓' : estaActivo ? (total > 0 ? `${completados}/${total}` : '…') : '—'}
+          </span>
+        </div>
+        <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#E5E7EB' }}>
+          <div
+            className={`h-full rounded-full transition-all duration-500 ${estaActivo ? 'animate-pulse' : ''}`}
+            style={{
+              width: estaListo ? '100%' : `${pct}%`,
+              backgroundColor: estaError ? '#EF4444' : (estaListo || estaActivo) ? color : '#D1D5DB',
+              opacity: estaListo ? 1 : estaActivo ? 0.85 : 0.4,
+            }}
+          />
+        </div>
       </div>
     )
   }
@@ -694,7 +823,37 @@ export default function PaginaCargaDocsUsuario() {
             </div>
           </div>
 
-          {/* Barra de progreso de sincronización inline */}
+          {/* Pipeline completo: Paso 1 (indexar ubicaciones) + Paso 2..6 (Documentos) */}
+          <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-4">
+            <div className="flex items-stretch gap-3">
+              <BarraPasoNumerada pasoKey={PASO_INDEXAR} numero={1} color="#7C3AED" />
+              {PASOS.map((paso, i) => (
+                <BarraPasoNumerada key={paso.key} pasoKey={paso.key} numero={i + 2} color={paso.colorBarra} />
+              ))}
+            </div>
+            {mensajeError && (
+              <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                <AlertTriangle size={15} className="mt-0.5 shrink-0" />{mensajeError}
+              </div>
+            )}
+            {(ejecutando || progresos[PASO_INDEXAR]?.estado === 'listo') && (
+              <p className="text-center text-xs text-texto-muted">
+                {ejecutando ? `Procesando · ${formatTiempo(tiempoTranscurrido)}` : `Tiempo: ${formatTiempo(tiempoTranscurrido)}`}
+              </p>
+            )}
+            <div className="flex gap-3">
+              {!ejecutando ? (
+                <Boton variante="primario" className="flex-1" onClick={ejecutarPipelineUbicaciones}>
+                  <ScanSearch size={15} />
+                  Ejecutar pipeline completo
+                </Boton>
+              ) : (
+                <Boton variante="peligro" className="flex-1" onClick={detener}>{t('detener')}</Boton>
+              )}
+            </div>
+          </div>
+
+          {/* Barra de progreso de sincronización inline (botón Indexar manual) */}
           {syncEstado !== 'idle' && (
             <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-2">
               <div className="flex items-center justify-between text-xs">
@@ -917,13 +1076,10 @@ export default function PaginaCargaDocsUsuario() {
               </div>
             )}
 
-            {/* Barras de progreso del pipeline */}
-            <div className="flex items-center gap-2">
+            {/* Barras de progreso del pipeline (Paso 2..6) */}
+            <div className="flex items-stretch gap-3">
               {PASOS.map((paso, i) => (
-                <div key={paso.key} className="flex items-center gap-2 flex-1">
-                  <BarraPaso pasoKey={paso.key} color={paso.colorBarra} />
-                  {i < PASOS.length - 1 && <div className="w-2 h-0.5 bg-gray-300 shrink-0" />}
-                </div>
+                <BarraPasoNumerada key={paso.key} pasoKey={paso.key} numero={i + 2} color={paso.colorBarra} />
               ))}
             </div>
 
@@ -985,7 +1141,7 @@ export default function PaginaCargaDocsUsuario() {
                               <td className="px-3 py-2.5 w-24">
                                 <div className="flex items-center justify-end gap-1">
                                   {doc.ubicacion_documento && !/^https?:\/\//i.test(doc.ubicacion_documento) && (
-                                    <button type="button" title={t('abrirArchivo')} onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(doc.ubicacion_documento, win) }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                                    <button type="button" title={t('abrirArchivo')} onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(doc.ubicacion_documento, win, userId, grupoActivo) }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                                       <FileText size={15} />
                                     </button>
                                   )}
@@ -1340,7 +1496,7 @@ export default function PaginaCargaDocsUsuario() {
                     <ExternalLink size={13} />
                   </a>
                 ) : (
-                  <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(docDetalle.ubicacion_documento, win) }}
+                  <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(docDetalle.ubicacion_documento, win, userId, grupoActivo) }}
                     className="shrink-0 p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
                     <FileText size={13} />
                   </button>
