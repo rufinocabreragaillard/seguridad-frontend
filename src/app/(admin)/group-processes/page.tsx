@@ -16,8 +16,8 @@ import { procesosGrupoApi } from '@/lib/api'
 import type { ProcesoGrupo } from '@/lib/api'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
-import {
 import { PageHeader } from '@/components/layout/PageHeader'
+import {
   TIPOS_ELEMENTO_SIN_SISTEMA,
 } from '@/lib/tipo-elemento'
 
