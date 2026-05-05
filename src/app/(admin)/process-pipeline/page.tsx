@@ -262,8 +262,8 @@ export default function PaginaCargaDocsUsuario() {
     const expandido = expandidos.has(u.codigo_ubicacion)
     const indent = u.nivel * 24
     const esArea = u.tipo_ubicacion === 'AREA'
-    const rowBg = esArea ? 'bg-blue-50 hover:bg-blue-100' : 'bg-amber-50 hover:bg-amber-100'
-    const folderColor = esArea ? 'text-blue-500' : 'text-amber-500'
+    const rowBg = esArea ? 'bg-amber-50 hover:bg-amber-100' : 'bg-blue-50 hover:bg-blue-100'
+    const folderColor = esArea ? 'text-amber-500' : 'text-blue-500'
     return (
       <div key={u.codigo_ubicacion}>
         <div
@@ -288,7 +288,7 @@ export default function PaginaCargaDocsUsuario() {
           <span className="text-xs text-texto-muted truncate max-w-[300px] shrink-0 hidden lg:block" title={u.ruta_completa || ''}>
             {u.ruta_completa || ''}
           </span>
-          <Insignia variante={u.tipo_ubicacion === 'AREA' ? 'primario' : 'advertencia'}>{u.tipo_ubicacion}</Insignia>
+          <Insignia variante={u.tipo_ubicacion === 'AREA' ? 'advertencia' : 'primario'}>{u.tipo_ubicacion}</Insignia>
           <Insignia variante={u.ubicacion_habilitada ? 'exito' : 'advertencia'}>{u.ubicacion_habilitada ? t('habilitada') : t('inhabilitada')}</Insignia>
           <Insignia variante='exito'>{tc('activo')}</Insignia>
           <div className="flex items-center gap-0.5 shrink-0 transition-opacity">
@@ -777,9 +777,9 @@ export default function PaginaCargaDocsUsuario() {
                                 style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
                                 onClick={() => { setUbicacionDocSel(u.codigo_ubicacion); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }}
                               >
-                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
+                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
                                 <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('area') : t('contenido')}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>{esArea ? t('area') : t('contenido')}</span>
                               </div>
                             )
                           })
@@ -812,9 +812,9 @@ export default function PaginaCargaDocsUsuario() {
                                     </button>
                                   : <span className="w-3 shrink-0" />
                                 }
-                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
+                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
                                 <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('area') : t('contenido')}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>{esArea ? t('area') : t('contenido')}</span>
                               </div>
                               {expandido && hijos.map(h => renderNodoDropdown(h))}
                             </div>
