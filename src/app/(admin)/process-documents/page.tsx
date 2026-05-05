@@ -12,6 +12,7 @@ import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Modal } from '@/components/ui/modal'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { documentosApi, ubicacionesDocsApi, colaEstadosDocsApi, procesosApi, parametrosApi, cargaDocumentosApi } from '@/lib/api'
 import { getEstadosDocs, getProcesosDocs } from '@/lib/catalogos'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
@@ -1127,12 +1128,11 @@ function PaginaProcesarDocumentosInterna() {
 
   return (
     <div className="relative flex flex-col gap-6 w-full overflow-x-hidden">
-      <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
-        {tabPrincipal === 'procesar' && (
-          <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
-        )}
-      </div>
+      <PageHeader
+        className="pr-28"
+        conSubtitulo={tabPrincipal === 'procesar'}
+        i18nNamespace="processDocuments"
+      />
 
       {/* Lengüetas Procesar / Todo / Revertir */}
       <div className="flex gap-1 border-b border-borde -mt-2">
