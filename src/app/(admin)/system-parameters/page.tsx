@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, Eye, Search, Download, Lock } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Search, Download } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -44,7 +44,6 @@ export default function PaginaParametrosGenerales() {
     categoria_parametro: '', nombre: '', descripcion: '',
     replica_grupo: false, visible_grupo: true, editable_grupo: true,
     replica_usuario: false, visible_usuario: true, editable_usuario: true,
-    privado: false,
   })
   const [promptsCat, setPromptsCat] = useState<CamposPrompt>({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
   const [mdCat, setMdCat] = useState<string>('')
@@ -124,7 +123,6 @@ export default function PaginaParametrosGenerales() {
       categoria_parametro: '', nombre: '', descripcion: '',
       replica_grupo: false, visible_grupo: true, editable_grupo: true,
       replica_usuario: false, visible_usuario: true, editable_usuario: true,
-      privado: false,
     })
     setPromptsCat({ prompt_insert: null, prompt_update: null, system_prompt: null, python_insert: null, python_update: null, javascript: null, python_editado_manual: false, javascript_editado_manual: false })
     setMdCat(''); setMensajeMdCat(null); setTabModalCat('datos'); setErrorCat(''); setModalCat(true)
@@ -142,7 +140,6 @@ export default function PaginaParametrosGenerales() {
       replica_usuario: c.replica_usuario ?? false,
       visible_usuario: c.visible_usuario ?? true,
       editable_usuario: c.editable_usuario ?? true,
-      privado: c.privado ?? false,
     })
     setPromptsCat({ prompt_insert: c2.prompt_insert as string ?? null, prompt_update: c2.prompt_update as string ?? null, system_prompt: c2.system_prompt as string ?? null, python_insert: c2.python_insert as string ?? null, python_update: c2.python_update as string ?? null, javascript: c2.javascript as string ?? null, python_editado_manual: c2.python_editado_manual as boolean ?? false, javascript_editado_manual: c2.javascript_editado_manual as boolean ?? false })
     setMdCat((c2.md as string) || ''); setMensajeMdCat(null); setTabModalCat('datos'); setErrorCat(''); setModalCat(true)
@@ -157,7 +154,6 @@ export default function PaginaParametrosGenerales() {
           nombre: formCat.nombre, descripcion: formCat.descripcion,
           replica_grupo: formCat.replica_grupo, visible_grupo: formCat.visible_grupo, editable_grupo: formCat.editable_grupo,
           replica_usuario: formCat.replica_usuario, visible_usuario: formCat.visible_usuario, editable_usuario: formCat.editable_usuario,
-          privado: formCat.privado,
           prompt_insert: promptsCat.prompt_insert, prompt_update: promptsCat.prompt_update, system_prompt: promptsCat.system_prompt,
           python_insert: promptsCat.python_insert, python_update: promptsCat.python_update, javascript: promptsCat.javascript,
           python_editado_manual: promptsCat.python_editado_manual, javascript_editado_manual: promptsCat.javascript_editado_manual,
@@ -169,7 +165,6 @@ export default function PaginaParametrosGenerales() {
           nombre: formCat.nombre, descripcion: formCat.descripcion,
           replica_grupo: formCat.replica_grupo, visible_grupo: formCat.visible_grupo, editable_grupo: formCat.editable_grupo,
           replica_usuario: formCat.replica_usuario, visible_usuario: formCat.visible_usuario, editable_usuario: formCat.editable_usuario,
-          privado: formCat.privado,
         })
         if (!cerrar) setCatEditando(creada)
       }
@@ -290,7 +285,6 @@ export default function PaginaParametrosGenerales() {
                 <TablaTh className="text-center">{t('colRepUsuario')}</TablaTh>
                 <TablaTh className="text-center">{t('colVisUsuario')}</TablaTh>
                 <TablaTh className="text-center">{t('colEditUsuario')}</TablaTh>
-                <TablaTh className="text-center"><Lock size={13} className="inline" /></TablaTh>
                 <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
@@ -315,11 +309,6 @@ export default function PaginaParametrosGenerales() {
                         <TablaTd className="text-center"><Insignia variante={c.replica_usuario ? 'exito' : 'error'}>{c.replica_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.visible_usuario ? 'exito' : 'error'}>{c.visible_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
                         <TablaTd className="text-center"><Insignia variante={c.editable_usuario ? 'exito' : 'error'}>{c.editable_usuario ? tc('si') : tc('no')}</Insignia></TablaTd>
-                        <TablaTd className="text-center">
-                          {c.privado
-                            ? <span title="Valores privados (tipo API Key)" className="text-amber-600"><Lock size={13} /></span>
-                            : <span className="text-texto-light">—</span>}
-                        </TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
                             <button onClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('tipos') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verTipos')}><Eye size={14} /></button>
@@ -474,25 +463,6 @@ export default function PaginaParametrosGenerales() {
                     </label>
                   </div>
                 </div>
-              </div>
-              <div className={`border rounded-lg p-3 ${formCat.privado ? 'border-amber-300 bg-amber-50' : 'border-borde'}`}>
-                <label className="flex items-start gap-3 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={formCat.privado}
-                    onChange={(e) => setFormCat({ ...formCat, privado: e.target.checked })}
-                    className="rounded border-borde text-amber-600 h-4 w-4 mt-0.5"
-                  />
-                  <div>
-                    <p className="text-sm font-medium text-texto flex items-center gap-1.5">
-                      <Lock size={13} className="text-amber-600" />
-                      Valores privados (tipo API Key)
-                    </p>
-                    <p className="text-xs text-texto-muted mt-0.5">
-                      Los valores se muestran como <code className="bg-surface border border-borde rounded px-1">••••••••••••••••</code> en listados. Para editarlos se debe ingresar el nuevo valor completo; dejar vacío no cambia el valor actual.
-                    </p>
-                  </div>
-                </label>
               </div>
               {errorCat && <p className="text-sm text-error">{errorCat}</p>}
               <PieBotonesModal
