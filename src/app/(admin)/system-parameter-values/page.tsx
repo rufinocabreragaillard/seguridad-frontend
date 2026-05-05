@@ -16,6 +16,7 @@ import { BotonChat } from '@/components/ui/boton-chat'
 import { parametrosApi } from '@/lib/api'
 import { usePaginacion } from '@/hooks/usePaginacion'
 import type { ParametroGeneral, TipoWidget } from '@/lib/tipos'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 const inputCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
@@ -179,7 +180,7 @@ export default function PaginaValoresParametrosGenerales() {
     <div className="relative flex flex-col gap-6">
       <BotonChat />
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="systemParameterValues" conSubtitulo={false} />
         <p className="text-sm text-texto-muted mt-1">
           {t('subtitulo')}
         </p>

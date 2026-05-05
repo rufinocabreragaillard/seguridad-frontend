@@ -23,6 +23,7 @@ import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { SelectorAreaJerarquico } from '@/components/ui/selector-area-jerarquico'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type RolAsignado = {
   codigo_grupo: string
@@ -530,7 +531,7 @@ export default function PaginaUsuarios() {
       {/* Encabezado */}
       <div className="flex items-center justify-between pr-28">
         <div>
-          <h2 className="page-heading">{t('titulo')}</h2>
+          <PageHeader i18nNamespace="users" conSubtitulo={false} />
           <p className="text-sm text-texto-muted mt-1">Gestión de usuarios del sistema</p>
         </div>
         <Boton variante="primario" onClick={abrirNuevo}>

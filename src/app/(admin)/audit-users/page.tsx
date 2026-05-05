@@ -11,6 +11,7 @@ import type { RegistroAuditoria } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { useListadoSimple } from '@/hooks/useListadoSimple'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 export default function PaginaAuditoriaUsuarios() {
   const t = useTranslations('auditUsers')
@@ -34,7 +35,7 @@ export default function PaginaAuditoriaUsuarios() {
       <BotonChat className="top-0 right-0" />
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="page-heading">{t('titulo')}</h2>
+          <PageHeader i18nNamespace="auditUsers" conSubtitulo={false} />
           <p className="text-sm text-texto-muted mt-1">{registros.length} registros totales</p>
         </div>
         <div className="flex gap-2">

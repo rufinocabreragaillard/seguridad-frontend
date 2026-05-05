@@ -12,6 +12,7 @@ import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { tiposAccesoApi } from '@/lib/api'
 import type { TipoAcceso } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 const selectClass =
   'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50'
@@ -154,7 +155,7 @@ export default function PaginaTiposAcceso() {
   return (
     <div className="relative flex flex-col gap-6 max-w-3xl">
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="accessTypes" conSubtitulo={false} />
         <p className="text-sm text-texto-muted mt-1">
           {t('subtitulo')}
         </p>

@@ -10,6 +10,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { datosBasicosApi, parametrosApi } from '@/lib/api'
 import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type TabId = 'categorias' | 'valores'
 
@@ -135,8 +136,7 @@ export default function PaginaParametrosGrupo() {
     <div className="relative flex flex-col gap-6">
       <BotonChat />
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="groupParameters" />
       </div>
 
       {mensajeExito && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3"><p className="text-sm text-exito">{mensajeExito}</p></div>}

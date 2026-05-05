@@ -9,6 +9,7 @@ import { documentosApi, estadosDocsApi } from '@/lib/api'
 import { getEstadosDocs, invalidarCatalogo } from '@/lib/catalogos'
 import type { EstadoDoc } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 export default function PaginaDocumentosDashboard() {
   const t = useTranslations('documentsDashboard')
@@ -98,7 +99,7 @@ export default function PaginaDocumentosDashboard() {
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="documentsDashboard" conSubtitulo={false} />
         <p className="text-texto-muted text-sm mt-1">
           {t('subtitulo')}
         </p>

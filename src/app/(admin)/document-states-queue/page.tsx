@@ -17,6 +17,7 @@ import type { ColaEstadoDoc, Documento, EstadoDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 const ESTADO_CONFIG: Record<string, { variante: 'exito' | 'error' | 'advertencia' | 'neutro'; icono: typeof Clock }> = {
   PENDIENTE: { variante: 'neutro', icono: Clock },
@@ -184,8 +185,7 @@ export default function PaginaColaEstadosDocs() {
       <BotonChat className="top-0 right-0" />
       {/* Header */}
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="documentStatesQueue" />
       </div>
 
       {/* Toolbar */}

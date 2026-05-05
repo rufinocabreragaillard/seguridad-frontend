@@ -12,6 +12,7 @@ import { Paginador } from '@/components/ui/paginador'
 import { usePaginacion } from '@/hooks/usePaginacion'
 import { sqlEjecutadosApi } from '@/lib/api'
 import type { SqlEjecutado } from '@/lib/tipos'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 function formatearFecha(fecha: string) {
   try {
@@ -79,7 +80,7 @@ export default function PaginaSqlEjecutados() {
     <div className="flex flex-col gap-6 max-w-[1400px]">
       {/* Header */}
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="executedSql" conSubtitulo={false} />
         <p className="text-sm text-texto-muted mt-1">
           {t('subtitulo')}
         </p>

@@ -8,6 +8,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { usuariosApi, rolesApi, entidadesApi, auditoriaApi } from '@/lib/api'
 import type { RegistroAuditoria } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 interface Estadisticas {
   totalUsuarios: number
@@ -89,7 +90,7 @@ export default function PaginaDashboard() {
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="dashboard" conSubtitulo={false} />
         <p className="text-texto-muted text-sm mt-1">{t('ayuda')}</p>
       </div>
 

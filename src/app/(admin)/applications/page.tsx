@@ -20,6 +20,7 @@ import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type FuncionApp = { codigo_funcion: string; orden: number; inicial: boolean; funciones: { nombre_funcion: string } }
 type GrupoApp = { codigo_grupo: string; grupos_entidades: { nombre_grupo: string } }
@@ -212,8 +213,7 @@ export default function PaginaAplicaciones() {
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat />
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="applications" />
       </div>
 
       <div className="flex items-center gap-3">

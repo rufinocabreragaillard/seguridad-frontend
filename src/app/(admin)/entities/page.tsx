@@ -19,6 +19,7 @@ import type { Entidad, Area, Grupo } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 export default function PaginaEntidades() {
   const t = useTranslations('entities')
@@ -274,7 +275,7 @@ export default function PaginaEntidades() {
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="entities" conSubtitulo={false} />
         <p className="text-sm text-texto-muted mt-1">Gestión de organizaciones y áreas jerárquicas</p>
       </div>
 

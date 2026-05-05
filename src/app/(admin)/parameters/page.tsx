@@ -12,6 +12,7 @@ import { Tarjeta, TarjetaCabecera, TarjetaTitulo, TarjetaDescripcion, TarjetaCon
 import { useAuth } from '@/context/AuthContext'
 import { parametrosApi, entidadesApi, datosBasicosApi } from '@/lib/api'
 import type { CategoriaParametro, TipoParametro, ParametroGeneral, ParametroGrupo, ParametroUsuario } from '@/lib/tipos'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type TabId = 'generales' | 'grupo' | 'entidad' | 'usuario'
 
@@ -342,8 +343,7 @@ export default function PaginaParametros() {
     <div className="relative flex flex-col gap-6 max-w-3xl">
       <BotonChat />
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="parameters" />
       </div>
 
       {mensajeExito && (

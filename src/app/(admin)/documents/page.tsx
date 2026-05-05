@@ -22,6 +22,7 @@ import { useAuth } from '@/context/AuthContext'
 import { abrirDocumento, descargarDocumento } from '@/lib/abrir-documento'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TextoCifrado } from '@/components/ui/texto-cifrado'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type TabModal = 'datos' | 'caracteristicas' | 'texto' | 'chunks'
 
@@ -316,8 +317,7 @@ export default function PaginaDocumentos() {
       <BotonChat className="top-0 right-0" />
       {/* Header */}
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="documents" />
       </div>
 
       {/* Toolbar */}

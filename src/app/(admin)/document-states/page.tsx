@@ -17,6 +17,7 @@ import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { Boton } from '@/components/ui/boton'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
@@ -157,8 +158,7 @@ export default function PaginaEstadosDocs() {
     <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="documentStates" />
       </div>
 
       <BarraHerramientas

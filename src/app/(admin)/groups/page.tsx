@@ -22,6 +22,7 @@ import { useTranslations } from 'next-intl'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type UsuarioGrupo = { codigo_usuario: string; fecha_alta?: string; usuarios?: { nombre: string } }
 
@@ -488,7 +489,7 @@ export default function PaginaGrupos() {
 
       {/* Header */}
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="groups" conSubtitulo={false} />
         <p className="text-sm text-texto-muted mt-1">Gestion de grupos, entidades y usuarios asociados</p>
       </div>
 

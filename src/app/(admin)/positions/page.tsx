@@ -20,6 +20,7 @@ import type { Cargo, RolCargo, Entidad, Rol } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { useAuth } from '@/context/AuthContext'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type FormCargo = {
   codigo_cargo: string
@@ -334,8 +335,7 @@ export default function PaginaCargos() {
     <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="positions" />
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">

@@ -17,6 +17,7 @@ import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { datosBasicosApi, promptsApi } from '@/lib/api'
 import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type TabId = 'categorias' | 'tipos'
 type TabModalCat = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
@@ -229,7 +230,7 @@ export default function PaginaParametrosGenerales() {
     <div className="relative flex flex-col gap-6">
       <BotonChat />
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="systemParameters" conSubtitulo={false} />
         <p className="text-sm text-texto-muted mt-1">{t('subtituloAdmin')}</p>
       </div>
 

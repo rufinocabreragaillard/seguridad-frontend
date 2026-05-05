@@ -17,6 +17,7 @@ import type { ProcesoGrupo } from '@/lib/api'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 import {
+import { PageHeader } from '@/components/layout/PageHeader'
   TIPOS_ELEMENTO_SIN_SISTEMA,
 } from '@/lib/tipo-elemento'
 
@@ -83,8 +84,7 @@ export default function PaginaProcesosGrupo() {
       <BotonChat className="top-0 right-0" />
       <div className="pr-28 flex items-start justify-between gap-4">
         <div>
-          <h2 className="page-heading">{t('titulo')}</h2>
-          <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+          <PageHeader i18nNamespace="groupProcesses" />
         </div>
         <Boton variante="primario" onClick={crud.abrirNuevo}>
           <Plus size={16} /> {t('nuevo')}

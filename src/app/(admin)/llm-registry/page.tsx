@@ -19,6 +19,7 @@ import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { useAuth } from '@/context/AuthContext'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type Proveedor = 'anthropic' | 'google' | 'openai' | 'deepseek'
 
@@ -402,8 +403,7 @@ export default function PaginaRegistroLLM() {
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="llmRegistry" />
       </div>
 
       {/* Lenguetas principales */}

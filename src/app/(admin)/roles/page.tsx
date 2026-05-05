@@ -20,6 +20,7 @@ import { InsigniaTipo } from '@/components/ui/insignia-tipo'
 import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { Insignia } from '@/components/ui/insignia'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type FuncionAsignada = { codigo_funcion: string; orden: number; funciones: { nombre_funcion: string } }
 
@@ -32,7 +33,7 @@ export default function PaginaRolesGenerales() {
     <div className="relative flex flex-col gap-6">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="roles" conSubtitulo={false} />
         <p className="text-sm text-texto-muted mt-1">
           Administra roles
         </p>

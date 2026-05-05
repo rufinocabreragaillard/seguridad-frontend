@@ -14,6 +14,7 @@ import { useToast } from '@/context/ToastContext'
 import { limpiezaApi } from '@/lib/api'
 import { formatFecha, formatNumero } from '@/lib/formatters'
 import type { PoliticaLimpieza, ResultadoLimpieza } from '@/lib/tipos'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 export default function PaginaLimpieza() {
   const t = useTranslations('cleanup')
@@ -111,7 +112,7 @@ export default function PaginaLimpieza() {
   if (!esSuperAdmin) {
     return (
       <div className="flex flex-col gap-4 max-w-4xl">
-        <h2 className="page-heading">{t('titulo')}</h2>
+        <PageHeader i18nNamespace="cleanup" conSubtitulo={false} />
         <div className="flex items-start gap-3 p-4 rounded-lg border border-borde bg-fondo">
           <AlertTriangle size={20} className="text-error mt-0.5" />
           <div>

@@ -14,6 +14,7 @@ import { tareasDatosBasicosApi } from '@/lib/api'
 import type { CategoriaTarea, EstadoTarea, EstadoCanonicoTarea } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type TipoTareaSimple = { codigo_tipo_tarea: string; nombre_tipo_tarea: string }
 
@@ -138,8 +139,7 @@ export default function PaginaEstadosTarea() {
     <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat className="top-0 right-0" />
       <div className="pr-28">
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="taskStates" />
       </div>
 
       <div className="flex items-center gap-3 flex-wrap">

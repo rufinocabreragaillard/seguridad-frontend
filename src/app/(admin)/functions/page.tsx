@@ -20,6 +20,7 @@ import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM, Rol } from '@/lib/t
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { TIPOS_ELEMENTO, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 type AppDeFuncion = { codigo_aplicacion: string; aplicaciones?: { nombre_aplicacion: string } }
 
@@ -376,8 +377,7 @@ export default function PaginaFunciones() {
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat />
       <div>
-        <h2 className="page-heading">{t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <PageHeader i18nNamespace="functions" />
       </div>
 
       <div className="flex items-center gap-3">
