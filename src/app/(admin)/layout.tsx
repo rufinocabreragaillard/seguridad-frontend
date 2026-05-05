@@ -11,6 +11,7 @@ import { useTranslations } from 'next-intl'
 import { AvisoPagina } from '@/components/ui/aviso-pagina'
 import { limpiarAvisos } from '@/lib/avisos-pagina'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { VisorDocumento } from '@/components/ui/visor-documento'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('layout')
@@ -73,6 +74,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </main>
       </div>
     </div>
+      <VisorDocumento />
     </SidebarProvider>
   )
 }

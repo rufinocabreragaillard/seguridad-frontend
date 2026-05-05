@@ -1384,11 +1384,17 @@ function PaginaProcesarDocumentosInterna() {
                 disabled={ejecutando}
               >
                 <option value="">— Todos —</option>
-                {estadosDocs.map((e) => (
-                  <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
-                    {e.nombre_estado || e.codigo_estado_doc}
-                  </option>
-                ))}
+                {(() => {
+                  const validos = estadosDocs.filter(e => !e.codigo_estado_doc.startsWith('NO_') && !['REVISAR','ELIMINADO'].includes(e.codigo_estado_doc))
+                  const noValidos = estadosDocs.filter(e => e.codigo_estado_doc.startsWith('NO_') || ['REVISAR','ELIMINADO'].includes(e.codigo_estado_doc))
+                  return (
+                    <>
+                      {validos.map((e) => <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>{e.nombre_estado || e.codigo_estado_doc}</option>)}
+                      {noValidos.length > 0 && validos.length > 0 && <option disabled>──────────────</option>}
+                      {noValidos.map((e) => <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>{e.nombre_estado || e.codigo_estado_doc}</option>)}
+                    </>
+                  )
+                })()}
               </select>
             </div>
 

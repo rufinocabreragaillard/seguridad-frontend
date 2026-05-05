@@ -15,7 +15,7 @@ import type { Documento, EstadoDoc } from '@/lib/tipos'
 interface UbicacionOption {
   codigo_ubicacion: string
   nombre_ubicacion: string
-  ruta_completa: string
+  url: string
   nivel: number
   tipo_ubicacion?: 'AREA' | 'CONTENIDO'
   codigo_ubicacion_superior?: string
@@ -32,7 +32,7 @@ interface TabRevertirProps {
 export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacionesProp = [], estadosDocs: estadosDocsProp = [] }: TabRevertirProps) {
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([...procesosProp].reverse())
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>(ubicacionesProp)
-  const [estadosDocs, setEstadosDocs] = useState<EstadoDoc[]>([...estadosDocsProp].reverse())
+  const [estadosDocs, setEstadosDocs] = useState<EstadoDoc[]>([...estadosDocsProp])
 
   // Filtros
   const [procesoSel, setProcesoSel] = useState('')
@@ -67,7 +67,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
 
   const rutaUbicacion = useMemo(() => {
     if (!ubicacionSel) return undefined
-    return ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)?.ruta_completa
+    return ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)?.url
   }, [ubicacionSel, ubicaciones])
 
   // Sincronizar props cuando cambian (ej. cambio de grupo)
@@ -75,7 +75,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
   useEffect(() => { if (procesosProp.length > 0) setProcesos([...procesosProp].reverse()) }, [procesosProp])
   useEffect(() => { if (ubicacionesProp.length > 0) setUbicaciones(ubicacionesProp) }, [ubicacionesProp])
   // Estados en orden inverso del pipeline
-  useEffect(() => { if (estadosDocsProp.length > 0) setEstadosDocs([...estadosDocsProp].reverse()) }, [estadosDocsProp])
+  useEffect(() => { if (estadosDocsProp.length > 0) setEstadosDocs([...estadosDocsProp]) }, [estadosDocsProp])
 
   // Click-outside dropdown ubicación
   useEffect(() => {
@@ -213,11 +213,17 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
                 disabled={ejecutando}
               >
                 <option value="">— Todos —</option>
-                {estadosDocs.map((e) => (
-                  <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
-                    {e.nombre_estado || e.codigo_estado_doc}
-                  </option>
-                ))}
+                {(() => {
+                  const validos = estadosDocs.filter(e => !e.codigo_estado_doc.startsWith('NO_') && !['REVISAR','ELIMINADO'].includes(e.codigo_estado_doc))
+                  const noValidos = estadosDocs.filter(e => e.codigo_estado_doc.startsWith('NO_') || ['REVISAR','ELIMINADO'].includes(e.codigo_estado_doc))
+                  return (
+                    <>
+                      {validos.map((e) => <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>{e.nombre_estado || e.codigo_estado_doc}</option>)}
+                      {noValidos.length > 0 && validos.length > 0 && <option disabled>──────────────</option>}
+                      {noValidos.map((e) => <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>{e.nombre_estado || e.codigo_estado_doc}</option>)}
+                    </>
+                  )
+                })()}
               </select>
             </div>
 
@@ -275,7 +281,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
                         if (ubicBusqueda) {
                           const filtradas = ubicaciones.filter(u =>
                             u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) ||
-                            (u.ruta_completa || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
+                            (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
                           )
                           if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
                           return filtradas.map(u => {

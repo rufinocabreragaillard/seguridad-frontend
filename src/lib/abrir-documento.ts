@@ -78,16 +78,21 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
 </html>`
   const wrapperBlob = new Blob([html], { type: 'text/html' })
   const wrapperUrl = URL.createObjectURL(wrapperBlob)
-  setTimeout(() => URL.revokeObjectURL(wrapperUrl), 5 * 60_000)
+  // No revocar el wrapperUrl si lo usamos en el modal (el modal lo revoca al cerrar)
 
   if (winPreAbierta && !winPreAbierta.closed) {
     winPreAbierta.location.replace(wrapperUrl)
+    setTimeout(() => URL.revokeObjectURL(wrapperUrl), 5 * 60_000)
     return
   }
 
   const win = window.open(wrapperUrl, '_blank')
-  if (!win) {
-    _triggerDownload(blob, nombre)
+  if (win) {
+    setTimeout(() => URL.revokeObjectURL(wrapperUrl), 5 * 60_000)
+  } else {
+    // Popup bloqueado: mostrar en modal inline usando el blob original (no el wrapper)
+    URL.revokeObjectURL(wrapperUrl)
+    window.dispatchEvent(new CustomEvent('serverlm:preview', { detail: { url, nombre } }))
   }
 }
 
