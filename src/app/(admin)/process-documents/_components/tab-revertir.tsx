@@ -88,6 +88,22 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  // Al abrir el dropdown de ubicaciones, expandir automáticamente las raíces
+  // para que se vea desde el inicio el árbol (no quedar en blanco esperando filtro).
+  useEffect(() => {
+    if (!ubicDropdownOpen) return
+    const raices = ubicaciones.filter(u => !u.codigo_ubicacion_superior).map(u => u.codigo_ubicacion)
+    if (raices.length === 0) return
+    setUbicExpandidos(prev => {
+      const next = new Set(prev)
+      let cambio = false
+      for (const cod of raices) {
+        if (!next.has(cod)) { next.add(cod); cambio = true }
+      }
+      return cambio ? next : prev
+    })
+  }, [ubicDropdownOpen, ubicaciones])
+
   const cargarDocumentos = useCallback(async (pagina: number = 1) => {
     const estadoOrigen = estadoFiltro || pasoActual?.estado_origen || undefined
     if (!estadoOrigen && !filtroLibre) return
@@ -187,24 +203,16 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
               </select>
             </div>
 
-            {/* Estado — editable, igual que Paso a Paso */}
+            {/* Estado — filtro libre, independiente del proceso */}
             <div className="flex flex-col gap-1.5 min-w-0">
               <label className="text-sm font-medium text-texto">Estado</label>
               <select
                 value={estadoFiltro}
-                onChange={(e) => {
-                  const nuevoEstado = e.target.value
-                  setEstadoFiltro(nuevoEstado)
-                  // Auto-seleccionar proceso cuyo estado_origen coincida
-                  if (nuevoEstado && !procesoSel) {
-                    const match = procesos.find((p) => p.estado_origen === nuevoEstado)
-                    if (match) setProcesoSel(match.codigo_proceso)
-                  }
-                }}
+                onChange={(e) => setEstadoFiltro(e.target.value)}
                 className={selectClass}
                 disabled={ejecutando}
               >
-                <option value="">— según proceso —</option>
+                <option value="">— Todos —</option>
                 {estadosDocs.map((e) => (
                   <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
                     {e.nombre_estado || e.codigo_estado_doc}

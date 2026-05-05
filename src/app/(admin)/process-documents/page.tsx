@@ -392,6 +392,22 @@ function PaginaProcesarDocumentosInterna() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  // Al abrir el dropdown de ubicaciones, expandir automáticamente las raíces
+  // para que se vea desde el inicio el árbol (no quedar en blanco esperando filtro).
+  useEffect(() => {
+    if (!ubicDropdownOpen) return
+    const raices = ubicaciones.filter(u => !u.codigo_ubicacion_superior).map(u => u.codigo_ubicacion)
+    if (raices.length === 0) return
+    setUbicExpandidos(prev => {
+      const next = new Set(prev)
+      let cambio = false
+      for (const cod of raices) {
+        if (!next.has(cod)) { next.add(cod); cambio = true }
+      }
+      return cambio ? next : prev
+    })
+  }, [ubicDropdownOpen, ubicaciones])
+
   // Restaurar dirHandle persistido al entrar (solo escanea filesystem; cargarDocumentos lo maneja el efecto de filtros)
   useEffect(() => {
     (async () => {
@@ -1239,21 +1255,13 @@ function PaginaProcesarDocumentosInterna() {
               <select
                 value={estadoFiltro}
                 onChange={(e) => {
-                  const nuevoEstado = e.target.value
-                  setEstadoFiltro(nuevoEstado)
+                  setEstadoFiltro(e.target.value)
                   setYaCargado(false)
-                  // Auto-seleccionar proceso cuyo estado_origen coincida (PROCESAR primero, luego CORREGIR)
-                  if (nuevoEstado && !procesoSel) {
-                    const matchP = procesos.find((p) => p.estado_origen === nuevoEstado)
-                    const matchC = procesosCorregir.find((p) => p.estado_origen === nuevoEstado)
-                    if (matchP) { setProcesoSel(matchP.codigo_proceso); setCategoriaSel('PROCESAR') }
-                    else if (matchC) { setProcesoSel(matchC.codigo_proceso); setCategoriaSel('CORREGIR') }
-                  }
                 }}
                 className={selectClass}
                 disabled={ejecutando}
               >
-                <option value="">— según proceso —</option>
+                <option value="">— Todos —</option>
                 {estadosDocs.map((e) => (
                   <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
                     {e.nombre_estado || e.codigo_estado_doc}
