@@ -7,6 +7,7 @@ import {
   Globe, Plus, Trash2, Loader2, XCircle, BookOpen, Eye,
 } from 'lucide-react'
 import { traduccionesApi } from '@/lib/api'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Boton } from '@/components/ui/boton'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
@@ -378,13 +379,14 @@ export default function TraduccionesPage() {
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
-        <div className="p-2 rounded-lg bg-primario-muy-claro">
-          <Languages size={20} className="text-primario" />
-        </div>
-        <div>
-          <h1 className="page-heading">{t('titulo')}</h1>
-          <p className="text-sm text-texto-muted">{t('subtitulo')}</p>
-        </div>
+        <PageHeader
+          i18nNamespace="translations"
+          icono={
+            <div className="p-2 rounded-lg bg-primario-muy-claro">
+              <Languages size={20} className="text-primario" />
+            </div>
+          }
+        />
         <div className="ml-auto">
           <Boton variante="contorno" onClick={cargarEstado} className="gap-2" deshabilitado={enGeneracion}>
             <RefreshCw size={14} /> {tc('actualizar')}
