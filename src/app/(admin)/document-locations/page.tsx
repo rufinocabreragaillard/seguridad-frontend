@@ -151,15 +151,14 @@ export default function PaginaUbicacionesDocs() {
     if (ubicaciones.length === 0) return
     setCargando(true)
     try {
-      // Trae el subárbol completo de cada raíz vía closure table.
-      const raices = ubicaciones.filter((u) => !u.codigo_ubicacion_superior).map((u) => u.codigo_ubicacion)
-      const lotes = await Promise.all(
-        raices.map((cod) => ubicacionesDocsApi.listar({ subarbol_de: cod }))
-      )
-      const todos = lotes.flat()
-      mergeUbicaciones(todos)
+      // Modo legacy (CTE recursiva con ruta_completa incremental):
+      // más eficiente que armar el subárbol vía grafo cuando hay miles de nodos.
+      const todos = await ubicacionesDocsApi.listar()
+      setUbicaciones(todos)
       setExpandidos(new Set(todos.map((u) => u.codigo_ubicacion)))
-      setPadresCargados(new Set(todos.filter((u) => u.tiene_hijos).map((u) => u.codigo_ubicacion)))
+      // En modo legacy no viene tiene_hijos; lo derivamos del Map<padre,hijos[]>.
+      const padres = new Set(todos.map((u) => u.codigo_ubicacion_superior).filter((c): c is string => !!c))
+      setPadresCargados(padres)
     } finally {
       setCargando(false)
     }
