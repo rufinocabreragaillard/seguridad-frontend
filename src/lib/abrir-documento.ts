@@ -196,34 +196,18 @@ async function abrirViaFileSystemApi(
   let handle = await getDirectoryHandle(userId, grupoActivo)
 
   if (!handle) {
-    if (userId && grupoActivo) {
-      const { obtenerHandleDirectorio } = await import('./seleccionar-directorio')
-      const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-      if (r.error) {
-        if (winPreAbierta) winPreAbierta.close()
-        alert(r.error)
-        return
-      }
-      if (!r.handle) {
-        if (winPreAbierta) winPreAbierta.close()
-        return
-      }
-      handle = r.handle
-    } else {
-      // No hay carpeta guardada: pedir al usuario que seleccione la raíz
-      const picker = (window as WinWithPicker).showDirectoryPicker
-      if (!picker) {
-        if (winPreAbierta) winPreAbierta.close()
-        alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
-        return
-      }
-      try {
-        handle = await picker({ mode: 'read' })
-        await setDirectoryHandle(handle, userId, grupoActivo)
-      } catch {
-        if (winPreAbierta) winPreAbierta.close()
-        return
-      }
+    const picker = (window as WinWithPicker).showDirectoryPicker
+    if (!picker) {
+      if (winPreAbierta) winPreAbierta.close()
+      alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
+      return
+    }
+    try {
+      handle = await picker({ mode: 'read' })
+      await setDirectoryHandle(handle, userId, grupoActivo)
+    } catch {
+      if (winPreAbierta) winPreAbierta.close()
+      return
     }
   }
 
