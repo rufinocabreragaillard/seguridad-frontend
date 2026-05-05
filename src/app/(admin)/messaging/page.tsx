@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Mail, MessageSquare, Smartphone, Plus, Pencil, Trash2, Play, RefreshCw } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -51,7 +52,7 @@ export default function PaginaMensajeria() {
 
   return (
     <div className="space-y-4">
-      <h2 className="page-heading">Mensajería</h2>
+      <PageHeader conSubtitulo={false} />
 
       <div className="flex gap-1 border-b border-borde">
         {(['plantillas', 'canales', 'historial'] as Tab[]).map((t) => (

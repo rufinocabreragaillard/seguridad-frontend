@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import { Zap, Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -201,7 +202,7 @@ export default function PaginaHabilidades() {
 
   return (
     <div>
-      <h2 className="page-heading mb-4">Catálogo de Habilidades</h2>
+      <PageHeader className="mb-4" conSubtitulo={false} />
 
       <BarraHerramientas
         busqueda={busqueda}

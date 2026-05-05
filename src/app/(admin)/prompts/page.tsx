@@ -7,6 +7,7 @@ import {
   AlertCircle, CheckCircle2, Code2, FileText, Play, ChevronDown, ChevronUp, Search,
   Network, Workflow, Eye,
 } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Boton } from '@/components/ui/boton'
 import {
   promptsApi, traduccionesApi, funcionesApi, jerarquiasApi,
@@ -380,9 +381,7 @@ export default function PaginaPrompts() {
 
   return (
     <div className="flex flex-col gap-4 max-w-6xl">
-      <h2 className="page-heading flex items-center gap-2">
-        <Brain /> {t('titulo')}
-      </h2>
+      <PageHeader i18nNamespace="prompts" icono={<Brain />} conSubtitulo={false} />
 
       {/* Pestañas */}
       <div className="border-b border-borde">

@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { CreditCard, Plus, Pencil, Trash2, X } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -164,12 +165,7 @@ export default function PaginaPlanes() {
 
   return (
     <div className="flex flex-col gap-6 max-w-6xl">
-      <div>
-        <h2 className="page-heading flex items-center gap-2"><CreditCard /> {t('titulo')}</h2>
-        <p className="text-sm text-texto-muted mt-1">
-          {t('subtitulo')}
-        </p>
-      </div>
+      <PageHeader i18nNamespace="plans" icono={<CreditCard />} />
 
       <div className="flex items-center gap-3">
         <div className="ml-auto">

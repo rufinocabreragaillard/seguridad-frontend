@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -183,10 +184,7 @@ export default function PaginaProcesoInstancias() {
   return (
     <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat className="top-0 right-0" />
-      <div className="pr-28">
-        <h2 className="page-heading">Procesos</h2>
-        <p className="text-sm text-texto-muted mt-1">Instancias de proceso del sistema</p>
-      </div>
+      <PageHeader className="pr-28" />
 
       <BarraHerramientas
         busqueda={crud.busqueda}

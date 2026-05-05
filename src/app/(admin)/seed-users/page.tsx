@@ -14,6 +14,7 @@
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import { Plus, Pencil, Search, Trash2, X, Star, FolderOpen } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { Input } from '@/components/ui/input'
@@ -563,12 +564,7 @@ export default function PaginaUsuariosSemilla() {
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat />
       <div className="flex items-center justify-between pr-28">
-        <div>
-          <h2 className="page-heading">Usuarios</h2>
-          <p className="text-sm text-texto-muted mt-1">
-            Gestión global de usuarios administradores iniciales por grupo. Sin filtro de grupo activo.
-          </p>
-        </div>
+        <PageHeader />
         <Boton variante="primario" onClick={abrirNuevo}><Plus size={16} />Nuevo usuario</Boton>
       </div>
 

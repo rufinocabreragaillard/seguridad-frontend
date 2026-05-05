@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { Search, Plus, X } from 'lucide-react'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { TabPrompts } from '@/components/ui/tab-prompts'
@@ -203,10 +204,7 @@ export default function PaginaCargosAdmin() {
   return (
     <div className="relative flex flex-col gap-6 max-w-5xl">
       <BotonChat className="top-0 right-0" />
-      <div className="pr-28">
-        <h2 className="page-heading">Cargos ServerLM</h2>
-        <p className="text-sm text-texto-muted mt-1">Cargos SISTEMA globales (sin grupo).</p>
-      </div>
+      <PageHeader className="pr-28" />
 
       <BarraHerramientas
         busqueda={crud.busqueda}
