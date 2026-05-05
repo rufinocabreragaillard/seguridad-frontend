@@ -50,32 +50,44 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
     return
   }
 
-  // Abre la ventana directamente con el blob del PDF, luego sobreescribe el título.
-  // Chrome no renderiza blobs anidados (embed/iframe con src blob: dentro de otro blob:),
-  // así que abrimos el PDF directamente y corregimos el título vía document.title.
-  const openAndSetTitle = (win: Window) => {
-    // Esperar a que el PDF cargue para setear el título (el PDF sobreescribe el título al cargar)
-    const trySetTitle = (attempts: number) => {
-      if (win.closed) return
-      win.document.title = nombre
-      // Reintentar hasta que el título quede fijo (el visor PDF puede sobrescribirlo)
-      if (attempts > 0) setTimeout(() => trySetTitle(attempts - 1), 300)
-    }
-    win.addEventListener('load', () => trySetTitle(5), { once: true })
-    trySetTitle(5)
-  }
+  // Envuelve el blob en un HTML con <title> real + <object> para mostrar el
+  // nombre correcto en la pestaña y en el diálogo de descarga del visor.
+  // <object> puede renderizar blobs anidados en Chrome (a diferencia de iframe).
+  const titulo = _escapeHtml(nombre)
+  const src = _escapeHtml(url)
+  const isPdf = (nombre.split('.').pop() || '').toLowerCase() === 'pdf'
+  const html = isPdf
+    ? `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${titulo}</title></head>
+<body style="margin:0;padding:0;overflow:hidden;background:#1f1f1f">
+<object data="${src}" type="application/pdf" style="width:100vw;height:100vh">
+  <p style="color:#ccc;font-family:sans-serif;padding:2rem">
+    No se puede mostrar el PDF en el navegador.
+    <a href="${src}" download="${titulo}" style="color:#6ab0f5">Descargar</a>
+  </p>
+</object>
+</body>
+</html>`
+    : `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>${titulo}</title></head>
+<body style="margin:0;padding:0;overflow:hidden;background:#1f1f1f">
+<iframe src="${src}" style="width:100vw;height:100vh;border:0" title="${titulo}"></iframe>
+</body>
+</html>`
+  const wrapperBlob = new Blob([html], { type: 'text/html' })
+  const wrapperUrl = URL.createObjectURL(wrapperBlob)
+  setTimeout(() => URL.revokeObjectURL(wrapperUrl), 5 * 60_000)
 
   if (winPreAbierta && !winPreAbierta.closed) {
-    winPreAbierta.location.replace(url)
-    openAndSetTitle(winPreAbierta)
+    winPreAbierta.location.replace(wrapperUrl)
     return
   }
 
-  const win = window.open(url, '_blank')
+  const win = window.open(wrapperUrl, '_blank')
   if (!win) {
     _triggerDownload(blob, nombre)
-  } else {
-    openAndSetTitle(win)
   }
 }
 

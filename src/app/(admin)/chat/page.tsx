@@ -13,7 +13,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi } from '@/lib/api'
-import { descargarDocumento, cargarBlobDocumento } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, cargarBlobDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import { useAuth } from '@/context/AuthContext'
 import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio } from '@/lib/tipos'
 
@@ -384,9 +384,9 @@ export default function PaginaChatUsuario() {
         !areaBusqueda ||
         a.nombre_ubicacion.toLowerCase().includes(areaBusqueda.toLowerCase()) ||
         (a.alias_ubicacion || '').toLowerCase().includes(areaBusqueda.toLowerCase()) ||
-        (a.ruta_completa || '').toLowerCase().includes(areaBusqueda.toLowerCase()),
+        (a.url || '').toLowerCase().includes(areaBusqueda.toLowerCase()),
       )
-      .sort((a, b) => (a.ruta_completa || '').localeCompare(b.ruta_completa || '')),
+      .sort((a, b) => (a.url || '').localeCompare(b.url || '')),
     [areas, areaBusqueda],
   )
 
@@ -824,8 +824,8 @@ export default function PaginaChatUsuario() {
                                 <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : 'text-sky-500'}`} />
                                 <div className="flex-1 min-w-0">
                                   <div className={`truncate ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{a.alias_ubicacion || a.nombre_ubicacion}</div>
-                                  {a.ruta_completa && (
-                                    <div className="text-texto-muted text-[10px] truncate">{a.ruta_completa}</div>
+                                  {a.url && (
+                                    <div className="text-texto-muted text-[10px] truncate">{a.url}</div>
                                   )}
                                 </div>
                               </div>
@@ -1230,7 +1230,7 @@ export default function PaginaChatUsuario() {
                                   <button
                                     type="button"
                                     title="Abrir archivo"
-                                    onClick={() => abrirDocumento(ubic)}
+                                    onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(ubic, win) }}
                                     className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
                                   >
                                     <FileText size={15} />

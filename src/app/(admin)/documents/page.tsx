@@ -19,7 +19,7 @@ import { getEstadosDocs } from '@/lib/catalogos'
 import type { Documento, CategoriaConCaracteristicasDocs, CaracteristicaDocumento, TipoCaractDocs, EstadoDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
-import { abrirDocumento, descargarDocumento } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TextoCifrado } from '@/components/ui/texto-cifrado'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -307,7 +307,10 @@ export default function PaginaDocumentos() {
     cargarCaracteristicas(editando.codigo_documento)
   }
 
-  const abrirDocumentoLocal = (d: Documento) => abrirDocumento(d.ubicacion_documento)
+  const abrirDocumentoLocal = (d: Documento) => {
+    const win = abrirVentanaLoading()
+    abrirDocumento(d.ubicacion_documento, win)
+  }
 
   // ── Filtro: backend hace la búsqueda y orden, dejamos la lista tal cual ──
   const filtrados = documentos

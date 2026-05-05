@@ -21,7 +21,7 @@ import type { Documento, ColaEstadoDoc, EstadoDoc, CategoriaConCaracteristicasDo
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, type ExtraccionMixta } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { abrirDocumento, descargarDocumento } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
@@ -106,7 +106,7 @@ const ESTADOS_CON_TEXTO = new Set(['METADATA', 'ESCANEADO', 'CHUNKEADO', 'VECTOR
 interface UbicacionOption {
   codigo_ubicacion: string
   nombre_ubicacion: string
-  ruta_completa: string
+  url: string
   nivel: number
   tipo_ubicacion?: 'AREA' | 'CONTENIDO'
   codigo_ubicacion_superior?: string
@@ -354,7 +354,7 @@ function PaginaProcesarDocumentosInterna() {
       setUbicaciones(
         (u as UbicacionOption[])
           .filter((x: UbicacionOption) => x)
-          .sort((a: UbicacionOption, b: UbicacionOption) => (a.ruta_completa || '').localeCompare(b.ruta_completa || ''))
+          .sort((a: UbicacionOption, b: UbicacionOption) => (a.url || '').localeCompare(b.url || ''))
       )
     } catch {
       setErrorCargaInicial(true)
@@ -436,7 +436,7 @@ function PaginaProcesarDocumentosInterna() {
     try {
       const qBackend = busqueda.trim() || filtroLibre.trim() || undefined
       const rutaPrefijo = ubicacionSel
-        ? ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)?.ruta_completa
+        ? ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)?.url
         : undefined
 
       if (esCargar) {
@@ -627,7 +627,10 @@ function PaginaProcesarDocumentosInterna() {
     cargarCaracteristicas(d.codigo_documento)
   }, [cargarCaracteristicas])
 
-  const abrirDocumentoLocal = (d: Documento) => abrirDocumento(d.ubicacion_documento)
+  const abrirDocumentoLocal = (d: Documento) => {
+    const win = abrirVentanaLoading()
+    abrirDocumento(d.ubicacion_documento, win)
+  }
 
   // Resuelve un Documento completo a partir de un ItemCola — busca en la lista
   // cargada; si no está, construye el mínimo viable para abrir el modal de
@@ -650,7 +653,10 @@ function PaginaProcesarDocumentosInterna() {
   const abrirArchivoDesdeCola = (c: ItemCola) => {
     const doc = documentos.find((x) => x.codigo_documento === c.codigo_documento)
     const ubic = doc?.ubicacion_documento ?? c.ubicacion_documento
-    if (ubic) abrirDocumento(ubic)
+    if (ubic) {
+      const win = abrirVentanaLoading()
+      abrirDocumento(ubic, win)
+    }
   }
 
   const ejecutarEliminarDoc = async () => {
@@ -759,8 +765,8 @@ function PaginaProcesarDocumentosInterna() {
       // Rutas deshabilitadas en BD: no se deben escanear ni contar sus archivos
       const rutasDeshabilitadas = new Set(
         ubicaciones
-          .filter((u) => u.ubicacion_habilitada === false && u.ruta_completa)
-          .map((u) => u.ruta_completa)
+          .filter((u) => u.ubicacion_habilitada === false && u.url)
+          .map((u) => u.url)
       )
 
       setEscaneandoDir(true)
@@ -789,7 +795,7 @@ function PaginaProcesarDocumentosInterna() {
 
       // Códigos de ubicaciones escaneadas (para detección de huérfanos en BD)
       const codigosUbicacionEscaneadas = ubicaciones
-        .filter((u) => u.ruta_completa && scan!.rutasEscaneadas.includes(u.ruta_completa))
+        .filter((u) => u.url && scan!.rutasEscaneadas.includes(u.url))
         .map((u) => u.codigo_ubicacion)
 
       // Pausar y mostrar modal de confirmación con el conteo de archivos encontrados.
@@ -1326,7 +1332,7 @@ function PaginaProcesarDocumentosInterna() {
                         if (ubicBusqueda) {
                           const filtradas = ubicaciones.filter(u =>
                             u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) ||
-                            (u.ruta_completa || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
+                            (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
                           )
                           if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
                           return filtradas.map(u => {
@@ -2007,7 +2013,7 @@ function PaginaProcesarDocumentosInterna() {
                         </a>
                       )}
                       {docDetalle.ubicacion_documento && !/^https?:\/\//i.test(docDetalle.ubicacion_documento) && (
-                        <button onClick={() => abrirDocumento(docDetalle.ubicacion_documento)}
+                        <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(docDetalle.ubicacion_documento, win) }}
                           className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
                           <FileText size={14} />
                         </button>

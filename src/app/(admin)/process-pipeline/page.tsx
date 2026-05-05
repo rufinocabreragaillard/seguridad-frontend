@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi } from '@/lib/api'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
-import { abrirDocumento } from '@/lib/abrir-documento'
+import { abrirDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import {
   escanearDirectorio, escanearDirectorioSinHijos,
@@ -247,14 +247,23 @@ export default function PaginaCargaDocsUsuario() {
   }
 
   // Render árbol
-  const opcionesPadre = (excluir?: string) => {
+  const opcionesPadre = (excluir?: string): UbicacionDoc[] => {
     if (!excluir) return ubicaciones
-    const desc = new Set<string>(); const buscar = (c: string) => { for (const u of ubicaciones) { if (u.codigo_ubicacion_superior === c && !desc.has(u.codigo_ubicacion)) { desc.add(u.codigo_ubicacion); buscar(u.codigo_ubicacion) } } }
-    desc.add(excluir); buscar(excluir)
+    const desc = new Set<string>()
+    const buscar = (c: string) => {
+      for (const u of ubicaciones) {
+        if (u.codigo_ubicacion_superior === c && !desc.has(u.codigo_ubicacion)) {
+          desc.add(u.codigo_ubicacion)
+          buscar(u.codigo_ubicacion)
+        }
+      }
+    }
+    desc.add(excluir)
+    buscar(excluir)
     return ubicaciones.filter((u) => !desc.has(u.codigo_ubicacion))
   }
   const filtradosUbs = busquedaUbs
-    ? ubicaciones.filter((u) => u.nombre_ubicacion.toLowerCase().includes(busquedaUbs.toLowerCase()) || u.codigo_ubicacion.toLowerCase().includes(busquedaUbs.toLowerCase()) || (u.ruta_completa || '').toLowerCase().includes(busquedaUbs.toLowerCase()))
+    ? ubicaciones.filter((u) => u.nombre_ubicacion.toLowerCase().includes(busquedaUbs.toLowerCase()) || u.codigo_ubicacion.toLowerCase().includes(busquedaUbs.toLowerCase()) || (u.url || '').toLowerCase().includes(busquedaUbs.toLowerCase()))
     : ubicaciones
 
   const renderNodo = (u: UbicacionDoc) => {
@@ -285,8 +294,8 @@ export default function PaginaCargaDocsUsuario() {
             <span className="font-medium text-xs">{u.nombre_ubicacion}</span>
             <span className="text-xs text-texto-muted ml-2">({u.codigo_ubicacion})</span>
           </div>
-          <span className="text-xs text-texto-muted truncate max-w-[300px] shrink-0 hidden lg:block" title={u.ruta_completa || ''}>
-            {u.ruta_completa || ''}
+          <span className="text-xs text-texto-muted truncate max-w-[300px] shrink-0 hidden lg:block" title={u.url || ''}>
+            {u.url || ''}
           </span>
           <Insignia variante={u.tipo_ubicacion === 'AREA' ? 'advertencia' : 'primario'}>{u.tipo_ubicacion}</Insignia>
           <Insignia variante={u.ubicacion_habilitada ? 'exito' : 'advertencia'}>{u.ubicacion_habilitada ? t('habilitada') : t('inhabilitada')}</Insignia>
@@ -384,7 +393,7 @@ export default function PaginaCargaDocsUsuario() {
       const res = await documentosApi.listarPaginado({ page: pagina, limit: 20, codigo_estado_doc: estadoDoc })
       // Filtrar por ubicación si hay una seleccionada (client-side, la API no tiene ese param)
       const ubic = ubicacionDocSel ? ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel) : null
-      const rutaUbic = ubic?.ruta_completa ?? null
+      const rutaUbic = ubic?.url ?? null
       const items = rutaUbic
         ? res.items.filter(d => d.ubicacion_documento?.startsWith(rutaUbic))
         : res.items
@@ -678,7 +687,7 @@ export default function PaginaCargaDocsUsuario() {
                     [
                       { titulo: t('colCodigo'), campo: 'codigo_ubicacion' },
                       { titulo: t('colNombre'), campo: 'nombre_ubicacion' },
-                      { titulo: t('colRuta'), campo: 'ruta_completa' },
+                      { titulo: t('colRuta'), campo: 'url' },
                       { titulo: t('colPadre'), campo: 'codigo_ubicacion_superior' },
                       { titulo: t('colNivel'), campo: 'nivel' },
                       { titulo: t('colHabilitada'), campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
@@ -764,7 +773,7 @@ export default function PaginaCargaDocsUsuario() {
                         if (ubicDocBusqueda) {
                           const filtradas = ubicaciones.filter(u =>
                             u.nombre_ubicacion.toLowerCase().includes(ubicDocBusqueda.toLowerCase()) ||
-                            (u.ruta_completa || '').toLowerCase().includes(ubicDocBusqueda.toLowerCase())
+                            (u.url || '').toLowerCase().includes(ubicDocBusqueda.toLowerCase())
                           )
                           if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
                           return filtradas.map(u => {
@@ -906,7 +915,7 @@ export default function PaginaCargaDocsUsuario() {
                               <td className="px-3 py-2.5 w-24">
                                 <div className="flex items-center justify-end gap-1">
                                   {doc.ubicacion_documento && !/^https?:\/\//i.test(doc.ubicacion_documento) && (
-                                    <button type="button" title={t('abrirArchivo')} onClick={() => abrirDocumento(doc.ubicacion_documento)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
+                                    <button type="button" title={t('abrirArchivo')} onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(doc.ubicacion_documento, win) }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                                       <FileText size={15} />
                                     </button>
                                   )}
@@ -1032,7 +1041,8 @@ export default function PaginaCargaDocsUsuario() {
                   <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaCarpetaPadre')}</label>
                   <select className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none" value={formUb.codigo_ubicacion_superior} onChange={(e) => setFormUb({ ...formUb, codigo_ubicacion_superior: e.target.value })}>
                     <option value="">{t('opcionRaiz')}</option>
-                    {opcionesPadre(editandoUb?.codigo_ubicacion).map((u) => <option key={u.codigo_ubicacion} value={u.codigo_ubicacion}>{'  '.repeat(u.nivel)}{u.nombre_ubicacion}</option>)}
+                    {/* Estamos en el bloque !editandoUb (modo crear), no hay nada que excluir */}
+                    {opcionesPadre().map((u: UbicacionDoc) => <option key={u.codigo_ubicacion} value={u.codigo_ubicacion}>{'  '.repeat(u.nivel)}{u.nombre_ubicacion}</option>)}
                   </select>
                 </div>
               )}
@@ -1260,7 +1270,7 @@ export default function PaginaCargaDocsUsuario() {
                     <ExternalLink size={13} />
                   </a>
                 ) : (
-                  <button onClick={() => abrirDocumento(docDetalle.ubicacion_documento)}
+                  <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(docDetalle.ubicacion_documento, win) }}
                     className="shrink-0 p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
                     <FileText size={13} />
                   </button>
