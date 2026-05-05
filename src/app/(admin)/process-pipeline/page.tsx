@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import {
-  FolderOpen, Folder, FolderInput, FolderPlus, FolderTree,
-  CheckCircle, AlertTriangle, RefreshCw, Upload, Download,
+  FolderOpen, Folder, FolderInput, FolderPlus, FolderTree, FolderSync,
+  CheckCircle, AlertTriangle, RefreshCw, Upload, Download, DatabaseZap, ScanSearch,
   ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
   Eye, FileText, XCircle, ExternalLink,
 } from 'lucide-react'
@@ -116,6 +116,10 @@ export default function PaginaCargaDocsUsuario() {
   const [datosEscaneo, setDatosEscaneo] = useState<{ nombreRaiz: string; directorios: DirectorioEscaneado[] } | null>(null)
   const [resultadoSync, setResultadoSync] = useState<{ insertadas: number; eliminadas: number; actualizadas: number; total: number; excluidas: number } | null>(null)
   const [cargandoUbIndividual, setCargandoUbIndividual] = useState(false)
+  // Barra de progreso inline para sincronización (sin modal)
+  type SyncEstado = 'idle' | 'escaneando' | 'sincronizando' | 'listo' | 'error'
+  const [syncEstado, setSyncEstado] = useState<SyncEstado>('idle')
+  const [syncMensaje, setSyncMensaje] = useState('')
 
   const cargarUbicaciones = useCallback(async () => {
     setCargandoUbs(true)
@@ -209,6 +213,25 @@ export default function PaginaCargaDocsUsuario() {
     } finally { setSincronizando(false) }
   }
   const cerrarModalCarga = () => { setModalCarga(false); setDatosEscaneo(null); setResultadoSync(null) }
+
+  // Escaneo + sincronización inline (sin modal, con barra de progreso)
+  const sincronizarDirectamente = async () => {
+    if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoporta')); return }
+    setSyncEstado('escaneando'); setSyncMensaje('')
+    try {
+      const r = await escanearDirectorio()
+      if (!r) { setSyncEstado('idle'); return }
+      setSyncEstado('sincronizando')
+      const res = await ubicacionesDocsApi.sincronizar({ directorios: r.directorios })
+      setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.eliminadas} eliminadas`)
+      setSyncEstado('listo')
+      setEtapa1Estado('completado')
+      cargarUbicaciones()
+    } catch (e) {
+      setSyncEstado('error')
+      setSyncMensaje(e instanceof Error ? e.message : t('alertErrorSincronizar'))
+    }
+  }
 
   const cargarUbicacionIndividual = async () => {
     if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoportaCorto')); return }
@@ -424,7 +447,7 @@ export default function PaginaCargaDocsUsuario() {
         handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored)
       } else {
         try {
-          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'cab-procesar-docs' })
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
           setDirHandleState(handle); await setDirectoryHandle(handle)
         } catch {
           // Sin permiso: marcar todos como no encontrados
@@ -646,7 +669,7 @@ export default function PaginaCargaDocsUsuario() {
               : 'text-texto/70 hover:text-texto'
           }`}
         >
-          <span className="flex items-center gap-2"><Upload size={15} />{t('tabDocumentos')}</span>
+          <span className="flex items-center gap-2"><DatabaseZap size={15} />{t('tabDocumentos')}</span>
         </button>
       </div>
 
@@ -655,9 +678,56 @@ export default function PaginaCargaDocsUsuario() {
       ══════════════════════════════════════════════════════════════════════ */}
       {tabActiva === 'ubicaciones' && (
         <div className="flex flex-col gap-4">
+          {/* Contadores de documentos en la tab Ubicaciones */}
+          <div className="grid grid-cols-3 gap-4 rounded-lg border border-borde bg-fondo-tarjeta p-4">
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="page-heading">{totalDocs}</span>
+              <span className="text-xs text-texto-muted">{t('documentosTotales')}</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="stat-number text-green-600">{docsValidos}</span>
+              <span className="text-xs text-texto-muted">{t('procesadosCorrectamente')}</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="stat-number text-red-500">{docsRechazados}</span>
+              <span className="text-xs text-texto-muted">{t('rechazados')}</span>
+            </div>
+          </div>
+
+          {/* Barra de progreso de sincronización inline */}
+          {syncEstado !== 'idle' && (
+            <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-2">
+              <div className="flex items-center justify-between text-xs">
+                <span className="font-semibold text-texto">
+                  {syncEstado === 'escaneando' ? 'Escaneando directorio…' : syncEstado === 'sincronizando' ? 'Sincronizando ubicaciones…' : syncEstado === 'listo' ? 'Listo' : 'Error'}
+                </span>
+                {syncEstado === 'listo' && <span className="text-texto-muted">✓</span>}
+              </div>
+              <div className="h-2 rounded-full overflow-hidden bg-gray-100">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${syncEstado === 'escaneando' || syncEstado === 'sincronizando' ? 'animate-pulse' : ''}`}
+                  style={{
+                    width: syncEstado === 'listo' ? '100%' : syncEstado === 'error' ? '100%' : '60%',
+                    backgroundColor: syncEstado === 'error' ? '#EF4444' : syncEstado === 'listo' ? '#22C55E' : '#074B91',
+                  }}
+                />
+              </div>
+              {syncMensaje && (
+                <p className={`text-xs ${syncEstado === 'error' ? 'text-red-600' : 'text-texto-muted'}`}>{syncMensaje}</p>
+              )}
+            </div>
+          )}
+
           {/* Toolbar — misma presentación que /ubicaciones-docs */}
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex gap-2 flex-wrap items-start">
+              <div className="flex flex-col items-center">
+                <Boton variante="primario" onClick={sincronizarDirectamente} cargando={syncEstado === 'escaneando' || syncEstado === 'sincronizando'}>
+                  <FolderSync size={16} />
+                  Indexar ubicaciones
+                </Boton>
+                <span className="text-[11px] text-texto-muted mt-0.5">Escanea y sincroniza</span>
+              </div>
               <div className="flex flex-col items-center">
                 <Boton variante="contorno" onClick={iniciarEscaneoDir} cargando={escaneandoDir}>
                   <FolderInput size={16} />
@@ -974,7 +1044,7 @@ export default function PaginaCargaDocsUsuario() {
             <div className="flex gap-3">
               {!ejecutando ? (
                 <Boton variante="primario" className="flex-1" onClick={ejecutarPipeline}>
-                  <Upload size={15} />
+                  <ScanSearch size={15} />
                   {todosListos ? t('cargarDeNuevo') : t('cargarDocumentos')}
                 </Boton>
               ) : (
