@@ -38,6 +38,12 @@ const _INLINE_EXT = new Set([
   'mp3', 'wav', 'ogg', 'mp4', 'webm', 'mov',
 ])
 
+export function esVisualizableEnBrowser(nombreOUbicacion: string | null | undefined): boolean {
+  if (!nombreOUbicacion) return false
+  const ext = (nombreOUbicacion.split('.').pop() || '').toLowerCase()
+  return _INLINE_EXT.has(ext)
+}
+
 function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Window | null): void {
   const ext = (nombre.split('.').pop() || '').toLowerCase()
   const inline = _INLINE_EXT.has(ext)
@@ -119,6 +125,8 @@ export async function cargarBlobDocumento(
   ubicacion: string,
   onBlob: (blobUrl: string, nombre: string) => void,
   onError: (msg: string) => void,
+  userId?: string | null,
+  grupoActivo?: string | null,
 ): Promise<void> {
   if (IS_CLIENT_MODE) {
     try {
@@ -133,13 +141,13 @@ export async function cargarBlobDocumento(
     } catch { /* fallback */ }
   }
 
-  let handle = await getDirectoryHandle()
+  let handle = await getDirectoryHandle(userId, grupoActivo)
   if (!handle) {
     const picker = (window as WinWithPicker).showDirectoryPicker
     if (!picker) { onError('Selecciona primero una carpeta raíz en Adm. Indexación Docs.'); return }
     try {
       handle = await picker({ mode: 'read' })
-      await setDirectoryHandle(handle)
+      await setDirectoryHandle(handle, userId, grupoActivo)
     } catch { return }
   }
   const ok = await ensureReadPermission(handle)
@@ -151,8 +159,13 @@ export async function cargarBlobDocumento(
   onBlob(url, file.name)
 }
 
-async function abrirViaFileSystemApi(ubicacion: string, winPreAbierta?: Window | null): Promise<void> {
-  let handle = await getDirectoryHandle()
+async function abrirViaFileSystemApi(
+  ubicacion: string,
+  winPreAbierta?: Window | null,
+  userId?: string | null,
+  grupoActivo?: string | null,
+): Promise<void> {
+  let handle = await getDirectoryHandle(userId, grupoActivo)
 
   if (!handle) {
     // No hay carpeta guardada: pedir al usuario que seleccione la raíz
@@ -164,7 +177,7 @@ async function abrirViaFileSystemApi(ubicacion: string, winPreAbierta?: Window |
     }
     try {
       handle = await picker({ mode: 'read' })
-      await setDirectoryHandle(handle)
+      await setDirectoryHandle(handle, userId, grupoActivo)
     } catch {
       if (winPreAbierta) winPreAbierta.close()
       return
@@ -179,7 +192,12 @@ async function abrirViaFileSystemApi(ubicacion: string, winPreAbierta?: Window |
   _abrirEnPestanaConNombre(file, file.name, winPreAbierta)
 }
 
-export async function abrirDocumento(ubicacion: string | null | undefined, winPreAbierta?: Window | null): Promise<void> {
+export async function abrirDocumento(
+  ubicacion: string | null | undefined,
+  winPreAbierta?: Window | null,
+  userId?: string | null,
+  grupoActivo?: string | null,
+): Promise<void> {
   if (!ubicacion) { if (winPreAbierta) winPreAbierta.close(); alert('Este documento no tiene ubicación registrada.'); return }
 
   if (IS_CLIENT_MODE) {
@@ -189,7 +207,7 @@ export async function abrirDocumento(ubicacion: string | null | undefined, winPr
   }
 
   try {
-    await abrirViaFileSystemApi(ubicacion, winPreAbierta)
+    await abrirViaFileSystemApi(ubicacion, winPreAbierta, userId, grupoActivo)
   } catch (e) {
     if (winPreAbierta) winPreAbierta.close()
     alert(`Error al abrir: ${e instanceof Error ? e.message : e}`)
@@ -221,8 +239,13 @@ async function descargarViaApiLocal(ruta: string, nombre: string): Promise<boole
   }
 }
 
-async function descargarViaFileSystemApi(ubicacion: string, nombre: string): Promise<void> {
-  const handle = await getDirectoryHandle()
+async function descargarViaFileSystemApi(
+  ubicacion: string,
+  nombre: string,
+  userId?: string | null,
+  grupoActivo?: string | null,
+): Promise<void> {
+  const handle = await getDirectoryHandle(userId, grupoActivo)
   if (!handle) {
     alert('No hay carpeta raíz seleccionada. Ve a "Procesar Documentos" y selecciona el directorio raíz primero.')
     return
@@ -238,6 +261,8 @@ async function descargarViaFileSystemApi(ubicacion: string, nombre: string): Pro
 export async function descargarDocumento(
   ubicacion: string | null | undefined,
   nombre: string = 'documento',
+  userId?: string | null,
+  grupoActivo?: string | null,
 ): Promise<void> {
   if (!ubicacion) { alert('Este documento no tiene ubicación registrada.'); return }
 
@@ -261,7 +286,7 @@ export async function descargarDocumento(
   }
 
   try {
-    await descargarViaFileSystemApi(ubicacion, nombre)
+    await descargarViaFileSystemApi(ubicacion, nombre, userId, grupoActivo)
   } catch (e) {
     alert(`Error al descargar: ${e instanceof Error ? e.message : e}`)
   }

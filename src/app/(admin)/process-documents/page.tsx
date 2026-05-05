@@ -21,7 +21,7 @@ import type { Documento, ColaEstadoDoc, EstadoDoc, CategoriaConCaracteristicasDo
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, type ExtraccionMixta } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser } from '@/lib/abrir-documento'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
@@ -228,7 +228,8 @@ function TabIndexarTodo({ procesos, estadosDocs, ubicaciones }: TabIndexarTodoPr
 function PaginaProcesarDocumentosInterna() {
   const t = useTranslations('processDocuments')
   const tc = useTranslations('common')
-  const { grupoActivo } = useAuth()
+  const { grupoActivo, usuario } = useAuth()
+  const userId = usuario?.codigo_usuario ?? null
   const searchParams = useSearchParams()
   // Estado del doc desde el que viene el dashboard (ej. "METADATA")
   const estadoDesdeUrl = searchParams.get('estado')
@@ -512,7 +513,7 @@ function PaginaProcesarDocumentosInterna() {
   // Restaurar dirHandle persistido al entrar (solo escanea filesystem; cargarDocumentos lo maneja el efecto de filtros)
   useEffect(() => {
     (async () => {
-      const h = await idbGetHandle()
+      const h = await idbGetHandle(userId, grupoActivo)
       if (!h) return
       try {
         // Verificar permisos; si los perdió, ignorar (el usuario re-pickeará manualmente)
@@ -639,7 +640,7 @@ function PaginaProcesarDocumentosInterna() {
       const opts: Record<string, unknown> = { mode: 'read' }
       const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
       setDirHandle(handle)
-      idbSetHandle(handle)
+      idbSetHandle(handle, userId, grupoActivo)
       setEscaneandoDir(true)
       try {
         const archivos = await escanearDirectorio(handle)
@@ -654,7 +655,7 @@ function PaginaProcesarDocumentosInterna() {
   const limpiarDirectorio = () => {
     setDirHandle(null)
     setArchivosEnDir(null)
-    idbSetHandle(null)
+    idbSetHandle(null, userId, grupoActivo)
   }
 
   // Ejecutar: rama por tipo de proceso
@@ -730,7 +731,7 @@ function PaginaProcesarDocumentosInterna() {
 
   const abrirDocumentoLocal = (d: Documento) => {
     const win = abrirVentanaLoading()
-    abrirDocumento(d.ubicacion_documento, win)
+    abrirDocumento(d.ubicacion_documento, win, userId, grupoActivo)
   }
 
   // Resuelve un Documento completo a partir de un ItemCola — busca en la lista
@@ -756,7 +757,7 @@ function PaginaProcesarDocumentosInterna() {
     const ubic = doc?.ubicacion_documento ?? c.ubicacion_documento
     if (ubic) {
       const win = abrirVentanaLoading()
-      abrirDocumento(ubic, win)
+      abrirDocumento(ubic, win, userId, grupoActivo)
     }
   }
 
@@ -851,7 +852,7 @@ function PaginaProcesarDocumentosInterna() {
     if (esCargar) {
       let handleEfectivo: FileSystemDirectoryHandle | null = dirHandle
       if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
-        const stored = await idbGetHandle()
+        const stored = await idbGetHandle(userId, grupoActivo)
         if (stored && (await ensureReadPermission(stored))) {
           handleEfectivo = stored
           setDirHandle(stored)
@@ -886,7 +887,7 @@ function PaginaProcesarDocumentosInterna() {
 
       // Guardar handle para reutilizar sin volver a pedir permisos
       setDirHandle(scan.dirHandle)
-      idbSetHandle(scan.dirHandle)
+      idbSetHandle(scan.dirHandle, userId, grupoActivo)
       // Actualizar set de nombres para filtro visual
       setArchivosEnDir(new Set(scan.archivos.map((a) => a.nombre)))
 
@@ -913,7 +914,7 @@ function PaginaProcesarDocumentosInterna() {
       // 3. Primera vez: showDirectoryPicker (abre Finder una sola vez, luego queda guardado)
       let handleEfectivo: FileSystemDirectoryHandle | null = dirHandle
       if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
-        const stored = await idbGetHandle()
+        const stored = await idbGetHandle(userId, grupoActivo)
         if (stored && (await ensureReadPermission(stored))) {
           handleEfectivo = stored
           setDirHandle(stored)
@@ -922,7 +923,7 @@ function PaginaProcesarDocumentosInterna() {
             const opts: Record<string, unknown> = { mode: 'read' }
             handleEfectivo = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
             setDirHandle(handleEfectivo)
-            idbSetHandle(handleEfectivo)
+            idbSetHandle(handleEfectivo, userId, grupoActivo)
             setEscaneandoDir(true)
             try {
               const archivos = await escanearDirectorio(handleEfectivo)
@@ -1706,7 +1707,7 @@ function PaginaProcesarDocumentosInterna() {
                             <ExternalLink size={15} />
                           </LinkAccion>
                         )}
-                        {ubic && !esUrl && (
+                        {ubic && !esUrl && esVisualizableEnBrowser(c.nombre_documento) && (
                           <BotonAccion
                             tooltip="Abrir archivo"
                             onClick={() => abrirArchivoDesdeCola(c)}
@@ -1717,7 +1718,7 @@ function PaginaProcesarDocumentosInterna() {
                         {ubic && (
                           <BotonAccion
                             tooltip="Descargar"
-                            onClick={() => descargarDocumento(ubic, c.nombre_documento)}
+                            onClick={() => descargarDocumento(ubic, c.nombre_documento, userId, grupoActivo)}
                             className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                             <Download size={15} />
                           </BotonAccion>
@@ -1815,7 +1816,7 @@ function PaginaProcesarDocumentosInterna() {
                           <ExternalLink size={15} />
                         </LinkAccion>
                       )}
-                      {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && (
+                      {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && esVisualizableEnBrowser(d.nombre_documento) && (
                         <BotonAccion
                           tooltip="Abrir archivo"
                           onClick={() => abrirDocumentoLocal(d)}
@@ -1826,7 +1827,7 @@ function PaginaProcesarDocumentosInterna() {
                       {d.ubicacion_documento && (
                         <BotonAccion
                           tooltip="Descargar"
-                          onClick={() => descargarDocumento(d.ubicacion_documento, d.nombre_documento)}
+                          onClick={() => descargarDocumento(d.ubicacion_documento, d.nombre_documento, userId, grupoActivo)}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                           <Download size={15} />
                         </BotonAccion>
@@ -2134,14 +2135,14 @@ function PaginaProcesarDocumentosInterna() {
                           <ExternalLink size={14} />
                         </a>
                       )}
-                      {docDetalle.ubicacion_documento && !/^https?:\/\//i.test(docDetalle.ubicacion_documento) && (
-                        <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(docDetalle.ubicacion_documento, win) }}
+                      {docDetalle.ubicacion_documento && !/^https?:\/\//i.test(docDetalle.ubicacion_documento) && esVisualizableEnBrowser(docDetalle.nombre_documento) && (
+                        <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(docDetalle.ubicacion_documento, win, userId, grupoActivo) }}
                           className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
                           <FileText size={14} />
                         </button>
                       )}
                       {docDetalle.ubicacion_documento && !/^https?:\/\//i.test(docDetalle.ubicacion_documento) && (
-                        <button onClick={() => descargarDocumento(docDetalle.ubicacion_documento, docDetalle.nombre_documento)}
+                        <button onClick={() => descargarDocumento(docDetalle.ubicacion_documento, docDetalle.nombre_documento, userId, grupoActivo)}
                           className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Descargar archivo">
                           <Download size={14} />
                         </button>

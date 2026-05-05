@@ -19,7 +19,7 @@ import { getEstadosDocs } from '@/lib/catalogos'
 import type { Documento, CategoriaConCaracteristicasDocs, CaracteristicaDocumento, TipoCaractDocs, EstadoDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
-import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser } from '@/lib/abrir-documento'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TextoCifrado } from '@/components/ui/texto-cifrado'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -33,7 +33,8 @@ const ESTADOS_CON_TEXTO = new Set(['METADATA', 'ESCANEADO', 'CHUNKEADO', 'VECTOR
 export default function PaginaDocumentos() {
   const t = useTranslations('documents')
   const tc = useTranslations('common')
-  const { grupoActivo } = useAuth()
+  const { grupoActivo, usuario } = useAuth()
+  const userId = usuario?.codigo_usuario ?? null
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [estados, setEstados] = useState<EstadoDoc[]>([])
@@ -309,7 +310,7 @@ export default function PaginaDocumentos() {
 
   const abrirDocumentoLocal = (d: Documento) => {
     const win = abrirVentanaLoading()
-    abrirDocumento(d.ubicacion_documento, win)
+    abrirDocumento(d.ubicacion_documento, win, userId, grupoActivo)
   }
 
   // ── Filtro: backend hace la búsqueda y orden, dejamos la lista tal cual ──
@@ -443,7 +444,7 @@ export default function PaginaDocumentos() {
                   <div className="flex items-center justify-end gap-1">
                     {d.ubicacion_documento && (
                       <button
-                        onClick={() => descargarDocumento(d.ubicacion_documento, d.nombre_documento)}
+                        onClick={() => descargarDocumento(d.ubicacion_documento, d.nombre_documento, userId, grupoActivo)}
                         className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
                         title="Descargar"
                       >
@@ -461,7 +462,7 @@ export default function PaginaDocumentos() {
                         <ExternalLink size={16} />
                       </a>
                     )}
-                    {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && (
+                    {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && esVisualizableEnBrowser(d.nombre_documento) && (
                       <button
                         onClick={() => abrirDocumentoLocal(d)}
                         className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
