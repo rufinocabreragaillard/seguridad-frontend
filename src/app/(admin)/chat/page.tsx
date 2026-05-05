@@ -676,7 +676,7 @@ export default function PaginaChatUsuario() {
           </aside>
 
           {/* Área principal de chat */}
-          <main className="flex-1 flex flex-col border border-borde rounded-lg bg-fondo overflow-hidden min-w-0">
+          <main className="flex-1 flex flex-col border border-borde rounded-lg overflow-hidden min-w-0" style={{ background: '#f8f9fb' }}>
             <>
               {/* Cabecera del chat: titulo + acciones (debug super-admin) */}
               {esSuperAdmin && convActivaId != null && (
@@ -735,7 +735,7 @@ export default function PaginaChatUsuario() {
                 <div className="px-4 py-2 text-sm text-error bg-red-50">{errorConv}</div>
               )}
 
-              <div className="px-3 pb-3 bg-fondo">
+              <div className="px-3 pb-3" style={{ background: '#f8f9fb' }}>
                 <div className="relative rounded-xl border border-borde bg-white focus-within:border-primario focus-within:ring-1 focus-within:ring-primario transition">
                   <textarea
                     ref={inputRef}
@@ -762,7 +762,7 @@ export default function PaginaChatUsuario() {
             </>
 
             {/* ── Barra inferior de filtros + Crear Espacio (siempre visible) ── */}
-            <div className="bg-fondo px-3 py-2 flex flex-wrap items-center gap-2 rounded-b-lg">
+            <div className="px-3 py-2 flex flex-wrap items-center gap-2 rounded-b-lg" style={{ background: '#f8f9fb' }}>
               {/* Selector buscable: Área */}
               <div className="relative">
                 <button
@@ -1448,8 +1448,8 @@ function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMens
   return (
     <div className={`flex ${esUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`${tieneTabla ? 'max-w-[95%] w-full' : 'max-w-[80%]'} px-4 py-2 rounded-lg text-sm ${
-          esUser ? 'bg-primario text-primario-texto' : 'bg-white text-texto'
+        className={`${tieneTabla ? 'max-w-[95%] w-full' : 'max-w-[80%]'} px-4 py-2 text-sm ${
+          esUser ? 'bg-primario text-primario-texto rounded-lg' : 'text-texto'
         }`}
       >
         {esUser ? (
