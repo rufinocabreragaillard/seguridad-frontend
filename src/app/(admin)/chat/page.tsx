@@ -311,7 +311,6 @@ export default function PaginaChatUsuario() {
           })
           setRespuestaEnCurso('')
           setActividad('')
-          cargarLista(false)
         },
         onError: (mensaje) => {
           setErrorConv(mensaje)
@@ -327,6 +326,7 @@ export default function PaginaChatUsuario() {
     )
     setEnviando(false)
     inputRef.current?.focus()
+    setTimeout(() => cargarLista(false), 800)
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
