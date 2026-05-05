@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import { Save, SlidersHorizontal, Layers, Building2, User, Trash2, Lock, EyeOff } from 'lucide-react'
+import { Save, SlidersHorizontal, Layers, Building2, User, Trash2, Lock, EyeOff, Eye, EyeClosed } from 'lucide-react'
 import { SortableDndContext, SortableListItem } from '@/components/ui/sortable'
 import { Paginador } from '@/components/ui/paginador'
 import { Boton } from '@/components/ui/boton'
@@ -16,15 +16,17 @@ import { PageHeader } from '@/components/layout/PageHeader'
 
 type TabId = 'generales' | 'grupo' | 'entidad' | 'usuario'
 
+const MASCARA = '••••••••••••••••'
+
 interface ParametroRow {
   categoria_parametro: string
   tipo_parametro: string
   valor_parametro: string
   descripcion?: string
   orden?: number
-  // flags grupo/usuario
   visible?: boolean
   editable?: boolean
+  es_privado?: boolean
 }
 
 const PAGE_SIZE = 15
@@ -69,6 +71,10 @@ export default function PaginaParametros() {
   const [mensajeExito, setMensajeExito] = useState('')
   const [error, setError] = useState('')
 
+  // Valores revelados: key = "cat/tipo" → valor real
+  const [valoresRevelados, setValoresRevelados] = useState<Record<string, string>>({})
+  const [revelando, setRevelando] = useState<string | null>(null)
+
   const mostrarExito = (msg: string) => {
     setMensajeExito(msg)
     setError('')
@@ -93,12 +99,13 @@ export default function PaginaParametros() {
     setCargandoGenerales(true)
     try {
       const data = await parametrosApi.listarGenerales()
-      setParamsGenerales(data.map((p: ParametroGeneral) => ({
+      setParamsGenerales(data.map((p: ParametroGeneral & { es_privado?: boolean }) => ({
         categoria_parametro: p.categoria_parametro,
         tipo_parametro: p.tipo_parametro,
         valor_parametro: p.valor_parametro,
         descripcion: p.descripcion,
         orden: (p as ParametroGeneral & { orden?: number }).orden ?? 0,
+        es_privado: p.es_privado ?? false,
       })))
     } catch { setParamsGenerales([]) }
     finally { setCargandoGenerales(false) }
@@ -109,13 +116,14 @@ export default function PaginaParametros() {
     setCargandoGrupo(true)
     try {
       const data = await parametrosApi.listarGrupo()
-      setParamsGrupo(data.map((p: ParametroGrupo) => ({
+      setParamsGrupo(data.map((p: ParametroGrupo & { es_privado?: boolean }) => ({
         categoria_parametro: p.categoria_parametro,
         tipo_parametro: p.tipo_parametro,
         valor_parametro: p.valor_parametro,
         orden: (p as ParametroGrupo & { orden?: number }).orden ?? 0,
         visible: p.visible ?? true,
         editable: p.editable ?? true,
+        es_privado: p.es_privado ?? false,
       })))
     } catch { setParamsGrupo([]) }
     finally { setCargandoGrupo(false) }
@@ -140,13 +148,14 @@ export default function PaginaParametros() {
     setCargandoUsuario(true)
     try {
       const data = await parametrosApi.listarUsuario()
-      setParamsUsuario(data.map((p: ParametroUsuario) => ({
+      setParamsUsuario(data.map((p: ParametroUsuario & { es_privado?: boolean }) => ({
         categoria_parametro: p.categoria_parametro,
         tipo_parametro: p.tipo_parametro,
         valor_parametro: p.valor_parametro,
         orden: (p as ParametroUsuario & { orden?: number }).orden ?? 0,
         visible: p.visible ?? true,
         editable: p.editable ?? true,
+        es_privado: p.es_privado ?? false,
       })))
     } catch { setParamsUsuario([]) }
     finally { setCargandoUsuario(false) }
@@ -154,6 +163,7 @@ export default function PaginaParametros() {
 
   const recargar = useCallback(() => {
     setPage(1)
+    setValoresRevelados({})
     if (tabActiva === 'generales') cargarGenerales()
     else if (tabActiva === 'grupo') cargarGrupo()
     else if (tabActiva === 'entidad') cargarEntidad()
@@ -162,15 +172,36 @@ export default function PaginaParametros() {
 
   useEffect(() => {
     setPage(1)
+    setValoresRevelados({})
     if (tabActiva === 'generales') cargarGenerales()
     else if (tabActiva === 'grupo') cargarGrupo()
     else if (tabActiva === 'entidad') cargarEntidad()
     else if (tabActiva === 'usuario') cargarUsuario()
   }, [tabActiva, cargarGenerales, cargarGrupo, cargarEntidad, cargarUsuario])
 
+  // ── Revelar valor privado ──────────────────────────────────────────────────
+  const revelarValor = async (p: ParametroRow) => {
+    const key = `${p.categoria_parametro}/${p.tipo_parametro}`
+    if (valoresRevelados[key] !== undefined) {
+      // Toggle: ocultar
+      setValoresRevelados((prev) => { const n = { ...prev }; delete n[key]; return n })
+      return
+    }
+    setRevelando(key)
+    try {
+      const res = tabActiva === 'generales'
+        ? await parametrosApi.revelarGeneral(p.categoria_parametro, p.tipo_parametro)
+        : await parametrosApi.revelarGrupo(p.categoria_parametro, p.tipo_parametro)
+      setValoresRevelados((prev) => ({ ...prev, [key]: res.valor }))
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Error al revelar valor')
+    } finally {
+      setRevelando(null)
+    }
+  }
+
   // ── Reordenar ─────────────────────────────────────────────────────────────
   const reordenar = async (nuevosPagina: ParametroRow[]) => {
-    // Reemplazar los items de la página actual en el array completo
     const full = tabActiva === 'generales' ? paramsGenerales
       : tabActiva === 'grupo' ? paramsGrupo
       : tabActiva === 'entidad' ? paramsEntidad
@@ -212,6 +243,11 @@ export default function PaginaParametros() {
 
   // ── Guardar parámetro inline ──────────────────────────────────────────────
   const guardarInline = async (tab: TabId, cat: string, tipo: string, valor: string) => {
+    // Si es privado y el valor está vacío o es máscara → no guardar
+    if (!valor || valor === MASCARA) {
+      mostrarExito('Sin cambios (campo privado vacío).')
+      return
+    }
     const key = `${cat}/${tipo}`
     setGuardando(key)
     setError('')
@@ -226,6 +262,8 @@ export default function PaginaParametros() {
       } else if (tab === 'usuario') {
         await parametrosApi.upsertUsuario(datos)
       }
+      // Limpiar valor revelado para que vuelva a mostrar máscara
+      setValoresRevelados((prev) => { const n = { ...prev }; delete n[key]; return n })
       mostrarExito(t('parametroGuardado'))
     } catch (e) {
       setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
@@ -284,7 +322,6 @@ export default function PaginaParametros() {
     }
   }, [visibleTabs, tabActiva])
 
-  // Datos y estado de carga según tab
   const getParams = (): ParametroRow[] => {
     if (tabActiva === 'generales') return paramsGenerales
     if (tabActiva === 'grupo') return paramsGrupo
@@ -308,14 +345,12 @@ export default function PaginaParametros() {
 
   const puedeAgregar = tabActiva !== 'generales' || esAdmin()
 
-  // Tipos filtrados por categoría seleccionada y los ya asignados
   const tiposDisponibles = tiposPorCat.filter(
     (t) => !getParams().some(
       (p) => p.categoria_parametro === t.categoria_parametro && p.tipo_parametro === t.tipo_parametro
     )
   )
 
-  // ── Paginación client-side ────────────────────────────────────────────────
   const allParams = getParams()
   const totalItems = allParams.length
   const pagedParams = useMemo(() => {
@@ -325,7 +360,6 @@ export default function PaginaParametros() {
 
   const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50'
 
-  // Indicadores de estado para grupo/usuario
   const BadgesParam = ({ p }: { p: ParametroRow }) => {
     if (tabActiva === 'generales') return null
     const editable = p.editable !== false
@@ -407,33 +441,72 @@ export default function PaginaParametros() {
                     const key = `${p.categoria_parametro}/${p.tipo_parametro}`
                     const esEditable = p.editable !== false
                     const esVisible = p.visible !== false
+                    const esPrivado = p.es_privado === true
+                    const valorRevelado = valoresRevelados[key]
+                    const estaRevelado = valorRevelado !== undefined
 
                     return (
                       <SortableListItem
                         key={key}
                         id={key}
-                        className={`flex items-start gap-2 px-3 py-2 rounded-lg border border-borde bg-surface ${!esVisible ? 'opacity-60' : ''}`}
+                        className={`flex items-start gap-2 px-3 py-2 rounded-lg border bg-surface ${
+                          esPrivado ? 'border-amber-200' : 'border-borde'
+                        } ${!esVisible ? 'opacity-60' : ''}`}
                       >
                         <div className="flex flex-col flex-1 min-w-0">
-                          {/* Fila principal */}
                           <div className="flex items-center gap-3">
                             <div className="flex-1 min-w-0">
-                              <p className="text-xs font-semibold text-texto-muted mb-1">
+                              <p className="text-xs font-semibold text-texto-muted mb-1 flex items-center gap-1">
                                 {p.categoria_parametro}
                                 <span className="mx-1 text-texto-light">/</span>
                                 {p.tipo_parametro}
+                                {esPrivado && <Lock size={10} className="text-amber-500 ml-1" />}
                               </p>
-                              <input
-                                type="text"
-                                defaultValue={p.valor_parametro}
-                                disabled={!esEditable}
-                                onBlur={(e) => {
-                                  if (e.target.value !== p.valor_parametro) {
-                                    guardarInline(tabActiva, p.categoria_parametro, p.tipo_parametro, e.target.value)
-                                  }
-                                }}
-                                className="w-full text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5 disabled:cursor-not-allowed disabled:text-texto-muted"
-                              />
+                              {esPrivado ? (
+                                /* Campo privado: input vacío + botón revelar */
+                                <div className="flex items-center gap-2">
+                                  <input
+                                    type={estaRevelado ? 'text' : 'password'}
+                                    defaultValue={estaRevelado ? valorRevelado : ''}
+                                    key={estaRevelado ? `revealed-${key}` : `hidden-${key}`}
+                                    placeholder={estaRevelado ? undefined : 'Ingresar nuevo valor para reemplazar'}
+                                    disabled={!esEditable}
+                                    onBlur={(e) => {
+                                      const v = e.target.value.trim()
+                                      if (v && v !== valorRevelado) {
+                                        guardarInline(tabActiva, p.categoria_parametro, p.tipo_parametro, v)
+                                      }
+                                    }}
+                                    className="flex-1 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5 disabled:cursor-not-allowed disabled:text-texto-muted font-mono"
+                                  />
+                                  {(tabActiva === 'generales' || tabActiva === 'grupo') && (
+                                    <button
+                                      onClick={() => revelarValor(p)}
+                                      disabled={revelando === key}
+                                      className="p-1 rounded text-texto-muted hover:text-amber-600 transition-colors shrink-0"
+                                      title={estaRevelado ? 'Ocultar valor' : 'Revelar valor actual'}
+                                    >
+                                      {revelando === key
+                                        ? <span className="text-xs">...</span>
+                                        : estaRevelado
+                                          ? <EyeClosed size={14} />
+                                          : <Eye size={14} />}
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <input
+                                  type="text"
+                                  defaultValue={p.valor_parametro}
+                                  disabled={!esEditable}
+                                  onBlur={(e) => {
+                                    if (e.target.value !== p.valor_parametro) {
+                                      guardarInline(tabActiva, p.categoria_parametro, p.tipo_parametro, e.target.value)
+                                    }
+                                  }}
+                                  className="w-full text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5 disabled:cursor-not-allowed disabled:text-texto-muted"
+                                />
+                              )}
                             </div>
                             <BadgesParam p={p} />
                             {/* Guardar */}
@@ -487,7 +560,6 @@ export default function PaginaParametros() {
                 {t('agregarParametro')}
               </p>
               <div className="flex flex-col gap-2">
-                {/* Fila 1: Categoría y Tipo (dropdowns) */}
                 <div className="grid grid-cols-2 gap-2">
                   <select
                     value={nuevoParam.categoria_parametro}
@@ -517,14 +589,13 @@ export default function PaginaParametros() {
                     ))}
                   </select>
                 </div>
-                {/* Fila 2: Valor y botón */}
                 <div className="flex gap-2">
                   <input
-                    type="text"
+                    type={categorias.find((c) => c.categoria_parametro === nuevoParam.categoria_parametro)?.privado ? 'password' : 'text'}
                     placeholder={t('placeholderValor')}
                     value={nuevoParam.valor_parametro}
                     onChange={(e) => setNuevoParam({ ...nuevoParam, valor_parametro: e.target.value })}
-                    className="flex-1 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario"
+                    className="flex-1 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario font-mono"
                   />
                   <Boton
                     variante="contorno"

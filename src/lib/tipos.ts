@@ -351,6 +351,7 @@ export interface CategoriaParametro {
   replica_usuario?: boolean
   visible_usuario?: boolean
   editable_usuario?: boolean
+  privado?: boolean
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null

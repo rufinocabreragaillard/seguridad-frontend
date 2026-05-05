@@ -537,6 +537,12 @@ export const parametrosApi = {
     api.delete(`/parametros/grupo/${categoria}/${tipo}`),
   reordenarGrupo: (items: { categoria_parametro: string; tipo_parametro: string; orden: number }[]) =>
     api.put('/parametros/grupo/reordenar', items),
+  nulificarGrupo: (categoria: string, tipo: string) =>
+    api.put(`/parametros/grupo/${categoria}/${tipo}/nulificar`),
+  revelarGeneral: (categoria: string, tipo: string) =>
+    api.get<{ valor: string }>(`/parametros/revelar/generales/${categoria}/${tipo}`).then((r) => r.data),
+  revelarGrupo: (categoria: string, tipo: string) =>
+    api.get<{ valor: string }>(`/parametros/revelar/grupo/${categoria}/${tipo}`).then((r) => r.data),
   listarUsuario: () =>
     api.get<ParametroUsuario[]>('/parametros/usuario').then((r) => r.data),
   actualizarUsuario: (codigo: string, valor: string) =>
@@ -732,7 +738,7 @@ export const documentosApi = {
       }[]
     }>(`/documentos/${id}/chunks`, { params }).then((r) => r.data),
   chatComando: (body: { mensaje: string; contexto: Record<string, unknown> }) =>
-    api.post<{ explicacion: string; acciones: { tipo: string; proceso?: string; estado_origen?: string; estado_destino?: string; ubicacion?: string; tope?: number }[]; ejecutado: boolean }>('/documentos/chat-comando', body).then((r) => r.data),
+    api.post<{ explicacion: string; acciones: { tipo: 'ejecutar_proceso' | 'cambiar_estado' | 'info'; proceso?: string; estado_origen?: string; estado_destino?: string; ubicacion?: string; tope?: number }[]; ejecutado: boolean }>('/documentos/chat-comando', body).then((r) => r.data),
 }
 
 // ─── Procesos (catálogo genérico multi-dominio) ────────────────────────────

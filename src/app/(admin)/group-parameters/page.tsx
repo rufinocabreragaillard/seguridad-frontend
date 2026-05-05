@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, Eye, Save } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Save, Lock, EyeClosed, RotateCcw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
@@ -19,8 +19,10 @@ interface ValorGrupo {
   tipo_parametro: string
   valor_parametro: string
   descripcion?: string
+  es_privado?: boolean
 }
 
+const MASCARA = '••••••••••••••••'
 const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
 export default function PaginaParametrosGrupo() {
@@ -41,11 +43,15 @@ export default function PaginaParametrosGrupo() {
   const [error, setError] = useState('')
   const [mensajeExito, setMensajeExito] = useState('')
 
+  // Revelar valores privados
+  const [valoresRevelados, setValoresRevelados] = useState<Record<string, string>>({})
+  const [revelando, setRevelando] = useState<string | null>(null)
+
   // Nuevo valor
   const [nuevoVal, setNuevoVal] = useState({ categoria_parametro: '', tipo_parametro: '', valor_parametro: '' })
   const [tiposPorCat, setTiposPorCat] = useState<TipoParametro[]>([])
 
-  // Eliminar
+  // Eliminar / Nulificar
   const [valAEliminar, setValAEliminar] = useState<ValorGrupo | null>(null)
   const [eliminando, setEliminando] = useState(false)
 
@@ -63,7 +69,11 @@ export default function PaginaParametrosGrupo() {
 
   const cargarValores = useCallback(async () => {
     setCargandoVal(true)
-    try { setValores(await parametrosApi.listarGrupo()) }
+    setValoresRevelados({})
+    try {
+      const data = await parametrosApi.listarGrupo()
+      setValores(data.map((p: ValorGrupo & { es_privado?: boolean }) => ({ ...p, es_privado: p.es_privado ?? false })))
+    }
     finally { setCargandoVal(false) }
   }, [])
 
@@ -80,12 +90,32 @@ export default function PaginaParametrosGrupo() {
     }
   }, [filtroCategoria])
 
+  // ── Revelar valor privado ──────────────────────────────────────────────────
+  const revelarValor = async (v: ValorGrupo) => {
+    const key = `${v.categoria_parametro}/${v.tipo_parametro}`
+    if (valoresRevelados[key] !== undefined) {
+      setValoresRevelados((prev) => { const n = { ...prev }; delete n[key]; return n })
+      return
+    }
+    setRevelando(key)
+    try {
+      const res = await parametrosApi.revelarGrupo(v.categoria_parametro, v.tipo_parametro)
+      setValoresRevelados((prev) => ({ ...prev, [key]: res.valor }))
+    } catch (e) { setError(e instanceof Error ? e.message : 'Error al revelar') }
+    finally { setRevelando(null) }
+  }
+
   // ── Guardar valor inline ───────────────────────────────────────────────────
-  const guardarInline = async (cat: string, tipo: string, valor: string) => {
+  const guardarInline = async (cat: string, tipo: string, valor: string, esPrivado: boolean) => {
+    if (esPrivado && (!valor || valor === MASCARA)) {
+      mostrarExito('Sin cambios (campo privado vacío).')
+      return
+    }
     const key = `${cat}/${tipo}`
     setGuardando(key); setError('')
     try {
       await parametrosApi.upsertGrupo({ categoria_parametro: cat, tipo_parametro: tipo, valor_parametro: valor })
+      setValoresRevelados((prev) => { const n = { ...prev }; delete n[key]; return n })
       mostrarExito(t('parametroGuardado'))
       cargarValores()
     } catch (e) { setError(e instanceof Error ? e.message : tc('errorAlGuardar')) }
@@ -97,17 +127,24 @@ export default function PaginaParametrosGrupo() {
     if (!nuevoVal.categoria_parametro || !nuevoVal.tipo_parametro || !nuevoVal.valor_parametro) {
       setError(t('errorCategoriaTipoValorObligatorios')); return
     }
-    await guardarInline(nuevoVal.categoria_parametro, nuevoVal.tipo_parametro, nuevoVal.valor_parametro)
+    const cat = categorias.find((c) => c.categoria_parametro === nuevoVal.categoria_parametro)
+    await guardarInline(nuevoVal.categoria_parametro, nuevoVal.tipo_parametro, nuevoVal.valor_parametro, cat?.privado ?? false)
     setNuevoVal({ categoria_parametro: '', tipo_parametro: '', valor_parametro: '' })
   }
 
-  // ── Eliminar valor ─────────────────────────────────────────────────────────
+  // ── Eliminar / Nulificar ───────────────────────────────────────────────────
   const confirmarEliminar = async () => {
     if (!valAEliminar) return
     setEliminando(true)
     try {
-      await parametrosApi.eliminarGrupo(valAEliminar.categoria_parametro, valAEliminar.tipo_parametro)
-      mostrarExito(t('parametroEliminado'))
+      if (valAEliminar.es_privado) {
+        // Privado: nulificar (elimina la réplica, vuelve al valor del sistema)
+        await parametrosApi.nulificarGrupo(valAEliminar.categoria_parametro, valAEliminar.tipo_parametro)
+        mostrarExito('Réplica eliminada. El grupo usará el valor del sistema.')
+      } else {
+        await parametrosApi.eliminarGrupo(valAEliminar.categoria_parametro, valAEliminar.tipo_parametro)
+        mostrarExito(t('parametroEliminado'))
+      }
       setValAEliminar(null)
       cargarValores()
     } catch (e) { setError(e instanceof Error ? e.message : tc('errorAlEliminar')) }
@@ -117,7 +154,6 @@ export default function PaginaParametrosGrupo() {
   // ── Datos derivados ────────────────────────────────────────────────────────
   const valoresFiltrados = filtroCategoria ? valores.filter((v) => v.categoria_parametro === filtroCategoria) : valores
 
-  // Categorías que tienen al menos un valor en el grupo (o todas del catálogo)
   const categoriasConInfo = categorias.map((c) => ({
     ...c,
     nValores: valores.filter((v) => v.categoria_parametro === c.categoria_parametro).length,
@@ -160,11 +196,13 @@ export default function PaginaParametrosGrupo() {
             <Tabla>
               <TablaCabecera><tr>
                 <TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh>
-                <TablaTh>{t('colValoresConfig')}</TablaTh><TablaTh className="text-right">{tc('acciones')}</TablaTh>
+                <TablaTh>{t('colValoresConfig')}</TablaTh>
+                <TablaTh className="text-center"><Lock size={13} className="inline" /></TablaTh>
+                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
                 {categoriasConInfo.length === 0 ? (
-                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={5 as never}>{t('sinCategoriasCatalogo')}</TablaTd></TablaFila>
+                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={6 as never}>{t('sinCategoriasCatalogo')}</TablaTd></TablaFila>
                 ) : categoriasConInfo.map((c) => (
                   <TablaFila key={c.categoria_parametro}>
                     <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
@@ -174,6 +212,11 @@ export default function PaginaParametrosGrupo() {
                       {c.nValores > 0
                         ? <Insignia variante="exito">{t('configurados', { n: c.nValores })}</Insignia>
                         : <Insignia variante="neutro">{t('sinValores')}</Insignia>}
+                    </TablaTd>
+                    <TablaTd className="text-center">
+                      {c.privado
+                        ? <span title="Valores privados (tipo API Key)" className="text-amber-600"><Lock size={13} /></span>
+                        : <span className="text-texto-light">—</span>}
                     </TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
@@ -213,32 +256,74 @@ export default function PaginaParametrosGrupo() {
               ) : valoresFiltrados.map((v) => {
                 const key = `${v.categoria_parametro}/${v.tipo_parametro}`
                 const tipo = tipos.find((t) => t.categoria_parametro === v.categoria_parametro && t.tipo_parametro === v.tipo_parametro)
+                const esPrivado = v.es_privado === true
+                const valorRevelado = valoresRevelados[key]
+                const estaRevelado = valorRevelado !== undefined
+
                 return (
-                  <div key={key} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-borde bg-surface">
+                  <div key={key} className={`flex items-center gap-2 px-3 py-2 rounded-lg border bg-surface ${esPrivado ? 'border-amber-200' : 'border-borde'}`}>
                     <div className="shrink-0 w-72">
-                      <p className="text-xs font-semibold text-texto-muted">
+                      <p className="text-xs font-semibold text-texto-muted flex items-center gap-1">
                         <code>{v.categoria_parametro}</code>
                         <span className="mx-1 text-texto-light">/</span>
                         <code>{v.tipo_parametro}</code>
+                        {esPrivado && <Lock size={10} className="text-amber-500 ml-1" />}
                       </p>
                       {tipo && <p className="text-xs text-texto-muted mt-0.5">{tipo.nombre}</p>}
                     </div>
-                    <input
-                      type="text"
-                      defaultValue={v.valor_parametro}
-                      onBlur={(e) => { if (e.target.value !== v.valor_parametro) guardarInline(v.categoria_parametro, v.tipo_parametro, e.target.value) }}
-                      className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
-                    />
-                    <button
-                      onClick={(e) => { const inp = (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement); if (inp) guardarInline(v.categoria_parametro, v.tipo_parametro, inp.value) }}
-                      disabled={guardando === key}
-                      className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title={tc('guardar')}>
-                      <Save size={14} />
-                    </button>
-                    <button onClick={() => setValAEliminar(v)}
-                      className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title={tc('eliminar')}>
-                      <Trash2 size={14} />
-                    </button>
+
+                    {esPrivado ? (
+                      <>
+                        <input
+                          type={estaRevelado ? 'text' : 'password'}
+                          defaultValue={estaRevelado ? valorRevelado : ''}
+                          key={estaRevelado ? `rev-${key}` : `hid-${key}`}
+                          placeholder="Ingresar nuevo valor para reemplazar"
+                          onBlur={(e) => {
+                            const val = e.target.value.trim()
+                            if (val && val !== valorRevelado) guardarInline(v.categoria_parametro, v.tipo_parametro, val, true)
+                          }}
+                          className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5 font-mono"
+                        />
+                        <button
+                          onClick={() => revelarValor(v)}
+                          disabled={revelando === key}
+                          className="p-1.5 rounded-lg text-texto-muted hover:text-amber-600 transition-colors shrink-0"
+                          title={estaRevelado ? 'Ocultar' : 'Revelar valor actual'}
+                        >
+                          {revelando === key
+                            ? <span className="text-xs">...</span>
+                            : estaRevelado ? <EyeClosed size={14} /> : <Eye size={14} />}
+                        </button>
+                        {/* Nulificar: elimina la réplica, vuelve al valor del sistema */}
+                        <button
+                          onClick={() => setValAEliminar(v)}
+                          className="p-1.5 rounded-lg hover:bg-amber-50 text-texto-muted hover:text-amber-600 transition-colors shrink-0"
+                          title="Quitar réplica (usar valor del sistema)"
+                        >
+                          <RotateCcw size={14} />
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="text"
+                          defaultValue={v.valor_parametro}
+                          onBlur={(e) => { if (e.target.value !== v.valor_parametro) guardarInline(v.categoria_parametro, v.tipo_parametro, e.target.value, false) }}
+                          className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
+                        />
+                        <button
+                          onClick={(e) => { const inp = (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement); if (inp) guardarInline(v.categoria_parametro, v.tipo_parametro, inp.value, false) }}
+                          disabled={guardando === key}
+                          className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title={tc('guardar')}>
+                          <Save size={14} />
+                        </button>
+                        <button onClick={() => setValAEliminar(v)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title={tc('eliminar')}>
+                          <Trash2 size={14} />
+                        </button>
+                      </>
+                    )}
                   </div>
                 )
               })}
@@ -266,9 +351,11 @@ export default function PaginaParametrosGrupo() {
                 </select>
               </div>
               <div className="flex gap-2">
-                <input type="text" placeholder={t('placeholderValor')} value={nuevoVal.valor_parametro}
+                <input
+                  type={categorias.find((c) => c.categoria_parametro === (nuevoVal.categoria_parametro || filtroCategoria))?.privado ? 'password' : 'text'}
+                  placeholder={t('placeholderValor')} value={nuevoVal.valor_parametro}
                   onChange={(e) => setNuevoVal({ ...nuevoVal, valor_parametro: e.target.value })}
-                  className="flex-1 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario" />
+                  className="flex-1 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario font-mono" />
                 <Boton variante="primario" tamano="sm" onClick={agregarNuevo}
                   disabled={!nuevoVal.categoria_parametro || !nuevoVal.tipo_parametro || !nuevoVal.valor_parametro}>
                   <Plus size={14} /> {t('agregar')}
@@ -283,9 +370,13 @@ export default function PaginaParametrosGrupo() {
         abierto={!!valAEliminar}
         alCerrar={() => setValAEliminar(null)}
         alConfirmar={confirmarEliminar}
-        titulo={t('eliminarTitulo')}
-        mensaje={valAEliminar ? t('eliminarConfirm', { categoria: valAEliminar.categoria_parametro, tipo: valAEliminar.tipo_parametro }) : ''}
-        textoConfirmar={tc('eliminar')}
+        titulo={valAEliminar?.es_privado ? 'Quitar réplica de grupo' : t('eliminarTitulo')}
+        mensaje={valAEliminar
+          ? valAEliminar.es_privado
+            ? `¿Quitar la réplica del parámetro ${valAEliminar.tipo_parametro} de este grupo? El grupo volverá a usar el valor del sistema.`
+            : t('eliminarConfirm', { categoria: valAEliminar.categoria_parametro, tipo: valAEliminar.tipo_parametro })
+          : ''}
+        textoConfirmar={valAEliminar?.es_privado ? 'Quitar réplica' : tc('eliminar')}
         cargando={eliminando}
       />
     </div>
