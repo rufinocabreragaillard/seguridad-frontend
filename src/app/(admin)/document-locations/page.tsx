@@ -896,7 +896,7 @@ export default function PaginaUbicacionesDocs() {
         titulo={editando ? `Editar Ubicación: ${editando.nombre_ubicacion} - ${editando.codigo_ubicacion}` : 'Nueva ubicación'}
         className="max-w-3xl"
       >
-        <div className="flex flex-col gap-4 min-h-[583px]">
+        <div className="flex flex-col gap-4 min-h-[700px]">
           {/* Tabs — siempre en edición */}
           {editando && (
             <div className="flex border-b border-borde">
@@ -1390,8 +1390,9 @@ export default function PaginaUbicacionesDocs() {
         abierto={modalCarga}
         alCerrar={cerrarModalCarga}
         titulo={t('cargarDesdeDirectorioTitulo')}
+        className="max-w-2xl"
       >
-        <div className="flex flex-col gap-4 min-w-[500px]">
+        <div className="flex flex-col gap-4 min-w-[666px]">
           {/* Pre-sincronización: preview */}
           {!resultadoSync && datosEscaneo && (
             <>
