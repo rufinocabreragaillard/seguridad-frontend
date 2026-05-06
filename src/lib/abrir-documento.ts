@@ -179,7 +179,7 @@ export async function cargarBlobDocumento(
     const picker = (window as WinWithPicker).showDirectoryPicker
     if (!picker) { onError('Selecciona primero una carpeta raíz en Adm. Indexación Docs.'); return }
     try {
-      handle = await picker({ mode: 'read' })
+      handle = await picker({ mode: 'read', id: 'serverlm-docs' })
       await setDirectoryHandle(handle, userId, grupoActivo)
     } catch { return }
   }
@@ -210,7 +210,7 @@ async function abrirViaFileSystemApi(
       return
     }
     try {
-      handle = await picker({ mode: 'read' })
+      handle = await picker({ mode: 'read', id: 'serverlm-docs' })
       await setDirectoryHandle(handle, userId, grupoActivo)
     } catch {
       if (winPreAbierta) winPreAbierta.close()
@@ -238,7 +238,7 @@ export async function seleccionarDirectorioRaiz(
     return null
   }
   try {
-    const handle = await picker({ mode: 'read' })
+    const handle = await picker({ mode: 'read', id: 'serverlm-docs' })
     await setDirectoryHandle(handle, userId, grupoActivo)
     return handle
   } catch {

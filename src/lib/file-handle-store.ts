@@ -111,3 +111,36 @@ export async function purgarBaseAntigua(): Promise<void> {
     /* ignore */
   }
 }
+
+export type RelacionHandles =
+  | 'igual'
+  | 'nuevo-es-descendiente'
+  | 'nuevo-es-ancestro'
+  | 'no-relacionados'
+
+/**
+ * Determina la relación entre dos FileSystemDirectoryHandle usando `resolve()`.
+ *
+ *   existente.resolve(nuevo) === [] → mismo directorio
+ *   existente.resolve(nuevo) === [...] → nuevo es descendiente de existente
+ *   nuevo.resolve(existente) === [...] → nuevo es ancestro de existente
+ *   ambos null → directorios laterales sin relación
+ */
+export async function compararHandles(
+  existente: FileSystemDirectoryHandle,
+  nuevo: FileSystemDirectoryHandle,
+): Promise<RelacionHandles> {
+  type WithResolve = FileSystemDirectoryHandle & {
+    resolve: (other: FileSystemHandle) => Promise<string[] | null>
+  }
+  const e = existente as WithResolve
+  const n = nuevo as WithResolve
+
+  const desc = await e.resolve(nuevo).catch(() => null)
+  if (desc !== null) return desc.length === 0 ? 'igual' : 'nuevo-es-descendiente'
+
+  const anc = await n.resolve(existente).catch(() => null)
+  if (anc !== null) return anc.length === 0 ? 'igual' : 'nuevo-es-ancestro'
+
+  return 'no-relacionados'
+}

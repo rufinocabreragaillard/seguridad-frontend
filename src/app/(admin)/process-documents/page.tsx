@@ -637,7 +637,7 @@ function PaginaProcesarDocumentosInterna() {
 
   const seleccionarDirectorio = async () => {
     try {
-      const opts: Record<string, unknown> = { mode: 'read' }
+      const opts: Record<string, unknown> = { mode: 'read', id: 'serverlm-docs' }
       const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
       setDirHandle(handle)
       idbSetHandle(handle, userId, grupoActivo)
@@ -920,7 +920,7 @@ function PaginaProcesarDocumentosInterna() {
           setDirHandle(stored)
         } else {
           try {
-            const opts: Record<string, unknown> = { mode: 'read' }
+            const opts: Record<string, unknown> = { mode: 'read', id: 'serverlm-docs' }
             handleEfectivo = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
             setDirHandle(handleEfectivo)
             idbSetHandle(handleEfectivo, userId, grupoActivo)

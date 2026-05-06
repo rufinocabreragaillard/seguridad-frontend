@@ -624,7 +624,7 @@ export default function PaginaUbicacionesDocs() {
       return
     }
     try {
-      const opts: Record<string, unknown> = { mode: 'read' }
+      const opts: Record<string, unknown> = { mode: 'read', id: 'serverlm-docs' }
       if (cdDirHandle) opts.startIn = cdDirHandle
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const handle = await (window as any).showDirectoryPicker(opts)

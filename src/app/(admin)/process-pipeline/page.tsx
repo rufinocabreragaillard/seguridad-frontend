@@ -470,7 +470,7 @@ export default function PaginaCargaDocsUsuario() {
         handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
       } else {
         try {
-          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' })
           setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
         } catch {
           // Sin permiso: marcar todos como no encontrados
@@ -593,7 +593,7 @@ export default function PaginaCargaDocsUsuario() {
         handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
       } else {
         try {
-          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' })
           setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
         } catch {
           setPaso('CARGAR', { estado: 'listo' })
