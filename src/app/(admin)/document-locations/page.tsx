@@ -16,7 +16,8 @@ import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { escanearDirectorio, escanearDirectorioSinHijos, soportaDirectoryPicker, type DirectorioEscaneado, escanearArchivosDirectorio, type ArchivoEscaneado } from '@/lib/escanear-directorio'
-import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle } from '@/lib/file-handle-store'
+import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, compararHandles } from '@/lib/file-handle-store'
+import { useToast } from '@/context/ToastContext'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
@@ -24,6 +25,7 @@ import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 export default function PaginaUbicacionesDocs() {
   const { grupoActivo, usuario } = useAuth()
   const userId = usuario?.codigo_usuario ?? null
+  const toast = useToast()
   const t = useTranslations('documentLocations')
   const tc = useTranslations('common')
   const tcd = useTranslations('cargarDocumentos')
@@ -338,6 +340,51 @@ export default function PaginaUbicacionesDocs() {
     }
   }
 
+  // ── Validación: nuevo handle debe ser ancestro/descendiente/igual al persistido ──
+  // Devuelve true si la carga puede proceder; false si fue rechazada.
+  // Como efecto colateral: si es 'ancestro entrante' o re-vinculación
+  // por nombre, actualiza el handle persistido al nuevo.
+  const validarRelacionConArbol = async (
+    nuevo: FileSystemDirectoryHandle,
+    nombreNuevo: string,
+  ): Promise<boolean> => {
+    const raices = ubicaciones.filter((u) => !u.codigo_ubicacion_superior)
+    if (raices.length === 0) return true // BD vacía: primera carga, todo permitido
+
+    const persistido = await idbGetHandle(userId, grupoActivo)
+    const nombresRoots = raices.map((r) => r.nombre_ubicacion)
+
+    if (!persistido) {
+      // Sanity check: si el nombre del nuevo coincide con un root, lo adoptamos
+      // como re-vinculación implícita.
+      if (nombresRoots.includes(nombreNuevo)) {
+        await idbSetHandle(nuevo, userId, grupoActivo)
+        return true
+      }
+      toast.warning(
+        'Re-vincula primero la carpeta raíz',
+        `Antes de cargar "${nombreNuevo}", selecciona la carpeta raíz existente: ${nombresRoots.join(' o ')}.`,
+      )
+      return false
+    }
+
+    const relacion = await compararHandles(persistido, nuevo)
+    if (relacion === 'no-relacionados') {
+      toast.error(
+        `"${nombreNuevo}" no es ancestro ni descendiente del árbol cargado`,
+        `Solo se permiten cargas que extiendan el árbol existente (raíces actuales: ${nombresRoots.join(', ')}).`,
+      )
+      return false
+    }
+
+    // Si el nuevo es ancestro del persistido, el nuevo pasa a ser el root del árbol.
+    if (relacion === 'nuevo-es-ancestro') {
+      await idbSetHandle(nuevo, userId, grupoActivo)
+    }
+
+    return true
+  }
+
   // ── Indexar Ubicaciones (escaneo + sincronización) ─────────────────────────
   const iniciarEscaneo = async () => {
     if (!soportaDirectoryPicker()) {
@@ -352,6 +399,9 @@ export default function PaginaUbicacionesDocs() {
         setEscaneando(false)
         return // usuario canceló
       }
+      // Validar parentesco antes de proceder.
+      const ok = await validarRelacionConArbol(resultado.dirHandle, resultado.nombreRaiz)
+      if (!ok) { setEscaneando(false); return }
       // Persistir el handle para que luego se puedan abrir documentos
       // sin volver a pedir la carpeta al usuario.
       idbSetHandle(resultado.dirHandle, userId, grupoActivo)
@@ -410,6 +460,9 @@ export default function PaginaUbicacionesDocs() {
         return
       }
       const { directorio, dirHandle } = resultado
+      // Validar parentesco antes de proceder.
+      const ok = await validarRelacionConArbol(dirHandle, directorio.nombre_ubicacion)
+      if (!ok) { setCargandoUbicacion(false); return }
       // Persistir el handle para que luego se puedan abrir documentos.
       idbSetHandle(dirHandle, userId, grupoActivo)
       setCdDirHandle(dirHandle)
