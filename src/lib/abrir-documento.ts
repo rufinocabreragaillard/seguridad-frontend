@@ -76,26 +76,41 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
     return
   }
 
-  // Envuelve el blob en un HTML con <title> real + <object> para mostrar el
-  // nombre correcto en la pestaña y en el diálogo de descarga del visor.
-  // <object> puede renderizar blobs anidados en Chrome (a diferencia de iframe).
+  const isPdf = (nombre.split('.').pop() || '').toLowerCase() === 'pdf'
+
+  // PDF: abrir el blob DIRECTAMENTE en la pestaña. Chrome bloquea blobs
+  // anidados (object/iframe/embed con src blob: dentro de un wrapper blob:),
+  // por eso no podemos usar un wrapper HTML para fijar el título. En su lugar
+  // sobrescribimos document.title vía postMessage al abrir.
+  if (isPdf) {
+    const setTitle = (win: Window) => {
+      const trySetTitle = (attempts: number) => {
+        if (win.closed) return
+        try { win.document.title = nombre } catch { /* cross-origin tras navegación */ }
+        if (attempts > 0) setTimeout(() => trySetTitle(attempts - 1), 300)
+      }
+      trySetTitle(5)
+    }
+    if (winPreAbierta && !winPreAbierta.closed) {
+      winPreAbierta.location.replace(url)
+      setTitle(winPreAbierta)
+      return
+    }
+    const win = window.open(url, '_blank')
+    if (win) {
+      setTitle(win)
+    } else {
+      // Popup bloqueado: mostrar en modal inline
+      window.dispatchEvent(new CustomEvent('serverlm:preview', { detail: { url, nombre } }))
+    }
+    return
+  }
+
+  // No-PDF inline (imágenes, html, etc): wrapper HTML con <iframe> para
+  // mostrar el título real en la pestaña.
   const titulo = _escapeHtml(nombre)
   const src = _escapeHtml(url)
-  const isPdf = (nombre.split('.').pop() || '').toLowerCase() === 'pdf'
-  const html = isPdf
-    ? `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>${titulo}</title></head>
-<body style="margin:0;padding:0;overflow:hidden;background:#1f1f1f">
-<object data="${src}" type="application/pdf" style="width:100vw;height:100vh">
-  <p style="color:#ccc;font-family:sans-serif;padding:2rem">
-    No se puede mostrar el PDF en el navegador.
-    <a href="${src}" download="${titulo}" style="color:#6ab0f5">Descargar</a>
-  </p>
-</object>
-</body>
-</html>`
-    : `<!DOCTYPE html>
+  const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>${titulo}</title></head>
 <body style="margin:0;padding:0;overflow:hidden;background:#1f1f1f">
@@ -104,7 +119,6 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
 </html>`
   const wrapperBlob = new Blob([html], { type: 'text/html' })
   const wrapperUrl = URL.createObjectURL(wrapperBlob)
-  // No revocar el wrapperUrl si lo usamos en el modal (el modal lo revoca al cerrar)
 
   if (winPreAbierta && !winPreAbierta.closed) {
     winPreAbierta.location.replace(wrapperUrl)
@@ -116,7 +130,6 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
   if (win) {
     setTimeout(() => URL.revokeObjectURL(wrapperUrl), 5 * 60_000)
   } else {
-    // Popup bloqueado: mostrar en modal inline usando el blob original (no el wrapper)
     URL.revokeObjectURL(wrapperUrl)
     window.dispatchEvent(new CustomEvent('serverlm:preview', { detail: { url, nombre } }))
   }
