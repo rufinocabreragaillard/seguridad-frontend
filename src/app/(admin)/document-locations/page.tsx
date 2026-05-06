@@ -961,6 +961,11 @@ export default function PaginaUbicacionesDocs() {
               {editando && (
                 <Input etiqueta={t('etiquetaCodigo')} value={form.codigo_ubicacion} disabled readOnly />
               )}
+              {editando && (
+                <div className="col-span-2">
+                  <Input etiqueta="Ruta" value={editando.url || ''} disabled readOnly />
+                </div>
+              )}
             </div>
           )}
 
