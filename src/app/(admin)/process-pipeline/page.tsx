@@ -212,6 +212,7 @@ export default function PaginaCargaDocsUsuario() {
     try {
       const r = await escanearDirectorio()
       if (!r) { setEscaneandoDir(false); return }
+      setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
       setDatosEscaneo(r); setModalCarga(true)
     } catch { alert(t('alertErrorEscaneo')) }
     finally { setEscaneandoDir(false) }
@@ -237,6 +238,7 @@ export default function PaginaCargaDocsUsuario() {
     try {
       const r = await escanearDirectorio()
       if (!r) { setSyncEstado('idle'); return }
+      setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
       setSyncEstado('sincronizando')
       const res = await ubicacionesDocsApi.sincronizar({ directorios: r.directorios })
       setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.eliminadas} eliminadas`)
@@ -255,6 +257,7 @@ export default function PaginaCargaDocsUsuario() {
     try {
       const r = await escanearDirectorioSinHijos()
       if (!r) { setCargandoUbIndividual(false); return }
+      setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
       await ubicacionesDocsApi.crear({ codigo_ubicacion: r.directorio.codigo_ubicacion, codigo_grupo: grupoActivo!, nombre_ubicacion: r.directorio.nombre_ubicacion })
       cargarUbicaciones()
     } catch (e) {
@@ -662,6 +665,7 @@ export default function PaginaCargaDocsUsuario() {
       try {
         const r = await escanearDirectorio()
         if (!r) { setPaso(PASO_INDEXAR, { estado: 'listo' }) /* usuario canceló */; return }
+        setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
         const res = await ubicacionesDocsApi.sincronizar({ directorios: r.directorios })
         setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.eliminadas} eliminadas`)
         setPaso(PASO_INDEXAR, { total: 1, completados: 1, estado: 'listo' })

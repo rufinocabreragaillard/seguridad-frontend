@@ -109,6 +109,7 @@ export function soportaDirectoryPicker(): boolean {
 export async function escanearDirectorio(): Promise<{
   nombreRaiz: string
   directorios: DirectorioEscaneado[]
+  dirHandle: FileSystemDirectoryHandle
 } | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dirHandle = await (window as any).showDirectoryPicker({ mode: 'read' }).catch(() => null)
@@ -132,7 +133,7 @@ export async function escanearDirectorio(): Promise<{
 
   await recorrer(dirHandle, codigoRaiz, `/${nombreRaiz}`, 1, resultado, codigos)
 
-  return { nombreRaiz, directorios: resultado }
+  return { nombreRaiz, directorios: resultado, dirHandle }
 }
 
 /**
@@ -259,6 +260,7 @@ export async function escanearArchivosDirectorio(
 export async function escanearDirectorioSinHijos(): Promise<{
   nombreRaiz: string
   directorio: DirectorioEscaneado
+  dirHandle: FileSystemDirectoryHandle
 } | null> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dirHandle = await (window as any).showDirectoryPicker({ mode: 'read' }).catch(() => null)
@@ -276,5 +278,6 @@ export async function escanearDirectorioSinHijos(): Promise<{
       ruta_completa: `/${nombreRaiz}`,
       nivel: 0,
     },
+    dirHandle,
   }
 }

@@ -352,6 +352,10 @@ export default function PaginaUbicacionesDocs() {
         setEscaneando(false)
         return // usuario canceló
       }
+      // Persistir el handle para que luego se puedan abrir documentos
+      // sin volver a pedir la carpeta al usuario.
+      idbSetHandle(resultado.dirHandle, userId, grupoActivo)
+      setCdDirHandle(resultado.dirHandle)
       // El preview/sincronización compara contra TODAS las ubicaciones del grupo.
       await asegurarArbolCompleto()
       setDatosEscaneo(resultado)
@@ -405,7 +409,10 @@ export default function PaginaUbicacionesDocs() {
         setCargandoUbicacion(false)
         return
       }
-      const { directorio } = resultado
+      const { directorio, dirHandle } = resultado
+      // Persistir el handle para que luego se puedan abrir documentos.
+      idbSetHandle(dirHandle, userId, grupoActivo)
+      setCdDirHandle(dirHandle)
       await ubicacionesDocsApi.crear({
         codigo_ubicacion: directorio.codigo_ubicacion,
         codigo_grupo: grupoActivo!,
