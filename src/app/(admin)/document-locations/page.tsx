@@ -887,7 +887,7 @@ export default function PaginaUbicacionesDocs() {
         titulo={editando ? `Editar Ubicación: ${editando.nombre_ubicacion} - ${editando.codigo_ubicacion}` : 'Nueva ubicación'}
         className="max-w-3xl"
       >
-        <div className="flex flex-col gap-4 min-h-[500px]">
+        <div className="flex flex-col gap-4 min-h-[583px]">
           {/* Tabs — siempre en edición */}
           {editando && (
             <div className="flex border-b border-borde">
