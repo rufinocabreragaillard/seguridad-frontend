@@ -464,6 +464,7 @@ export default function PaginaDocumentos() {
                     )}
                     {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && (
                       <button
+                        type="button"
                         onClick={() => abrirDocumentoLocal(d)}
                         className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
                         title={t('abrirDocumentoLocal')}
