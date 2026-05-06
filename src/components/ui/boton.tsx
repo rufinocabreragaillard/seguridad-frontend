@@ -38,7 +38,7 @@ interface BotonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const Boton = forwardRef<HTMLButtonElement, BotonProps>(
-  ({ className, variante = 'primario', tamano = 'md', cargando, children, disabled, ...props }, ref) => {
+  ({ className, variante = 'primario', tamano = 'md', cargando, children, disabled, type = 'button', ...props }, ref) => {
     const base =
       'inline-flex items-center justify-center font-medium rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed'
 
@@ -67,6 +67,7 @@ const Boton = forwardRef<HTMLButtonElement, BotonProps>(
     return (
       <button
         ref={ref}
+        type={type}
         disabled={disabled || cargando}
         className={cn(base, variantes[variante], tamanos[tamano], className)}
         {...props}
