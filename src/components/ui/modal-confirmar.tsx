@@ -14,6 +14,7 @@ interface ModalConfirmarProps {
   textoCancelar?: string
   variante?: 'peligro' | 'primario'
   cargando?: boolean
+  className?: string
 }
 
 export function ModalConfirmar({
@@ -26,9 +27,10 @@ export function ModalConfirmar({
   textoCancelar = 'Cancelar',
   variante = 'peligro',
   cargando = false,
+  className,
 }: ModalConfirmarProps) {
   return (
-    <Modal abierto={abierto} alCerrar={alCerrar} titulo={titulo}>
+    <Modal abierto={abierto} alCerrar={alCerrar} titulo={titulo} className={className}>
       <div className="flex flex-col gap-4">
         <div className="flex gap-3 items-start">
           {variante === 'peligro' && (

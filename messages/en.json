@@ -963,7 +963,7 @@
     "errorNombreObligatorio": "Name is required",
     "errorBrowserNoSoporta": "Your browser does not support directory selection. Use Chrome, Edge, or Safari.",
     "eliminarTitulo": "⚠️ Disable location",
-    "eliminarConfirm": "The location \"{nombre}\" will be disabled.\n\n• Folders to disable: {ubicaciones}\n• Affected virtual documents: {documentosAfectados}\n• Virtual documents that will be disabled (left without location): {documentosEliminar}\n  — includes all their features and summaries\n\nDocuments that exist in other locations are NOT affected. They are only disabled from the virtual representation in Server LM.",
+    "eliminarConfirm": "The location \"{nombre}\" will be disabled.\n\n• Folders to disable: {ubicaciones}\n• Affected virtual documents: {documentosAfectados}\n• Virtual documents that will be disabled (left without location): {documentosEliminar}\n  — includes all their features and summaries\n\nDocument indexes that exist in other locations will not be affected. They are only disabled from the virtual representation in Server LM.",
     "calculandoImpacto": "Calculating impact of disabling \"{nombre}\"...",
     "cambiarTipoTitulo": "Change type to {tipo}",
     "cambiarTipoConfirm": "Change type of \"{nombre}\" to {nuevoTipo}?\n\nIf you mark as AREA, all its ancestors will be automatically marked AREA.\nIf you mark as CONTENT, all its descendants will be marked CONTENT.",

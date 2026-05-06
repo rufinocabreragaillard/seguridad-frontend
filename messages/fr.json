@@ -963,7 +963,7 @@
     "errorNombreObligatorio": "Le nom est obligatoire",
     "errorBrowserNoSoporta": "Votre navigateur ne prend pas en charge la sélection de répertoires. Utilisez Chrome, Edge ou Safari.",
     "eliminarTitulo": "⚠️ Désactiver l'emplacement",
-    "eliminarConfirm": "L'emplacement \"{nombre}\" sera désactivé.\n\n• Dossiers à désactiver : {ubicaciones}\n• Documents virtuels affectés : {documentosAfectados}\n• Documents virtuels qui seront désactivés (sans emplacement) : {documentosEliminar}\n  — inclut toutes leurs caractéristiques et résumés\n\nLes documents existant à d'autres emplacements NE sont PAS affectés. Ils sont seulement désactivés de la représentation virtuelle dans Server LM.",
+    "eliminarConfirm": "L'emplacement \"{nombre}\" sera désactivé.\n\n• Dossiers à désactiver : {ubicaciones}\n• Documents virtuels affectés : {documentosAfectados}\n• Documents virtuels qui seront désactivés (sans emplacement) : {documentosEliminar}\n  — inclut toutes leurs caractéristiques et résumés\n\nLes index des documents existant à d'autres emplacements ne seront pas affectés. Ils sont seulement désactivés de la représentation virtuelle dans Server LM.",
     "calculandoImpacto": "Calcul de l'impact de la désactivation de \"{nombre}\"...",
     "cambiarTipoTitulo": "Changer le type en {tipo}",
     "cambiarTipoConfirm": "Changer le type de \"{nombre}\" en {nuevoTipo} ?\n\nSi vous marquez comme AREA, tous ses ancêtres seront automatiquement marqués AREA.\nSi vous marquez comme CONTENIDO, tous ses descendants seront marqués CONTENIDO.",

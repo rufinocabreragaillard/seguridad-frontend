@@ -1158,6 +1158,7 @@ export default function PaginaUbicacionesDocs() {
         }
         textoConfirmar={tc('eliminar')}
         cargando={eliminando || !previewEliminar}
+        className="min-h-[680px]"
       />
 
       {/* Modal Confirmar Cambio de Tipo */}
