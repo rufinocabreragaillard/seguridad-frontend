@@ -189,10 +189,20 @@ async function abrirViaFileSystemApi(
   let handle = handlePreseleccionado || await getDirectoryHandle(userId, grupoActivo)
 
   if (!handle) {
-    // Sin handle guardado y sin preselección — cerrar ventana y avisar
-    if (winPreAbierta) winPreAbierta.close()
-    alert('Selecciona primero el directorio raíz usando el botón "Seleccionar directorio" en Adm. Indexación Docs.')
-    return
+    // No hay carpeta guardada: pedir al usuario que seleccione la raíz
+    const picker = (window as WinWithPicker).showDirectoryPicker
+    if (!picker) {
+      if (winPreAbierta) winPreAbierta.close()
+      alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
+      return
+    }
+    try {
+      handle = await picker({ mode: 'read' })
+      await setDirectoryHandle(handle, userId, grupoActivo)
+    } catch {
+      if (winPreAbierta) winPreAbierta.close()
+      return
+    }
   }
 
   const ok = await ensureReadPermission(handle)
