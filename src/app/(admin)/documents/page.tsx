@@ -19,7 +19,7 @@ import { getEstadosDocs } from '@/lib/catalogos'
 import type { Documento, CategoriaConCaracteristicasDocs, CaracteristicaDocumento, TipoCaractDocs, EstadoDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
-import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading, seleccionarDirectorioRaiz } from '@/lib/abrir-documento'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TextoCifrado } from '@/components/ui/texto-cifrado'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -308,9 +308,16 @@ export default function PaginaDocumentos() {
     cargarCaracteristicas(editando.codigo_documento)
   }
 
-  const abrirDocumentoLocal = (d: Documento) => {
+  const abrirDocumentoLocal = async (d: Documento) => {
+    const { getDirectoryHandle } = await import('@/lib/file-handle-store')
+    let handle = await getDirectoryHandle(userId, grupoActivo)
+    if (!handle) {
+      // Picker debe llamarse en el contexto directo del click, antes de abrir popup
+      handle = await seleccionarDirectorioRaiz(userId, grupoActivo)
+      if (!handle) return
+    }
     const win = abrirVentanaLoading()
-    abrirDocumento(d.ubicacion_documento, win, userId, grupoActivo)
+    abrirDocumento(d.ubicacion_documento, win, userId, grupoActivo, handle)
   }
 
   // ── Filtro: backend hace la búsqueda y orden, dejamos la lista tal cual ──

@@ -192,23 +192,15 @@ async function abrirViaFileSystemApi(
   winPreAbierta?: Window | null,
   userId?: string | null,
   grupoActivo?: string | null,
+  handlePreseleccionado?: FileSystemDirectoryHandle | null,
 ): Promise<void> {
-  let handle = await getDirectoryHandle(userId, grupoActivo)
+  let handle = handlePreseleccionado || await getDirectoryHandle(userId, grupoActivo)
 
   if (!handle) {
-    const picker = (window as WinWithPicker).showDirectoryPicker
-    if (!picker) {
-      if (winPreAbierta) winPreAbierta.close()
-      alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
-      return
-    }
-    try {
-      handle = await picker({ mode: 'read' })
-      await setDirectoryHandle(handle, userId, grupoActivo)
-    } catch {
-      if (winPreAbierta) winPreAbierta.close()
-      return
-    }
+    // Sin handle guardado y sin preselección — cerrar ventana y avisar
+    if (winPreAbierta) winPreAbierta.close()
+    alert('Selecciona primero el directorio raíz usando el botón "Seleccionar directorio" en Adm. Indexación Docs.')
+    return
   }
 
   const ok = await ensureReadPermission(handle)
@@ -219,11 +211,32 @@ async function abrirViaFileSystemApi(
   _abrirEnPestanaConNombre(file, file.name, winPreAbierta)
 }
 
+// Invoca showDirectoryPicker sincrónicamente respecto al gesto del usuario.
+// Debe llamarse ANTES de cualquier await (ej. antes de abrirVentanaLoading).
+export async function seleccionarDirectorioRaiz(
+  userId?: string | null,
+  grupoActivo?: string | null,
+): Promise<FileSystemDirectoryHandle | null> {
+  const picker = (window as WinWithPicker).showDirectoryPicker
+  if (!picker) {
+    alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
+    return null
+  }
+  try {
+    const handle = await picker({ mode: 'read' })
+    await setDirectoryHandle(handle, userId, grupoActivo)
+    return handle
+  } catch {
+    return null
+  }
+}
+
 export async function abrirDocumento(
   ubicacion: string | null | undefined,
   winPreAbierta?: Window | null,
   userId?: string | null,
   grupoActivo?: string | null,
+  handlePreseleccionado?: FileSystemDirectoryHandle | null,
 ): Promise<void> {
   if (!ubicacion) { if (winPreAbierta) winPreAbierta.close(); alert('Este documento no tiene ubicación registrada.'); return }
 
@@ -234,7 +247,7 @@ export async function abrirDocumento(
   }
 
   try {
-    await abrirViaFileSystemApi(ubicacion, winPreAbierta, userId, grupoActivo)
+    await abrirViaFileSystemApi(ubicacion, winPreAbierta, userId, grupoActivo, handlePreseleccionado)
   } catch (e) {
     if (winPreAbierta) winPreAbierta.close()
     alert(`Error al abrir: ${e instanceof Error ? e.message : e}`)
