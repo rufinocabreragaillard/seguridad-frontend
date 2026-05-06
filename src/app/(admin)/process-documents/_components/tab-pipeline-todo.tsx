@@ -6,8 +6,7 @@ import { Boton } from '@/components/ui/boton'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
-import { getDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { obtenerHandleDirectorio } from '@/lib/seleccionar-directorio'
+import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { useAuth } from '@/context/AuthContext'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import type { EstadoDoc } from '@/lib/tipos'
@@ -151,11 +150,11 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   }, [grupoActivo])
 
   const seleccionarDirectorio = async () => {
-    const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-    if (r.aviso) alert(r.aviso)
-    if (r.error) { alert(r.error); return }
-    if (!r.handle) return
-    setDirHandleState(r.handle)
+    try {
+      const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
+      setDirHandleState(handle)
+      await setDirectoryHandle(handle, userId, grupoActivo)
+    } catch { /* usuario canceló */ }
   }
 
   const setPaso = (key: string, patch: Partial<ProgresoPaso>) =>
@@ -171,20 +170,24 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     if (docsFinal.length === 0) { setPaso('EXTRAER', { estado: 'listo' }); return true }
 
     // Solo pedimos handle cuando hay docs CARGADO que necesitan lectura física
-    let handle = dirHandle && (await ensureReadPermission(dirHandle)) ? dirHandle : null
-    if (!handle) {
-      const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-      if (r.aviso) alert(r.aviso)
-      if (r.error) alert(r.error)
-      if (!r.handle) {
-        for (const doc of docsFinal) {
-          await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true }).catch(() => {})
+    let handle = dirHandle
+    if (!handle || !(await ensureReadPermission(handle))) {
+      const stored = await getDirectoryHandle(userId, grupoActivo)
+      if (stored && (await ensureReadPermission(stored))) {
+        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
+      } else {
+        try {
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
+          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
+        } catch {
+          // Sin permiso: marcar todos como no encontrados
+          for (const doc of docsFinal) {
+            await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true }).catch(() => {})
+          }
+          setPaso('EXTRAER', { completados: docsFinal.length, estado: 'listo' })
+          return true
         }
-        setPaso('EXTRAER', { completados: docsFinal.length, estado: 'listo' })
-        return true
       }
-      handle = r.handle
-      setDirHandleState(handle)
     }
 
     setPaso('EXTRAER', { total: docsFinal.length, completados: 0, estado: 'activo' })

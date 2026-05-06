@@ -818,6 +818,7 @@ export interface UbicacionDoc {
   descripcion?: string | null
   codigo_ubicacion_superior?: string | null
   ruta_completa?: string | null
+  url?: string | null
   nivel: number
   orden: number
   ubicacion_habilitada: boolean
@@ -828,7 +829,6 @@ export interface UbicacionDoc {
   python_insert?: string | null
   python_update?: string | null
   system_prompt?: string | null
-  url?: string | null
 }
 
 // ─── Cargos ───────────────────────────────────────────────────────────────────

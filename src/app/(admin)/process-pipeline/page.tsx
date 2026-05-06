@@ -20,8 +20,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi, cargaDocumentosApi } from '@/lib/api'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { abrirDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
-import { getDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { obtenerHandleDirectorio } from '@/lib/seleccionar-directorio'
+import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import {
   escanearDirectorio, escanearDirectorioSinHijos, escanearArchivosDirectorio,
   soportaDirectoryPicker, type DirectorioEscaneado,
@@ -461,21 +460,24 @@ export default function PaginaCargaDocsUsuario() {
     if (!docs.length) { setPaso('EXTRAER', { estado: 'listo' }); return true }
 
     // Solo pedimos handle cuando hay docs CARGADO que necesitan lectura física
-    let handle = dirHandle && (await ensureReadPermission(dirHandle)) ? dirHandle : null
-    if (!handle) {
-      const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-      if (r.aviso) alert(r.aviso)
-      if (r.error) { alert(r.error) }
-      if (!r.handle) {
-        // Sin permiso/cancelado: marcar todos como no encontrados
-        for (const doc of docs) {
-          await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true }).catch(() => {})
+    let handle = dirHandle
+    if (!handle || !(await ensureReadPermission(handle))) {
+      const stored = await getDirectoryHandle(userId, grupoActivo)
+      if (stored && (await ensureReadPermission(stored))) {
+        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
+      } else {
+        try {
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
+          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
+        } catch {
+          // Sin permiso: marcar todos como no encontrados
+          for (const doc of docs) {
+            await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true }).catch(() => {})
+          }
+          setPaso('EXTRAER', { completados: docs.length, estado: 'listo' })
+          return true
         }
-        setPaso('EXTRAER', { completados: docs.length, estado: 'listo' })
-        return true
       }
-      handle = r.handle
-      setDirHandleState(handle)
     }
 
     setPaso('EXTRAER', { total: docs.length, completados: 0, estado: 'activo' })
@@ -581,14 +583,20 @@ export default function PaginaCargaDocsUsuario() {
   // Paso 2 — CARGAR: escanear filesystem y subir lista de archivos al backend
   const ejecutarCargar = async (): Promise<boolean> => {
     // Solicitar handle si hace falta (igual lógica que extraer)
-    let handle = dirHandle && (await ensureReadPermission(dirHandle)) ? dirHandle : null
-    if (!handle) {
-      const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-      if (r.aviso) alert(r.aviso)
-      if (r.error) alert(r.error)
-      if (!r.handle) { setPaso('CARGAR', { estado: 'listo' }); return true }
-      handle = r.handle
-      setDirHandleState(handle)
+    let handle = dirHandle
+    if (!handle || !(await ensureReadPermission(handle))) {
+      const stored = await getDirectoryHandle(userId, grupoActivo)
+      if (stored && (await ensureReadPermission(stored))) {
+        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
+      } else {
+        try {
+          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read' })
+          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
+        } catch {
+          setPaso('CARGAR', { estado: 'listo' })
+          return true
+        }
+      }
     }
     setPaso('CARGAR', { total: 1, completados: 0, estado: 'activo' })
     try {

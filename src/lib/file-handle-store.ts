@@ -16,15 +16,10 @@ const IDB_STORE = 'handles'
 const IDB_KEY_LEGACY = 'dirHandle' // clave usada por la versión anterior (sin partición)
 const IDB_NAME_LEGACY = 'cab-procesar-docs'
 
-function buildKey(
-  userId?: string | null,
-  grupoActivo?: string | null,
-  codigoRaiz?: string | null,
-): string {
+function buildKey(userId?: string | null, grupoActivo?: string | null): string {
   // Si no hay user/grupo, caer al esquema legacy para no romper consumidores que aún
   // no propagan el contexto. Se logueará en consola para detectar.
   if (!userId || !grupoActivo) return IDB_KEY_LEGACY
-  if (codigoRaiz) return `dirHandle:${userId}:${grupoActivo}:${codigoRaiz}`
   return `dirHandle:${userId}:${grupoActivo}`
 }
 
@@ -40,12 +35,11 @@ function idbOpen(): Promise<IDBDatabase> {
 export async function getDirectoryHandle(
   userId?: string | null,
   grupoActivo?: string | null,
-  codigoRaiz?: string | null,
 ): Promise<FileSystemDirectoryHandle | null> {
   if (typeof indexedDB === 'undefined') return null
   try {
     const db = await idbOpen()
-    const key = buildKey(userId, grupoActivo, codigoRaiz)
+    const key = buildKey(userId, grupoActivo)
     return await new Promise((resolve) => {
       const tx = db.transaction(IDB_STORE, 'readonly')
       const req = tx.objectStore(IDB_STORE).get(key)
@@ -61,13 +55,12 @@ export async function setDirectoryHandle(
   handle: FileSystemDirectoryHandle | null,
   userId?: string | null,
   grupoActivo?: string | null,
-  codigoRaiz?: string | null,
 ) {
   if (typeof indexedDB === 'undefined') return
   try {
     const db = await idbOpen()
     const tx = db.transaction(IDB_STORE, 'readwrite')
-    const key = buildKey(userId, grupoActivo, codigoRaiz)
+    const key = buildKey(userId, grupoActivo)
     if (handle) tx.objectStore(IDB_STORE).put(handle, key)
     else tx.objectStore(IDB_STORE).delete(key)
   } catch {

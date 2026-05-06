@@ -16,8 +16,7 @@ import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { escanearDirectorio, escanearDirectorioSinHijos, soportaDirectoryPicker, type DirectorioEscaneado, escanearArchivosDirectorio, type ArchivoEscaneado } from '@/lib/escanear-directorio'
-import { getDirectoryHandle as idbGetHandle } from '@/lib/file-handle-store'
-import { obtenerHandleDirectorio } from '@/lib/seleccionar-directorio'
+import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle } from '@/lib/file-handle-store'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
@@ -617,12 +616,15 @@ export default function PaginaUbicacionesDocs() {
       alert('Su navegador no soporta la selección de directorios. Use Chrome, Edge o Safari.')
       return
     }
-    const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-    if (r.aviso) alert(r.aviso)
-    if (r.error) { alert(r.error); return }
-    if (!r.handle) return
-    setCdDirHandle(r.handle)
-    await cdEjecutarEscaneo(r.handle)
+    try {
+      const opts: Record<string, unknown> = { mode: 'read' }
+      if (cdDirHandle) opts.startIn = cdDirHandle
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const handle = await (window as any).showDirectoryPicker(opts)
+      setCdDirHandle(handle)
+      idbSetHandle(handle, userId, grupoActivo)
+      await cdEjecutarEscaneo(handle)
+    } catch { /* cancelado */ }
   }
 
   const cdEjecutarCarga = async () => {

@@ -21,7 +21,6 @@ import type { Documento, ColaEstadoDoc, EstadoDoc, CategoriaConCaracteristicasDo
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, type ExtraccionMixta } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { obtenerHandleDirectorio } from '@/lib/seleccionar-directorio'
 import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser } from '@/lib/abrir-documento'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
@@ -637,20 +636,20 @@ function PaginaProcesarDocumentosInterna() {
   }
 
   const seleccionarDirectorio = async () => {
-    const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-    if (r.aviso) alert(r.aviso)
-    if (r.error) { alert(r.error); return }
-    if (!r.handle) return
-    const handle = r.handle
-    setDirHandle(handle)
-    setEscaneandoDir(true)
     try {
-      const archivos = await escanearDirectorio(handle)
-      setArchivosEnDir(archivos)
-    } finally {
-      setEscaneandoDir(false)
-    }
-    cargarDocumentos()
+      const opts: Record<string, unknown> = { mode: 'read' }
+      const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
+      setDirHandle(handle)
+      idbSetHandle(handle, userId, grupoActivo)
+      setEscaneandoDir(true)
+      try {
+        const archivos = await escanearDirectorio(handle)
+        setArchivosEnDir(archivos)
+      } finally {
+        setEscaneandoDir(false)
+      }
+      cargarDocumentos()
+    } catch { /* cancelado */ }
   }
 
   const limpiarDirectorio = () => {
@@ -851,15 +850,14 @@ function PaginaProcesarDocumentosInterna() {
 
     // ── CARGAR (client-side): FILESYSTEM → CARGADO ───────────────────────
     if (esCargar) {
-      let handleEfectivo: FileSystemDirectoryHandle | null =
-        dirHandle && (await ensureReadPermission(dirHandle)) ? dirHandle : null
-      if (!handleEfectivo) {
-        const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-        if (r.aviso) alert(r.aviso)
-        if (r.error) { alert(r.error); setEjecutando(false); return }
-        if (!r.handle) { setEjecutando(false); return }
-        handleEfectivo = r.handle
-        setDirHandle(handleEfectivo)
+      let handleEfectivo: FileSystemDirectoryHandle | null = dirHandle
+      if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
+        const stored = await idbGetHandle(userId, grupoActivo)
+        if (stored && (await ensureReadPermission(stored))) {
+          handleEfectivo = stored
+          setDirHandle(stored)
+        }
+        // Si no hay handle guardado, escanearArchivosDirectorio abrirá el picker
       }
 
       // Crear AbortController para poder cancelar el escaneo con Detener
@@ -911,23 +909,32 @@ function PaginaProcesarDocumentosInterna() {
 
     // ── EXTRAER (client-side): CARGADO → METADATA ─────────────────────────
     if (esExtraer) {
-      // Handle activo con permisos vigentes; si no, helper centralizado
-      // (valida raíz BD + reutiliza IndexedDB + abre picker si hace falta).
-      let handleEfectivo: FileSystemDirectoryHandle | null =
-        dirHandle && (await ensureReadPermission(dirHandle)) ? dirHandle : null
-      if (!handleEfectivo) {
-        const r = await obtenerHandleDirectorio({ userId, grupoActivo })
-        if (r.aviso) alert(r.aviso)
-        if (r.error) { alert(r.error); setEjecutando(false); return }
-        if (!r.handle) { setEjecutando(false); return }
-        handleEfectivo = r.handle
-        setDirHandle(handleEfectivo)
-        setEscaneandoDir(true)
-        try {
-          const archivos = await escanearDirectorio(handleEfectivo)
-          setArchivosEnDir(archivos)
-        } finally {
-          setEscaneandoDir(false)
+      // 1. Handle activo con permisos vigentes
+      // 2. Handle guardado en IndexedDB (banner silencioso del browser)
+      // 3. Primera vez: showDirectoryPicker (abre Finder una sola vez, luego queda guardado)
+      let handleEfectivo: FileSystemDirectoryHandle | null = dirHandle
+      if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
+        const stored = await idbGetHandle(userId, grupoActivo)
+        if (stored && (await ensureReadPermission(stored))) {
+          handleEfectivo = stored
+          setDirHandle(stored)
+        } else {
+          try {
+            const opts: Record<string, unknown> = { mode: 'read' }
+            handleEfectivo = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker(opts)
+            setDirHandle(handleEfectivo)
+            idbSetHandle(handleEfectivo, userId, grupoActivo)
+            setEscaneandoDir(true)
+            try {
+              const archivos = await escanearDirectorio(handleEfectivo)
+              setArchivosEnDir(archivos)
+            } finally {
+              setEscaneandoDir(false)
+            }
+          } catch {
+            setEjecutando(false)
+            return
+          }
         }
       }
 
