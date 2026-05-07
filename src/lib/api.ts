@@ -1059,6 +1059,7 @@ export interface LLMUsoFila {
   tokens_cache_write: number
   costo_estimado_usd: number
   codigo_funcion: string | null
+  codigo_habilidad: string | null
   operacion: string | null
   id_documento: number | null
   exito: boolean

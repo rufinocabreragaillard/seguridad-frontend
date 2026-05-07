@@ -81,10 +81,14 @@ test.describe('documents — botón FileText (📄)', () => {
     }
 
     if (newPage) {
+      await newPage.waitForTimeout(3000);
       const url = newPage.url();
-      console.log(`✅ Se abrió nueva pestaña: ${url}`);
+      const title = await newPage.title();
+      console.log(`Nueva pestaña URL: ${url}`);
+      console.log(`Nueva pestaña título: ${title}`);
+      await newPage.screenshot({ path: '/tmp/docs-nueva-pestana.png' });
     } else {
-      console.log('ℹ️  No se abrió nueva pestaña (puede haberse abierto picker nativo del OS o window bloqueada)');
+      console.log('NO se abrió nueva pestaña');
     }
 
     if (consoleErrors.length > 0) {

@@ -71,4 +71,10 @@ body {
     color: var(--color-text-primary);
     letter-spacing: -0.015em;
   }
+  /* Texto del scope "cliente" (componentes y secciones cliente-facing) — Inter Light */
+  .cliente-text {
+    @apply text-base;
+    font-weight: 300;
+    color: var(--color-text-primary);
+  }
 }

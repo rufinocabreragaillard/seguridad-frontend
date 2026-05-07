@@ -8,7 +8,7 @@ import type { EstadoDoc } from '@/lib/tipos'
 interface UbicacionOption {
   codigo_ubicacion: string
   nombre_ubicacion: string
-  ruta_completa: string
+  url: string
   nivel: number
 }
 
@@ -91,7 +91,7 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
           ubicaciones: ubicaciones.slice(0, 30).map((u) => ({
             codigo: u.codigo_ubicacion,
             nombre: u.nombre_ubicacion,
-            ruta: u.ruta_completa,
+            ruta: u.url,
           })),
           estados: estadosDocs.map((e) => e.codigo_estado_doc),
         },

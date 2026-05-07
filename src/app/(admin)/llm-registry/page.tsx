@@ -777,11 +777,13 @@ export default function PaginaRegistroLLM() {
                 <TablaCabecera>
                   <TablaFila>
                     <TablaTh>{tUso('colFecha')}</TablaTh>
+                    <TablaTh>{tUso('colGrupo')}</TablaTh>
                     <TablaTh>{tUso('colProveedor')}</TablaTh>
                     <TablaTh>{tUso('colModelo')}</TablaTh>
                     <TablaTh>{tUso('colKey')}</TablaTh>
                     <TablaTh>{tUso('colUsuario')}</TablaTh>
                     <TablaTh>{tUso('colFuncion')}</TablaTh>
+                    <TablaTh>{tUso('colHabilidad')}</TablaTh>
                     <TablaTh className="text-right">{tUso('colTokIn')}</TablaTh>
                     <TablaTh className="text-right">{tUso('colTokOut')}</TablaTh>
                     <TablaTh className="text-right">{tUso('colCosto')}</TablaTh>
@@ -792,11 +794,13 @@ export default function PaginaRegistroLLM() {
                   {filas.map((f) => (
                     <TablaFila key={f.id}>
                       <TablaTd className="text-xs">{new Date(f.created_at).toLocaleString('es-CL')}</TablaTd>
+                      <TablaTd className="text-xs">{f.codigo_grupo}</TablaTd>
                       <TablaTd className="capitalize">{f.proveedor}</TablaTd>
                       <TablaTd className="font-mono text-xs">{f.modelo}</TablaTd>
                       <TablaTd>{f.uso_key_casa ? <Insignia variante="advertencia">Casa</Insignia> : <Insignia variante="exito">{f.alias_credencial}</Insignia>}</TablaTd>
                       <TablaTd className="text-xs">{f.codigo_usuario}</TablaTd>
                       <TablaTd className="text-xs">{f.codigo_funcion ?? '—'}</TablaTd>
+                      <TablaTd className="text-xs">{f.codigo_habilidad ?? '—'}</TablaTd>
                       <TablaTd className="text-right">{fmtInt(f.tokens_input)}</TablaTd>
                       <TablaTd className="text-right">{fmtInt(f.tokens_output)}</TablaTd>
                       <TablaTd className="text-right">{fmtUsd(f.costo_estimado_usd)}</TablaTd>
@@ -804,7 +808,7 @@ export default function PaginaRegistroLLM() {
                     </TablaFila>
                   ))}
                   {filas.length === 0 && (
-                    <TablaFila><TablaTd colSpan={10} className="text-center text-gray-400 py-6">{tUso('sinLlamadas')}</TablaTd></TablaFila>
+                    <TablaFila><TablaTd colSpan={12} className="text-center text-gray-400 py-6">{tUso('sinLlamadas')}</TablaTd></TablaFila>
                   )}
                 </TablaCuerpo>
               </Tabla>

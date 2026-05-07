@@ -23,7 +23,7 @@ export default function PaginaAreas() {
   const { filtrados, cargando, busqueda, setBusqueda, recargar } =
     useListadoSimple<UbicacionDoc>({
       cargarFn: () => ubicacionesDocsApi.listar({ tipo: 'AREA' }),
-      camposBusqueda: a => [a.nombre_ubicacion, a.alias_ubicacion, a.ruta_completa, a.codigo_entidad],
+      camposBusqueda: a => [a.nombre_ubicacion, a.alias_ubicacion, a.url, a.codigo_entidad],
     })
 
   const [modal, setModal] = useState(false)
@@ -94,7 +94,7 @@ export default function PaginaAreas() {
                   <TablaTd className="text-xs text-texto-muted" onDoubleClick={() => abrirEditar(a)}>{a.codigo_entidad || '—'}</TablaTd>
                   <TablaTd className="font-medium" onDoubleClick={() => abrirEditar(a)}>{a.nombre_ubicacion}</TablaTd>
                   <TablaTd className="text-texto-muted" onDoubleClick={() => abrirEditar(a)}>{a.alias_ubicacion || '—'}</TablaTd>
-                  <TablaTd className="text-xs text-texto-muted">{a.ruta_completa || '—'}</TablaTd>
+                  <TablaTd className="text-xs text-texto-muted">{a.url || '—'}</TablaTd>
                   <TablaTd className="text-xs">{a.nivel}</TablaTd>
                   <TablaTd>
                     <button
