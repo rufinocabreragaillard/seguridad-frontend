@@ -641,6 +641,7 @@ export const documentosApi = {
     api.post<{ revertidos: number; estados_origen: string[]; estado_destino: string }>(
       '/documentos/revertir-estado',
       { codigos_documento, estados_origen, estado_destino },
+      { timeout: 120000 },
     ).then((r) => r.data),
   // Revertir masivo por filtros (sin lista de IDs).
   // Si solo_contar=true devuelve conteo sin hacer UPDATE.
@@ -656,6 +657,7 @@ export const documentosApi = {
     api.post<{ conteo: number; revertidos: number; solo_contar: boolean }>(
       '/documentos/revertir',
       params,
+      { timeout: 120000 },
     ).then((r) => r.data),
   // Características
   listarCaracteristicas: (id: number) =>
