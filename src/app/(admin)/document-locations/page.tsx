@@ -1443,9 +1443,9 @@ export default function PaginaUbicacionesDocs() {
         abierto={modalCarga}
         alCerrar={cerrarModalCarga}
         titulo={t('cargarDesdeDirectorioTitulo')}
-        className="max-w-2xl"
+        className="max-w-[840px]"
       >
-        <div className="flex flex-col gap-4 min-w-[666px]">
+        <div className="flex flex-col gap-4 min-w-[833px]">
           {/* Pre-sincronización: preview */}
           {!resultadoSync && datosEscaneo && (
             <>
