@@ -64,7 +64,7 @@ import type {
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
-const api = axios.create({ baseURL: BASE_URL, timeout: 15000 })
+const api = axios.create({ baseURL: BASE_URL, timeout: 30000 })
 
 // ── Mapa URL → codigo_funcion (para auditoría) ──────────────────────────────
 let _urlToFuncion: Record<string, string> = {}

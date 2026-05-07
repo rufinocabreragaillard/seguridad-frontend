@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { authApi } from '@/lib/api'
@@ -16,18 +16,20 @@ async function irAInicio(router: ReturnType<typeof useRouter>) {
 
 export default function AuthCallback() {
   const router = useRouter()
+  const redirigido = useRef(false)
 
   useEffect(() => {
     // Escucha el evento SIGNED_IN que Supabase emite después de
     // completar el intercambio del código OAuth (PKCE flow).
-    // Llamar a getSession() de inmediato no funciona porque el
-    // intercambio es asíncrono y aún no ha terminado.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         if (event === 'PASSWORD_RECOVERY' && session) {
           router.push('/auth/reset-password')
         } else if (event === 'SIGNED_IN' && session) {
-          irAInicio(router)
+          if (!redirigido.current) {
+            redirigido.current = true
+            irAInicio(router)
+          }
         } else if (event === 'SIGNED_OUT') {
           router.push('/login')
         }
@@ -36,15 +38,21 @@ export default function AuthCallback() {
 
     // Verificar si ya hay sesión activa (el evento pudo haberse disparado antes del mount)
     supabase.auth.getSession().then(({ data }) => {
-      if (data.session) irAInicio(router)
+      if (data.session && !redirigido.current) {
+        redirigido.current = true
+        irAInicio(router)
+      }
     })
 
-    // Timeout de seguridad: si en 8s no hay sesión, redirigir al login
+    // Timeout de seguridad: si en 12s no hay sesión, redirigir al login
     const timeout = setTimeout(async () => {
       const { data } = await supabase.auth.getSession()
       if (!data.session) router.push('/login')
-      else irAInicio(router)
-    }, 8000)
+      else if (!redirigido.current) {
+        redirigido.current = true
+        irAInicio(router)
+      }
+    }, 12000)
 
     return () => {
       subscription.unsubscribe()
