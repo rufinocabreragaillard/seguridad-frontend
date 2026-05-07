@@ -186,6 +186,8 @@ function PaginaProcesarDocumentosInterna() {
   const esResetearCargado = procesoSel === PROCESO_RESETEAR_CARGADO
   const esCargar = pasoActual?.estado_origen === 'FILESYSTEM' && pasoActual?.estado_destino === 'CARGADO'
   const esExtraer = pasoActual?.estado_origen === 'CARGADO' && pasoActual?.estado_destino === 'METADATA'
+  // Estos modos cargan todos los docs en memoria y paginan client-side
+  const esModoClienteSide = esCargar || esExtraer || esRestablecer || esResetearCargado
 
   // Documentos candidatos
   const [documentos, setDocumentos] = useState<Documento[]>([])
@@ -514,12 +516,17 @@ function PaginaProcesarDocumentosInterna() {
 
   // Separar en dos grupos: encontrados en disco y no encontrados.
   // Si no hay directorio escaneado, todos van al grupo "enDisco".
-  const docsEnDisco = esExtraer && archivosEnDir
+  const todosEnDisco = esExtraer && archivosEnDir
     ? documentos.filter((d) => archivosEnDir.has(d.nombre_documento))
     : documentos
-  const docsSinDisco = esExtraer && archivosEnDir
+  const todosSinDisco = esExtraer && archivosEnDir
     ? documentos.filter((d) => !archivosEnDir.has(d.nombre_documento))
     : []
+  // En modo client-side la paginación es por slice; en server-side el backend ya pagina
+  const inicio = esModoClienteSide ? (paginaDoc - 1) * DOCS_POR_PAGINA_DEFAULT : 0
+  const fin = esModoClienteSide ? paginaDoc * DOCS_POR_PAGINA_DEFAULT : todosEnDisco.length
+  const docsEnDisco = esModoClienteSide ? todosEnDisco.slice(inicio, fin) : todosEnDisco
+  const docsSinDisco = todosSinDisco
 
   const escanearDirectorio = async (handle: FileSystemDirectoryHandle, maxNiveles: number = nivelesDirectorio): Promise<Set<string>> => {
     const archivos = new Set<string>()
@@ -1634,14 +1641,14 @@ function PaginaProcesarDocumentosInterna() {
                 {(paginaDoc - 1) * DOCS_POR_PAGINA_DEFAULT + 1}–{Math.min(paginaDoc * DOCS_POR_PAGINA_DEFAULT, totalDocs)} de {totalDocs}
               </span>
               <div className="flex gap-1">
-                <button disabled={paginaDoc <= 1} onClick={() => { setPaginaDoc(1); cargarDocumentos(1) }}
+                <button disabled={paginaDoc <= 1} onClick={() => { setPaginaDoc(1); if (!esModoClienteSide) cargarDocumentos(1) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">«</button>
-                <button disabled={paginaDoc <= 1} onClick={() => { const p = paginaDoc - 1; setPaginaDoc(p); cargarDocumentos(p) }}
+                <button disabled={paginaDoc <= 1} onClick={() => { const p = paginaDoc - 1; setPaginaDoc(p); if (!esModoClienteSide) cargarDocumentos(p) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">‹</button>
                 <span className="px-3 py-1">{paginaDoc} / {totalPaginasDoc}</span>
-                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { const p = paginaDoc + 1; setPaginaDoc(p); cargarDocumentos(p) }}
+                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { const p = paginaDoc + 1; setPaginaDoc(p); if (!esModoClienteSide) cargarDocumentos(p) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">›</button>
-                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { setPaginaDoc(totalPaginasDoc); cargarDocumentos(totalPaginasDoc) }}
+                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { setPaginaDoc(totalPaginasDoc); if (!esModoClienteSide) cargarDocumentos(totalPaginasDoc) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">»</button>
               </div>
             </div>
@@ -1789,14 +1796,14 @@ function PaginaProcesarDocumentosInterna() {
                 {(paginaDoc - 1) * DOCS_POR_PAGINA_DEFAULT + 1}–{Math.min(paginaDoc * DOCS_POR_PAGINA_DEFAULT, totalDocs)} de {totalDocs}
               </span>
               <div className="flex gap-1">
-                <button disabled={paginaDoc <= 1} onClick={() => { setPaginaDoc(1); cargarDocumentos(1) }}
+                <button disabled={paginaDoc <= 1} onClick={() => { setPaginaDoc(1); if (!esModoClienteSide) cargarDocumentos(1) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">«</button>
-                <button disabled={paginaDoc <= 1} onClick={() => { const p = paginaDoc - 1; setPaginaDoc(p); cargarDocumentos(p) }}
+                <button disabled={paginaDoc <= 1} onClick={() => { const p = paginaDoc - 1; setPaginaDoc(p); if (!esModoClienteSide) cargarDocumentos(p) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">‹</button>
                 <span className="px-3 py-1">{paginaDoc} / {totalPaginasDoc}</span>
-                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { const p = paginaDoc + 1; setPaginaDoc(p); cargarDocumentos(p) }}
+                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { const p = paginaDoc + 1; setPaginaDoc(p); if (!esModoClienteSide) cargarDocumentos(p) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">›</button>
-                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { setPaginaDoc(totalPaginasDoc); cargarDocumentos(totalPaginasDoc) }}
+                <button disabled={paginaDoc >= totalPaginasDoc} onClick={() => { setPaginaDoc(totalPaginasDoc); if (!esModoClienteSide) cargarDocumentos(totalPaginasDoc) }}
                   className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed">»</button>
               </div>
             </div>
