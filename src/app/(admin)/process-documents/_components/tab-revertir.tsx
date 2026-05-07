@@ -71,8 +71,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
   }, [ubicacionSel, ubicaciones])
 
   // Sincronizar props cuando cambian (ej. cambio de grupo)
-  // Procesos en orden inverso del pipeline (el más avanzado primero)
-  useEffect(() => { if (procesosProp.length > 0) setProcesos([...procesosProp].reverse()) }, [procesosProp])
+  useEffect(() => { if (procesosProp.length > 0) setProcesos([...procesosProp]) }, [procesosProp])
   useEffect(() => { if (ubicacionesProp.length > 0) setUbicaciones(ubicacionesProp) }, [ubicacionesProp])
   // Estados en orden inverso del pipeline
   useEffect(() => { if (estadosDocsProp.length > 0) setEstadosDocs([...estadosDocsProp]) }, [estadosDocsProp])
