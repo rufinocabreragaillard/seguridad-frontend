@@ -121,6 +121,8 @@ export default function PaginaUbicacionesDocs() {
     total: number
     excluidas: number
   } | null>(null)
+  // Carpetas expandidas en el preview del modal Sincronizar (parte cerrado).
+  const [expandidosScan, setExpandidosScan] = useState<Set<string>>(new Set())
 
   // ── Lazy loading ──────────────────────────────────────────────────────────
   // padresCargados: nodos cuyos hijos directos ya fueron traídos del server.
@@ -418,7 +420,7 @@ export default function PaginaUbicacionesDocs() {
   }
 
   // ── Indexar Ubicaciones (escaneo + sincronización) ─────────────────────────
-  const iniciarEscaneo = async () => {
+  const iniciarEscaneo = async (forzarPicker = false) => {
     if (!soportaDirectoryPicker()) {
       alert(t('errorBrowserNoSoporta'))
       return
@@ -426,14 +428,31 @@ export default function PaginaUbicacionesDocs() {
     setEscaneando(true)
     setResultadoSync(null)
     try {
-      const resultado = await escanearDirectorio()
+      // Si hay handle persistido y aún tenemos permiso, reusarlo sin abrir Finder.
+      let handlePersistido: FileSystemDirectoryHandle | null = null
+      if (!forzarPicker) {
+        const h = await idbGetHandle(userId, grupoActivo)
+        if (h) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const perm = await (h as any).queryPermission?.({ mode: 'read' })
+          if (perm === 'granted') handlePersistido = h
+          else if (perm === 'prompt') {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const r = await (h as any).requestPermission?.({ mode: 'read' })
+            if (r === 'granted') handlePersistido = h
+          }
+        }
+      }
+      const resultado = await escanearDirectorio(handlePersistido)
       if (!resultado) {
         setEscaneando(false)
         return // usuario canceló
       }
-      // Validar parentesco antes de proceder.
-      const ok = await validarRelacionConArbol(resultado.dirHandle, resultado.nombreRaiz)
-      if (!ok) { setEscaneando(false); return }
+      // Validar parentesco solo cuando vino del picker (handle nuevo).
+      if (!handlePersistido) {
+        const ok = await validarRelacionConArbol(resultado.dirHandle, resultado.nombreRaiz)
+        if (!ok) { setEscaneando(false); return }
+      }
       // Persistir el handle para que luego se puedan abrir documentos
       // sin volver a pedir la carpeta al usuario.
       idbSetHandle(resultado.dirHandle, userId, grupoActivo)
@@ -903,7 +922,7 @@ export default function PaginaUbicacionesDocs() {
             <span className="text-[11px] text-texto-muted mt-0.5">solo un directorio</span>
           </div>
           <div className="flex flex-col items-center">
-            <Boton variante="contorno" onClick={iniciarEscaneo} cargando={escaneando}>
+            <Boton variante="contorno" onClick={() => iniciarEscaneo()} cargando={escaneando}>
               <FolderInput size={16} />
               {t('cargarDesdeDirectorioTitulo')}
             </Boton>
@@ -1506,21 +1525,49 @@ export default function PaginaUbicacionesDocs() {
                 </div>
               )}
 
-              {/* Preview del árbol escaneado */}
+              {/* Preview del árbol escaneado — colapsable, parte cerrado */}
               <div className="border border-borde rounded-lg max-h-[300px] overflow-y-auto overflow-x-auto">
                 <div className="py-1 w-max min-w-full">
                   {(() => {
                     const { filtrados: dirsFiltrados } = filtrarPorInhabilitadas(datosEscaneo.directorios)
                     const codsFiltrados = new Set(dirsFiltrados.map((d) => d.codigo_ubicacion))
-                    return datosEscaneo.directorios.slice(0, 30).map((d) => {
+                    const tieneHijos = new Set<string>()
+                    for (const d of datosEscaneo.directorios) {
+                      if (d.codigo_ubicacion_superior) tieneHijos.add(d.codigo_ubicacion_superior)
+                    }
+                    const visibles = datosEscaneo.directorios.filter((d) =>
+                      !d.codigo_ubicacion_superior || expandidosScan.has(d.codigo_ubicacion_superior)
+                    )
+                    return visibles.map((d) => {
                       const esNueva = !ubicaciones.some((u) => u.codigo_ubicacion === d.codigo_ubicacion)
                       const esExcluida = !codsFiltrados.has(d.codigo_ubicacion)
+                      const expandible = tieneHijos.has(d.codigo_ubicacion)
+                      const expandido = expandidosScan.has(d.codigo_ubicacion)
                       return (
                         <div
                           key={d.codigo_ubicacion}
-                          className={`flex items-center gap-2 px-3 py-1.5 text-sm ${esExcluida ? 'opacity-40' : ''}`}
-                          style={{ paddingLeft: `${d.nivel * 20 + 12}px` }}
+                          className={`flex items-center gap-1 px-3 py-1.5 text-sm ${esExcluida ? 'opacity-40' : ''}`}
+                          style={{ paddingLeft: `${d.nivel * 20 + 8}px` }}
                         >
+                          {expandible ? (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setExpandidosScan((prev) => {
+                                  const s = new Set(prev)
+                                  if (s.has(d.codigo_ubicacion)) s.delete(d.codigo_ubicacion)
+                                  else s.add(d.codigo_ubicacion)
+                                  return s
+                                })
+                              }}
+                              className="p-0.5 hover:bg-fondo rounded shrink-0"
+                              aria-label={expandido ? 'Colapsar' : 'Expandir'}
+                            >
+                              {expandido ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                            </button>
+                          ) : (
+                            <span className="w-[22px] shrink-0" />
+                          )}
                           <Folder size={14} className="text-texto-muted shrink-0" />
                           <span className={esExcluida ? 'text-texto-muted line-through' : esNueva ? 'text-green-700 font-medium' : 'text-texto'}>
                             {d.nombre_ubicacion}
@@ -1535,11 +1582,6 @@ export default function PaginaUbicacionesDocs() {
                       )
                     })
                   })()}
-                  {datosEscaneo.directorios.length > 30 && (
-                    <p className="px-4 py-2 text-xs text-texto-muted text-center">
-                      ...y {datosEscaneo.directorios.length - 30} directorio(s) más
-                    </p>
-                  )}
                 </div>
               </div>
 
@@ -1559,7 +1601,7 @@ export default function PaginaUbicacionesDocs() {
                 </div>
               )}
 
-              <div className="flex gap-3 justify-end pt-2">
+              <div className="sticky bottom-0 bg-surface flex gap-3 justify-end pt-3 pb-1 -mx-6 px-6 border-t border-borde">
                 <Boton variante="contorno" onClick={cerrarModalCarga}>
                   {tc('cancelar')}
                 </Boton>

@@ -106,14 +106,22 @@ export function soportaDirectoryPicker(): boolean {
  *
  * @returns null si el usuario canceló, o la lista de directorios
  */
-export async function escanearDirectorio(): Promise<{
+export async function escanearDirectorio(
+  handleExterno?: FileSystemDirectoryHandle | null,
+): Promise<{
   nombreRaiz: string
   directorios: DirectorioEscaneado[]
   dirHandle: FileSystemDirectoryHandle
 } | null> {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const dirHandle = await (window as any).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' }).catch(() => null)
-  if (!dirHandle) return null
+  let dirHandle: FileSystemDirectoryHandle
+  if (handleExterno) {
+    dirHandle = handleExterno
+  } else {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const picked = await (window as any).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' }).catch(() => null)
+    if (!picked) return null
+    dirHandle = picked
+  }
 
   const nombreRaiz = dirHandle.name
   const codigos = new Set<string>()
