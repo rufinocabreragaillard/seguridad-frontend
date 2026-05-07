@@ -485,7 +485,42 @@ export default function PaginaUbicacionesDocs() {
         codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
       })
       setResultadoSync(res)
-      cargar()
+      // Tras sync: cargar el árbol completo y auto-expandir la raíz
+      // sincronizada para que las nuevas ubicaciones queden visibles sin
+      // que el usuario tenga que ir clicando subdirectorio por subdirectorio.
+      try {
+        const todas = await ubicacionesDocsApi.listar()
+        setUbicaciones(todas)
+        const padres = new Set(
+          todas.map((u) => u.codigo_ubicacion_superior).filter((c): c is string => !!c)
+        )
+        setPadresCargados(padres)
+        if (raiz?.codigo_ubicacion) {
+          // Expandir la raíz + todos los ancestros de las ubicaciones nuevas
+          // para que las nuevas hojas queden accesibles con un par de clics
+          // (no abrimos todo el árbol — con miles de nodos sería ruidoso).
+          const nuevosCodigos = new Set(
+            datosEscaneo.directorios
+              .map((d) => d.codigo_ubicacion)
+              .filter((c) => !arbolCompletoCache.some((u) => u.codigo_ubicacion === c))
+          )
+          const aExpandir = new Set<string>([raiz.codigo_ubicacion])
+          const padreDe = new Map<string, string | null>(
+            todas.map((u) => [u.codigo_ubicacion, u.codigo_ubicacion_superior || null])
+          )
+          for (const cod of nuevosCodigos) {
+            let p = padreDe.get(cod) ?? null
+            while (p) {
+              aExpandir.add(p)
+              p = padreDe.get(p) ?? null
+            }
+          }
+          setExpandidos(aExpandir)
+        }
+      } catch {
+        // si falla la recarga, al menos refrescamos las raíces
+        cargar()
+      }
     } catch (e: unknown) {
       toast.error('Error al sincronizar ubicaciones.', detalleError(e))
     } finally {
@@ -1611,10 +1646,10 @@ export default function PaginaUbicacionesDocs() {
               )}
 
               <div className="sticky bottom-0 bg-surface flex gap-3 justify-end pt-3 pb-1 -mx-6 px-6 border-t border-borde">
-                <Boton variante="contorno" onClick={cerrarModalCarga}>
-                  {tc('cancelar')}
+                <Boton variante="contorno" onClick={cerrarModalCarga} disabled={sincronizando}>
+                  {tc('salir')}
                 </Boton>
-                <Boton variante="primario" onClick={ejecutarSincronizacion} cargando={sincronizando}>
+                <Boton variante="accion-sincronizar" onClick={ejecutarSincronizacion} cargando={sincronizando}>
                   <RefreshCw size={15} />
                   Sincronizar
                 </Boton>
@@ -1652,7 +1687,7 @@ export default function PaginaUbicacionesDocs() {
 
               <div className="flex justify-end pt-2">
                 <Boton variante="primario" onClick={cerrarModalCarga}>
-                  {tc('cerrar')}
+                  {tc('salir')}
                 </Boton>
               </div>
             </>
