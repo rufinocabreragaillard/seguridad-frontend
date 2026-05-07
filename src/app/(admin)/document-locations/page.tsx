@@ -22,6 +22,38 @@ import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
+// Extrae mensaje de error con detalle técnico: status + URL + detail/message + excepción.
+function mensajeError(e: unknown, fallback: string): string {
+  const partes: string[] = []
+  if (e && typeof e === 'object') {
+    const errAny = e as {
+      response?: { status?: number; statusText?: string; data?: unknown; config?: { url?: string } }
+      config?: { url?: string }
+      message?: string
+      code?: string
+    }
+    const status = errAny.response?.status
+    const statusText = errAny.response?.statusText
+    const url = errAny.response?.config?.url || errAny.config?.url
+    const data = errAny.response?.data
+    let detalle: string | undefined
+    if (typeof data === 'string') detalle = data
+    else if (data && typeof data === 'object') {
+      const d = data as { detail?: unknown; message?: unknown; error?: unknown }
+      const v = d.detail ?? d.message ?? d.error
+      detalle = typeof v === 'string' ? v : v != null ? JSON.stringify(v) : JSON.stringify(data)
+    }
+    if (detalle) partes.push(detalle)
+    if (status) partes.push(`HTTP ${status}${statusText ? ` ${statusText}` : ''}`)
+    if (url) partes.push(`@ ${url}`)
+    if (errAny.code) partes.push(`code=${errAny.code}`)
+    if (errAny.message && !partes.includes(errAny.message)) partes.push(errAny.message)
+  } else if (e instanceof Error) {
+    partes.push(e.message)
+  }
+  return partes.length ? `${fallback}\n\n${partes.join(' · ')}` : fallback
+}
+
 export default function PaginaUbicacionesDocs() {
   const { grupoActivo, usuario } = useAuth()
   const userId = usuario?.codigo_usuario ?? null
@@ -410,8 +442,8 @@ export default function PaginaUbicacionesDocs() {
       await asegurarArbolCompleto()
       setDatosEscaneo(resultado)
       setModalCarga(true)
-    } catch {
-      alert('Error al escanear el directorio.')
+    } catch (e: unknown) {
+      alert(mensajeError(e, 'Error al escanear el directorio.'))
     } finally {
       setEscaneando(false)
     }
@@ -429,10 +461,7 @@ export default function PaginaUbicacionesDocs() {
       setResultadoSync(res)
       cargar()
     } catch (e: unknown) {
-      const msg = e && typeof e === 'object' && 'response' in e
-        ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Error al sincronizar ubicaciones.'
-        : 'Error al sincronizar ubicaciones.'
-      alert(msg)
+      alert(mensajeError(e, 'Error al sincronizar ubicaciones.'))
     } finally {
       setSincronizando(false)
     }
@@ -473,10 +502,7 @@ export default function PaginaUbicacionesDocs() {
       })
       cargar()
     } catch (e: unknown) {
-      const msg = e && typeof e === 'object' && 'response' in e
-        ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Error al crear ubicación.'
-        : e instanceof Error ? e.message : 'Error al crear ubicación.'
-      alert(msg)
+      alert(mensajeError(e, 'Error al crear ubicación.'))
     } finally {
       setCargandoUbicacion(false)
     }
@@ -664,8 +690,8 @@ export default function PaginaUbicacionesDocs() {
       // el árbol del lado izquierdo está en modo lazy, así que aquí pedimos full.
       const todas = await ubicacionesDocsApi.listar()
       setCdDatos(cdClasificar(scan, todas))
-    } catch {
-      alert('Error al escanear el directorio.')
+    } catch (e: unknown) {
+      alert(mensajeError(e, 'Error al escanear el directorio.'))
     } finally {
       setCdEscaneando(false)
     }
@@ -703,10 +729,7 @@ export default function PaginaUbicacionesDocs() {
       })
       setCdResultado(res)
     } catch (e: unknown) {
-      const msg = e && typeof e === 'object' && 'response' in e
-        ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || 'Error al cargar documentos.'
-        : 'Error al cargar documentos.'
-      alert(msg)
+      alert(mensajeError(e, 'Error al cargar documentos.'))
     } finally {
       setCdCargando(false)
     }
@@ -1443,9 +1466,9 @@ export default function PaginaUbicacionesDocs() {
         abierto={modalCarga}
         alCerrar={cerrarModalCarga}
         titulo={t('cargarDesdeDirectorioTitulo')}
-        className="max-w-[840px]"
+        className="max-w-2xl"
       >
-        <div className="flex flex-col gap-4 min-w-[833px]">
+        <div className="flex flex-col gap-4">
           {/* Pre-sincronización: preview */}
           {!resultadoSync && datosEscaneo && (
             <>
@@ -1484,8 +1507,8 @@ export default function PaginaUbicacionesDocs() {
               )}
 
               {/* Preview del árbol escaneado */}
-              <div className="border border-borde rounded-lg max-h-[300px] overflow-y-auto">
-                <div className="py-1">
+              <div className="border border-borde rounded-lg max-h-[300px] overflow-y-auto overflow-x-auto">
+                <div className="py-1 w-max min-w-full">
                   {(() => {
                     const { filtrados: dirsFiltrados } = filtrarPorInhabilitadas(datosEscaneo.directorios)
                     const codsFiltrados = new Set(dirsFiltrados.map((d) => d.codigo_ubicacion))
