@@ -262,7 +262,7 @@ export default function PaginaUbicacionesDocs() {
   // la página principal mantenga su modo lazy de raíces y no se "expanda" al
   // abrir el modal de Sincronizar.
   const asegurarArbolCompleto = useCallback(async () => {
-    const todas = await ubicacionesDocsApi.listar()
+    const todas = await ubicacionesDocsApi.listar({ todo: true })
     setArbolCompletoCache(todas)
     return todas
   }, [])
@@ -483,7 +483,7 @@ export default function PaginaUbicacionesDocs() {
       // sincronizada para que las nuevas ubicaciones queden visibles sin
       // que el usuario tenga que ir clicando subdirectorio por subdirectorio.
       try {
-        const todas = await ubicacionesDocsApi.listar()
+        const todas = await ubicacionesDocsApi.listar({ todo: true })
         setUbicaciones(todas)
         const padres = new Set(
           todas.map((u) => u.codigo_ubicacion_superior).filter((c): c is string => !!c)
@@ -745,7 +745,7 @@ export default function PaginaUbicacionesDocs() {
       if (!scan) return
       // La clasificación necesita TODAS las ubicaciones del grupo (con url);
       // el árbol del lado izquierdo está en modo lazy, así que aquí pedimos full.
-      const todas = await ubicacionesDocsApi.listar()
+      const todas = await ubicacionesDocsApi.listar({ todo: true })
       setCdDatos(cdClasificar(scan, todas))
     } catch (e: unknown) {
       toast.error('Error al escanear el directorio.', detalleError(e))

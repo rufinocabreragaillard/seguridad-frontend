@@ -1363,6 +1363,7 @@ export const ubicacionesDocsApi = {
     solo_raices?: boolean
     q?: string
     subarbol_de?: string
+    todo?: boolean
   }) => {
     const params: Record<string, string> = {}
     if (typeof opciones === 'string') {
@@ -1374,6 +1375,7 @@ export const ubicacionesDocsApi = {
       if (opciones.solo_raices) params.solo_raices = 'true'
       if (opciones.q) params.q = opciones.q
       if (opciones.subarbol_de) params.subarbol_de = opciones.subarbol_de
+    if (opciones.todo) params.todo = 'true'
     }
     return api.get<UbicacionDoc[]>('/ubicaciones-docs', { params: Object.keys(params).length ? params : undefined }).then((r) => r.data)
   },
