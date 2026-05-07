@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle, Download, Loader2, Pencil, Plus, RefreshCw, Search, Send, Trash2, XCircle, Zap } from 'lucide-react'
+import { CheckCircle, Download, Loader2, Pencil, Plus, RefreshCw, Search, Send, Trash2, XCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -11,8 +11,8 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { registroLLMApi, llmCredencialesApi, llmPreciosApi, llmUsoApi, promptsApi } from '@/lib/api'
-import type { LLMCredencial, LLMPrecio, LLMUsoFila, LLMUsoResumen } from '@/lib/api'
+import { registroLLMApi, llmPreciosApi, llmUsoApi, promptsApi } from '@/lib/api'
+import type { LLMPrecio, LLMUsoFila, LLMUsoResumen } from '@/lib/api'
 import type { RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { TabPrompts } from '@/components/ui/tab-prompts'
@@ -197,120 +197,8 @@ export default function PaginaRegistroLLM() {
     .sort((a, b) => a.proveedor.localeCompare(b.proveedor) || a.nombre_visible.localeCompare(b.nombre_visible))
 
   // ══════════════════════════════════════════
-  // TAB 2 — Configuración
+  // TAB 2 — Configuración (solo precios; super-admin)
   // ══════════════════════════════════════════
-  const [tabConfig, setTabConfig] = useState<'credenciales' | 'precios'>('credenciales')
-  const [credenciales, setCredenciales] = useState<LLMCredencial[]>([])
-  const [cargandoCredenciales, setCargandoCredenciales] = useState(true)
-  const [modalCredencial, setModalCredencial] = useState(false)
-  const [editandoCredencial, setEditandoCredencial] = useState<LLMCredencial | null>(null)
-  const [formCredencial, setFormCredencial] = useState({
-    proveedor: 'anthropic' as Proveedor,
-    alias: 'default',
-    api_key: '',
-    limite_usd_mes: '' as string,
-  })
-  const [guardandoCredencial, setGuardandoCredencial] = useState(false)
-  const [errorCredencial, setErrorCredencial] = useState('')
-  const [confirmacionCredencial, setConfirmacionCredencial] = useState<LLMCredencial | null>(null)
-  const [eliminandoCredencial, setEliminandoCredencial] = useState(false)
-  const [probandoKey, setProbandoKey] = useState<string | null>(null)
-  const [resultadoPrueba, setResultadoPrueba] = useState<{
-    key: string; ok: boolean; mensaje: string; tiempo_ms: number
-  } | null>(null)
-
-  const cargarCredenciales = useCallback(async () => {
-    setCargandoCredenciales(true)
-    try {
-      setCredenciales(await llmCredencialesApi.listar())
-    } finally {
-      setCargandoCredenciales(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (tabPagina === 'configuracion') cargarCredenciales()
-  }, [tabPagina, cargarCredenciales, grupoActivo])
-
-  const abrirNuevaCredencial = () => {
-    setEditandoCredencial(null)
-    setFormCredencial({ proveedor: 'anthropic', alias: 'default', api_key: '', limite_usd_mes: '' })
-    setErrorCredencial('')
-    setModalCredencial(true)
-  }
-
-  const abrirEditarCredencial = (c: LLMCredencial) => {
-    setEditandoCredencial(c)
-    setFormCredencial({
-      proveedor: c.proveedor,
-      alias: c.alias,
-      api_key: '',
-      limite_usd_mes: c.limite_usd_mes !== null ? String(c.limite_usd_mes) : '',
-    })
-    setErrorCredencial('')
-    setModalCredencial(true)
-  }
-
-  const guardarCredencial = async (cerrar = true) => {
-    setErrorCredencial('')
-    setGuardandoCredencial(true)
-    try {
-      const limite = formCredencial.limite_usd_mes.trim() === '' ? null : Number(formCredencial.limite_usd_mes)
-      if (editandoCredencial) {
-        await llmCredencialesApi.actualizar(editandoCredencial.proveedor, editandoCredencial.alias, {
-          api_key: formCredencial.api_key || undefined,
-          limite_usd_mes: limite,
-        })
-      } else {
-        if (!formCredencial.api_key) {
-          setErrorCredencial(tConfig('errorApiKeyObligatoria'))
-          setGuardandoCredencial(false)
-          return
-        }
-        await llmCredencialesApi.crear({
-          proveedor: formCredencial.proveedor,
-          alias: formCredencial.alias || 'default',
-          api_key: formCredencial.api_key,
-          limite_usd_mes: limite,
-        })
-      }
-      if (cerrar) setModalCredencial(false)
-      cargarCredenciales()
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { detail?: string } }; message?: string }
-      setErrorCredencial(err.response?.data?.detail || err.message || tConfig('errorAlGuardar'))
-    } finally {
-      setGuardandoCredencial(false)
-    }
-  }
-
-  const eliminarCredencial = async () => {
-    if (!confirmacionCredencial) return
-    setEliminandoCredencial(true)
-    try {
-      await llmCredencialesApi.eliminar(confirmacionCredencial.proveedor, confirmacionCredencial.alias)
-      setConfirmacionCredencial(null)
-      cargarCredenciales()
-    } finally {
-      setEliminandoCredencial(false)
-    }
-  }
-
-  const probarCredencial = async (c: LLMCredencial) => {
-    const key = `${c.proveedor}/${c.alias}`
-    setProbandoKey(key)
-    setResultadoPrueba(null)
-    try {
-      const r = await llmCredencialesApi.probar(c.proveedor, c.alias)
-      setResultadoPrueba({ key, ...r })
-    } catch (e: unknown) {
-      const err = e as { response?: { data?: { detail?: string } } }
-      setResultadoPrueba({ key, ok: false, mensaje: err.response?.data?.detail || tConfig('errorAlProbar'), tiempo_ms: 0 })
-    } finally {
-      setProbandoKey(null)
-    }
-  }
-
   const [precios, setPrecios] = useState<LLMPrecio[]>([])
   const [cargandoPrecios, setCargandoPrecios] = useState(false)
   const [editandoPrecio, setEditandoPrecio] = useState<LLMPrecio | null>(null)
@@ -328,8 +216,8 @@ export default function PaginaRegistroLLM() {
   }, [])
 
   useEffect(() => {
-    if (tabPagina === 'configuracion' && tabConfig === 'precios') cargarPrecios()
-  }, [tabPagina, tabConfig, cargarPrecios])
+    if (tabPagina === 'configuracion' && esSuperAdmin) cargarPrecios()
+  }, [tabPagina, esSuperAdmin, cargarPrecios])
 
   const guardarPrecio = async (cerrar = true) => {
     if (!editandoPrecio) return
@@ -714,81 +602,14 @@ export default function PaginaRegistroLLM() {
         </>
       )}
 
-      {/* ── TAB 2: Configuración ── */}
+      {/* ── TAB 2: Configuración (precios; super-admin) ── */}
       {tabPagina === 'configuracion' && (
         <>
-          <div className="border-b border-gray-200">
-            <nav className="flex gap-6">
-              <button onClick={() => setTabConfig('credenciales')} className={tabStyle(tabConfig === 'credenciales')}>
-                {tConfig('tabCredenciales')}
-              </button>
-              {esSuperAdmin && (
-                <button onClick={() => setTabConfig('precios')} className={tabStyle(tabConfig === 'precios')}>
-                  {tConfig('tabPrecios')}
-                </button>
-              )}
-            </nav>
-          </div>
-
-          {tabConfig === 'credenciales' && (
-            <>
-              <div className="flex justify-end">
-                <Boton onClick={abrirNuevaCredencial}><Plus className="w-4 h-4 mr-1" />{tConfig('nuevaCredencial')}</Boton>
-              </div>
-              {cargandoCredenciales ? (
-                <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
-              ) : credenciales.length === 0 ? (
-                <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">{tConfig('sinCredenciales')}</div>
-              ) : (
-                <Tabla>
-                  <TablaCabecera>
-                    <TablaFila>
-                      <TablaTh>{tConfig('colProveedor')}</TablaTh>
-                      <TablaTh>{tConfig('colAlias')}</TablaTh>
-                      <TablaTh>{tConfig('colApiKey')}</TablaTh>
-                      <TablaTh>{tConfig('colLimite')}</TablaTh>
-                      <TablaTh>{tConfig('colUltimoUso')}</TablaTh>
-                      <TablaTh>{tConfig('colEstado')}</TablaTh>
-                      <TablaTh className="text-right">{tc('acciones')}</TablaTh>
-                    </TablaFila>
-                  </TablaCabecera>
-                  <TablaCuerpo>
-                    {credenciales.map((c) => {
-                      const keyId = `${c.proveedor}/${c.alias}`
-                      const res = resultadoPrueba?.key === keyId ? resultadoPrueba : null
-                      return (
-                        <TablaFila key={keyId}>
-                          <TablaTd className="capitalize font-medium" onDoubleClick={() => abrirEditarCredencial(c)}>{c.proveedor}</TablaTd>
-                          <TablaTd onDoubleClick={() => abrirEditarCredencial(c)}>{c.alias}</TablaTd>
-                          <TablaTd className="font-mono text-xs" onDoubleClick={() => abrirEditarCredencial(c)}>{c.api_key_preview}</TablaTd>
-                          <TablaTd>{c.limite_usd_mes !== null ? `$${c.limite_usd_mes}` : '—'}</TablaTd>
-                          <TablaTd className="text-xs text-gray-500">{c.ultimo_uso_en ? new Date(c.ultimo_uso_en).toLocaleString('es-CL') : '—'}</TablaTd>
-                          <TablaTd></TablaTd>
-                          <TablaTd className="text-right">
-                            <div className="flex justify-end items-center gap-2">
-                              {res && (
-                                <span className={`text-xs flex items-center gap-1 ${res.ok ? 'text-green-600' : 'text-red-600'}`} title={res.mensaje}>
-                                  {res.ok ? <CheckCircle className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
-                                  {res.tiempo_ms}ms
-                                </span>
-                              )}
-                              <button onClick={() => probarCredencial(c)} disabled={probandoKey === keyId} className="p-1 hover:bg-gray-100 rounded text-blue-600" title={tConfig('probarConexion')}>
-                                {probandoKey === keyId ? <Loader2 className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
-                              </button>
-                              <button onClick={() => abrirEditarCredencial(c)} className="p-1 hover:bg-gray-100 rounded"><Pencil className="w-4 h-4" /></button>
-                              <button onClick={() => setConfirmacionCredencial(c)} className="p-1 hover:bg-gray-100 rounded text-red-600"><Trash2 className="w-4 h-4" /></button>
-                            </div>
-                          </TablaTd>
-                        </TablaFila>
-                      )
-                    })}
-                  </TablaCuerpo>
-                </Tabla>
-              )}
-            </>
-          )}
-
-          {tabConfig === 'precios' && esSuperAdmin && (
+          {!esSuperAdmin ? (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-sm text-amber-900">
+              {tConfig('soloSuperAdmin') ?? 'Solo el super-admin puede configurar precios.'}
+            </div>
+          ) : (
             <>
               {cargandoPrecios ? (
                 <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin text-gray-400" /></div>
@@ -829,38 +650,6 @@ export default function PaginaRegistroLLM() {
             </>
           )}
 
-          {modalCredencial && (
-            <Modal abierto={modalCredencial} alCerrar={() => setModalCredencial(false)} titulo={editandoCredencial ? `Editar Credencial: ${editandoCredencial.proveedor} - ${editandoCredencial.alias}` : tConfig('nuevoTitulo')}>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{tConfig('etiquetaProveedor')}</label>
-                  <select disabled={!!editandoCredencial} value={formCredencial.proveedor} onChange={(e) => setFormCredencial({ ...formCredencial, proveedor: e.target.value as Proveedor })} className="w-full border border-gray-300 rounded px-3 py-2 text-sm disabled:bg-gray-100">
-                    <option value="anthropic">Anthropic</option>
-                    <option value="google">Google</option>
-                    <option value="openai">OpenAI</option>
-                    <option value="deepseek">DeepSeek</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{tConfig('etiquetaAlias')}</label>
-                  <Input value={formCredencial.alias} disabled={!!editandoCredencial} onChange={(e) => setFormCredencial({ ...formCredencial, alias: e.target.value })} placeholder={tConfig('placeholderAlias')} />
-                  <p className="text-xs text-gray-500 mt-1">{tConfig('descAlias')}</p>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{tConfig('etiquetaApiKey', { nota: editandoCredencial ? tConfig('notaApiKey') : '' })}</label>
-                  <Input type="password" value={formCredencial.api_key} onChange={(e) => setFormCredencial({ ...formCredencial, api_key: e.target.value })} placeholder={editandoCredencial ? '••••••••' : tConfig('placeholderApiKey')} />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{tConfig('etiquetaLimite')}</label>
-                  <Input type="number" step="0.01" value={formCredencial.limite_usd_mes} onChange={(e) => setFormCredencial({ ...formCredencial, limite_usd_mes: e.target.value })} placeholder={tConfig('placeholderLimite')} />
-                  <p className="text-xs text-gray-500 mt-1">{tConfig('descLimite')}</p>
-                </div>
-                {errorCredencial && <div className="text-sm text-red-600">{errorCredencial}</div>}
-                <PieBotonesModal editando={!!editandoCredencial} onGuardar={() => guardarCredencial(false)} onGuardarYSalir={() => guardarCredencial(true)} onCerrar={() => setModalCredencial(false)} cargando={guardandoCredencial} />
-              </div>
-            </Modal>
-          )}
-
           {editandoPrecio && (
             <Modal abierto={!!editandoPrecio} alCerrar={() => setEditandoPrecio(null)} titulo={tConfig('precioTitulo', { proveedor: editandoPrecio.proveedor, modelo: editandoPrecio.nombre_tecnico })}>
               <div className="space-y-3">
@@ -875,9 +664,6 @@ export default function PaginaRegistroLLM() {
             </Modal>
           )}
 
-          <ModalConfirmar abierto={!!confirmacionCredencial} titulo={tConfig('eliminarTitulo')}
-            mensaje={confirmacionCredencial ? tConfig('eliminarConfirm', { proveedor: confirmacionCredencial.proveedor, alias: confirmacionCredencial.alias }) : ''}
-            alCerrar={() => setConfirmacionCredencial(null)} alConfirmar={eliminarCredencial} textoConfirmar={tc('eliminar')} cargando={eliminandoCredencial} />
         </>
       )}
 

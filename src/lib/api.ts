@@ -1016,18 +1016,7 @@ export const registroLLMApi = {
     api.post<{ md: string }>(`/registro-llm/${id}/generar-md`).then((r) => r.data),
 }
 
-// ─── LLM Credenciales por grupo ──────────────────────────────────────────────
-
-export interface LLMCredencial {
-  codigo_grupo: string
-  proveedor: 'anthropic' | 'google'
-  alias: string
-  api_key_preview: string
-  limite_usd_mes: number | null
-  ultimo_uso_en: string | null
-  creado_por: string | null
-  created_at: string | null
-}
+// ─── LLM Precios ─────────────────────────────────────────────────────────────
 
 export interface LLMPrecio {
   proveedor: string
@@ -1037,29 +1026,6 @@ export interface LLMPrecio {
   precio_cache_read_1m: number
   precio_cache_write_1m: number
   vigente_desde: string
-}
-
-export const llmCredencialesApi = {
-  listar: () => api.get<LLMCredencial[]>('/llm-credenciales').then((r) => r.data),
-  crear: (datos: {
-    proveedor: 'anthropic' | 'google'
-    alias?: string
-    api_key: string
-    limite_usd_mes?: number | null
-  }) => api.post<LLMCredencial>('/llm-credenciales', datos).then((r) => r.data),
-  actualizar: (
-    proveedor: string,
-    alias: string,
-    datos: { api_key?: string; limite_usd_mes?: number | null },
-  ) => api.put<LLMCredencial>(`/llm-credenciales/${proveedor}/${alias}`, datos).then((r) => r.data),
-  eliminar: (proveedor: string, alias: string) =>
-    api.delete(`/llm-credenciales/${proveedor}/${alias}`),
-  probar: (proveedor: string, alias: string) =>
-    api
-      .post<{ ok: boolean; mensaje: string; tiempo_ms: number }>(
-        `/llm-credenciales/${proveedor}/${alias}/probar`,
-      )
-      .then((r) => r.data),
 }
 
 export const llmPreciosApi = {
