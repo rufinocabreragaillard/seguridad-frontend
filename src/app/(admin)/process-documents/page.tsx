@@ -1499,7 +1499,7 @@ function PaginaProcesarDocumentosInterna() {
               {docsSinDisco.length > 0 && (
                 <Boton variante="peligro" onClick={() => setConfirmEliminarBulkSinDisco(true)} disabled={ejecutando}>
                   <Trash2 size={14} />
-                  Eliminar sin archivo ({docsSinDisco.length})
+                  Eliminar índices sin archivo ({docsSinDisco.length})
                 </Boton>
               )}
               <Boton variante="primario" onClick={ejecutar}
@@ -1737,7 +1737,7 @@ function PaginaProcesarDocumentosInterna() {
                     <TablaTd colSpan={4 as never} className="bg-red-50 py-1.5 px-3">
                       <div className="flex items-center gap-2 text-xs font-medium text-error">
                         <AlertTriangle size={13} className="shrink-0" />
-                        {docsSinDisco.length} {docsSinDisco.length === 1 ? 'archivo no encontrado en el directorio seleccionado' : 'archivos no encontrados en el directorio seleccionado'} — no se procesarán
+                        {docsSinDisco.length} {docsSinDisco.length === 1 ? 'índice sin archivo en el directorio seleccionado' : 'índices sin archivo en el directorio seleccionado'} — no se procesarán
                       </div>
                     </TablaTd>
                   </TablaFila>
@@ -1941,8 +1941,8 @@ function PaginaProcesarDocumentosInterna() {
         abierto={confirmEliminarBulkSinDisco}
         alCerrar={() => { setConfirmEliminarBulkSinDisco(false); setEliminandoBulkSinDisco(false) }}
         alConfirmar={ejecutarEliminarBulkSinDisco}
-        titulo="Eliminar archivos no encontrados"
-        mensaje={`¿Eliminar ${docsSinDisco.length} documento(s) que no están en el directorio? Esta acción no se puede deshacer.`}
+        titulo="Eliminar índices de documentos no encontrados"
+        mensaje={`¿Eliminar los índices de ${docsSinDisco.length} documento(s) que no están en el directorio? Esta acción no se puede deshacer.`}
         textoConfirmar={tc('eliminar')}
         cargando={eliminandoBulkSinDisco}
       />
