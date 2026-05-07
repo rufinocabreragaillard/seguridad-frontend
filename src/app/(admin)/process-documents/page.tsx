@@ -132,33 +132,41 @@ interface TabIndexarTodoProps {
 
 function TabIndexarTodo({ procesos, estadosDocs, ubicaciones }: TabIndexarTodoProps) {
   type EstadoBarra = 'esperando' | 'activo' | 'listo' | 'error'
+  const { grupoActivo, usuario } = useAuth()
+  const userId = usuario?.codigo_usuario ?? null
+
+  // Paso 1: Indexar ubicaciones
   const [paso1Estado, setPaso1Estado] = useState<EstadoBarra>('esperando')
   const [paso1Total, setPaso1Total] = useState(0)
   const [paso1Completados, setPaso1Completados] = useState(0)
   const [paso1Mensaje, setPaso1Mensaje] = useState('')
-  const [pipelineActivo, setPipelineActivo] = useState(false)
+
+  // Paso 2: FILESYSTEM → CARGADO
+  const [paso2Estado, setPaso2Estado] = useState<EstadoBarra>('esperando')
+  const [paso2Total, setPaso2Total] = useState(0)
+  const [paso2Completados, setPaso2Completados] = useState(0)
+  const [paso2Mensaje, setPaso2Mensaje] = useState('')
+  // Confirmación inline antes de cargar
+  type ScanResultTodo = NonNullable<Awaited<ReturnType<typeof escanearArchivosDirectorio>>>
+  type PendingCarga = { archivos: ScanResultTodo['archivos']; codigosUbicacion: string[]; nombreRaiz: string }
+  const [pendingCarga, setPendingCarga] = useState<PendingCarga | null>(null)
+
   const [claveReset, setClaveReset] = useState(0)
 
-  const COLORES_PASO1 = '#6B7280'
-
   const pct1 = paso1Total > 0 ? Math.round((paso1Completados / paso1Total) * 100) : 0
+  const pct2 = paso2Total > 0 ? Math.round((paso2Completados / paso2Total) * 100) : 0
 
-  const ejecutarPaso1 = async () => {
+  const ejecutarPaso1 = async (): Promise<boolean> => {
     setPaso1Estado('activo')
     setPaso1Total(0)
     setPaso1Completados(0)
     setPaso1Mensaje('')
     try {
       const resultado = await escanearDirectorioUbicaciones()
-      if (!resultado) {
-        setPaso1Estado('esperando')
-        return false
-      }
+      if (!resultado) { setPaso1Estado('esperando'); return false }
       const total = resultado.directorios.length
       setPaso1Total(total)
-      const sincronizado = await ubicacionesDocsApi.sincronizar({
-        directorios: resultado.directorios,
-      })
+      const sincronizado = await ubicacionesDocsApi.sincronizar({ directorios: resultado.directorios })
       setPaso1Completados(total)
       setPaso1Estado('listo')
       setPaso1Mensaje(`${sincronizado.insertadas ?? 0} nuevas, ${sincronizado.actualizadas ?? 0} actualizadas, ${sincronizado.eliminadas ?? 0} eliminadas`)
@@ -170,57 +178,141 @@ function TabIndexarTodo({ procesos, estadosDocs, ubicaciones }: TabIndexarTodoPr
     }
   }
 
-  const iniciar = async () => {
-    const ok = await ejecutarPaso1()
-    if (ok) {
-      setClaveReset(k => k + 1)
-      setPipelineActivo(true)
+  const ejecutarPaso2Escaneo = async (): Promise<boolean> => {
+    setPaso2Estado('activo')
+    setPaso2Total(0)
+    setPaso2Completados(0)
+    setPaso2Mensaje('Escaneando directorio…')
+    setPendingCarga(null)
+    try {
+      const rutasDeshabilitadas = new Set(
+        ubicaciones.filter((u) => u.ubicacion_habilitada === false && u.url).map((u) => u.url)
+      )
+      const stored = await idbGetHandle(userId, grupoActivo)
+      const handleEfectivo = stored && (await ensureReadPermission(stored)) ? stored : undefined
+      const scan = await escanearArchivosDirectorio(handleEfectivo, 5, undefined, rutasDeshabilitadas)
+      if (!scan) { setPaso2Estado('esperando'); setPaso2Mensaje(''); return false }
+      if (stored !== scan.dirHandle) idbSetHandle(scan.dirHandle, userId, grupoActivo)
+      const codigosUbicacion = ubicaciones
+        .filter((u) => u.url && scan.rutasEscaneadas.includes(u.url))
+        .map((u) => u.codigo_ubicacion)
+      setPaso2Total(scan.archivos.length)
+      setPaso2Mensaje(`${scan.archivos.length} archivos encontrados. Confirma para cargar.`)
+      setPendingCarga({ archivos: scan.archivos, codigosUbicacion, nombreRaiz: scan.nombreRaiz })
+      setPaso2Estado('esperando') // queda en espera de confirmación
+      return false // no avanza hasta confirmar
+    } catch (e) {
+      setPaso2Estado('error')
+      setPaso2Mensaje(e instanceof Error ? e.message : 'Error al escanear directorio')
+      return false
     }
   }
 
-  return (
-    <div className="flex flex-col gap-6">
-      {/* Barra Paso 1: Indexar ubicaciones */}
-      <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-3">
+  const confirmarCarga = async () => {
+    if (!pendingCarga) return
+    const { archivos, codigosUbicacion } = pendingCarga
+    setPendingCarga(null)
+    setPaso2Estado('activo')
+    setPaso2Completados(0)
+    setPaso2Mensaje(`Cargando ${archivos.length} archivos…`)
+    try {
+      const res = await cargaDocumentosApi.cargar({
+        archivos,
+        codigos_ubicacion_escaneadas: codigosUbicacion.length > 0 ? codigosUbicacion : undefined,
+      })
+      setPaso2Completados(archivos.length)
+      setPaso2Estado('listo')
+      setPaso2Mensaje(`${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`)
+      setClaveReset(k => k + 1)
+    } catch (e) {
+      setPaso2Estado('error')
+      setPaso2Mensaje(e instanceof Error ? e.message : 'Error al cargar documentos')
+    }
+  }
+
+  const iniciar = async () => {
+    const ok1 = await ejecutarPaso1()
+    if (!ok1) return
+    await ejecutarPaso2Escaneo()
+  }
+
+  function BarraPaso({ numero, label, estado, completados, total, pct, mensaje }: {
+    numero: number; label: string; estado: EstadoBarra; completados: number; total: number; pct: number; mensaje: string
+  }) {
+    const color = estado === 'error' ? '#EF4444' : numero === 1 ? '#6B7280' : '#3B82F6'
+    return (
+      <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-2">
         <div className="flex items-center justify-between text-xs">
-          <span className={`font-semibold ${paso1Estado === 'activo' ? 'text-texto' : paso1Estado === 'listo' ? 'text-texto-muted' : 'text-texto-muted opacity-60'}`}>
-            Paso 1
+          <span className={`font-semibold ${estado === 'activo' ? 'text-texto' : estado === 'listo' ? 'text-texto-muted' : 'text-texto-muted opacity-60'}`}>
+            Paso {numero} — {label}
           </span>
           <span className="text-texto-muted tabular-nums">
-            {paso1Estado === 'listo' ? '✓' : paso1Estado === 'activo' ? `${paso1Completados}/${paso1Total || '…'}` : '—'}
+            {estado === 'listo' ? '✓' : estado === 'activo' ? `${completados}/${total || '…'}` : '—'}
           </span>
         </div>
-        <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#E5E7EB' }}>
+        <div className="h-2 rounded-full overflow-hidden" style={{ backgroundColor: '#E5E7EB' }}>
           <div
-            className={`h-full rounded-full transition-all duration-300 ${paso1Estado === 'activo' ? 'animate-pulse' : ''}`}
-            style={{
-              width: paso1Estado === 'listo' ? '100%' : `${pct1}%`,
-              backgroundColor: paso1Estado === 'error' ? '#EF4444' : COLORES_PASO1,
-              opacity: paso1Estado === 'esperando' ? 0.3 : 0.9,
-            }}
+            className={`h-full rounded-full transition-all duration-300 ${estado === 'activo' ? 'animate-pulse' : ''}`}
+            style={{ width: estado === 'listo' ? '100%' : `${pct}%`, backgroundColor: color, opacity: estado === 'esperando' ? 0.3 : 0.9 }}
           />
         </div>
-        {paso1Mensaje && (
-          <p className={`text-xs ${paso1Estado === 'error' ? 'text-red-600' : 'text-texto-muted'}`}>
-            {paso1Mensaje}
-          </p>
+        {mensaje && (
+          <p className={`text-xs ${estado === 'error' ? 'text-red-600' : 'text-texto-muted'}`}>{mensaje}</p>
         )}
-        <div className="flex justify-center pt-1">
-          <Boton variante="primario" onClick={iniciar} disabled={paso1Estado === 'activo'}>
-            {paso1Estado === 'activo' ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-            {paso1Estado === 'activo' ? 'Indexando ubicaciones…' : paso1Estado === 'listo' ? 'Re-indexar ubicaciones' : 'Iniciar — indexar ubicaciones'}
-          </Boton>
+      </div>
+    )
+  }
+
+  const paso2Bloqueado = paso1Estado !== 'listo'
+  const ejecutandoCualquiera = paso1Estado === 'activo' || paso2Estado === 'activo'
+
+  return (
+    <div className="flex flex-col gap-4">
+      <BarraPaso numero={1} label="Indexar ubicaciones" estado={paso1Estado} completados={paso1Completados} total={paso1Total} pct={pct1} mensaje={paso1Mensaje} />
+      <BarraPaso numero={2} label="Cargar documentos (FILESYSTEM → BD)" estado={paso2Estado} completados={paso2Completados} total={paso2Total} pct={pct2} mensaje={paso2Mensaje} />
+
+      {/* Confirmación inline antes de cargar */}
+      {pendingCarga && (
+        <div className="rounded-lg border border-amarillo bg-amarillo/10 p-4 flex flex-col gap-3">
+          <p className="text-sm font-medium text-texto">
+            Se encontraron <strong>{pendingCarga.archivos.length} archivos</strong> en <strong>{pendingCarga.nombreRaiz}</strong>.
+          </p>
+          <p className="text-xs text-texto-muted">¿Confirmas cargar estos archivos a la base de datos?</p>
+          <div className="flex gap-2">
+            <Boton variante="primario" tamano="sm" onClick={confirmarCarga}>
+              <Play size={14} /> Confirmar carga
+            </Boton>
+            <Boton variante="contorno" tamano="sm" onClick={() => { setPendingCarga(null); setPaso2Estado('esperando'); setPaso2Mensaje('') }}>
+              Cancelar
+            </Boton>
+          </div>
         </div>
+      )}
+
+      {/* Botón principal */}
+      <div className="flex justify-center pt-1">
+        <Boton variante="primario" onClick={iniciar} disabled={ejecutandoCualquiera || !!pendingCarga}>
+          {ejecutandoCualquiera ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+          {ejecutandoCualquiera
+            ? 'Procesando…'
+            : paso1Estado === 'listo' && paso2Estado !== 'listo'
+            ? 'Cargar documentos'
+            : paso1Estado === 'listo' && paso2Estado === 'listo'
+            ? 'Re-ejecutar pasos 1 y 2'
+            : 'Iniciar — indexar ubicaciones y cargar documentos'}
+        </Boton>
       </div>
 
-      {/* Pasos 2-5: pipeline de documentos */}
-      <TabPipelineTodo
-        key={claveReset}
-        procesos={procesos}
-        estadosDocs={estadosDocs}
-        ubicaciones={ubicaciones}
-        offsetPaso={2}
-      />
+      {/* Pasos 3-6: pipeline de documentos (se activa después de cargar) */}
+      {!paso2Bloqueado && (
+        <TabPipelineTodo
+          key={claveReset}
+          procesos={procesos}
+          estadosDocs={estadosDocs}
+          ubicaciones={ubicaciones}
+          offsetPaso={3}
+        />
+      )}
     </div>
   )
 }
