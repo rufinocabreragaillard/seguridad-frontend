@@ -30,7 +30,7 @@ interface TabRevertirProps {
 }
 
 export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacionesProp = [], estadosDocs: estadosDocsProp = [] }: TabRevertirProps) {
-  const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([...procesosProp].reverse())
+  const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([...procesosProp])
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>(ubicacionesProp)
   const [estadosDocs, setEstadosDocs] = useState<EstadoDoc[]>([...estadosDocsProp])
 
