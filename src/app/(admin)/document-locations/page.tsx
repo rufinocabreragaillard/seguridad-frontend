@@ -22,8 +22,9 @@ import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 
-// Extrae mensaje de error con detalle técnico: status + URL + detail/message + excepción.
-function mensajeError(e: unknown, fallback: string): string {
+// Extrae el detalle técnico de un error (status + URL + detail/message + code).
+// Retorna string vacío si no se puede extraer nada útil.
+function detalleError(e: unknown): string {
   const partes: string[] = []
   if (e && typeof e === 'object') {
     const errAny = e as {
@@ -51,7 +52,7 @@ function mensajeError(e: unknown, fallback: string): string {
   } else if (e instanceof Error) {
     partes.push(e.message)
   }
-  return partes.length ? `${fallback}\n\n${partes.join(' · ')}` : fallback
+  return partes.join(' · ')
 }
 
 export default function PaginaUbicacionesDocs() {
@@ -422,7 +423,7 @@ export default function PaginaUbicacionesDocs() {
   // ── Indexar Ubicaciones (escaneo + sincronización) ─────────────────────────
   const iniciarEscaneo = async (forzarPicker = false) => {
     if (!soportaDirectoryPicker()) {
-      alert(t('errorBrowserNoSoporta'))
+      toast.error(t('errorBrowserNoSoporta'))
       return
     }
     setEscaneando(true)
@@ -462,7 +463,7 @@ export default function PaginaUbicacionesDocs() {
       setDatosEscaneo(resultado)
       setModalCarga(true)
     } catch (e: unknown) {
-      alert(mensajeError(e, 'Error al escanear el directorio.'))
+      toast.error('Error al escanear el directorio.', detalleError(e))
     } finally {
       setEscaneando(false)
     }
@@ -480,7 +481,7 @@ export default function PaginaUbicacionesDocs() {
       setResultadoSync(res)
       cargar()
     } catch (e: unknown) {
-      alert(mensajeError(e, 'Error al sincronizar ubicaciones.'))
+      toast.error('Error al sincronizar ubicaciones.', detalleError(e))
     } finally {
       setSincronizando(false)
     }
@@ -497,7 +498,7 @@ export default function PaginaUbicacionesDocs() {
 
   const cargarUbicacionIndividual = async () => {
     if (!soportaDirectoryPicker()) {
-      alert(t('errorBrowserNoSoporta'))
+      toast.error(t('errorBrowserNoSoporta'))
       return
     }
     setCargandoUbicacion(true)
@@ -521,7 +522,7 @@ export default function PaginaUbicacionesDocs() {
       })
       cargar()
     } catch (e: unknown) {
-      alert(mensajeError(e, 'Error al crear ubicación.'))
+      toast.error('Error al crear ubicación.', detalleError(e))
     } finally {
       setCargandoUbicacion(false)
     }
@@ -710,7 +711,7 @@ export default function PaginaUbicacionesDocs() {
       const todas = await ubicacionesDocsApi.listar()
       setCdDatos(cdClasificar(scan, todas))
     } catch (e: unknown) {
-      alert(mensajeError(e, 'Error al escanear el directorio.'))
+      toast.error('Error al escanear el directorio.', detalleError(e))
     } finally {
       setCdEscaneando(false)
     }
@@ -718,7 +719,7 @@ export default function PaginaUbicacionesDocs() {
 
   const cdSeleccionarDirectorio = async () => {
     if (!soportaDirectoryPicker()) {
-      alert('Su navegador no soporta la selección de directorios. Use Chrome, Edge o Safari.')
+      toast.error('Su navegador no soporta la selección de directorios. Use Chrome, Edge o Safari.')
       return
     }
     try {
@@ -748,7 +749,7 @@ export default function PaginaUbicacionesDocs() {
       })
       setCdResultado(res)
     } catch (e: unknown) {
-      alert(mensajeError(e, 'Error al cargar documentos.'))
+      toast.error('Error al cargar documentos.', detalleError(e))
     } finally {
       setCdCargando(false)
     }
