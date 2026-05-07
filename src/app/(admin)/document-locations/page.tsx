@@ -396,17 +396,11 @@ export default function PaginaUbicacionesDocs() {
     const nombresRoots = raices.map((r) => r.nombre_ubicacion)
 
     if (!persistido) {
-      // Sanity check: si el nombre del nuevo coincide con un root, lo adoptamos
-      // como re-vinculación implícita.
-      if (nombresRoots.includes(nombreNuevo)) {
-        await idbSetHandle(nuevo, userId, grupoActivo)
-        return true
-      }
-      toast.warning(
-        'Re-vincula primero la carpeta raíz',
-        `Antes de cargar "${nombreNuevo}", selecciona la carpeta raíz existente: ${nombresRoots.join(' o ')}.`,
-      )
-      return false
+      // Sin handle persistido: permitir siempre. El backend maneja el caso de
+      // ancestro entrante (reparenteo) y de raíz nueva. Guardamos el handle
+      // para que cargas posteriores puedan validar parentesco.
+      await idbSetHandle(nuevo, userId, grupoActivo)
+      return true
     }
 
     const relacion = await compararHandles(persistido, nuevo)
