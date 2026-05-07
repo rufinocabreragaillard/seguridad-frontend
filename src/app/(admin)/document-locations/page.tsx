@@ -124,6 +124,10 @@ export default function PaginaUbicacionesDocs() {
   } | null>(null)
   // Carpetas expandidas en el preview del modal Sincronizar (parte cerrado).
   const [expandidosScan, setExpandidosScan] = useState<Set<string>>(new Set())
+  // Snapshot completo del árbol de BD usado SOLO por el modal Sincronizar
+  // para calcular diff. No se mezcla con `ubicaciones` (que mantiene su modo
+  // lazy de raíces) para no alterar la vista del árbol principal.
+  const [arbolCompletoCache, setArbolCompletoCache] = useState<UbicacionDoc[]>([])
 
   // ── Lazy loading ──────────────────────────────────────────────────────────
   // padresCargados: nodos cuyos hijos directos ya fueron traídos del server.
@@ -254,10 +258,12 @@ export default function PaginaUbicacionesDocs() {
     u.tiene_hijos === true || (hijosPorPadre.get(u.codigo_ubicacion)?.length ?? 0) > 0
 
   // Carga completa bajo demanda (sincronización / preview de impacto).
+  // Guarda el snapshot en `arbolCompletoCache` (NO en `ubicaciones`) para que
+  // la página principal mantenga su modo lazy de raíces y no se "expanda" al
+  // abrir el modal de Sincronizar.
   const asegurarArbolCompleto = useCallback(async () => {
     const todas = await ubicacionesDocsApi.listar()
-    setUbicaciones(todas)
-    setPadresCargados(new Set(todas.filter((u) => u.tiene_hijos).map((u) => u.codigo_ubicacion)))
+    setArbolCompletoCache(todas)
     return todas
   }, [])
 
@@ -491,6 +497,8 @@ export default function PaginaUbicacionesDocs() {
     setModalCarga(false)
     setDatosEscaneo(null)
     setResultadoSync(null)
+    setArbolCompletoCache([])
+    setExpandidosScan(new Set())
   }
 
   // ── Cargar Ubicación individual (sin hijos) ──────────────────────────────
@@ -532,7 +540,7 @@ export default function PaginaUbicacionesDocs() {
   // ── Filtrar directorios escaneados: excluir hijos de inhabilitadas ────────
   const filtrarPorInhabilitadas = (directorios: DirectorioEscaneado[]) => {
     const inhabilitadas = new Set(
-      ubicaciones.filter((u) => !u.ubicacion_habilitada).map((u) => u.codigo_ubicacion)
+      arbolCompletoCache.filter((u) => !u.ubicacion_habilitada).map((u) => u.codigo_ubicacion)
     )
     if (inhabilitadas.size === 0) return { filtrados: directorios, excluidos: 0 }
 
@@ -543,12 +551,12 @@ export default function PaginaUbicacionesDocs() {
 
     const esDescendienteInhabilitada = (codigo: string): boolean => {
       const visitados = new Set<string>()
-      let actual = padres[codigo] || ubicaciones.find((u) => u.codigo_ubicacion === codigo)?.codigo_ubicacion_superior
+      let actual = padres[codigo] || arbolCompletoCache.find((u) => u.codigo_ubicacion === codigo)?.codigo_ubicacion_superior
       while (actual) {
         if (inhabilitadas.has(actual)) return true
         if (visitados.has(actual)) break
         visitados.add(actual)
-        actual = padres[actual] || ubicaciones.find((u) => u.codigo_ubicacion === actual)?.codigo_ubicacion_superior || undefined
+        actual = padres[actual] || arbolCompletoCache.find((u) => u.codigo_ubicacion === actual)?.codigo_ubicacion_superior || undefined
       }
       return false
     }
@@ -560,7 +568,7 @@ export default function PaginaUbicacionesDocs() {
   const calcularDiferencias = () => {
     if (!datosEscaneo) return { nuevas: 0, aEliminar: 0, sinCambio: 0, excluidas: 0 }
     const { filtrados: dirsFiltrados, excluidos } = filtrarPorInhabilitadas(datosEscaneo.directorios)
-    const codigosActuales = new Set(ubicaciones.map((u) => u.codigo_ubicacion))
+    const codigosActuales = new Set(arbolCompletoCache.map((u) => u.codigo_ubicacion))
     const codigosEscaneados = new Set(dirsFiltrados.map((d) => d.codigo_ubicacion))
     const nuevas = dirsFiltrados.filter((d) => !codigosActuales.has(d.codigo_ubicacion)).length
     // Acotar "a eliminar" al subárbol de la raíz escaneada — coincide con la
@@ -570,7 +578,7 @@ export default function PaginaUbicacionesDocs() {
     const enSubarbol = new Set<string>()
     if (codigoRaiz && codigosActuales.has(codigoRaiz)) {
       const hijosDe = new Map<string, string[]>()
-      for (const u of ubicaciones) {
+      for (const u of arbolCompletoCache) {
         if (u.codigo_ubicacion_superior) {
           const arr = hijosDe.get(u.codigo_ubicacion_superior) ?? []
           arr.push(u.codigo_ubicacion)
@@ -589,7 +597,7 @@ export default function PaginaUbicacionesDocs() {
         }
       }
     }
-    const aEliminar = ubicaciones.filter(
+    const aEliminar = arbolCompletoCache.filter(
       (u) => enSubarbol.has(u.codigo_ubicacion) && !codigosEscaneados.has(u.codigo_ubicacion)
     ).length
     const sinCambio = dirsFiltrados.length - nuevas
@@ -916,18 +924,18 @@ export default function PaginaUbicacionesDocs() {
         </div>
         <div className="flex gap-2 flex-wrap items-start">
           <div className="flex flex-col items-center">
-            <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion}>
-              <FolderPlus size={16} />
-              {t('cargarUbicacion')}
-            </Boton>
-            <span className="text-[11px] text-texto-muted mt-0.5">solo un directorio</span>
-          </div>
-          <div className="flex flex-col items-center">
             <Boton variante="contorno" onClick={() => iniciarEscaneo()} cargando={escaneando}>
               <FolderInput size={16} />
               {t('cargarDesdeDirectorioTitulo')}
             </Boton>
             <span className="text-[11px] text-texto-muted mt-0.5">y todos los sub-directorios</span>
+          </div>
+          <div className="flex flex-col items-center">
+            <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion}>
+              <FolderPlus size={16} />
+              {t('cargarUbicacion')}
+            </Boton>
+            <span className="text-[11px] text-texto-muted mt-0.5">solo un directorio</span>
           </div>
           <div className="flex flex-col items-center">
             <Boton variante="contorno" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
@@ -1540,7 +1548,7 @@ export default function PaginaUbicacionesDocs() {
                       !d.codigo_ubicacion_superior || expandidosScan.has(d.codigo_ubicacion_superior)
                     )
                     return visibles.map((d) => {
-                      const esNueva = !ubicaciones.some((u) => u.codigo_ubicacion === d.codigo_ubicacion)
+                      const esNueva = !arbolCompletoCache.some((u) => u.codigo_ubicacion === d.codigo_ubicacion)
                       const esExcluida = !codsFiltrados.has(d.codigo_ubicacion)
                       const expandible = tieneHijos.has(d.codigo_ubicacion)
                       const expandido = expandidosScan.has(d.codigo_ubicacion)
