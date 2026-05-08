@@ -848,11 +848,22 @@ function PaginaProcesarDocumentosInterna() {
                   const ocrRes = await documentosApi.subirOcr(item.codigo_documento, rawBytes)
                   setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: ocrRes.codigo_estado_doc === 'METADATA' ? `METADATA via OCR (${ocrRes.caracteres} chars)` : 'NO_ESCANEABLE (OCR sin texto)', tiempo_ms: Date.now() - t0 } : c))
                 } catch (ocrErr) {
+                  // El OCR puede haber completado en el backend aunque la respuesta se haya perdido
+                  // (corte de proxy, timeout intermedio). NO revertimos el estado del documento desde
+                  // el frontend: si el backend completó OCR ya quedó en METADATA, y si falló sigue
+                  // en CARGADO listo para el próximo reintento. Verificamos el estado real antes de
+                  // marcar la fila de cola.
                   const ocrMsg = ocrErr instanceof Error ? ocrErr.message : 'Error OCR'
+                  let estadoReal: string | null = null
                   try {
-                    await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', formato_no_soportado: 'pdf-sin-texto-ocr-fallido' })
+                    const docActual = await documentosApi.obtener(item.codigo_documento)
+                    estadoReal = docActual?.codigo_estado_doc || null
                   } catch { /* best effort */ }
-                  setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `NO_ESCANEABLE (OCR: ${ocrMsg})`, tiempo_ms: Date.now() - t0 } : c))
+                  if (estadoReal === 'METADATA') {
+                    setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: 'METADATA via OCR (respuesta perdida — backend OK)', tiempo_ms: Date.now() - t0 } : c))
+                  } else {
+                    setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'ERROR', resultado: `OCR falló: ${ocrMsg}`, tiempo_ms: Date.now() - t0 } : c))
+                  }
                 }
               } else if (!contenido.trim()) {
                 await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', contenido_vacio: true })
