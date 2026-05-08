@@ -1889,7 +1889,7 @@ function PaginaProcesarDocumentosInterna() {
                     <TablaTd className="text-xs text-texto-muted whitespace-nowrap">
                       {new Date(c.fecha_cola).toLocaleString('es-CL', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
                     </TablaTd>
-                    <TablaTd className="text-sm text-center">{c.intentos}/{c.max_intentos}</TablaTd>
+                    <TablaTd className="text-sm text-center">{c.intentos}</TablaTd>
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
                         <BotonAccion

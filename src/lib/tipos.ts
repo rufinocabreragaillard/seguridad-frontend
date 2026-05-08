@@ -782,7 +782,10 @@ export interface ColaEstadoDoc {
   mensaje_error?: string | null
   modelo_usado?: string | null
   intentos: number
-  max_intentos: number
+  // max_intentos vive en rel_transiciones_estado por (origen, destino).
+  // No viene en la respuesta de /cola-estados-docs; se mantiene optional sólo
+  // por compatibilidad con respuestas legacy hasta que se dropee la columna.
+  max_intentos?: number
   documentos?: { codigo_documento: number; nombre_documento: string; codigo_estado_doc: string | null } | null
 }
 
