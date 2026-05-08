@@ -25,12 +25,14 @@ const DOCS_POR_PAGINA = 20
 
 interface TabRevertirProps {
   procesos?: ProcesoCatalogo[]
+  procesosCorregir?: ProcesoCatalogo[]
   ubicaciones?: UbicacionOption[]
   estadosDocs?: EstadoDoc[]
 }
 
-export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacionesProp = [], estadosDocs: estadosDocsProp = [] }: TabRevertirProps) {
+export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: procesosCorregirProp = [], ubicaciones: ubicacionesProp = [], estadosDocs: estadosDocsProp = [] }: TabRevertirProps) {
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([...procesosProp])
+  const [procesosCorregir, setProcesosCorregir] = useState<ProcesoCatalogo[]>([...procesosCorregirProp])
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>(ubicacionesProp)
   const [estadosDocs, setEstadosDocs] = useState<EstadoDoc[]>([...estadosDocsProp])
 
@@ -62,8 +64,12 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
 
   const pasoActual = useMemo(() => {
     if (!procesoSel) return null
-    return procesos.find((x) => x.codigo_proceso === procesoSel) ?? null
-  }, [procesos, procesoSel])
+    return (
+      procesos.find((x) => x.codigo_proceso === procesoSel) ??
+      procesosCorregir.find((x) => x.codigo_proceso === procesoSel) ??
+      null
+    )
+  }, [procesos, procesosCorregir, procesoSel])
 
   const rutaUbicacion = useMemo(() => {
     if (!ubicacionSel) return undefined
@@ -72,6 +78,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
 
   // Sincronizar props cuando cambian (ej. cambio de grupo)
   useEffect(() => { if (procesosProp.length > 0) setProcesos([...procesosProp]) }, [procesosProp])
+  useEffect(() => { if (procesosCorregirProp.length > 0) setProcesosCorregir([...procesosCorregirProp]) }, [procesosCorregirProp])
   useEffect(() => { if (ubicacionesProp.length > 0) setUbicaciones(ubicacionesProp) }, [ubicacionesProp])
   // Estados en orden inverso del pipeline
   useEffect(() => { if (estadosDocsProp.length > 0) setEstadosDocs([...estadosDocsProp]) }, [estadosDocsProp])
@@ -185,6 +192,7 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
                   // Auto-seleccionar estado_origen del proceso (igual que Paso a Paso al revés)
                   if (val) {
                     const p = procesos.find((x) => x.codigo_proceso === val)
+                      ?? procesosCorregir.find((x) => x.codigo_proceso === val)
                     if (p?.estado_origen) setEstadoFiltro(p.estado_origen)
                   } else {
                     setEstadoFiltro('')
@@ -194,11 +202,24 @@ export function TabRevertir({ procesos: procesosProp = [], ubicaciones: ubicacio
                 disabled={ejecutando}
               >
                 <option value="">— Sin valor —</option>
-                {procesos.map((p) => (
-                  <option key={p.codigo_proceso} value={p.codigo_proceso}>
-                    {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
-                  </option>
-                ))}
+                {procesos.length > 0 && (
+                  <optgroup label="Reversa de éxito">
+                    {procesos.map((p) => (
+                      <option key={p.codigo_proceso} value={p.codigo_proceso}>
+                        {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+                {procesosCorregir.length > 0 && (
+                  <optgroup label="Reintentar errores">
+                    {procesosCorregir.map((p) => (
+                      <option key={p.codigo_proceso} value={p.codigo_proceso}>
+                        {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
 

@@ -1110,7 +1110,7 @@ function PaginaProcesarDocumentosInterna() {
         </button>
       </div>
 
-      {tabPrincipal === 'revertir' && <TabRevertir procesos={procesosRevertir} ubicaciones={ubicaciones} estadosDocs={estadosDocs} />}
+      {tabPrincipal === 'revertir' && <TabRevertir procesos={procesosRevertir} procesosCorregir={procesosCorregir} ubicaciones={ubicaciones} estadosDocs={estadosDocs} />}
 
       {tabPrincipal === 'todo' && (
         <TabPipelineTodo
