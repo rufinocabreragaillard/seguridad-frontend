@@ -436,12 +436,11 @@ export default function PaginaUbicacionesDocs() {
         if (h) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const perm = await (h as any).queryPermission?.({ mode: 'read' })
+          // Solo reusar el handle si ya tiene permiso concedido. 'prompt' requiere
+          // un gesto de usuario directo — intentar requestPermission aquí (dentro
+          // de un await anidado) cuelga en Chrome/Safari; dejamos que showDirectoryPicker
+          // lo resuelva naturalmente.
           if (perm === 'granted') handlePersistido = h
-          else if (perm === 'prompt') {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const r = await (h as any).requestPermission?.({ mode: 'read' })
-            if (r === 'granted') handlePersistido = h
-          }
         }
       }
       const resultado = await escanearDirectorio(handlePersistido)
