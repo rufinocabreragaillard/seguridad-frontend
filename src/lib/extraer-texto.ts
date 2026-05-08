@@ -45,18 +45,38 @@ export type PaginaImagen = { pagina: number; base64: string }
 export type ExtraccionMixta = { texto: string; paginasImagen: PaginaImagen[] }
 
 /**
+ * Timings finos del paso EXTRAER. Se llenan solo cuando el parámetro
+ * DOCUMENTOS/DEBUG_TIEMPOS_EXTRAER='true'. El caller pasa un objeto que la
+ * función va llenando in-place y luego adjunta a `timings_debug` al subir.
+ */
+export type TimingsExtraccion = {
+  t_arrayBuffer_ms?: number
+  t_pdfjs_getDocument_ms?: number
+  t_pdfjs_paginas_ms?: number
+  t_render_imagenes_ms?: number
+  num_paginas?: number
+  num_paginas_imagen?: number
+  bytes?: number
+}
+
+/**
  * Lee un archivo del filesystem y extrae su contenido como texto.
  * Retorna null si el formato no es soportado.
  * Para PDFs mixtos (páginas nativas + páginas imagen), retorna ExtraccionMixta.
  */
-export async function extraerTextoDeArchivo(fileHandle: FileSystemFileHandle, timeoutMs?: number): Promise<string | typeof NECESITA_OCR | ExtraccionMixta | null> {
+export async function extraerTextoDeArchivo(
+  fileHandle: FileSystemFileHandle,
+  timeoutMs?: number,
+  timings?: TimingsExtraccion,
+): Promise<string | typeof NECESITA_OCR | ExtraccionMixta | null> {
   const ms = (timeoutMs && timeoutMs > 0) ? timeoutMs : TIMEOUT_EXTRACCION_MS
   const file = await fileHandle.getFile()
   const nombre = file.name.toLowerCase()
   const ext = nombre.split('.').pop() || ''
+  if (timings) timings.bytes = file.size
 
   if (ext === 'pdf') {
-    return conTimeout(extraerTextoPDF(file), ms, file.name)
+    return conTimeout(extraerTextoPDF(file, timings), ms, file.name)
   }
 
   if (ext === 'docx') {
@@ -122,28 +142,37 @@ export class ArchivoNoEscaneable extends Error {
 // El caller debe intentar OCR en el backend antes de marcar NO_ESCANEABLE.
 export const NECESITA_OCR: unique symbol = Symbol('NECESITA_OCR')
 
-async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR | ExtraccionMixta> {
+async function extraerTextoPDF(file: File, timings?: TimingsExtraccion): Promise<string | typeof NECESITA_OCR | ExtraccionMixta> {
   const pdfjsLib = await getPdfjsLib()
 
+  const _t_buf = performance.now()
   const arrayBuffer = await file.arrayBuffer()
+  if (timings) timings.t_arrayBuffer_ms = Math.round(performance.now() - _t_buf)
   // PDF.js lanza PasswordException cuando el archivo requiere contraseña.
   // Lo capturamos aquí para relanzarlo como PdfProtegidoError (distinguible upstream).
   let pdf
+  const _t_get = performance.now()
   try {
     pdf = await pdfjsLib.getDocument({ data: arrayBuffer, worker: _pdfWorker }).promise
   } catch (e: unknown) {
     const name = (e as { name?: string })?.name ?? ''
     const msg  = e instanceof Error ? e.message : String(e)
+    if (timings) timings.t_pdfjs_getDocument_ms = Math.round(performance.now() - _t_get)
     if (name === 'PasswordException' || msg.toLowerCase().includes('password')) {
       throw new PdfProtegidoError()
     }
     // Cualquier otro error de PDF.js (corrupto, truncado, formato inválido)
     throw new ArchivoNoEscaneable(`PDF inválido: ${msg}`)
   }
+  if (timings) {
+    timings.t_pdfjs_getDocument_ms = Math.round(performance.now() - _t_get)
+    timings.num_paginas = pdf.numPages
+  }
 
   // Paralelizar extracción de páginas. PDF.js maneja la concurrencia interna
   // dentro del worker compartido. Para PDFs densos (jurídicos, balances) baja
   // wall-clock de páginas serial → cap por la página más lenta.
+  const _t_pages = performance.now()
   const numsPaginaImagen: number[] = []
   const promesas: Promise<{ idx: number; texto: string }>[] = []
   for (let i = 1; i <= pdf.numPages; i++) {
@@ -159,6 +188,7 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
   }
   const resultados = await Promise.all(promesas)
   resultados.sort((a, b) => a.idx - b.idx)
+  if (timings) timings.t_pdfjs_paginas_ms = Math.round(performance.now() - _t_pages)
   const paginas: string[] = resultados.map((r) => r.texto)
   resultados.forEach((r) => {
     if (r.texto.trim().length < CHARS_MINIMOS_PAGINA) {
@@ -173,6 +203,7 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
   // Si el PDF no tiene capa de texto (imagen escaneada, DRM que bloquea extracción),
   // el texto queda vacío. Renderizamos todas las páginas como imágenes para Vision LLM.
   if (!texto.replace(/\f/g, '').trim()) {
+    const _t_render = performance.now()
     const paginasImagen: PaginaImagen[] = []
     for (let i = 1; i <= pdf.numPages; i++) {
       try {
@@ -190,6 +221,10 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
         // Si falla el render de una página, se omite
       }
     }
+    if (timings) {
+      timings.t_render_imagenes_ms = Math.round(performance.now() - _t_render)
+      timings.num_paginas_imagen = paginasImagen.length
+    }
     if (paginasImagen.length > 0) {
       return { texto: '', paginasImagen }
     }
@@ -201,6 +236,7 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
   // Renderizar esas páginas a JPEG para enviar a Vision LLM en ANALIZAR.
   // Solo paga Vision por estas páginas; el resto usa texto nativo (costo cero).
   if (numsPaginaImagen.length > 0) {
+    const _t_render2 = performance.now()
     const paginasImagen: PaginaImagen[] = []
     for (const numPag of numsPaginaImagen) {
       try {
@@ -226,6 +262,10 @@ async function extraerTextoPDF(file: File): Promise<string | typeof NECESITA_OCR
       } catch (err) {
         console.error(`[extraer-texto] Error renderizando página ${numPag}:`, err)
       }
+    }
+    if (timings) {
+      timings.t_render_imagenes_ms = Math.round(performance.now() - _t_render2)
+      timings.num_paginas_imagen = paginasImagen.length
     }
     if (paginasImagen.length > 0) {
       return { texto, paginasImagen }

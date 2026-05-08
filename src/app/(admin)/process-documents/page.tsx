@@ -17,7 +17,7 @@ import { getEstadosDocs, getProcesosDocs } from '@/lib/catalogos'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Documento, ColaEstadoDoc, EstadoDoc } from '@/lib/tipos'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, type ExtraccionMixta } from '@/lib/extraer-texto'
+import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, type ExtraccionMixta, type TimingsExtraccion } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser } from '@/lib/abrir-documento'
@@ -790,10 +790,25 @@ function PaginaProcesarDocumentosInterna() {
       const N_CONCURRENTE = procesoExtraer?.n_parallel ?? 6
       const timeoutExtraccionMs = procesoExtraer?.timeout_extraccion_seg ? procesoExtraer.timeout_extraccion_seg * 1000 : undefined
 
+      // Flag DOCUMENTOS/DEBUG_TIEMPOS_EXTRAER: si está activo medimos cada
+      // sub-paso del EXTRAER y lo enviamos al backend para diagnóstico.
+      // Lectura una sola vez por corrida (no por doc), overhead despreciable.
+      let _debugTiempos = false
+      try {
+        const _r = await parametrosApi.obtenerValor('DOCUMENTOS', 'DEBUG_TIEMPOS_EXTRAER')
+        _debugTiempos = (_r?.valor || '').toLowerCase() === 'true'
+      } catch { /* si falla, sigue apagado */ }
+      const debugTiempos = _debugTiempos
+
       const procesarItemExtraer = async (item: ItemCola, idx: number) => {
         if (abortRef.current) return
         setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'EN_PROCESO' } : c))
         const t0 = Date.now()
+        // Declarados al scope del try para que el catch (PDF protegido, corrupto, etc.)
+        // también pueda persistirlos cuando debugTiempos está activo.
+        const timings: TimingsExtraccion | undefined = debugTiempos ? {} : undefined
+        let tAbrirHandleMs = 0
+        let subDuracionMs = 0
         try {
           if (!item.ubicacion_documento) {
             await documentosApi.subirTexto(item.codigo_documento, {
@@ -801,15 +816,17 @@ function PaginaProcesarDocumentosInterna() {
             })
             setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: 'NO_ENCONTRADO (sin ubicación)', tiempo_ms: Date.now() - t0 } : c))
           } else {
+            const _tAbrir = Date.now()
             const fileHandle = await abrirArchivoPorRuta(handleEfectivo!, item.ubicacion_documento)
+            tAbrirHandleMs = Date.now() - _tAbrir
             if (!fileHandle) {
               await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true })
               setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: 'NO_ENCONTRADO', tiempo_ms: Date.now() - t0 } : c))
             } else {
               const ext = (item.ubicacion_documento.split('.').pop() || '').toLowerCase()
               const tExtraccion = Date.now()
-              const contenidoRaw = await extraerTextoDeArchivo(fileHandle, timeoutExtraccionMs)
-              const subDuracionMs = Date.now() - tExtraccion
+              const contenidoRaw = await extraerTextoDeArchivo(fileHandle, timeoutExtraccionMs, timings)
+              subDuracionMs = Date.now() - tExtraccion
               // Normalizar ExtraccionMixta (PDF con páginas imagen) al mismo flujo
               let contenido: string | typeof NECESITA_OCR | null
               let paginasImagen: ExtraccionMixta['paginasImagen'] | undefined
@@ -850,13 +867,26 @@ function PaginaProcesarDocumentosInterna() {
                 const textoTruncado = textoLimpio.length > MAX_CHARS_FRONTEND
                   ? textoLimpio.slice(0, MAX_CHARS_FRONTEND)
                   : textoLimpio
+                // Timings que conocemos ANTES del POST (todo lo que precede a subirTexto).
+                // El tiempo del POST en sí se calcula como tiempo_ms - sub_duracion_ms
+                // - t_abrir_handle_ms al consultar la cola (tiempo_ms se persiste en
+                // cola_estados_docs como diferencia fecha_fin - fecha_inicio).
+                const timingsDebug = timings
+                  ? { ...timings, t_abrir_handle_ms: tAbrirHandleMs, t_total_extraccion_ms: subDuracionMs }
+                  : undefined
+                const _tSubir = Date.now()
                 const res = await documentosApi.subirTexto(item.codigo_documento, {
                   texto_fuente: textoTruncado,
                   caracteres: contenido.length,
                   fecha_inicio_extraccion: new Date(t0).toISOString(),
                   sub_duracion_ms: subDuracionMs,
                   ...(paginasImagen ? { paginas_imagen: paginasImagen } : {}),
+                  ...(timingsDebug ? { timings_debug: timingsDebug } : {}),
                 })
+                if (timingsDebug) {
+                  const tSubirMs = Date.now() - _tSubir
+                  console.debug('[EXTRAER timings]', item.codigo_documento, { ...timingsDebug, t_subir_backend_ms: tSubirMs, t_total_ms: Date.now() - t0 })
+                }
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `METADATA (${res.caracteres} chars)`, tiempo_ms: Date.now() - t0 } : c))
               }
             }
@@ -868,12 +898,23 @@ function PaginaProcesarDocumentosInterna() {
           if (e instanceof PdfProtegidoError || e instanceof ArchivoNoEscaneable) {
             const detalle = e instanceof PdfProtegidoError ? 'pdf-protegido' : msg
             const etiqueta = e instanceof PdfProtegidoError ? 'PDF protegido' : msg
+            // En este path "abortado" timings ya tiene t_arrayBuffer_ms y
+            // t_pdfjs_getDocument_ms (PDF.js los registró antes de lanzar).
+            // Eso permite ver si los 16s se fueron en arrayBuffer (Dropbox sync,
+            // archivo grande) o en getDocument (parsing antes de password challenge).
+            const timingsDebug = timings
+              ? { ...timings, t_abrir_handle_ms: tAbrirHandleMs, t_total_extraccion_ms: subDuracionMs, fallo_tipo: e instanceof PdfProtegidoError ? 'pdf_protegido' : 'archivo_no_escaneable' }
+              : undefined
             try {
               await documentosApi.subirTexto(item.codigo_documento, {
                 texto_fuente: '',
                 formato_no_soportado: detalle,
+                ...(timingsDebug ? { timings_debug: timingsDebug } : {}),
               })
             } catch { /* si falla el upload, al menos dejamos visible en UI */ }
+            if (timingsDebug) {
+              console.debug('[EXTRAER timings (fail)]', item.codigo_documento, { ...timingsDebug, t_total_ms: Date.now() - t0 })
+            }
             setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `NO_ESCANEABLE (${etiqueta})`, tiempo_ms: Date.now() - t0 } : c))
           } else {
             setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'ERROR', resultado: msg, tiempo_ms: Date.now() - t0 } : c))
