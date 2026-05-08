@@ -637,7 +637,7 @@ function PaginaProcesarDocumentosInterna() {
     // ── RESETEAR A CARGADO ────────────────────────────────────────────────
     if (esResetearCargado) {
       try {
-        const ids = docsEnDisco.map((d) => d.codigo_documento)
+        const ids = todosEnDisco.map((d) => d.codigo_documento)
         const res = await documentosApi.resetearACargado(ids)
         setCola([{
           id_cola: 0,
@@ -659,7 +659,7 @@ function PaginaProcesarDocumentosInterna() {
     // ── RESTABLECER ───────────────────────────────────────────────────────
     if (esRestablecer) {
       try {
-        const ids = docsEnDisco.map((d) => d.codigo_documento)
+        const ids = todosEnDisco.map((d) => d.codigo_documento)
         const res = await documentosApi.restablecerEstado(ids)
         setCola([{
           id_cola: 0,
@@ -768,13 +768,14 @@ function PaginaProcesarDocumentosInterna() {
         }
       }
 
-      // Aplicar filtro efectivo sobre los docs ya cargados (por si el usuario no presionó Enter)
+      // Aplicar filtro efectivo sobre TODOS los docs cargados (no solo la página visible).
+      // La paginación es solo para visualización; al ejecutar se procesan todos los matcheados.
       let docsAExtraer = filtroEfectivo
-        ? docsEnDisco.filter((d) =>
+        ? todosEnDisco.filter((d) =>
             d.nombre_documento?.toLowerCase().includes(filtroEfectivo.toLowerCase()) ||
             d.ubicacion_documento?.toLowerCase().includes(filtroEfectivo.toLowerCase())
           )
-        : docsEnDisco
+        : todosEnDisco
       if (tope) docsAExtraer = docsAExtraer.slice(0, parseInt(tope))
       const colaInicial: ItemCola[] = docsAExtraer.map((doc) => ({
         id_cola: doc.codigo_documento,
@@ -1555,8 +1556,9 @@ function PaginaProcesarDocumentosInterna() {
         )
       })()}
 
-      {/* Lista de documentos candidatos (visible antes de ejecución) */}
-      {cola.length === 0 && (
+      {/* Lista de documentos candidatos (visible cuando NO está ejecutando — antes y después).
+          Durante la ejecución se oculta para no buscar más registros mientras corre el lote. */}
+      {!ejecutando && (
         <>
           {/* Paginación superior */}
           {totalDocs > DOCS_POR_PAGINA_DEFAULT && (
