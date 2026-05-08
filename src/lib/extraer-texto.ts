@@ -1,6 +1,6 @@
 /**
  * Utilidad para extraer texto de archivos usando File System Access API.
- * Soporta: PDF, DOCX, PPTX/POTX, XLSX, XLS, TXT, CSV, MD, JSON, XML, HTML
+ * Soporta: PDF, DOCX, RTF, PPTX/POTX, XLSX, XLS, TXT, CSV, MD, JSON, XML, HTML
  */
 
 /** Timeout máximo por archivo (ms). Archivos con firma digital o cifrado complejo
@@ -81,6 +81,10 @@ export async function extraerTextoDeArchivo(
 
   if (ext === 'docx') {
     return conTimeout(extraerTextoDOCX(file), ms, file.name)
+  }
+
+  if (ext === 'rtf') {
+    return conTimeout(extraerTextoRTF(file), ms, file.name)
   }
 
   if (ext === 'xlsx' || ext === 'xls' || ext === 'xlsm') {
@@ -520,4 +524,119 @@ export async function abrirArchivoPorRuta(
   }
 
   return null
+}
+
+/**
+ * Extrae texto plano de un archivo RTF.
+ * RTF es ASCII con marcado tipo {\rtf1\ansi ...}. Los control words (\par, \b, etc.)
+ * y los grupos {...} se descartan; queda solo el texto. Implementación FSM minimal
+ * portada del algoritmo estándar de striprtf — suficiente para RAG (no preserva formato).
+ *
+ * Soporta:
+ *   - Control words: \par, \line, \page → \n; \tab → \t; resto se descarta.
+ *   - Grupos de cabecera (fonttbl, colortbl, stylesheet, info, *): se ignora todo el contenido.
+ *   - \'XX → carácter Latin-1 (windows-1252).
+ *   - \uNNNN? → carácter Unicode (con fallback char tras `?`).
+ *   - \\, \{, \} → caracteres literales \, {, }.
+ */
+async function extraerTextoRTF(file: File): Promise<string> {
+  const raw = await file.text()
+  const out: string[] = []
+  // Stack de profundidad de grupos a ignorar (header tables, picts, *).
+  const ignorarHasta: number[] = []
+  // Tablas de cabecera y elementos binarios cuyo contenido NO va al texto.
+  const GRUPOS_IGNORAR = new Set([
+    'fonttbl', 'colortbl', 'stylesheet', 'listtable', 'listoverridetable',
+    'rsidtbl', 'generator', 'info', 'pict', 'themedata', 'datastore',
+    'latentstyles', 'wgrffmtfilter', 'xmlnstbl', 'mmathPr', 'shppict',
+    'nonshppict', 'header', 'footer', 'headerl', 'headerr', 'headerf',
+    'footerl', 'footerr', 'footerf', 'object',
+  ])
+  let depth = 0
+  let i = 0
+  while (i < raw.length) {
+    const c = raw[i]
+    if (c === '{') {
+      depth++
+      // Detectar {\* — extensión Microsoft, ignorar grupo entero
+      if (raw[i + 1] === '\\' && raw[i + 2] === '*') {
+        ignorarHasta.push(depth)
+      }
+      i++
+      continue
+    }
+    if (c === '}') {
+      if (ignorarHasta.length > 0 && ignorarHasta[ignorarHasta.length - 1] === depth) {
+        ignorarHasta.pop()
+      }
+      depth--
+      i++
+      continue
+    }
+    const ignorando = ignorarHasta.length > 0
+    if (c === '\\') {
+      // Caracteres escape: \\ \{ \}
+      const nxt = raw[i + 1]
+      if (nxt === '\\' || nxt === '{' || nxt === '}') {
+        if (!ignorando) out.push(nxt)
+        i += 2
+        continue
+      }
+      // \'XX (hex Latin-1 / windows-1252)
+      if (nxt === "'" && /[0-9a-fA-F]/.test(raw[i + 2] || '') && /[0-9a-fA-F]/.test(raw[i + 3] || '')) {
+        if (!ignorando) {
+          const code = parseInt(raw.slice(i + 2, i + 4), 16)
+          out.push(String.fromCharCode(code))
+        }
+        i += 4
+        continue
+      }
+      // \uNNNN? — carácter Unicode (con char ASCII de fallback que descartamos)
+      if (nxt === 'u' && /\d|-/.test(raw[i + 2] || '')) {
+        const m = /^\\u(-?\d+)\??/.exec(raw.slice(i))
+        if (m) {
+          if (!ignorando) {
+            let code = parseInt(m[1], 10)
+            if (code < 0) code += 65536
+            out.push(String.fromCharCode(code & 0xFFFF))
+          }
+          i += m[0].length
+          // Si después del ? hay un char ASCII de fallback, descartarlo
+          if (raw[i] && raw[i] !== '\\' && raw[i] !== '{' && raw[i] !== '}') i++
+          continue
+        }
+      }
+      // Control word: \word seguido opcionalmente de número y un espacio
+      const m = /^\\([a-zA-Z]+)(-?\d+)?[ \t]?/.exec(raw.slice(i))
+      if (m) {
+        const word = m[1]
+        // Detectar grupos de cabecera al inicio del grupo actual
+        if (GRUPOS_IGNORAR.has(word.toLowerCase())) {
+          ignorarHasta.push(depth)
+        } else if (!ignorando) {
+          if (word === 'par' || word === 'line' || word === 'pard') out.push('\n')
+          else if (word === 'page' || word === 'sect') out.push('\n\n')
+          else if (word === 'tab') out.push('\t')
+          else if (word === 'emdash') out.push('—')
+          else if (word === 'endash') out.push('–')
+          else if (word === 'lquote') out.push('‘')
+          else if (word === 'rquote') out.push('’')
+          else if (word === 'ldblquote') out.push('“')
+          else if (word === 'rdblquote') out.push('”')
+          else if (word === 'bullet') out.push('•')
+        }
+        i += m[0].length
+        continue
+      }
+      // Símbolo solitario (\\n, etc.) — saltar la barra
+      i++
+      continue
+    }
+    if (!ignorando && c !== '\r') {
+      out.push(c)
+    }
+    i++
+  }
+  // Colapsar saltos de línea triples y espacios al final
+  return out.join('').replace(/\n{3,}/g, '\n\n').trim()
 }
