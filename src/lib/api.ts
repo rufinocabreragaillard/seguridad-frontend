@@ -699,14 +699,20 @@ export const documentosApi = {
     },
   ) =>
     api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
-      `/documentos/${id}/texto`, body, { timeout: 60000 },
+      // Timeout 180s: bajo sliding window con N=6 docs paralelos, el endpoint
+      // se satura (cifrado + RPC) y docs que caen al fondo de la cola pueden
+      // tardar más de los 60s originales. 180s da margen mientras evaluamos
+      // el cache de claves (commit 9476cea) y el resto del cuello backend.
+      `/documentos/${id}/texto`, body, { timeout: 180000 },
     ).then((r) => r.data),
   subirOcr: (id: number, pdfBytes: ArrayBuffer) => {
     const blob = new Blob([pdfBytes], { type: 'application/pdf' })
     const form = new FormData()
     form.append('archivo', blob, 'documento.pdf')
     return api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
-      `/documentos/${id}/ocr`, form, { timeout: 120000 },
+      // Timeout 300s: PDFs grandes con OCR Tesseract pueden tardar bastante
+      // (medimos 49s para 19 págs; 50+ págs densas pueden pasarse de 120s).
+      `/documentos/${id}/ocr`, form, { timeout: 300000 },
     ).then((r) => r.data)
   },
   // DOC: extracción de Word binario (.doc pre-2007, formato OLE) vía antiword en backend
