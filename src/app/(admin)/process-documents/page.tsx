@@ -17,7 +17,7 @@ import { getEstadosDocs, getProcesosDocs } from '@/lib/catalogos'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Documento, ColaEstadoDoc, EstadoDoc } from '@/lib/tipos'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, EXTENSIONES_NO_TEXTUALES, type ExtraccionMixta, type TimingsExtraccion } from '@/lib/extraer-texto'
+import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, NECESITA_DOC_BACKEND, EXTENSIONES_NO_TEXTUALES, type ExtraccionMixta, type TimingsExtraccion } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser } from '@/lib/abrir-documento'
@@ -837,17 +837,40 @@ function PaginaProcesarDocumentosInterna() {
               const contenidoRaw = await extraerTextoDeArchivo(fileHandle, timeoutExtraccionMs, timings)
               subDuracionMs = Date.now() - tExtraccion
               // Normalizar ExtraccionMixta (PDF con páginas imagen) al mismo flujo
-              let contenido: string | typeof NECESITA_OCR | null
+              let contenido: string | typeof NECESITA_OCR | typeof NECESITA_DOC_BACKEND | null
               let paginasImagen: ExtraccionMixta['paginasImagen'] | undefined
               if (typeof contenidoRaw === 'object' && contenidoRaw !== null && 'paginasImagen' in contenidoRaw) {
                 contenido = (contenidoRaw as ExtraccionMixta).texto
                 paginasImagen = (contenidoRaw as ExtraccionMixta).paginasImagen
               } else {
-                contenido = contenidoRaw as string | typeof NECESITA_OCR | null
+                contenido = contenidoRaw as string | typeof NECESITA_OCR | typeof NECESITA_DOC_BACKEND | null
               }
               if (contenido === null) {
                 await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', formato_no_soportado: ext || 'desconocido' })
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `NO_ESCANEABLE (.${ext})`, tiempo_ms: Date.now() - t0 } : c))
+              } else if (contenido === NECESITA_DOC_BACKEND) {
+                // .doc binario (OLE) — extracción vía antiword en backend
+                setCola((prev) => prev.map((c, j) => j === idx ? { ...c, resultado: 'antiword en proceso…' } : c))
+                try {
+                  const rawFile = await fileHandle.getFile()
+                  const rawBytes = await rawFile.arrayBuffer()
+                  const docRes = await documentosApi.subirDoc(item.codigo_documento, rawBytes)
+                  setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: docRes.codigo_estado_doc === 'METADATA' ? `METADATA via antiword (${docRes.caracteres} chars)` : 'NO_ESCANEABLE (antiword sin texto)', tiempo_ms: Date.now() - t0 } : c))
+                } catch (docErr) {
+                  // Mismo patrón idempotente que OCR: si el backend completó pero la respuesta
+                  // se perdió, consultar el estado real antes de marcar la fila como ERROR.
+                  const docMsg = docErr instanceof Error ? docErr.message : 'Error antiword'
+                  let estadoReal: string | null = null
+                  try {
+                    const docActual = await documentosApi.obtener(item.codigo_documento)
+                    estadoReal = docActual?.codigo_estado_doc || null
+                  } catch { /* best effort */ }
+                  if (estadoReal === 'METADATA') {
+                    setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: 'METADATA via antiword (respuesta perdida — backend OK)', tiempo_ms: Date.now() - t0 } : c))
+                  } else {
+                    setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'ERROR', resultado: `antiword falló: ${docMsg}`, tiempo_ms: Date.now() - t0 } : c))
+                  }
+                }
               } else if (contenido === NECESITA_OCR) {
                 // PDF sin capa de texto (imagen escaneada / DRM). Intentar OCR en backend.
                 setCola((prev) => prev.map((c, j) => j === idx ? { ...c, resultado: 'OCR en proceso…' } : c))

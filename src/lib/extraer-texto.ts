@@ -86,7 +86,7 @@ export async function extraerTextoDeArchivo(
   fileHandle: FileSystemFileHandle,
   timeoutMs?: number,
   timings?: TimingsExtraccion,
-): Promise<string | typeof NECESITA_OCR | ExtraccionMixta | null> {
+): Promise<string | typeof NECESITA_OCR | typeof NECESITA_DOC_BACKEND | ExtraccionMixta | null> {
   const ms = (timeoutMs && timeoutMs > 0) ? timeoutMs : TIMEOUT_EXTRACCION_MS
   const file = await fileHandle.getFile()
   const nombre = file.name.toLowerCase()
@@ -99,6 +99,11 @@ export async function extraerTextoDeArchivo(
 
   if (EXTENSIONES_DOCX.has(ext)) {
     return conTimeout(extraerTextoDOCX(file), ms, file.name)
+  }
+
+  if (ext === 'doc') {
+    // .doc binario (OLE) — el parser browser no lo soporta; delegar al backend
+    return NECESITA_DOC_BACKEND
   }
 
   if (ext === 'rtf') {
@@ -163,6 +168,10 @@ export class ArchivoNoEscaneable extends Error {
 // Sentinel: PDF se abrió correctamente pero no tiene capa de texto (imagen escaneada).
 // El caller debe intentar OCR en el backend antes de marcar NO_ESCANEABLE.
 export const NECESITA_OCR: unique symbol = Symbol('NECESITA_OCR')
+
+// Sentinel: archivo .doc binario (Word pre-2007). El parser browser no soporta OLE;
+// el caller debe enviarlo al endpoint /documentos/:id/doc (antiword en backend).
+export const NECESITA_DOC_BACKEND: unique symbol = Symbol('NECESITA_DOC_BACKEND')
 
 async function extraerTextoPDF(file: File, timings?: TimingsExtraccion): Promise<string | typeof NECESITA_OCR | ExtraccionMixta> {
   const pdfjsLib = await getPdfjsLib()

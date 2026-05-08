@@ -709,6 +709,15 @@ export const documentosApi = {
       `/documentos/${id}/ocr`, form, { timeout: 120000 },
     ).then((r) => r.data)
   },
+  // DOC: extracción de Word binario (.doc pre-2007, formato OLE) vía antiword en backend
+  subirDoc: (id: number, docBytes: ArrayBuffer) => {
+    const blob = new Blob([docBytes], { type: 'application/msword' })
+    const form = new FormData()
+    form.append('archivo', blob, 'documento.doc')
+    return api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
+      `/documentos/${id}/doc`, form, { timeout: 90000 },
+    ).then((r) => r.data)
+  },
   // TEXTO: ver texto_fuente extraído en EXTRAER (tabla documento_texto)
   obtenerTexto: (id: number) =>
     api.get<{
