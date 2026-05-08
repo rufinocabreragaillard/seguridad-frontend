@@ -41,6 +41,18 @@ export default function PaginaDocumentos() {
   const [busqueda, setBusqueda] = useState('')
   const [estadoFiltro, setEstadoFiltro] = useState('')
 
+  // Estados ordenados: primero los válidos (ruta feliz, orden múltiplo de 10),
+  // luego los no válidos (NO_*, REVISAR, ELIMINADO). Dentro de cada grupo, por `orden`.
+  const estadosOrdenados = useMemo(() => {
+    const esValido = (e: EstadoDoc) => e.orden % 10 === 0
+    return [...estados].sort((a, b) => {
+      const va = esValido(a) ? 0 : 1
+      const vb = esValido(b) ? 0 : 1
+      if (va !== vb) return va - vb
+      return a.orden - b.orden
+    })
+  }, [estados])
+
   // ── Paginación server-side ────────────────────────────────────────────────
   const filtros = useMemo(() => ({
     q: busqueda.trim() || undefined,
@@ -347,7 +359,7 @@ export default function PaginaDocumentos() {
           className="text-sm border border-borde rounded-md px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario"
         >
           <option value="">Todos los estados</option>
-          {estados.map((e) => (
+          {estadosOrdenados.map((e) => (
             <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
               {e.nombre_estado || e.codigo_estado_doc}
             </option>
@@ -610,7 +622,7 @@ export default function PaginaDocumentos() {
                     onChange={(e) => setForm({ ...form, codigo_estado_doc: e.target.value })}
                   >
                     <option value="">{t('sinEstado')}</option>
-                    {estados.map((e) => (
+                    {estadosOrdenados.map((e) => (
                       <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
                         {e.nombre_estado}
                       </option>
