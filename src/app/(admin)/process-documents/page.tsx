@@ -17,7 +17,7 @@ import { getEstadosDocs, getProcesosDocs } from '@/lib/catalogos'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
 import type { Documento, ColaEstadoDoc, EstadoDoc } from '@/lib/tipos'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, type ExtraccionMixta, type TimingsExtraccion } from '@/lib/extraer-texto'
+import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, EXTENSIONES_NO_TEXTUALES, type ExtraccionMixta, type TimingsExtraccion } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
 import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser } from '@/lib/abrir-documento'
@@ -816,6 +816,15 @@ function PaginaProcesarDocumentosInterna() {
             })
             setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: 'NO_ENCONTRADO (sin ubicación)', tiempo_ms: Date.now() - t0 } : c))
           } else {
+            // Fast-path: extensiones que sabemos que no son texto (imágenes, audio,
+            // video, binarios). Evitamos abrirArchivoPorRuta + extractor + getFile()
+            // que con N workers paralelos puede tomar varios segundos por doc.
+            const extPrev = (item.ubicacion_documento.split('.').pop() || '').toLowerCase()
+            if (EXTENSIONES_NO_TEXTUALES.has(extPrev)) {
+              await documentosApi.subirTexto(item.codigo_documento, { texto_fuente: '', formato_no_soportado: extPrev })
+              setCola((prev) => prev.map((c, j) => j === idx ? { ...c, estado_cola: 'COMPLETADO', resultado: `NO_ESCANEABLE (.${extPrev})`, tiempo_ms: Date.now() - t0 } : c))
+              return
+            }
             const _tAbrir = Date.now()
             const fileHandle = await abrirArchivoPorRuta(handleEfectivo!, item.ubicacion_documento)
             tAbrirHandleMs = Date.now() - _tAbrir

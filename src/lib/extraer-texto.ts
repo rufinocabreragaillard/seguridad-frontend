@@ -32,6 +32,21 @@ const EXTENSIONES_TEXTO = new Set([
 
 const EXTENSIONES_PPTX = new Set(['pptx', 'potx', 'ppsx'])
 
+/** Extensiones que NO se pueden extraer como texto en el frontend (imágenes, audio,
+ *  video, binarios). Se usan para fast-path: en vez de abrir el archivo y dejar que
+ *  el extractor retorne null tras navegar el filesystem (~8 s con N workers paralelos),
+ *  el caller puede marcar NO_ESCANEABLE inmediatamente sin abrir el archivo. */
+export const EXTENSIONES_NO_TEXTUALES = new Set([
+  // Imágenes
+  'jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'tiff', 'tif', 'heic', 'heif', 'svg', 'ico', 'avif',
+  // Audio / Video
+  'mp3', 'wav', 'flac', 'ogg', 'm4a', 'aac', 'wma',
+  'mp4', 'mov', 'avi', 'mkv', 'webm', 'wmv', 'flv', 'm4v',
+  // Binarios y archivos comprimidos
+  'zip', 'rar', '7z', 'tar', 'gz', 'bz2', 'xz',
+  'exe', 'dll', 'bin', 'iso', 'dmg', 'pkg', 'deb', 'rpm',
+])
+
 /** Umbral de chars por página: menos que esto = página es imagen, no texto nativo. */
 const CHARS_MINIMOS_PAGINA = 150
 
