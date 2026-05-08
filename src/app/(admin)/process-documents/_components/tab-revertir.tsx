@@ -65,8 +65,8 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
   const pasoActual = useMemo(() => {
     if (!procesoSel) return null
     return (
-      procesos.find((x) => x.codigo_proceso === procesoSel) ??
-      procesosCorregir.find((x) => x.codigo_proceso === procesoSel) ??
+      procesos.find((x) => String(x.id_transicion) === procesoSel) ??
+      procesosCorregir.find((x) => String(x.id_transicion) === procesoSel) ??
       null
     )
   }, [procesos, procesosCorregir, procesoSel])
@@ -191,8 +191,8 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                   setProcesoSel(val)
                   // Auto-seleccionar estado_origen del proceso (igual que Paso a Paso al revés)
                   if (val) {
-                    const p = procesos.find((x) => x.codigo_proceso === val)
-                      ?? procesosCorregir.find((x) => x.codigo_proceso === val)
+                    const p = procesos.find((x) => String(x.id_transicion) === val)
+                      ?? procesosCorregir.find((x) => String(x.id_transicion) === val)
                     if (p?.estado_origen) setEstadoFiltro(p.estado_origen)
                   } else {
                     setEstadoFiltro('')
@@ -205,16 +205,16 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                 {procesos.length > 0 && (
                   <optgroup label="Reversa de éxito">
                     {procesos.map((p) => (
-                      <option key={p.codigo_proceso} value={p.codigo_proceso}>
+                      <option key={p.id_transicion ?? p.codigo_proceso} value={String(p.id_transicion)}>
                         {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
                       </option>
                     ))}
                   </optgroup>
                 )}
                 {procesosCorregir.length > 0 && (
-                  <optgroup label="Reintentar errores">
+                  <optgroup label="Reversa de éxito">
                     {procesosCorregir.map((p) => (
-                      <option key={p.codigo_proceso} value={p.codigo_proceso}>
+                      <option key={p.id_transicion ?? p.codigo_proceso} value={String(p.id_transicion)}>
                         {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
                       </option>
                     ))}
