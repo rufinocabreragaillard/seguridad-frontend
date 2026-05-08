@@ -1,13 +1,13 @@
 import { test, expect } from '@playwright/test'
 
-test.describe.serial('Costos LLM (/llm-costos)', () => {
+test.describe.serial('Costos LLM (/llm-costs)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await page.getByLabel(/email|correo/i).fill('rufinocabreragaillard@gmail.com')
     await page.getByLabel(/password|contraseña/i).fill('Test1234!')
     await page.getByRole('button', { name: /iniciar sesión|ingresar|login/i }).click()
     await expect(page).not.toHaveURL(/login/i, { timeout: 15000 })
-    await page.goto('/llm-costos')
+    await page.goto('/llm-costs')
   })
 
   test('carga la página y muestra tarjetas de resumen', async ({ page }) => {
