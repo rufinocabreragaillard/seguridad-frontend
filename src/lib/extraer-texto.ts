@@ -1,6 +1,7 @@
 /**
  * Utilidad para extraer texto de archivos usando File System Access API.
- * Soporta: PDF, DOCX, RTF, PPTX/POTX, XLSX, XLS, TXT, CSV, MD, JSON, XML, HTML
+ * Soporta: PDF, DOCX/DOTX/DOCM/DOTM, RTF, PPTX/POTX/PPSX/PPTM/POTM,
+ * XLSX/XLS/XLSM/XLSB, TXT, CSV, MD, JSON, XML, HTML
  */
 
 /** Timeout máximo por archivo (ms). Archivos con firma digital o cifrado complejo
@@ -30,7 +31,9 @@ const EXTENSIONES_TEXTO = new Set([
   'txt', 'csv', 'md', 'json', 'xml', 'html', 'htm', 'log', 'sql', 'py', 'js', 'ts', 'yaml', 'yml', 'ini', 'cfg',
 ])
 
-const EXTENSIONES_PPTX = new Set(['pptx', 'potx', 'ppsx'])
+const EXTENSIONES_DOCX = new Set(['docx', 'dotx', 'docm', 'dotm'])
+const EXTENSIONES_EXCEL = new Set(['xlsx', 'xls', 'xlsm', 'xlsb'])
+const EXTENSIONES_PPTX = new Set(['pptx', 'potx', 'ppsx', 'pptm', 'potm'])
 
 /** Extensiones que NO se pueden extraer como texto en el frontend (imágenes, audio,
  *  video, binarios). Se usan para fast-path: en vez de abrir el archivo y dejar que
@@ -94,7 +97,7 @@ export async function extraerTextoDeArchivo(
     return conTimeout(extraerTextoPDF(file, timings), ms, file.name)
   }
 
-  if (ext === 'docx') {
+  if (EXTENSIONES_DOCX.has(ext)) {
     return conTimeout(extraerTextoDOCX(file), ms, file.name)
   }
 
@@ -102,7 +105,7 @@ export async function extraerTextoDeArchivo(
     return conTimeout(extraerTextoRTF(file), ms, file.name)
   }
 
-  if (ext === 'xlsx' || ext === 'xls' || ext === 'xlsm') {
+  if (EXTENSIONES_EXCEL.has(ext)) {
     return conTimeout(extraerTextoExcel(file), ms, file.name)
   }
 
