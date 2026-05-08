@@ -952,7 +952,7 @@ export default function PaginaUbicacionesDocs() {
         </div>
         <div className="flex gap-2 flex-wrap items-start">
           <div className="flex flex-col items-center">
-            <Boton variante="contorno" onClick={() => iniciarEscaneo()} cargando={escaneando}>
+            <Boton variante="contorno" onClick={() => iniciarEscaneo(true)} cargando={escaneando}>
               <FolderInput size={16} />
               {t('cargarDesdeDirectorioTitulo')}
             </Boton>
