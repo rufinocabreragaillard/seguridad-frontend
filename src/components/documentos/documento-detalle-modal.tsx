@@ -125,7 +125,7 @@ export function DocumentoDetalleModal({
     <Modal
       abierto={abierto}
       alCerrar={alCerrar}
-      titulo={`No. ${documento.codigo_documento} - Doc. : ${documento.nombre_documento}`}
+      titulo={`Índice de Documento: ${documento.nombre_documento} - ${documento.codigo_documento}`}
       className="max-w-4xl"
     >
       <div className="flex flex-col gap-4 min-h-[500px]">
