@@ -1,12 +1,11 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Zap, Plus, Pencil, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { Zap, Plus, Pencil, ChevronDown, ChevronUp } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
-import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaTh, TablaTd, TablaFila } from '@/components/ui/tabla'
@@ -76,9 +75,6 @@ export default function PaginaHabilidades() {
   const [tabModal, setTabModal] = useState<TabModal>('datos')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
-
-  const [confirmEliminar, setConfirmEliminar] = useState<Habilidad | null>(null)
-  const [eliminando, setEliminando] = useState(false)
 
   const [expandida, setExpandida] = useState<string | null>(null)
 
@@ -174,21 +170,6 @@ export default function PaginaHabilidades() {
       setError(msg || 'Error al guardar la habilidad.')
     } finally {
       setGuardando(false)
-    }
-  }
-
-  const eliminar = async () => {
-    if (!confirmEliminar) return
-    setEliminando(true)
-    try {
-      await habilidadesApi.eliminar(confirmEliminar.codigo_habilidad)
-      setConfirmEliminar(null)
-      await cargar()
-    } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setError(msg || 'Error al eliminar.')
-    } finally {
-      setEliminando(false)
     }
   }
 
@@ -295,13 +276,6 @@ export default function PaginaHabilidades() {
                           title="Editar"
                         >
                           <Pencil size={14} />
-                        </button>
-                        <button
-                          onClick={() => setConfirmEliminar(h)}
-                          className="p-1.5 rounded hover:bg-error/10 text-error"
-                          title="Eliminar"
-                        >
-                          <Trash2 size={14} />
                         </button>
                       </div>
                     </TablaTd>
@@ -495,16 +469,6 @@ export default function PaginaHabilidades() {
         />
       </Modal>
 
-      {/* Confirmar eliminar */}
-      <ModalConfirmar
-        abierto={!!confirmEliminar}
-        titulo="Eliminar habilidad"
-        mensaje={`¿Eliminar "${confirmEliminar?.nombre_habilidad}"? Si tiene filas activas en la cola no se podrá eliminar.`}
-        onConfirmar={eliminar}
-        onCancelar={() => setConfirmEliminar(null)}
-        cargando={eliminando}
-        variante="error"
-      />
     </div>
   )
 }
