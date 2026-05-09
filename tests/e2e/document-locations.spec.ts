@@ -21,6 +21,31 @@ test('document-locations: muestra al menos un nodo raíz en el árbol', async ({
   await expect(nodoRaiz).toBeVisible({ timeout: 15000 })
 })
 
+test('document-locations: árbol carga con nodos colapsados (sin expandir todo)', async ({ page }) => {
+  await page.goto(`${BASE_URL}/document-locations`)
+  await page.waitForLoadState('networkidle', { timeout: 20000 })
+
+  const nodosRaiz = page.locator('span.font-medium')
+  await expect(nodosRaiz.first()).toBeVisible({ timeout: 15000 })
+
+  // Al cargar solo raíces, ningún ChevronDown debe existir (nada expandido)
+  const chevronDown = page.locator('[data-lucide="chevron-down"]')
+  const count = await chevronDown.count()
+  expect(count).toBe(0)
+})
+
+test('document-locations: ubicación inhabilitada muestra badge rojo', async ({ page }) => {
+  await page.goto(`${BASE_URL}/document-locations`)
+  await page.waitForLoadState('networkidle', { timeout: 20000 })
+
+  const badgeInhabilitada = page.locator('span', { hasText: /inhabilitad/i }).first()
+  const count = await badgeInhabilitada.count()
+  if (count > 0) {
+    const className = await badgeInhabilitada.getAttribute('class') ?? ''
+    expect(className).toMatch(/red|error/)
+  }
+})
+
 test('document-locations: botón Indexar Ubicaciones no queda colgado con spinner infinito', async ({ page }) => {
   // Mock showDirectoryPicker para simular cancelación (sin abrir el OS picker)
   await page.addInitScript(() => {
