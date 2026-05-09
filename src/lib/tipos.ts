@@ -980,6 +980,7 @@ export interface DocumentoEspacio {
 
 // ─── Habilidades ──────────────────────────────────────────────────────────────
 export type AplicaA = 'DOCUMENTO' | 'CONJUNTO_DOCUMENTOS' | 'ESPACIO' | 'TEXTOS'
+export type TipoHabilidad = 'LLM' | 'PRIMITIVA' | 'HEURISTICA'
 export type SalidaDestino = 'DOC_COLUMNA' | 'CHAT_INLINE' | 'CARACTERISTICA' | 'NUEVO_DOC' | 'CUSTOM' | 'ARCHIVO'
 export type FormatoSalida = 'TEXTO' | 'JSON'
 
@@ -989,6 +990,7 @@ export interface Habilidad {
   alias_habilidad?: string | null
   descripcion?: string | null
   aplica_a: AplicaA
+  tipo_habilidad: TipoHabilidad
   prompt: string
   system_prompt?: string | null
   id_modelo?: number | null
