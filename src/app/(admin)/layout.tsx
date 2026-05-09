@@ -12,6 +12,8 @@ import { AvisoPagina } from '@/components/ui/aviso-pagina'
 import { limpiarAvisos } from '@/lib/avisos-pagina'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { VisorDocumento } from '@/components/ui/visor-documento'
+import { SoporteProvider } from '@/context/SoporteContext'
+import { DrawerSoporte } from '@/components/soporte/DrawerSoporte'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('layout')
@@ -50,6 +52,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return (
     <SidebarProvider defaultColapsado={sidebarColapsadoPorDefecto}>
+    <SoporteProvider>
     <div className="flex h-screen overflow-hidden">
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -75,6 +78,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
     </div>
       <VisorDocumento />
+      <DrawerSoporte />
+    </SoporteProvider>
     </SidebarProvider>
   )
 }

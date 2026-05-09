@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { PanelLeftClose, PanelLeftOpen, Search, X } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Search, X, HelpCircle } from 'lucide-react'
 import { useMemo, useRef, useCallback, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
 import { useTema } from '@/context/ThemeContext'
 import { useSidebar } from '@/context/SidebarContext'
+import { useSoporte } from '@/context/SoporteContext'
 import { useTipoAccesoGrafo } from '@/hooks/useTipoAccesoGrafo'
 import { obtenerIcono } from '@/lib/icon-map'
 import { tr } from '@/lib/traducir'
@@ -38,6 +39,7 @@ export function Sidebar() {
   const { usuario } = useAuth()
   const { logo } = useTema()
   const { colapsado, setColapsado } = useSidebar()
+  const { abrir: abrirSoporte } = useSoporte()
   const [tooltip, setTooltip] = useState<{ texto: string; rect: DOMRect } | null>(null)
   const [busqueda, setBusqueda] = useState('')
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -233,6 +235,18 @@ export function Sidebar() {
           ))
         )}
       </nav>
+
+      {/* Botón Soporte (sobre versión) */}
+      <button
+        type="button"
+        onClick={abrirSoporte}
+        className="mx-2 mt-2 mb-1 flex items-center gap-2 rounded-md px-2 py-2 text-sm text-sidebar-texto/80 hover:bg-sidebar-texto/10 hover:text-sidebar-texto transition-colors"
+        title="Soporte y ayuda"
+        aria-label="Abrir chat de soporte"
+      >
+        <HelpCircle size={16} className="shrink-0" />
+        {!colapsado && <span className="text-xs">Soporte</span>}
+      </button>
 
       {/* Pie con versión */}
       <div className="px-2 py-3 border-t border-sidebar-texto/40 text-center">
