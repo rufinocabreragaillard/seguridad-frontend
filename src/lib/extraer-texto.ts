@@ -64,7 +64,7 @@ export type ExtraccionMixta = { texto: string; paginasImagen: PaginaImagen[] }
 
 /**
  * Timings finos del paso EXTRAER. Se llenan solo cuando el parámetro
- * DOCUMENTOS/DEBUG_TIEMPOS_EXTRAER='true'. El caller pasa un objeto que la
+ * DOCUMENTOS/DEBUG_TIEMPOS_PIPELINE='true'. El caller pasa un objeto que la
  * función va llenando in-place y luego adjunta a `timings_debug` al subir.
  */
 export type TimingsExtraccion = {

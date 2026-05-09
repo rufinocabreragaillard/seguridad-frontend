@@ -790,12 +790,12 @@ function PaginaProcesarDocumentosInterna() {
       const N_CONCURRENTE = procesoExtraer?.n_parallel ?? 6
       const timeoutExtraccionMs = procesoExtraer?.timeout_extraccion_seg ? procesoExtraer.timeout_extraccion_seg * 1000 : undefined
 
-      // Flag DOCUMENTOS/DEBUG_TIEMPOS_EXTRAER: si está activo medimos cada
+      // Flag DOCUMENTOS/DEBUG_TIEMPOS_PIPELINE: si está activo medimos cada
       // sub-paso del EXTRAER y lo enviamos al backend para diagnóstico.
       // Lectura una sola vez por corrida (no por doc), overhead despreciable.
       let _debugTiempos = false
       try {
-        const _r = await parametrosApi.obtenerValor('DOCUMENTOS', 'DEBUG_TIEMPOS_EXTRAER')
+        const _r = await parametrosApi.obtenerValor('DOCUMENTOS', 'DEBUG_TIEMPOS_PIPELINE')
         _debugTiempos = (_r?.valor || '').toLowerCase() === 'true'
       } catch { /* si falla, sigue apagado */ }
       const debugTiempos = _debugTiempos

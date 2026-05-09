@@ -693,7 +693,7 @@ export const documentosApi = {
       /** Páginas PDF renderizadas como JPEG (solo PDFs mixtos texto+imagen) */
       paginas_imagen?: Array<{ pagina: number; base64: string }>
       /** Tiempos detallados del paso EXTRAER. Solo se envían cuando el parámetro
-       *  DOCUMENTOS/DEBUG_TIEMPOS_EXTRAER='true'. Persistidos en
+       *  DOCUMENTOS/DEBUG_TIEMPOS_PIPELINE='true'. Persistidos en
        *  cola_estados_docs.opciones.timings para diagnóstico. */
       timings_debug?: Record<string, unknown>
     },
