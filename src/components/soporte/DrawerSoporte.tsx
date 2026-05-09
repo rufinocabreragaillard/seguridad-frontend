@@ -107,12 +107,12 @@ export function DrawerSoporte() {
     >
       <div className="absolute inset-0 bg-black/30" />
       <aside className="relative h-full w-full max-w-md bg-white shadow-2xl flex flex-col animate-in slide-in-from-right duration-200">
-        <header className="flex items-center justify-between px-4 py-3 border-b" style={{ backgroundColor: '#074B91' }}>
-          <div className="flex items-center gap-2 text-white">
+        <header className="flex items-center justify-between px-4 py-3 border-b bg-sidebar border-sidebar-texto/20">
+          <div className="flex items-center gap-2 text-sidebar-texto">
             <HelpCircle size={20} />
             <h2 className="font-semibold">Soporte</h2>
           </div>
-          <button onClick={cerrar} className="text-white hover:opacity-80" aria-label="Cerrar soporte">
+          <button onClick={cerrar} className="text-sidebar-texto hover:opacity-80" aria-label="Cerrar soporte">
             <X size={20} />
           </button>
         </header>
@@ -126,10 +126,9 @@ export function DrawerSoporte() {
               <div
                 className={
                   m.rol === 'user'
-                    ? 'max-w-[85%] rounded-lg px-3 py-2 text-sm text-white'
+                    ? 'max-w-[85%] rounded-lg px-3 py-2 text-sm bg-sidebar text-sidebar-texto'
                     : 'max-w-[85%] rounded-lg px-3 py-2 text-sm bg-white border text-gray-800'
                 }
-                style={m.rol === 'user' ? { backgroundColor: '#074B91' } : undefined}
               >
                 {m.contenido || (enviando && i === mensajes.length - 1 ? '…' : '')}
               </div>
@@ -160,8 +159,7 @@ export function DrawerSoporte() {
             <button
               onClick={enviar}
               disabled={enviando || !texto.trim() || !idConversacion}
-              className="px-3 rounded-lg text-white disabled:opacity-50"
-              style={{ backgroundColor: '#074B91' }}
+              className="px-3 rounded-lg bg-sidebar text-sidebar-texto disabled:opacity-50"
               aria-label="Enviar"
             >
               <Send size={18} />
