@@ -343,11 +343,44 @@ export default function PaginaUbicacionesDocs() {
   }
 
   const toggleHabilitada = async (u: UbicacionDoc) => {
+    const nuevoEstado = !u.ubicacion_habilitada
     try {
       await ubicacionesDocsApi.actualizar(u.codigo_ubicacion, {
-        ubicacion_habilitada: !u.ubicacion_habilitada,
+        ubicacion_habilitada: nuevoEstado,
       })
-      cargar()
+      // Actualizar en memoria sin colapsar el árbol: propagar a todos los
+      // descendientes ya cargados (el backend ya los inhabilitó en BD).
+      if (!nuevoEstado) {
+        // Al inhabilitar: marcar la ubicación y todos sus descendientes cargados.
+        setUbicaciones((prev) => {
+          // Recopilar todos los descendientes del nodo usando el árbol en memoria.
+          const descendientes = new Set<string>()
+          const queue = [u.codigo_ubicacion]
+          while (queue.length > 0) {
+            const cur = queue.shift()!
+            for (const n of prev) {
+              if (n.codigo_ubicacion_superior === cur) {
+                descendientes.add(n.codigo_ubicacion)
+                queue.push(n.codigo_ubicacion)
+              }
+            }
+          }
+          return prev.map((n) =>
+            n.codigo_ubicacion === u.codigo_ubicacion || descendientes.has(n.codigo_ubicacion)
+              ? { ...n, ubicacion_habilitada: false }
+              : n
+          )
+        })
+      } else {
+        // Al habilitar: solo actualizar el nodo mismo (no propaga en cascada).
+        setUbicaciones((prev) =>
+          prev.map((n) =>
+            n.codigo_ubicacion === u.codigo_ubicacion
+              ? { ...n, ubicacion_habilitada: true }
+              : n
+          )
+        )
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
     }
