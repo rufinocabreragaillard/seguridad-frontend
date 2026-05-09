@@ -501,10 +501,13 @@ export default function PaginaUbicacionesDocs() {
           const padreDe = new Map<string, string | null>(
             todas.map((u) => [u.codigo_ubicacion, u.codigo_ubicacion_superior || null])
           )
+          const nivelDe = new Map<string, number>(
+            todas.map((u) => [u.codigo_ubicacion, u.nivel ?? 99])
+          )
           for (const cod of nuevosCodigos) {
             let p = padreDe.get(cod) ?? null
             while (p) {
-              aExpandir.add(p)
+              if ((nivelDe.get(p) ?? 99) <= 1) aExpandir.add(p)
               p = padreDe.get(p) ?? null
             }
           }
@@ -833,8 +836,10 @@ export default function PaginaUbicacionesDocs() {
       u.codigo_ubicacion.toLowerCase().includes(q) ||
       (u.url || '').toLowerCase().includes(q)
     )
+    const inhabilitada = !u.ubicacion_habilitada
     const rowBg = coincide
       ? 'bg-yellow-100 hover:bg-yellow-200'
+      : inhabilitada ? 'bg-red-50 hover:bg-red-100'
       : esArea ? 'bg-blue-50 hover:bg-blue-100' : 'bg-amber-50 hover:bg-amber-100'
     const folderColor = esArea ? 'text-blue-500' : 'text-amber-500'
 
@@ -870,7 +875,7 @@ export default function PaginaUbicacionesDocs() {
             {u.tipo_ubicacion}
           </Insignia>
 
-          <Insignia variante={u.ubicacion_habilitada ? 'exito' : 'advertencia'}>
+          <Insignia variante={u.ubicacion_habilitada ? 'exito' : 'error'}>
             {u.ubicacion_habilitada ? t('habilitada') : t('inhabilitada')}
           </Insignia>
 
