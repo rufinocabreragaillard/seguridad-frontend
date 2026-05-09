@@ -234,8 +234,19 @@ export function Sidebar() {
         )}
       </nav>
 
-      {/* Pie */}
-      <div className="px-2 py-4 border-t border-sidebar-texto/40" />
+      {/* Pie con versión */}
+      <div className="px-2 py-3 border-t border-sidebar-texto/40 text-center">
+        <span
+          className="text-[10px] text-sidebar-texto/60 select-none"
+          title={
+            process.env.NEXT_PUBLIC_GIT_SHA
+              ? `commit ${process.env.NEXT_PUBLIC_GIT_SHA.slice(0, 7)}`
+              : undefined
+          }
+        >
+          {colapsado ? `v${process.env.NEXT_PUBLIC_VERSION}` : `Server LM v${process.env.NEXT_PUBLIC_VERSION}`}
+        </span>
+      </div>
     </aside>
     {/* Tooltip portal — fuera del aside para escapar del overflow */}
     {tooltip && <TooltipPortal texto={tooltip.texto} rect={tooltip.rect} />}

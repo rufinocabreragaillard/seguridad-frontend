@@ -1,9 +1,16 @@
 import type { NextConfig } from "next";
 import createNextIntlPlugin from "next-intl/plugin";
+import pkg from "./package.json";
 
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig & { eslint?: { ignoreDuringBuilds?: boolean } } = {
+  // Versión y commit visibles en cliente vía process.env.NEXT_PUBLIC_*.
+  // VERCEL_GIT_COMMIT_SHA es inyectado automáticamente por Vercel en build.
+  env: {
+    NEXT_PUBLIC_VERSION: pkg.version,
+    NEXT_PUBLIC_GIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA || "",
+  },
   typescript: {
     // Permite que el build pase aunque haya errores de tipos
     ignoreBuildErrors: true,
