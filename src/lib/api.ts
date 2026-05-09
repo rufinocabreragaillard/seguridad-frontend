@@ -1364,6 +1364,22 @@ export const colaEstadosDocsApi = {
     api.get<ColaEstadoDoc[]>(`/cola-estados-docs/por-documento/${codigoDocumento}`).then((r) => r.data),
   porIds: (ids: number[]) =>
     api.get<ColaEstadoDoc[]>('/cola-estados-docs/por-ids', { params: { ids: ids.join(',') } }).then((r) => r.data),
+  resumenPipeline: (ventanaSeg = 120) =>
+    api.get<ResumenPipeline>('/cola-estados-docs/resumen-pipeline', { params: { ventana_seg: ventanaSeg } }).then((r) => r.data),
+}
+
+export interface ResumenFase {
+  pendiente: number
+  en_proceso: number
+  completado: number
+  error: number
+  workers_activos: number
+  velocidad_docs_por_min: number
+}
+
+export interface ResumenPipeline {
+  por_destino: Record<string, ResumenFase>
+  ventana_velocidad_seg: number
 }
 
 // ─── SQL Ejecutados ─────────────────────────────────────────────────────────

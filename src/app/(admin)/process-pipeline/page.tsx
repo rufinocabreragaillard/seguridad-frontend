@@ -29,6 +29,7 @@ import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import type { UbicacionDoc, Documento } from '@/lib/tipos'
+import type { ResumenPipeline } from '@/lib/api'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
@@ -400,6 +401,10 @@ export default function PaginaCargaDocsUsuario() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const resolveColaRef = useRef<(() => void) | null>(null)
 
+  // Resumen pipeline (polling backend) — desglose por fase + workers + velocidad
+  const [resumenPipeline, setResumenPipeline] = useState<ResumenPipeline | null>(null)
+  const resumenPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   const handleColaChange = useCallback(() => {
     if (resolveColaRef.current) { resolveColaRef.current(); resolveColaRef.current = null }
   }, [])
@@ -411,6 +416,22 @@ export default function PaginaCargaDocsUsuario() {
     } else { if (timerRef.current) clearInterval(timerRef.current) }
     return () => { if (timerRef.current) clearInterval(timerRef.current) }
   }, [ejecutando, tiempoInicio])
+
+  // Polling del resumen del pipeline mientras se está ejecutando
+  useEffect(() => {
+    const cargar = () => {
+      colaEstadosDocsApi.resumenPipeline(120).then(setResumenPipeline).catch(() => { /* ignorar */ })
+    }
+    if (ejecutando) {
+      cargar()
+      resumenPollRef.current = setInterval(cargar, 2500)
+    } else {
+      // Una carga al montar/cuando deja de ejecutar para tener números frescos
+      cargar()
+      if (resumenPollRef.current) clearInterval(resumenPollRef.current)
+    }
+    return () => { if (resumenPollRef.current) clearInterval(resumenPollRef.current) }
+  }, [ejecutando, grupoActivo])
 
   const cargarConteos = useCallback(async () => {
     try {
@@ -708,7 +729,7 @@ export default function PaginaCargaDocsUsuario() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docsListaPagina, todosListos, ubicacionDocSel])
 
-  // Barra de progreso individual numerada — etiqueta solo "Paso N" y conteo
+  // Barra de progreso individual numerada — etiqueta "Paso N", conteo + desglose backend
   const BarraPasoNumerada = ({ pasoKey, numero, color }: { pasoKey: string; numero: number; color: string }) => {
     const prog = progresos[pasoKey]
     const estado = prog?.estado ?? 'esperando'
@@ -718,6 +739,12 @@ export default function PaginaCargaDocsUsuario() {
     const estaActivo = estado === 'activo'
     const estaListo = estado === 'listo'
     const estaError = estado === 'error'
+
+    // Desglose backend: solo para pasos que mapean a un estado destino consultable
+    const pasoCfg = PASOS.find((p) => p.key === pasoKey)
+    const estadoDestino = pasoCfg?.estadoDestino
+    const fase = estadoDestino ? resumenPipeline?.por_destino?.[estadoDestino] : undefined
+
     return (
       <div className="flex flex-col gap-1 flex-1 min-w-0">
         <div className="flex items-center justify-between text-xs">
@@ -738,8 +765,52 @@ export default function PaginaCargaDocsUsuario() {
             }}
           />
         </div>
+        {fase && (fase.en_proceso > 0 || fase.pendiente > 0 || fase.completado > 0 || fase.error > 0) && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] tabular-nums leading-tight pt-0.5">
+            {fase.en_proceso > 0 && (
+              <span className="text-amber-700" title="En proceso (workers activos)">
+                ▶ {fase.en_proceso}
+                {fase.workers_activos > 0 && <span className="text-texto-muted"> ({fase.workers_activos}w)</span>}
+              </span>
+            )}
+            {fase.pendiente > 0 && (
+              <span className="text-texto-muted" title="Esperando">⧗ {fase.pendiente}</span>
+            )}
+            {fase.completado > 0 && (
+              <span className="text-green-700" title="Completados">✓ {fase.completado}</span>
+            )}
+            {fase.error > 0 && (
+              <span className="text-red-600" title="Errores">✕ {fase.error}</span>
+            )}
+            {fase.velocidad_docs_por_min > 0 && (
+              <span className="text-texto-muted" title="Velocidad reciente (últimos 2 min)">
+                · {fase.velocidad_docs_por_min}/min
+              </span>
+            )}
+          </div>
+        )}
       </div>
     )
+  }
+
+  // ETA global y velocidad agregada del pipeline
+  const etaInfo = (() => {
+    if (!resumenPipeline) return null
+    const fases = Object.values(resumenPipeline.por_destino)
+    const totalEnCurso = fases.reduce((acc, f) => acc + f.pendiente + f.en_proceso, 0)
+    const velocidadMin = fases.reduce((acc, f) => acc + f.velocidad_docs_por_min, 0)
+    if (totalEnCurso === 0) return null
+    const minutosEta = velocidadMin > 0 ? totalEnCurso / velocidadMin : null
+    return { totalEnCurso, velocidadMin: Math.round(velocidadMin * 10) / 10, minutosEta }
+  })()
+
+  const formatEta = (min: number | null): string => {
+    if (min === null) return '—'
+    if (min < 1) return '<1 min'
+    if (min < 60) return `~${Math.ceil(min)} min`
+    const h = Math.floor(min / 60)
+    const m = Math.round(min % 60)
+    return m > 0 ? `~${h} h ${m} min` : `~${h} h`
   }
 
   // ── Círculo de etapa ──────────────────────────────────────────────────────
@@ -843,6 +914,11 @@ export default function PaginaCargaDocsUsuario() {
             {(ejecutando || progresos[PASO_INDEXAR]?.estado === 'listo') && (
               <p className="text-center text-xs text-texto-muted">
                 {ejecutando ? `Procesando · ${formatTiempo(tiempoTranscurrido)}` : `Tiempo: ${formatTiempo(tiempoTranscurrido)}`}
+              </p>
+            )}
+            {etaInfo && (
+              <p className="text-center text-xs text-texto-muted tabular-nums">
+                {etaInfo.totalEnCurso.toLocaleString()} docs en pipeline · {etaInfo.velocidadMin}/min · ETA {formatEta(etaInfo.minutosEta)}
               </p>
             )}
             <div className="flex gap-3">
