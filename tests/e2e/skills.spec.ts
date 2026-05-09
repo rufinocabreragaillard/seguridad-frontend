@@ -32,8 +32,8 @@ test.describe('Habilidades del Sistema (/skills)', () => {
     const filas = page.locator('tbody tr')
     const count = await filas.count()
     if (count === 0) { test.skip() }
-    // Doble clic en la celda de código (2ª celda) evita el botón chevron (1ª celda)
-    await filas.first().locator('td').nth(1).dblclick()
+    // Doble clic en la celda de código (1ª celda)
+    await filas.first().locator('td').first().dblclick()
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 })
     await expect(page.locator('[role="dialog"]')).toContainText('Editar Habilidad')
   })
