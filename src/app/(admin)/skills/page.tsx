@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
-import { Zap, Plus, Pencil, ChevronDown, ChevronUp } from 'lucide-react'
+import { Zap, Plus, Pencil } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
@@ -45,10 +45,10 @@ const FORMATOS: { value: FormatoSalida; label: string }[] = [
 ]
 
 const varianteAplicaA = (v: AplicaA) =>
-  v === 'DOCUMENTO' ? 'primario' : v === 'ESPACIO' ? 'exito' : 'advertencia'
+  v === 'DOCUMENTO' ? 'exito' : v === 'ESPACIO' ? 'primario' : 'advertencia'
 
 const varianteTipoHab = (v: TipoHabilidad) =>
-  v === 'LLM' ? 'neutro' : v === 'HEURISTICA' ? 'advertencia' : 'primario'
+  v === 'LLM' ? 'neutro' : v === 'HEURISTICA' ? 'advertencia' : 'error'
 
 const varianteSalida = (s: SalidaDestino) =>
   s === 'DOC_COLUMNA' ? 'exito' : s === 'CHAT_INLINE' ? 'neutro' : s === 'CARACTERISTICA' ? 'advertencia' : 'primario'
@@ -88,7 +88,6 @@ export default function PaginaHabilidades() {
   const [tabModal,     setTabModal]     = useState<TabModal>('datos')
   const [guardando,    setGuardando]    = useState(false)
   const [error,        setError]        = useState('')
-  const [expandida,    setExpandida]    = useState<string | null>(null)
 
   const cargar = async () => {
     setCargando(true)
@@ -116,6 +115,11 @@ export default function PaginaHabilidades() {
       const matchAplicaA = !filtroAplicaA || h.aplica_a === filtroAplicaA
       const matchTipo    = !filtroTipo    || h.tipo_habilidad === filtroTipo
       return matchQ && matchAplicaA && matchTipo
+    }).sort((a, b) => {
+      if (a.tipo_habilidad !== b.tipo_habilidad) {
+        return a.tipo_habilidad.localeCompare(b.tipo_habilidad)
+      }
+      return a.nombre_habilidad.localeCompare(b.nombre_habilidad)
     }),
     [habilidades, busqueda, filtroAplicaA, filtroTipo],
   )
@@ -199,7 +203,7 @@ export default function PaginaHabilidades() {
         : 'border-transparent text-texto-muted hover:text-texto'
     }`
 
-  const totalCols = esSuperAdmin ? 8 : 7
+  const totalCols = esSuperAdmin ? 7 : 6
 
   return (
     <div>
@@ -250,7 +254,6 @@ export default function PaginaHabilidades() {
       <Tabla>
         <TablaCabecera>
           <tr>
-            <TablaTh className="w-8" />
             <TablaTh>Código</TablaTh>
             <TablaTh>Nombre</TablaTh>
             <TablaTh>Tipo</TablaTh>
@@ -275,83 +278,47 @@ export default function PaginaHabilidades() {
             </TablaFila>
           ) : (
             filtradas.map((h) => (
-              <>
-                <TablaFila
-                  key={h.codigo_habilidad}
-                  onDoubleClick={() => abrirEditar(h)}
-                >
-                  <TablaTd>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setExpandida(expandida === h.codigo_habilidad ? null : h.codigo_habilidad)
-                      }}
-                      className="p-1 rounded hover:bg-fondo text-texto-muted"
-                      title={expandida === h.codigo_habilidad ? 'Colapsar' : 'Ver prompt'}
-                    >
-                      {expandida === h.codigo_habilidad ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                    </button>
-                  </TablaTd>
-                  <TablaTd className="text-xs text-texto-muted font-mono">{h.codigo_habilidad}</TablaTd>
-                  <TablaTd>
-                    <div className="flex items-center gap-2">
-                      <Zap size={14} className="text-primario shrink-0" />
-                      <span className="font-medium text-sm">{h.nombre_habilidad}</span>
-                    </div>
-                    {h.descripcion && (
-                      <p className="text-xs text-texto-muted mt-0.5 max-w-xs truncate">{h.descripcion}</p>
-                    )}
-                  </TablaTd>
-                  <TablaTd>
-                    <Insignia variante={varianteTipoHab(h.tipo_habilidad)}>{h.tipo_habilidad}</Insignia>
-                  </TablaTd>
-                  <TablaTd>
-                    <Insignia variante={varianteAplicaA(h.aplica_a)}>{h.aplica_a}</Insignia>
-                  </TablaTd>
-                  <TablaTd>
-                    <Insignia variante={varianteSalida(h.salida_destino)}>{h.salida_destino}</Insignia>
-                    {h.salida_columna && (
-                      <span className="ml-1 text-xs text-texto-muted">({h.salida_columna})</span>
-                    )}
-                  </TablaTd>
-                  <TablaTd className="text-xs text-texto-muted">{modeloNombre(h.id_modelo)}</TablaTd>
-                  {esSuperAdmin && (
-                    <TablaTd className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <button
-                          onClick={() => abrirEditar(h)}
-                          className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
-                          title="Editar"
-                        >
-                          <Pencil size={14} />
-                        </button>
-                      </div>
-                    </TablaTd>
+              <TablaFila
+                key={h.codigo_habilidad}
+                onDoubleClick={() => abrirEditar(h)}
+              >
+                <TablaTd className="text-xs text-texto-muted font-mono">{h.codigo_habilidad}</TablaTd>
+                <TablaTd>
+                  <div className="flex items-center gap-2">
+                    <Zap size={14} className="text-primario shrink-0" />
+                    <span className="font-medium text-sm">{h.nombre_habilidad}</span>
+                  </div>
+                  {h.descripcion && (
+                    <p className="text-xs text-texto-muted mt-0.5 max-w-xs truncate">{h.descripcion}</p>
                   )}
-                </TablaFila>
-                {expandida === h.codigo_habilidad && (
-                  <TablaFila key={`${h.codigo_habilidad}-expand`}>
-                    <TablaTd colSpan={totalCols as never} className="bg-fondo px-6 py-3">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div>
-                          <p className="font-semibold text-xs uppercase tracking-wide text-texto-muted mb-1">Prompt</p>
-                          <pre className="whitespace-pre-wrap text-xs text-texto bg-white border border-borde rounded p-2 max-h-40 overflow-y-auto">
-                            {h.prompt}
-                          </pre>
-                        </div>
-                        {h.system_prompt && (
-                          <div>
-                            <p className="font-semibold text-xs uppercase tracking-wide text-texto-muted mb-1">System Prompt</p>
-                            <pre className="whitespace-pre-wrap text-xs text-texto bg-white border border-borde rounded p-2 max-h-40 overflow-y-auto">
-                              {h.system_prompt}
-                            </pre>
-                          </div>
-                        )}
-                      </div>
-                    </TablaTd>
-                  </TablaFila>
+                </TablaTd>
+                <TablaTd>
+                  <Insignia variante={varianteTipoHab(h.tipo_habilidad)}>{h.tipo_habilidad}</Insignia>
+                </TablaTd>
+                <TablaTd>
+                  <Insignia variante={varianteAplicaA(h.aplica_a)}>{h.aplica_a}</Insignia>
+                </TablaTd>
+                <TablaTd>
+                  <Insignia variante={varianteSalida(h.salida_destino)}>{h.salida_destino}</Insignia>
+                  {h.salida_columna && (
+                    <span className="ml-1 text-xs text-texto-muted">({h.salida_columna})</span>
+                  )}
+                </TablaTd>
+                <TablaTd className="text-xs text-texto-muted">{modeloNombre(h.id_modelo)}</TablaTd>
+                {esSuperAdmin && (
+                  <TablaTd className="text-right">
+                    <div className="flex justify-end gap-1">
+                      <button
+                        onClick={() => abrirEditar(h)}
+                        className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"
+                        title="Editar"
+                      >
+                        <Pencil size={14} />
+                      </button>
+                    </div>
+                  </TablaTd>
                 )}
-              </>
+              </TablaFila>
             ))
           )}
         </TablaCuerpo>
