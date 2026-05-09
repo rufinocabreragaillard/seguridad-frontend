@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
-import { BarraHerramientas } from '@/components/ui/barra-herramientas'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaTh, TablaTd, TablaFila } from '@/components/ui/tabla'
 import { Insignia } from '@/components/ui/insignia'
 import { Boton } from '@/components/ui/boton'
@@ -209,22 +208,19 @@ export default function PaginaHabilidades() {
         <p className="text-sm text-texto-muted mt-1">{funcion.ayuda}</p>
       )}
 
-      <BarraHerramientas
-        busqueda={busqueda}
-        onBusqueda={setBusqueda}
-        placeholder="Buscar habilidad…"
-        acciones={
-          esSuperAdmin ? (
-            <Boton variante="primario" tamano="sm" onClick={abrirCrear}>
-              <Plus size={14} className="mr-1" /> Nueva habilidad
-            </Boton>
-          ) : undefined
-        }
-      >
+      <div className="flex flex-wrap items-center gap-3 mb-4">
+        <div className="max-w-xs flex-1">
+          <Input
+            placeholder="Buscar habilidad…"
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+          />
+        </div>
         <select
           value={filtroAplicaA}
           onChange={(e) => setFiltroAplicaA(e.target.value as AplicaA | '')}
           className={selectCls}
+          style={{ width: 'auto' }}
         >
           <option value="">Todos (aplica a)</option>
           {APLICA_A_OPTS.map((t) => (
@@ -235,13 +231,21 @@ export default function PaginaHabilidades() {
           value={filtroTipo}
           onChange={(e) => setFiltroTipo(e.target.value as TipoHabilidad | '')}
           className={selectCls}
+          style={{ width: 'auto' }}
         >
           <option value="">Todos (tipo)</option>
           {TIPO_HABILIDAD_OPTS.map((t) => (
             <option key={t.value} value={t.value}>{t.value}</option>
           ))}
         </select>
-      </BarraHerramientas>
+        {esSuperAdmin && (
+          <div className="ml-auto">
+            <Boton variante="primario" tamano="sm" onClick={abrirCrear}>
+              <Plus size={14} className="mr-1" /> Nueva habilidad
+            </Boton>
+          </div>
+        )}
+      </div>
 
       <Tabla>
         <TablaCabecera>
