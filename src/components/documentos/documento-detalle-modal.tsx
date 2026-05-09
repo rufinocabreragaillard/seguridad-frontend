@@ -337,12 +337,16 @@ export function DocumentoDetalleModal({
                     <div className="flex flex-col gap-1">
                       {cc.caracteristicas.map((c) => {
                         const tipoNombre = c.tipos_caract_docs?.nombre_tipo_docs || c.codigo_tipo_docs
-                        const valor = c.valor_texto_docs || c.valor_numerico_docs || c.valor_fecha_docs
-                        if (!valor) return null
+                        const partes: string[] = []
+                        if (c.valor_texto_docs) partes.push(c.valor_texto_docs)
+                        if (c.valor_numerico_docs != null) partes.push(`#${c.valor_numerico_docs}`)
+                        if (c.valor_fecha_docs) partes.push(c.valor_fecha_docs)
+                        if (c.comentarios) partes.push(`— ${c.comentarios}`)
+                        if (partes.length === 0) return null
                         return (
                           <div key={c.id_caracteristica_docs} className="text-sm flex items-start gap-2">
                             <span className="text-texto-muted shrink-0">{tipoNombre}:</span>
-                            <span className="text-texto">{valor}</span>
+                            <span className="text-texto">{partes.join(' · ')}</span>
                           </div>
                         )
                       })}
