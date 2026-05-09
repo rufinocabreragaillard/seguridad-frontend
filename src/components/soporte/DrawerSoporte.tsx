@@ -47,7 +47,7 @@ export function DrawerSoporte() {
             {
               rol: 'assistant',
               contenido:
-                '¡Hola! Soy el asistente de soporte de Server LM. ¿En qué te puedo ayudar? Puedo revisar tu configuración, buscar en los manuales o registrar una solicitud para el equipo.',
+                '¡Hola! Soy el asistente de soporte de Server LM. ¿En qué te puedo ayudar? Puedo revisar tu configuración o registrar una solicitud para el equipo.',
             },
           ])
         }
