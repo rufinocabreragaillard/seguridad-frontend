@@ -622,6 +622,7 @@ export interface Documento {
   nombre_documento: string
   ubicacion_documento?: string | null
   resumen_documento?: string | null
+  md?: string | null
   fecha_modificacion?: string | null
   tamano_kb?: number | null
   codigo_estado_doc?: string | null

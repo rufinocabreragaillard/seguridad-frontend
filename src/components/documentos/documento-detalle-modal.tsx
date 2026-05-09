@@ -11,7 +11,7 @@ import { documentosApi, colaEstadosDocsApi } from '@/lib/api'
 import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import type { Documento, ColaEstadoDoc, CategoriaConCaracteristicasDocs } from '@/lib/tipos'
 
-type TabDetalle = 'datos' | 'resumen' | 'caracteristicas' | 'texto' | 'chunks'
+type TabDetalle = 'datos' | 'resumen' | 'md' | 'caracteristicas' | 'texto' | 'chunks'
 
 const ESTADOS_CON_CHUNKS = new Set(['CHUNKEADO', 'VECTORIZADO'])
 const ESTADOS_CON_TEXTO = new Set(['METADATA', 'ESCANEADO', 'CHUNKEADO', 'VECTORIZADO'])
@@ -139,6 +139,12 @@ export function DocumentoDetalleModal({
             <button onClick={() => setTab('resumen')}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'resumen' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
               Resumen
+            </button>
+          )}
+          {documento.md && (
+            <button onClick={() => setTab('md')}
+              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'md' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+              MD
             </button>
           )}
           <button onClick={() => setTab('caracteristicas')}
@@ -290,6 +296,23 @@ export function DocumentoDetalleModal({
               <div className="rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto whitespace-pre-wrap max-h-[60vh] overflow-y-auto">{documento.resumen_documento}</div>
             ) : (
               <p className="text-sm text-texto-muted py-4 text-center">Sin resumen registrado.</p>
+            )}
+          </div>
+        )}
+
+        {/* Tab MD — contenido de documentos.md (contexto que se embebe en los vectores) */}
+        {tab === 'md' && (
+          <div className="flex flex-col gap-3">
+            {documento.md ? (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-texto-muted">Contexto que se embebe junto a cada chunk en los vectores</p>
+                  <BotonCopiar texto={documento.md} />
+                </div>
+                <pre className="rounded-lg border border-borde bg-fondo px-3 py-3 text-xs text-texto whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono leading-relaxed">{documento.md}</pre>
+              </div>
+            ) : (
+              <p className="text-sm text-texto-muted py-4 text-center">Sin MD generado aún. Se genera al ejecutar CHUNKEAR.</p>
             )}
           </div>
         )}
