@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test'
 
-test.describe.serial('Habilidades del Sistema (/skills)', () => {
+test.describe('Habilidades del Sistema (/skills)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
     await page.getByLabel(/email|correo/i).fill('rufinocabreragaillard@gmail.com')
