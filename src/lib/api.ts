@@ -1736,7 +1736,7 @@ export const espaciosTrabajoApi = {
 
 // ─── Habilidades ──────────────────────────────────────────────────────────────
 export const habilidadesApi = {
-  listar: (params?: { tipo_habilidad?: string }) =>
+  listar: (params?: { aplica_a?: string }) =>
     api.get<Habilidad[]>('/habilidades', { params }).then((r) => r.data),
   obtener: (codigo: string) =>
     api.get<Habilidad>(`/habilidades/${codigo}`).then((r) => r.data),

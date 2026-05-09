@@ -12,13 +12,13 @@ import { Tabla, TablaCabecera, TablaCuerpo, TablaTh, TablaTd, TablaFila } from '
 import { Insignia } from '@/components/ui/insignia'
 import { Boton } from '@/components/ui/boton'
 import { habilidadesApi, registroLLMApi } from '@/lib/api'
-import type { Habilidad, TipoHabilidad, SalidaDestino, FormatoSalida } from '@/lib/tipos'
+import type { Habilidad, AplicaA, SalidaDestino, FormatoSalida } from '@/lib/tipos'
 import type { RegistroLLM } from '@/lib/tipos'
 import { useAuth } from '@/context/AuthContext'
 
 type TabModal = 'datos' | 'prompts'
 
-const TIPOS_HABILIDAD: { value: TipoHabilidad; label: string }[] = [
+const TIPOS_HABILIDAD: { value: AplicaA; label: string }[] = [
   { value: 'DOCUMENTO', label: 'DOCUMENTO — sobre un doc' },
   { value: 'CONJUNTO_DOCUMENTOS', label: 'CONJUNTO_DOCUMENTOS — sobre varios docs' },
   { value: 'ESPACIO', label: 'ESPACIO — sobre un espacio completo' },
@@ -39,7 +39,7 @@ const FORMATOS: { value: FormatoSalida; label: string }[] = [
   { value: 'JSON', label: 'JSON' },
 ]
 
-const varianteTipo = (t: TipoHabilidad) =>
+const varianteTipo = (t: AplicaA) =>
   t === 'DOCUMENTO' ? 'primario' : t === 'ESPACIO' ? 'exito' : 'advertencia'
 
 const varianteSalida = (s: SalidaDestino) =>
@@ -50,7 +50,7 @@ const FORM_VACIO = {
   nombre_habilidad: '',
   alias_habilidad: '',
   descripcion: '',
-  tipo_habilidad: 'DOCUMENTO' as TipoHabilidad,
+  aplica_a: 'DOCUMENTO' as AplicaA,
   prompt: '',
   system_prompt: '',
   id_modelo: '' as string | number,
@@ -67,7 +67,7 @@ export default function PaginaHabilidades() {
   const [modelos, setModelos] = useState<RegistroLLM[]>([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
-  const [filtroTipo, setFiltroTipo] = useState<TipoHabilidad | ''>('')
+  const [filtroTipo, setFiltroTipo] = useState<AplicaA | ''>('')
 
   const [modalAbierto, setModalAbierto] = useState(false)
   const [editando, setEditando] = useState<Habilidad | null>(null)
@@ -100,7 +100,7 @@ export default function PaginaHabilidades() {
       const matchQ = !q || h.nombre_habilidad.toLowerCase().includes(q) ||
         h.codigo_habilidad.toLowerCase().includes(q) ||
         (h.descripcion || '').toLowerCase().includes(q)
-      const matchTipo = !filtroTipo || h.tipo_habilidad === filtroTipo
+      const matchTipo = !filtroTipo || h.aplica_a === filtroTipo
       return matchQ && matchTipo
     }),
     [habilidades, busqueda, filtroTipo],
@@ -121,7 +121,7 @@ export default function PaginaHabilidades() {
       nombre_habilidad: h.nombre_habilidad,
       alias_habilidad: h.alias_habilidad || '',
       descripcion: h.descripcion || '',
-      tipo_habilidad: h.tipo_habilidad,
+      aplica_a: h.aplica_a,
       prompt: h.prompt,
       system_prompt: h.system_prompt || '',
       id_modelo: h.id_modelo ?? '',
@@ -147,7 +147,7 @@ export default function PaginaHabilidades() {
         nombre_habilidad: form.nombre_habilidad.trim(),
         alias_habilidad: form.alias_habilidad.trim() || undefined,
         descripcion: form.descripcion.trim() || undefined,
-        tipo_habilidad: form.tipo_habilidad,
+        aplica_a: form.aplica_a,
         prompt: form.prompt.trim(),
         system_prompt: form.system_prompt.trim() || undefined,
         id_modelo: form.id_modelo !== '' ? Number(form.id_modelo) : undefined,
@@ -199,7 +199,7 @@ export default function PaginaHabilidades() {
       >
         <select
           value={filtroTipo}
-          onChange={(e) => setFiltroTipo(e.target.value as TipoHabilidad | '')}
+          onChange={(e) => setFiltroTipo(e.target.value as AplicaA | '')}
           className="rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto"
         >
           <option value="">Todos los tipos</option>
@@ -258,7 +258,7 @@ export default function PaginaHabilidades() {
                   </TablaTd>
                   <TablaTd className="text-xs text-texto-muted font-mono">{h.codigo_habilidad}</TablaTd>
                   <TablaTd>
-                    <Insignia variante={varianteTipo(h.tipo_habilidad)}>{h.tipo_habilidad}</Insignia>
+                    <Insignia variante={varianteTipo(h.aplica_a)}>{h.aplica_a}</Insignia>
                   </TablaTd>
                   <TablaTd>
                     <Insignia variante={varianteSalida(h.salida_destino)}>{h.salida_destino}</Insignia>
@@ -362,8 +362,8 @@ export default function PaginaHabilidades() {
               <div>
                 <label className="block text-sm font-medium text-texto mb-1">Tipo</label>
                 <select
-                  value={form.tipo_habilidad}
-                  onChange={(e) => setForm({ ...form, tipo_habilidad: e.target.value as TipoHabilidad })}
+                  value={form.aplica_a}
+                  onChange={(e) => setForm({ ...form, aplica_a: e.target.value as AplicaA })}
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto"
                 >
                   {TIPOS_HABILIDAD.map((t) => (
