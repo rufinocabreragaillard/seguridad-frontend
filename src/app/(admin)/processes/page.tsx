@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -24,6 +24,7 @@ import { useCrudPage } from '@/hooks/useCrudPage'
 import { useAuth } from '@/context/AuthContext'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { SelectorBuscable } from '@/components/ui/selector-buscable'
+import { Trash2, CheckSquare, Square, Calendar } from 'lucide-react'
 
 type Tab = 'datos' | 'detalle'
 
@@ -62,6 +63,15 @@ export default function PaginaProcesoInstancias() {
   const [estadosProc, setEstadosProc] = useState<EstadoProceso[]>([])
   const [usuarios, setUsuarios] = useState<Usuario[]>([])
   const [tab, setTab] = useState<Tab>('datos')
+
+  // ── Selección masiva ───────────────────────────────────────────────────────
+  const [seleccionados, setSeleccionados] = useState<Set<string>>(new Set())
+  const [modalBulk, setModalBulk] = useState(false)
+  const [bulkFechaDesde, setBulkFechaDesde] = useState('')
+  const [bulkFechaHasta, setBulkFechaHasta] = useState('')
+  const [bulkEliminando, setBulkEliminando] = useState(false)
+  const [bulkError, setBulkError] = useState('')
+  const [bulkModo, setBulkModo] = useState<'seleccion' | 'fecha'>('seleccion')
 
   useEffect(() => {
     procesosDatosBasicosApi.listarCategorias().then(setCategorias).catch(() => setCategorias([]))
@@ -130,6 +140,67 @@ export default function PaginaProcesoInstancias() {
   const abrirNuevo = () => { setTab('datos'); crud.abrirNuevo() }
   const abrirEditar = (p: ProcesoInstancia) => { setTab('datos'); crud.abrirEditar(p) }
 
+  // ── Selección masiva helpers ───────────────────────────────────────────────
+  const toggleSeleccion = useCallback((id: string) => {
+    setSeleccionados(prev => {
+      const s = new Set(prev)
+      if (s.has(id)) s.delete(id); else s.add(id)
+      return s
+    })
+  }, [])
+
+  const todosSeleccionados = crud.filtrados.length > 0 && seleccionados.size === crud.filtrados.length
+  const algunoSeleccionado = seleccionados.size > 0
+
+  const toggleTodos = () => {
+    if (todosSeleccionados) {
+      setSeleccionados(new Set())
+    } else {
+      setSeleccionados(new Set(crud.filtrados.map(p => p.codigo_proceso)))
+    }
+  }
+
+  const abrirModalBulk = (modo: 'seleccion' | 'fecha') => {
+    setBulkModo(modo)
+    setBulkFechaDesde('')
+    setBulkFechaHasta('')
+    setBulkError('')
+    setModalBulk(true)
+  }
+
+  const ejecutarBulk = async () => {
+    setBulkError('')
+    if (bulkModo === 'seleccion' && seleccionados.size === 0) {
+      setBulkError('No hay registros seleccionados.')
+      return
+    }
+    if (bulkModo === 'fecha' && !bulkFechaDesde && !bulkFechaHasta) {
+      setBulkError('Debe indicar al menos una fecha.')
+      return
+    }
+    setBulkEliminando(true)
+    try {
+      const params: { codigos_proceso?: string[]; fecha_inicio_desde?: string; fecha_inicio_hasta?: string } = {}
+      if (bulkModo === 'seleccion') {
+        params.codigos_proceso = Array.from(seleccionados)
+      } else {
+        if (bulkFechaDesde) params.fecha_inicio_desde = bulkFechaDesde
+        if (bulkFechaHasta) params.fecha_inicio_hasta = bulkFechaHasta + 'T23:59:59'
+      }
+      const res = await procesosInstanciasApi.eliminarBulk(params)
+      setModalBulk(false)
+      setSeleccionados(new Set())
+      crud.cargar()
+      // eslint-disable-next-line no-console
+      console.info(`Eliminados: ${res.eliminados} procesos`)
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'Error al eliminar'
+      setBulkError(msg)
+    } finally {
+      setBulkEliminando(false)
+    }
+  }
+
   // ── Opciones selectores ───────────────────────────────────────────────────
   const opcionesCategorias = [...categorias]
     .sort((a, b) => a.nombre_categoria_proceso.localeCompare(b.nombre_categoria_proceso))
@@ -152,7 +223,6 @@ export default function PaginaProcesoInstancias() {
     .sort((a, b) => a.nombre.localeCompare(b.nombre))
     .map((u) => ({ valor: u.codigo_usuario, etiqueta: u.nombre, hint: u.codigo_usuario }))
 
-  // Nombre de categoría para mostrar en tabla
   const nombreCategoria = (p: ProcesoInstancia) => {
     if (!p.codigo_categoria_proceso) return ''
     const cat = categorias.find((c) => c.codigo_categoria_proceso === p.codigo_categoria_proceso)
@@ -171,7 +241,6 @@ export default function PaginaProcesoInstancias() {
     return u ? u.nombre : codigo
   }
 
-  // Título del modal: "Editar Proceso: nombre - código" | "Nuevo proceso"
   const tituloModal = crud.editando
     ? `Editar Proceso: ${crud.editando.nombre_proceso ?? crud.editando.codigo_proceso} - ${crud.editando.codigo_proceso}`
     : 'Nuevo proceso'
@@ -205,8 +274,55 @@ export default function PaginaProcesoInstancias() {
         excelNombreArchivo="procesos-instancias"
       />
 
+      {/* Barra de acciones masivas */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <button
+          type="button"
+          onClick={toggleTodos}
+          className="flex items-center gap-1.5 text-sm text-texto-muted hover:text-texto transition-colors"
+          title={todosSeleccionados ? 'Deseleccionar todos' : 'Seleccionar todos'}
+        >
+          {todosSeleccionados
+            ? <CheckSquare size={16} className="text-primario" />
+            : <Square size={16} />}
+          {todosSeleccionados ? 'Deseleccionar todos' : 'Seleccionar todos'}
+        </button>
+
+        {algunoSeleccionado && (
+          <button
+            type="button"
+            onClick={() => abrirModalBulk('seleccion')}
+            className="flex items-center gap-1.5 text-sm text-white bg-error hover:bg-red-700 px-3 py-1.5 rounded-lg transition-colors"
+          >
+            <Trash2 size={14} />
+            Eliminar seleccionados ({seleccionados.size})
+          </button>
+        )}
+
+        <button
+          type="button"
+          onClick={() => abrirModalBulk('fecha')}
+          className="flex items-center gap-1.5 text-sm text-error border border-error hover:bg-red-50 px-3 py-1.5 rounded-lg transition-colors ml-auto"
+        >
+          <Calendar size={14} />
+          Eliminar por fecha
+        </button>
+      </div>
+
       <TablaCrud
         columnas={[
+          {
+            titulo: '',
+            render: (p: ProcesoInstancia) => (
+              <input
+                type="checkbox"
+                checked={seleccionados.has(p.codigo_proceso)}
+                onChange={() => toggleSeleccion(p.codigo_proceso)}
+                className="accent-primario cursor-pointer"
+                onClick={(e) => e.stopPropagation()}
+              />
+            ),
+          },
           columnaCodigo<ProcesoInstancia>('Código', (p) => p.codigo_proceso),
           {
             titulo: 'Categoría / Tipo',
@@ -287,10 +403,8 @@ export default function PaginaProcesoInstancias() {
             ))}
           </div>
 
-          {/* Contenedor altura fija para que el modal no cambie de tamaño al cambiar de tab */}
           <div className="min-h-[420px] flex flex-col">
 
-          {/* Tab Datos */}
           {tab === 'datos' && (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
@@ -365,7 +479,6 @@ export default function PaginaProcesoInstancias() {
             </div>
           )}
 
-          {/* Tab Detalle */}
           {tab === 'detalle' && (
             <div className="flex flex-col gap-4">
               <div className="grid grid-cols-2 gap-4">
@@ -406,7 +519,7 @@ export default function PaginaProcesoInstancias() {
             </div>
           )}
 
-          </div>{/* fin contenedor altura fija */}
+          </div>
 
           {crud.error && (
             <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
@@ -424,6 +537,7 @@ export default function PaginaProcesoInstancias() {
         </div>
       </Modal>
 
+      {/* Modal eliminación individual */}
       <ModalConfirmar
         abierto={!!crud.confirmacion}
         titulo="Eliminar proceso"
@@ -432,6 +546,77 @@ export default function PaginaProcesoInstancias() {
         alCerrar={() => crud.setConfirmacion(null)}
         cargando={crud.eliminando}
       />
+
+      {/* Modal eliminación masiva */}
+      <Modal
+        abierto={modalBulk}
+        alCerrar={() => setModalBulk(false)}
+        titulo={bulkModo === 'seleccion' ? `Eliminar ${seleccionados.size} procesos` : 'Eliminar procesos por fecha'}
+        className="max-w-md"
+      >
+        <div className="flex flex-col gap-4">
+          {bulkModo === 'seleccion' ? (
+            <p className="text-sm text-texto-muted">
+              Se eliminarán permanentemente <strong>{seleccionados.size}</strong> registro{seleccionados.size !== 1 ? 's' : ''} seleccionado{seleccionados.size !== 1 ? 's' : ''}.
+              Esta acción no se puede deshacer.
+            </p>
+          ) : (
+            <>
+              <p className="text-sm text-texto-muted">
+                Elimina todos los procesos cuya fecha de inicio esté dentro del rango indicado.
+                Deja vacío un campo para no limitar ese extremo.
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <Input
+                  etiqueta="Fecha desde"
+                  type="date"
+                  value={bulkFechaDesde}
+                  onChange={(e) => setBulkFechaDesde(e.target.value)}
+                />
+                <Input
+                  etiqueta="Fecha hasta"
+                  type="date"
+                  value={bulkFechaHasta}
+                  onChange={(e) => setBulkFechaHasta(e.target.value)}
+                />
+              </div>
+              <p className="text-xs text-error font-medium">
+                Esta acción no se puede deshacer. Se eliminarán todos los procesos del rango.
+              </p>
+            </>
+          )}
+
+          {bulkError && (
+            <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+              <p className="text-sm text-error">{bulkError}</p>
+            </div>
+          )}
+
+          <div className="flex justify-end gap-3 pt-2">
+            <button
+              type="button"
+              onClick={() => setModalBulk(false)}
+              disabled={bulkEliminando}
+              className="px-4 py-2 text-sm text-texto-muted hover:text-texto border border-borde rounded-lg transition-colors"
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              onClick={ejecutarBulk}
+              disabled={bulkEliminando}
+              className="flex items-center gap-2 px-4 py-2 text-sm text-white bg-error hover:bg-red-700 rounded-lg transition-colors disabled:opacity-60"
+            >
+              {bulkEliminando ? (
+                <span className="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full" />
+              ) : (
+                <Trash2 size={14} />
+              )}
+              {bulkEliminando ? 'Eliminando...' : 'Eliminar'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }

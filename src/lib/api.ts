@@ -890,6 +890,11 @@ export const procesosInstanciasApi = {
     comentarios_proceso: string
   }>) => api.patch<ProcesoInstancia>(`/procesos-instancias/${codigo}`, data).then((r) => r.data),
   eliminar: (codigo: string) => api.delete(`/procesos-instancias/${codigo}`),
+  eliminarBulk: (params: {
+    codigos_proceso?: string[]
+    fecha_inicio_desde?: string
+    fecha_inicio_hasta?: string
+  }) => api.post<{ eliminados: number }>('/procesos-instancias/eliminar-bulk', params).then((r) => r.data),
 }
 
 // ─── Procesos del Grupo ──────────────────────────────────────────────────────
