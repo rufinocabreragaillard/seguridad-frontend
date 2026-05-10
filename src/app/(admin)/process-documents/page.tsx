@@ -1037,9 +1037,12 @@ function PaginaProcesarDocumentosInterna() {
     })
     setCola(colaInicial)
 
-    // 3. (Fase 2) Ya no se dispara el worker desde acá. El worker corre en su
-    //    propio service Railway y reacciona al INSERT de /inicializar via
-    //    Supabase Realtime. Polling de respaldo cada 30 s en el worker.
+    // 3. Disparar procesamiento en el backend (BackgroundTask).
+    try {
+      await colaEstadosDocsApi.ejecutar(estadoDestino, procesoSel || undefined)
+    } catch {
+      // No-op: el backend puede estar procesando otro lote — el Realtime lo reflejará
+    }
 
     // 4. Espera via Realtime (reemplaza polling 3s).
     // Cuando llega una notificación, refresca el estado de la cola.

@@ -1348,10 +1348,11 @@ export const colaEstadosDocsApi = {
   cerrar: () =>
     api.post<{ eliminados: number }>('/cola-estados-docs/cerrar').then((r) => r.data),
   eliminar: (id: number) => api.delete(`/cola-estados-docs/${id}`),
-  // Fase 2: el endpoint POST /cola-estados-docs/ejecutar fue eliminado.
-  // El procesamiento ahora corre en un service Railway separado (worker.py)
-  // que reacciona a INSERTs vía Supabase Realtime + polling cada 30s.
-  // Para encolar trabajo basta con llamar inicializar() o inicializarPorEstado().
+  ejecutar: (estadoDestino?: string, codigoProceso?: string) =>
+    api.post<{ mensaje: string; grupo: string; estado_destino?: string }>(
+      '/cola-estados-docs/ejecutar',
+      { estado_destino: estadoDestino || null, codigo_proceso: codigoProceso || null },
+    ).then((r) => r.data),
   recuperarHuerfanos: (minutos = 5) =>
     api.post<{ recuperados: number }>(
       '/cola-estados-docs/recuperar-huerfanos',
