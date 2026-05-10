@@ -49,6 +49,8 @@ const nextConfig: NextConfig & { eslint?: { ignoreDuringBuilds?: boolean } } = {
               "font-src 'self' data:",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"} https://*.supabase.co wss://*.supabase.co`,
               "frame-ancestors 'none'",
+              "frame-src 'self' blob:",
+              "child-src 'self' blob:",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
