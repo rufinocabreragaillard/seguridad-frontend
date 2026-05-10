@@ -19,8 +19,8 @@ test.describe('process-documents', () => {
     await expect(page.getByRole('button', { name: /indexar todo/i })).not.toBeVisible();
   });
 
-  test('tab Indexar documentos muestra 6 barras horizontales', async ({ page }) => {
-    await page.getByRole('button', { name: /indexar documentos/i }).click();
+  test('tab Vectorizar muestra 6 barras horizontales', async ({ page }) => {
+    await page.getByRole('button', { name: /^vectorizar$/i }).click();
     // Las 6 barras: 1.Ubicaciones 2.Cargar 3.Extraer 4.Analizar 5.Chunkear 6.Vectorizar
     await expect(page.getByText('1. Ubicaciones')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('2. Cargar')).toBeVisible();
@@ -30,8 +30,8 @@ test.describe('process-documents', () => {
     await expect(page.getByText('6. Vectorizar')).toBeVisible();
   });
 
-  test('tab Indexar documentos muestra botones de acción y selector de directorio', async ({ page }) => {
-    await page.getByRole('button', { name: /indexar documentos/i }).click();
+  test('tab Vectorizar muestra botones de acción y selector de directorio', async ({ page }) => {
+    await page.getByRole('button', { name: /^vectorizar$/i }).click();
     await expect(page.getByRole('button', { name: /sincronizar ubicaciones y cargar/i })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: /procesar.*3-6/i })).toBeVisible();
     await expect(page.getByRole('button', { name: /seleccionar directorio/i })).toBeVisible();

@@ -1173,7 +1173,7 @@ function PaginaProcesarDocumentosInterna() {
         i18nNamespace="processDocuments"
       />
 
-      {/* Lengüetas Procesar / Indexar documentos / Revertir */}
+      {/* Lengüetas Procesar / Vectorizar / Revertir */}
       <div className="flex gap-1 border-b border-borde -mt-2">
         <button
           onClick={() => setTabPrincipal('procesar')}
@@ -1185,7 +1185,7 @@ function PaginaProcesarDocumentosInterna() {
           onClick={() => setTabPrincipal('todo')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'todo' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
         >
-          Indexar documentos
+          Vectorizar
         </button>
         <button
           onClick={() => setTabPrincipal('revertir')}
