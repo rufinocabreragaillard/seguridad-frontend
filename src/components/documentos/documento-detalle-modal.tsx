@@ -8,7 +8,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { TextoCifrado } from '@/components/ui/texto-cifrado'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { documentosApi, colaEstadosDocsApi } from '@/lib/api'
-import { abrirDocumento, descargarDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading, asegurarHandleConPermiso } from '@/lib/abrir-documento'
 import type { Documento, ColaEstadoDoc, CategoriaConCaracteristicasDocs } from '@/lib/tipos'
 
 type TabDetalle = 'datos' | 'resumen' | 'md' | 'caracteristicas' | 'texto' | 'chunks'
@@ -199,7 +199,13 @@ export function DocumentoDetalleModal({
                     </a>
                   )}
                   {documento.ubicacion_documento && !/^https?:\/\//i.test(documento.ubicacion_documento) && (
-                    <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(documento.ubicacion_documento, win, userId, grupoActivo) }}
+                    <button
+                      onClick={async () => {
+                        const { continuar, handle } = await asegurarHandleConPermiso(userId, grupoActivo)
+                        if (!continuar) return
+                        const win = abrirVentanaLoading()
+                        abrirDocumento(documento.ubicacion_documento, win, userId, grupoActivo, handle)
+                      }}
                       className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
                       <FileText size={14} />
                     </button>

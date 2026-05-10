@@ -13,7 +13,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi } from '@/lib/api'
-import { abrirDocumento, descargarDocumento, cargarBlobDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, cargarBlobDocumento, abrirVentanaLoading, asegurarHandleConPermiso } from '@/lib/abrir-documento'
 import { useAuth } from '@/context/AuthContext'
 import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio } from '@/lib/tipos'
 
@@ -127,6 +127,11 @@ export default function PaginaChatUsuario() {
   }, [visorBlobUrl])
 
   const abrirDocDesdeLink = useCallback(async (codigo: number) => {
+    // Asegurar handle + permiso ANTES del await del API: requestPermission()
+    // y showDirectoryPicker() requieren un user gesture activo, que se pierde
+    // si llamamos primero a documentosApi.obtener.
+    const { continuar, handle } = await asegurarHandleConPermiso(codigoUsuario || null, grupoActivo)
+    if (!continuar) return
     try {
       const doc = await documentosApi.obtener(codigo)
       if (!doc.ubicacion_documento) return
@@ -136,6 +141,7 @@ export default function PaginaChatUsuario() {
         (msg) => alert(msg),
         codigoUsuario || null,
         grupoActivo,
+        handle,
       )
     } catch { /* silencioso */ }
   }, [codigoUsuario, grupoActivo])

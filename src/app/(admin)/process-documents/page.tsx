@@ -20,7 +20,7 @@ import type { Documento, ColaEstadoDoc, EstadoDoc } from '@/lib/tipos'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, PdfProtegidoError, ArchivoNoEscaneable, NECESITA_OCR, NECESITA_DOC_BACKEND, EXTENSIONES_NO_TEXTUALES, type ExtraccionMixta, type TimingsExtraccion } from '@/lib/extraer-texto'
 
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizableEnBrowser, asegurarHandleConPermiso } from '@/lib/abrir-documento'
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
@@ -559,9 +559,13 @@ function PaginaProcesarDocumentosInterna() {
     setDocDetalle(d)
   }, [])
 
-  const abrirDocumentoLocal = (d: Documento) => {
+  const abrirDocumentoLocal = async (d: Documento) => {
+    // Asegurar handle + permiso ANTES de abrir la pestaña: requestPermission()
+    // y showDirectoryPicker() requieren un user gesture activo.
+    const { continuar, handle } = await asegurarHandleConPermiso(userId, grupoActivo)
+    if (!continuar) return
     const win = abrirVentanaLoading()
-    abrirDocumento(d.ubicacion_documento, win, userId, grupoActivo)
+    abrirDocumento(d.ubicacion_documento, win, userId, grupoActivo, handle)
   }
 
   // Resuelve un Documento completo a partir de un ItemCola — busca en la lista
@@ -582,13 +586,14 @@ function PaginaProcesarDocumentosInterna() {
     abrirDetalle(docDesdeCola(c))
   }, [abrirDetalle, docDesdeCola])
 
-  const abrirArchivoDesdeCola = (c: ItemCola) => {
+  const abrirArchivoDesdeCola = async (c: ItemCola) => {
     const doc = documentos.find((x) => x.codigo_documento === c.codigo_documento)
     const ubic = doc?.ubicacion_documento ?? c.ubicacion_documento
-    if (ubic) {
-      const win = abrirVentanaLoading()
-      abrirDocumento(ubic, win, userId, grupoActivo)
-    }
+    if (!ubic) return
+    const { continuar, handle } = await asegurarHandleConPermiso(userId, grupoActivo)
+    if (!continuar) return
+    const win = abrirVentanaLoading()
+    abrirDocumento(ubic, win, userId, grupoActivo, handle)
   }
 
   const ejecutarEliminarDoc = async () => {

@@ -19,7 +19,7 @@ import { getEstadosDocs } from '@/lib/catalogos'
 import type { Documento, EstadoDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
-import { abrirDocumento, descargarDocumento, abrirVentanaLoading, seleccionarDirectorioRaiz } from '@/lib/abrir-documento'
+import { abrirDocumento, descargarDocumento, abrirVentanaLoading, asegurarHandleConPermiso } from '@/lib/abrir-documento'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { DocumentoDetalleModal } from '@/components/documentos/documento-detalle-modal'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -180,13 +180,8 @@ export default function PaginaDocumentos() {
   }
 
   const abrirDocumentoLocal = async (d: Documento) => {
-    const { getDirectoryHandle } = await import('@/lib/file-handle-store')
-    let handle = await getDirectoryHandle(userId, grupoActivo)
-    if (!handle) {
-      // Picker debe llamarse en el contexto directo del click, antes de abrir popup
-      handle = await seleccionarDirectorioRaiz(userId, grupoActivo)
-      if (!handle) return
-    }
+    const { continuar, handle } = await asegurarHandleConPermiso(userId, grupoActivo)
+    if (!continuar) return
     const win = abrirVentanaLoading()
     abrirDocumento(d.ubicacion_documento, win, userId, grupoActivo, handle)
   }

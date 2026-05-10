@@ -160,6 +160,7 @@ export async function cargarBlobDocumento(
   onError: (msg: string) => void,
   userId?: string | null,
   grupoActivo?: string | null,
+  handlePreseleccionado?: FileSystemDirectoryHandle | null,
 ): Promise<void> {
   if (IS_CLIENT_MODE) {
     try {
@@ -174,17 +175,12 @@ export async function cargarBlobDocumento(
     } catch { /* fallback */ }
   }
 
-  let handle = await getDirectoryHandle(userId, grupoActivo)
-  if (!handle) {
-    const picker = (window as WinWithPicker).showDirectoryPicker
-    if (!picker) { onError('Selecciona primero una carpeta raíz en Adm. Indexación Docs.'); return }
-    try {
-      handle = await picker({ mode: 'read', id: 'serverlm-docs' })
-      await setDirectoryHandle(handle, userId, grupoActivo)
-    } catch { return }
-  }
+  // Si el caller no preseleccionó handle, asumimos que ya está concedido en
+  // IndexedDB (no podemos llamar al picker aquí: estamos fuera del user gesture).
+  const handle = handlePreseleccionado || await getDirectoryHandle(userId, grupoActivo)
+  if (!handle) { onError('Selecciona primero una carpeta raíz en Adm. Indexación Docs.'); return }
   const ok = await ensureReadPermission(handle)
-  if (!ok) { onError('Permiso de lectura denegado.'); return }
+  if (!ok) { onError('Permiso de lectura del directorio caducado. Vuelve a seleccionar la carpeta raíz.'); return }
   const fileHandle = await abrirArchivoPorRuta(handle, ubicacion)
   if (!fileHandle) { onError(`No se encontró el archivo.`); return }
   const file = await fileHandle.getFile()
@@ -244,6 +240,36 @@ export async function seleccionarDirectorioRaiz(
   } catch {
     return null
   }
+}
+
+/**
+ * Resultado de asegurarHandleConPermiso.
+ * - `continuar`: si false, el caller debe abortar (usuario canceló picker).
+ * - `handle`: handle a pasar a abrirDocumento/cargarBlobDocumento. null en
+ *   modo cliente (la API local resuelve sin handle).
+ */
+export type ResultadoHandle = { continuar: boolean; handle: FileSystemDirectoryHandle | null }
+
+// Asegura que haya un handle con permiso de lectura concedido. DEBE llamarse en
+// el handler del click ANTES de window.open() o cualquier await largo:
+// requestPermission() y showDirectoryPicker() requieren un user gesture activo,
+// y se pierde si hay awaits intermedios.
+//
+// En modo cliente devuelve { continuar: true, handle: null } — la API local
+// resuelve sin necesidad de handle.
+export async function asegurarHandleConPermiso(
+  userId?: string | null,
+  grupoActivo?: string | null,
+): Promise<ResultadoHandle> {
+  if (IS_CLIENT_MODE) return { continuar: true, handle: null }
+  const handle = await getDirectoryHandle(userId, grupoActivo)
+  if (handle) {
+    const ok = await ensureReadPermission(handle)
+    if (ok) return { continuar: true, handle }
+  }
+  const nuevo = await seleccionarDirectorioRaiz(userId, grupoActivo)
+  if (!nuevo) return { continuar: false, handle: null }
+  return { continuar: true, handle: nuevo }
 }
 
 export async function abrirDocumento(
