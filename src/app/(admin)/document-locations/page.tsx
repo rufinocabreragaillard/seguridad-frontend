@@ -912,10 +912,6 @@ export default function PaginaUbicacionesDocs() {
             {u.ubicacion_habilitada ? t('habilitada') : t('inhabilitada')}
           </Insignia>
 
-          <Insignia variante='exito'>
-            Activo
-          </Insignia>
-
           <div className="flex items-center gap-0.5 shrink-0 transition-opacity">
             <button
               onClick={() => toggleHabilitada(u)}
@@ -1028,7 +1024,6 @@ export default function PaginaUbicacionesDocs() {
                     { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
                     { titulo: 'Nivel', campo: 'nivel' },
                     { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                    { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Activo' : 'Inactivo') },
                   ],
                   'ubicaciones-docs'
                 )
