@@ -34,6 +34,7 @@ export default function PaginaLimpieza() {
   const [modalEjecutar, setModalEjecutar] = useState<PoliticaLimpieza | null>(null)
   const [formModo, setFormModo] = useState<'TIEMPO' | 'CANTIDAD'>('TIEMPO')
   const [formValor, setFormValor] = useState<number>(90)
+  const [formValorTexto, setFormValorTexto] = useState<string>('90')
   const [confirmando, setConfirmando] = useState(false)
 
   // Confirmar ejecucion
@@ -62,6 +63,7 @@ export default function PaginaLimpieza() {
     setModalEjecutar(p)
     setFormModo(p.modo)
     setFormValor(p.valor)
+    setFormValorTexto(String(p.valor))
     setUltimoResultado(null)
   }
 
@@ -233,8 +235,20 @@ export default function PaginaLimpieza() {
                 <Input
                   type="number"
                   min={1}
-                  value={formValor}
-                  onChange={(e) => setFormValor(Math.max(1, parseInt(e.target.value || '0')))}
+                  value={formValorTexto}
+                  onChange={(e) => {
+                    setFormValorTexto(e.target.value)
+                    const n = parseInt(e.target.value)
+                    if (!isNaN(n) && n >= 1) setFormValor(n)
+                  }}
+                  onBlur={() => {
+                    if (!formValorTexto || isNaN(parseInt(formValorTexto)) || parseInt(formValorTexto) < 1) {
+                      setFormValorTexto('1')
+                      setFormValor(1)
+                    } else {
+                      setFormValorTexto(String(formValor))
+                    }
+                  }}
                 />
               </div>
             </div>
