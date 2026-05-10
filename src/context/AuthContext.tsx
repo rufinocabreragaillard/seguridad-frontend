@@ -259,6 +259,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  const traducirErrorOAuth = (mensaje: string, provider: 'Google' | 'Microsoft'): string => {
+    if (mensaje.includes('Unsupported provider') || mensaje.includes('provider is not enabled')) {
+      return `Login con ${provider} no está disponible en este ambiente. Usa email y contraseña.`
+    }
+    return mensaje
+  }
+
   const loginConGoogle = async () => {
     setError(null)
     loginExplicito.current = true
@@ -271,8 +278,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (err) {
       loginExplicito.current = false
-      setError(err.message)
-      throw new Error(err.message)
+      const mensaje = traducirErrorOAuth(err.message, 'Google')
+      setError(mensaje)
+      throw new Error(mensaje)
     }
   }
 
@@ -289,8 +297,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     if (err) {
       loginExplicito.current = false
-      setError(err.message)
-      throw new Error(err.message)
+      const mensaje = traducirErrorOAuth(err.message, 'Microsoft')
+      setError(mensaje)
+      throw new Error(mensaje)
     }
   }
 
