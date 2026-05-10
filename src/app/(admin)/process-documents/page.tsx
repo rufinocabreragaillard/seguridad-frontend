@@ -124,6 +124,8 @@ function PaginaProcesarDocumentosInterna() {
   const [cargandoInicial, setCargandoInicial] = useState(true)
   const [procesoSel, setProcesoSel] = useState<string>('')   // codigo_proceso del catálogo o PROCESO_RESTABLECER
   const [categoriaSel, setCategoriaSel] = useState<'PROCESAR' | 'CORREGIR' | null>(null)
+  const [dropdownProcesoAbierto, setDropdownProcesoAbierto] = useState(false)
+  const dropdownProcesoRef = useRef<HTMLDivElement>(null)
   const [nParallelEdit, setNParallelEdit] = useState<number>(10)
   const [guardandoParalel, setGuardandoParalel] = useState(false)
   const [tope, setTope] = useState<string>('')  // vacío = sin tope (procesa todo)
@@ -158,6 +160,17 @@ function PaginaProcesarDocumentosInterna() {
       ?? procesosCorregir.find((x) => x.codigo_proceso === procesoSel)
     if (p) setNParallelEdit(p.n_parallel ?? 10)
   }, [procesoSel, procesos, procesosCorregir])
+
+  useEffect(() => {
+    if (!dropdownProcesoAbierto) return
+    const handler = (e: MouseEvent) => {
+      if (dropdownProcesoRef.current && !dropdownProcesoRef.current.contains(e.target as Node)) {
+        setDropdownProcesoAbierto(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [dropdownProcesoAbierto])
 
   // ¿Este proceso usa LLM? Si tiene id_modelo en su paso, lo corre el worker backend.
   // Si no, es un paso client-side (ej. EXTRAER que usa dirHandle).
@@ -1238,47 +1251,78 @@ function PaginaProcesarDocumentosInterna() {
       <Tarjeta>
         <TarjetaContenido>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="flex flex-col gap-1.5 min-w-0">
+            <div className="flex flex-col gap-1.5 min-w-0" ref={dropdownProcesoRef}>
               <label className="text-sm font-medium text-texto">{t('etiquetaProceso')}</label>
-              <select
-                value={categoriaSel === 'CORREGIR' ? `CORREGIR:${procesoSel}` : procesoSel}
-                onChange={(e) => {
-                  const val = e.target.value
-                  if (val.startsWith('CORREGIR:')) {
-                    setProcesoSel(val.slice('CORREGIR:'.length))
-                    setCategoriaSel('CORREGIR')
-                  } else {
-                    setProcesoSel(val)
-                    setCategoriaSel('PROCESAR')
-                  }
-                }}
-                className={selectClass}
-                disabled={ejecutando || cargandoInicial}
-              >
-                <option value="">— Sin valor —</option>
-                <optgroup label="Procesar">
-                  {procesos.map((p) => {
-                    const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
-                    return (
-                      <option key={p.codigo_proceso} value={p.codigo_proceso}>
-                        {p.nombre_proceso} ({flecha})
-                      </option>
-                    )
-                  })}
-                </optgroup>
-                {procesosCorregir.length > 0 && (
-                  <optgroup label="Corregir inválidos">
-                    {procesosCorregir.map((p) => {
+              <div className="relative">
+                <button
+                  type="button"
+                  disabled={ejecutando || cargandoInicial}
+                  onClick={() => setDropdownProcesoAbierto((v) => !v)}
+                  className={`${selectClass} flex items-center justify-between gap-2 text-left`}
+                >
+                  <span className="truncate">
+                    {(() => {
+                      if (!procesoSel) return <span className="text-texto-muted">— Sin valor —</span>
+                      const p = [...procesos, ...procesosCorregir].find((x) => x.codigo_proceso === procesoSel)
+                      if (!p) return procesoSel
                       const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
                       return (
-                        <option key={`CORREGIR:${p.codigo_proceso}`} value={`CORREGIR:${p.codigo_proceso}`}>
-                          {p.nombre_proceso} ({flecha})
-                        </option>
+                        <span>
+                          {p.nombre_proceso}{flecha && <span className="text-xs text-texto-muted ml-1">({flecha})</span>}
+                        </span>
+                      )
+                    })()}
+                  </span>
+                  <ChevronDown size={14} className="shrink-0 text-texto-muted" />
+                </button>
+                {dropdownProcesoAbierto && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-fondo border border-borde rounded-md shadow-lg py-1 max-h-64 overflow-y-auto">
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro text-texto-muted"
+                      onClick={() => { setProcesoSel(''); setCategoriaSel(null); setDropdownProcesoAbierto(false) }}
+                    >
+                      — Sin valor —
+                    </button>
+                    <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide">Procesar</div>
+                    {procesos.map((p) => {
+                      const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
+                      const selec = procesoSel === p.codigo_proceso && categoriaSel !== 'CORREGIR'
+                      return (
+                        <button
+                          key={p.codigo_proceso}
+                          type="button"
+                          className={`w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro flex items-baseline gap-1 ${selec ? 'bg-primario-muy-claro font-medium' : ''}`}
+                          onClick={() => { setProcesoSel(p.codigo_proceso); setCategoriaSel('PROCESAR'); setDropdownProcesoAbierto(false) }}
+                        >
+                          <span className="text-texto">{p.nombre_proceso}</span>
+                          {flecha && <span className="text-xs text-texto-muted">({flecha})</span>}
+                        </button>
                       )
                     })}
-                  </optgroup>
+                    {procesosCorregir.length > 0 && (
+                      <>
+                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide border-t border-borde mt-1">Corregir inválidos</div>
+                        {procesosCorregir.map((p) => {
+                          const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
+                          const selec = procesoSel === p.codigo_proceso && categoriaSel === 'CORREGIR'
+                          return (
+                            <button
+                              key={`CORREGIR:${p.codigo_proceso}`}
+                              type="button"
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro flex items-baseline gap-1 ${selec ? 'bg-primario-muy-claro font-medium' : ''}`}
+                              onClick={() => { setProcesoSel(p.codigo_proceso); setCategoriaSel('CORREGIR'); setDropdownProcesoAbierto(false) }}
+                            >
+                              <span className="text-texto">{p.nombre_proceso}</span>
+                              {flecha && <span className="text-xs text-texto-muted">({flecha})</span>}
+                            </button>
+                          )
+                        })}
+                      </>
+                    )}
+                  </div>
                 )}
-              </select>
+              </div>
             </div>
 
             <div className="flex flex-col gap-1.5 min-w-0">
