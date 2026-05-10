@@ -47,6 +47,8 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
   const [ubicExpandidos, setUbicExpandidos] = useState<Set<string>>(new Set())
   const [tope, setTope] = useState('')
   const ubicDropdownRef = useRef<HTMLDivElement>(null)
+  const [dropdownProcesoAbierto, setDropdownProcesoAbierto] = useState(false)
+  const dropdownProcesoRef = useRef<HTMLDivElement>(null)
 
   // Documentos candidatos
   const [documentos, setDocumentos] = useState<Documento[]>([])
@@ -93,6 +95,18 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  // Click-outside dropdown proceso
+  useEffect(() => {
+    if (!dropdownProcesoAbierto) return
+    const handler = (e: MouseEvent) => {
+      if (dropdownProcesoRef.current && !dropdownProcesoRef.current.contains(e.target as Node)) {
+        setDropdownProcesoAbierto(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [dropdownProcesoAbierto])
 
   // Al abrir el dropdown de ubicaciones, expandir automáticamente las raíces
   // para que se vea desde el inicio el árbol (no quedar en blanco esperando filtro).
@@ -182,45 +196,92 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
         <TarjetaContenido>
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Proceso */}
-            <div className="flex flex-col gap-1.5 min-w-0">
+            <div className="flex flex-col gap-1.5 min-w-0" ref={dropdownProcesoRef}>
               <label className="text-sm font-medium text-texto">Proceso</label>
-              <select
-                value={procesoSel}
-                onChange={(e) => {
-                  const val = e.target.value
-                  setProcesoSel(val)
-                  // Auto-seleccionar estado_origen del proceso (igual que Paso a Paso al revés)
-                  if (val) {
-                    const p = procesos.find((x) => String(x.id_transicion) === val)
-                      ?? procesosCorregir.find((x) => String(x.id_transicion) === val)
-                    if (p?.estado_origen) setEstadoFiltro(p.estado_origen)
-                  } else {
-                    setEstadoFiltro('')
-                  }
-                }}
-                className={selectClass}
-                disabled={ejecutando}
-              >
-                <option value="">— Sin valor —</option>
-                {procesos.length > 0 && (
-                  <optgroup label="Reversa de éxito">
-                    {procesos.map((p) => (
-                      <option key={p.id_transicion ?? p.codigo_proceso} value={String(p.id_transicion)}>
-                        {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
-                      </option>
-                    ))}
-                  </optgroup>
+              <div className="relative">
+                <button
+                  type="button"
+                  disabled={ejecutando}
+                  onClick={() => setDropdownProcesoAbierto((v) => !v)}
+                  className={`${selectClass} flex items-center justify-between gap-2 text-left`}
+                >
+                  <span className="truncate">
+                    {(() => {
+                      if (!procesoSel) return <span className="text-texto-muted">— Sin valor —</span>
+                      const p = [...procesos, ...procesosCorregir].find((x) => String(x.id_transicion) === procesoSel)
+                      if (!p) return procesoSel
+                      const flecha = `${p.estado_origen || '—'} → ${p.estado_destino}`
+                      return (
+                        <span>
+                          {p.nombre_proceso}<span className="text-xs text-texto-muted ml-1">({flecha})</span>
+                        </span>
+                      )
+                    })()}
+                  </span>
+                  <ChevronDown size={14} className="shrink-0 text-texto-muted" />
+                </button>
+                {dropdownProcesoAbierto && (
+                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-fondo border border-borde rounded-md shadow-lg py-1 max-h-64 overflow-y-auto">
+                    <button
+                      type="button"
+                      className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro text-texto-muted"
+                      onClick={() => { setProcesoSel(''); setEstadoFiltro(''); setDropdownProcesoAbierto(false) }}
+                    >
+                      — Sin valor —
+                    </button>
+                    {procesos.length > 0 && (
+                      <>
+                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide">Reversa de éxito</div>
+                        {procesos.map((p) => {
+                          const flecha = `${p.estado_origen || '—'} → ${p.estado_destino}`
+                          const selec = procesoSel === String(p.id_transicion)
+                          return (
+                            <button
+                              key={p.id_transicion ?? p.codigo_proceso}
+                              type="button"
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro flex items-baseline gap-1 ${selec ? 'bg-primario-muy-claro font-medium' : ''}`}
+                              onClick={() => {
+                                const val = String(p.id_transicion)
+                                setProcesoSel(val)
+                                if (p.estado_origen) setEstadoFiltro(p.estado_origen)
+                                setDropdownProcesoAbierto(false)
+                              }}
+                            >
+                              <span className="text-texto">{p.nombre_proceso}</span>
+                              <span className="text-xs text-texto-muted">({flecha})</span>
+                            </button>
+                          )
+                        })}
+                      </>
+                    )}
+                    {procesosCorregir.length > 0 && (
+                      <>
+                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide border-t border-borde mt-1">Corregir inválidos</div>
+                        {procesosCorregir.map((p) => {
+                          const flecha = `${p.estado_origen || '—'} → ${p.estado_destino}`
+                          const selec = procesoSel === String(p.id_transicion)
+                          return (
+                            <button
+                              key={p.id_transicion ?? p.codigo_proceso}
+                              type="button"
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro flex items-baseline gap-1 ${selec ? 'bg-primario-muy-claro font-medium' : ''}`}
+                              onClick={() => {
+                                const val = String(p.id_transicion)
+                                setProcesoSel(val)
+                                if (p.estado_origen) setEstadoFiltro(p.estado_origen)
+                                setDropdownProcesoAbierto(false)
+                              }}
+                            >
+                              <span className="text-texto">{p.nombre_proceso}</span>
+                              <span className="text-xs text-texto-muted">({flecha})</span>
+                            </button>
+                          )
+                        })}
+                      </>
+                    )}
+                  </div>
                 )}
-                {procesosCorregir.length > 0 && (
-                  <optgroup label="Reversa de éxito">
-                    {procesosCorregir.map((p) => (
-                      <option key={p.id_transicion ?? p.codigo_proceso} value={String(p.id_transicion)}>
-                        {p.nombre_proceso} ({p.estado_origen || '—'} → {p.estado_destino})
-                      </option>
-                    ))}
-                  </optgroup>
-                )}
-              </select>
+              </div>
             </div>
 
             {/* Estado — filtro libre, independiente del proceso */}
