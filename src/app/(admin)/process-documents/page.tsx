@@ -489,13 +489,12 @@ function PaginaProcesarDocumentosInterna() {
   }, [procesoSel, esCargar, esExtraer, esRestablecer, esResetearCargado, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro, filtroLibre])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
-  // No cargar mientras los datos iniciales (catálogo de procesos) aún están cargando,
-  // ni si no hay proceso seleccionado (evita query innecesario al entrar).
+  // No cargar mientras los datos iniciales (catálogo de procesos) aún están cargando.
+  // Sin proceso seleccionado se muestran todos los documentos (sin filtro de estado).
   // Nota: a proposito NO incluimos `busqueda` en las deps; eso lo maneja el
   // boton/Enter del filtro para no re-cargar con cada tecla.
   useEffect(() => {
     if (cargandoInicial) return
-    if (!procesoSel && !estadoFiltro) return
     setDocumentos([])
     setYaCargado(false)
     cargarDocumentos()
@@ -1210,13 +1209,13 @@ function PaginaProcesarDocumentosInterna() {
           onClick={() => setTabPrincipal('todo')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'todo' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
         >
-          Vectorizar
+          {t('tabVectorizar')}
         </button>
         <button
           onClick={() => setTabPrincipal('revertir')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'revertir' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
         >
-          Revertir
+          {t('tabRevertir')}
         </button>
       </div>
 
@@ -1244,10 +1243,10 @@ function PaginaProcesarDocumentosInterna() {
       {errorCargaInicial && (
         <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-error">
           <AlertTriangle size={16} className="shrink-0" />
-          <span>No se pudieron cargar los procesos del sistema. El servidor puede estar iniciando.</span>
+          <span>{t('errorCargaInicial')}</span>
           <Boton variante="contorno" tamano="sm" onClick={cargarDatosIniciales} disabled={cargandoInicial}>
             {cargandoInicial ? <Loader2 size={14} className="animate-spin" /> : null}
-            Reintentar
+            {t('reintentar')}
           </Boton>
         </div>
       )}
@@ -1266,7 +1265,7 @@ function PaginaProcesarDocumentosInterna() {
                 >
                   <span className="truncate">
                     {(() => {
-                      if (!procesoSel) return <span className="text-texto-muted">— Sin valor —</span>
+                      if (!procesoSel) return <span className="text-texto-muted">{t('sinValor')}</span>
                       const p = [...procesos, ...procesosCorregir].find((x) => x.codigo_proceso === procesoSel)
                       if (!p) return procesoSel
                       const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
@@ -1286,9 +1285,9 @@ function PaginaProcesarDocumentosInterna() {
                       className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro text-texto-muted"
                       onClick={() => { setProcesoSel(''); setCategoriaSel(null); setDropdownProcesoAbierto(false) }}
                     >
-                      — Sin valor —
+                      {t('sinValor')}
                     </button>
-                    <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide">Procesar</div>
+                    <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide">{t('procesar')}</div>
                     {procesos.map((p) => {
                       const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
                       const selec = procesoSel === p.codigo_proceso && categoriaSel !== 'CORREGIR'
@@ -1306,7 +1305,7 @@ function PaginaProcesarDocumentosInterna() {
                     })}
                     {procesosCorregir.length > 0 && (
                       <>
-                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide border-t border-borde mt-1">Corregir inválidos</div>
+                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide border-t border-borde mt-1">{t('corregirInvalidos')}</div>
                         {procesosCorregir.map((p) => {
                           const flecha = p.estado_destino ? `${p.estado_origen || '—'} → ${p.estado_destino}` : ''
                           const selec = procesoSel === p.codigo_proceso && categoriaSel === 'CORREGIR'
@@ -1330,7 +1329,7 @@ function PaginaProcesarDocumentosInterna() {
             </div>
 
             <div className="flex flex-col gap-1.5 min-w-0">
-              <label className="text-sm font-medium text-texto">Estado</label>
+              <label className="text-sm font-medium text-texto">{t('etiquetaEstado')}</label>
               <select
                 value={estadoFiltro}
                 onChange={(e) => {
@@ -1340,7 +1339,7 @@ function PaginaProcesarDocumentosInterna() {
                 className={selectClass}
                 disabled={ejecutando}
               >
-                <option value="">— Todos —</option>
+                <option value="">{t('todosEstadoLabel')}</option>
                 {(() => {
                   const validos = estadosDocs.filter(e => !e.codigo_estado_doc.startsWith('NO_') && !['REVISAR','ELIMINADO'].includes(e.codigo_estado_doc))
                   const noValidos = estadosDocs.filter(e => e.codigo_estado_doc.startsWith('NO_') || ['REVISAR','ELIMINADO'].includes(e.codigo_estado_doc))
@@ -1357,8 +1356,8 @@ function PaginaProcesarDocumentosInterna() {
 
             <div className="flex flex-col gap-1.5 min-w-0" ref={ubicDropdownRef}>
               <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-texto">Ubicación</label>
-                <span className="text-xs text-texto-muted">Hasta 5 niveles</span>
+                <label className="text-sm font-medium text-texto">{t('etiquetaUbicacion')}</label>
+                <span className="text-xs text-texto-muted">{t('hastaXNiveles', { n: 5 })}</span>
               </div>
               <div className="relative">
                 <button
@@ -1370,8 +1369,8 @@ function PaginaProcesarDocumentosInterna() {
                   <FolderOpen size={16} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
                   <span className="flex-1 text-left truncate">
                     {ubicacionSel
-                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion || 'Seleccionar ubicación')
-                      : 'Seleccionar ubicación'}
+                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion || t('seleccionarUbicacion'))
+                      : t('seleccionarUbicacion')}
                   </span>
                   {ubicacionSel ? (
                     <X
@@ -1389,7 +1388,7 @@ function PaginaProcesarDocumentosInterna() {
                     <div className="p-2 border-b border-borde shrink-0">
                       <input
                         type="text"
-                        placeholder="Buscar ubicación…"
+                        placeholder={t('buscarUbicacion')}
                         value={ubicBusqueda}
                         onChange={(e) => setUbicBusqueda(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
@@ -1403,7 +1402,7 @@ function PaginaProcesarDocumentosInterna() {
                         className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde"
                         onClick={() => { setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
                       >
-                        Todas
+                        {t('todasUbicaciones')}
                       </div>
                       {(() => {
                         const tieneHijosUbic = (cod: string) => ubicaciones.some(u => u.codigo_ubicacion !== cod && u.codigo_ubicacion_superior === cod)
@@ -1413,7 +1412,7 @@ function PaginaProcesarDocumentosInterna() {
                             u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) ||
                             (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
                           )
-                          if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
+                          if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
                           return filtradas.map(u => {
                             const esArea = u.tipo_ubicacion === 'AREA'
                             const selec = ubicacionSel === u.codigo_ubicacion
@@ -1483,11 +1482,11 @@ function PaginaProcesarDocumentosInterna() {
           {/* Filtro libre + Paralelo + Tope — misma línea */}
           <div className="flex items-end gap-3 mt-3 flex-wrap">
             <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-              <label className="text-sm font-medium text-texto">Filtro libre</label>
+              <label className="text-sm font-medium text-texto">{t('filtroLibreLabel')}</label>
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Filtrar por nombre, directorio, estado o comentarios… (Enter para aplicar)"
+                  placeholder={t('filtroLibrePlaceholder')}
                   value={filtroLibreInput}
                   onChange={(e) => setFiltroLibreInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -1513,7 +1512,7 @@ function PaginaProcesarDocumentosInterna() {
               </div>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-texto-muted">Paralelo:</span>
+              <span className="text-xs text-texto-muted">{t('paralelo')}</span>
               <input
                 type="number"
                 min={1}
@@ -1528,11 +1527,11 @@ function PaginaProcesarDocumentosInterna() {
               {guardandoParalel && <Loader2 className="w-3 h-3 animate-spin text-texto-muted" />}
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="text-xs text-texto-muted">Tope:</span>
+              <span className="text-xs text-texto-muted">{t('tope')}</span>
               <input
                 type="number"
                 min={1}
-                placeholder="todos"
+                placeholder={t('todosPlaceholder')}
                 value={tope}
                 onChange={(e) => setTope(e.target.value)}
                 disabled={ejecutando}
@@ -1548,7 +1547,7 @@ function PaginaProcesarDocumentosInterna() {
                   disabled={ejecutando}
                   className="w-3.5 h-3.5 accent-primario disabled:opacity-50 cursor-pointer"
                 />
-                <span className="text-xs text-texto-muted">Generar resumen</span>
+                <span className="text-xs text-texto-muted">{t('generarResumen')}</span>
               </label>
             )}
           </div>
@@ -1657,7 +1656,7 @@ function PaginaProcesarDocumentosInterna() {
                       <div className="flex items-center justify-end gap-1">
                         {ubic && esUrl && (
                           <LinkAccion
-                            tooltip="Abrir URL"
+                            tooltip={t('tooltipAbrirUrl')}
                             href={ubic}
                             className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                             <ExternalLink size={15} />
@@ -1665,7 +1664,7 @@ function PaginaProcesarDocumentosInterna() {
                         )}
                         {ubic && !esUrl && (
                           <BotonAccion
-                            tooltip="Abrir archivo"
+                            tooltip={t('tooltipAbrirArchivo')}
                             onClick={() => abrirArchivoDesdeCola(c)}
                             className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                             <FileText size={15} />
@@ -1673,14 +1672,14 @@ function PaginaProcesarDocumentosInterna() {
                         )}
                         {ubic && (
                           <BotonAccion
-                            tooltip="Descargar"
+                            tooltip={t('tooltipDescargar')}
                             onClick={() => descargarDocumento(ubic, c.nombre_documento, userId, grupoActivo)}
                             className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                             <Download size={15} />
                           </BotonAccion>
                         )}
                         <BotonAccion
-                          tooltip="Ver detalle"
+                          tooltip={t('tooltipVerDetalle')}
                           onClick={() => abrirDetalleDesdeCola(c)}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                           <Eye size={15} />
@@ -1767,7 +1766,7 @@ function PaginaProcesarDocumentosInterna() {
                     <div className="flex items-center justify-end gap-1">
                       {d.ubicacion_documento && /^https?:\/\//i.test(d.ubicacion_documento) && (
                         <LinkAccion
-                          tooltip="Abrir URL"
+                          tooltip={t('tooltipAbrirUrl')}
                           href={d.ubicacion_documento}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                           <ExternalLink size={15} />
@@ -1775,7 +1774,7 @@ function PaginaProcesarDocumentosInterna() {
                       )}
                       {d.ubicacion_documento && !/^https?:\/\//i.test(d.ubicacion_documento) && (
                         <BotonAccion
-                          tooltip="Abrir archivo"
+                          tooltip={t('tooltipAbrirArchivo')}
                           onClick={() => abrirDocumentoLocal(d)}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                           <FileText size={15} />
@@ -1783,20 +1782,20 @@ function PaginaProcesarDocumentosInterna() {
                       )}
                       {d.ubicacion_documento && (
                         <BotonAccion
-                          tooltip="Descargar"
+                          tooltip={t('tooltipDescargar')}
                           onClick={() => descargarDocumento(d.ubicacion_documento, d.nombre_documento, userId, grupoActivo)}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                           <Download size={15} />
                         </BotonAccion>
                       )}
                       <BotonAccion
-                        tooltip="Ver detalle"
+                        tooltip={t('tooltipVerDetalle')}
                         onClick={() => abrirDetalle(d)}
                         className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
                         <Eye size={15} />
                       </BotonAccion>
                       <BotonAccion
-                        tooltip="Quitar de la BD"
+                        tooltip={t('tooltipQuitarBd')}
                         onClick={() => setConfirmEliminarDoc(d)}
                         className="p-1.5 rounded-lg hover:bg-orange-50 text-texto-muted hover:text-orange-500 transition-colors">
                         <XCircle size={15} />
@@ -1836,13 +1835,13 @@ function PaginaProcesarDocumentosInterna() {
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
                           <BotonAccion
-                            tooltip="Ver detalle"
+                            tooltip={t('tooltipVerDetalle')}
                             onClick={() => abrirDetalle(d)}
                             className="p-1.5 rounded-lg hover:bg-fondo text-texto-muted hover:text-primario transition-colors">
                             <Eye size={15} />
                           </BotonAccion>
                           <BotonAccion
-                            tooltip="Eliminar"
+                            tooltip={t('tooltipEliminar')}
                             onClick={() => setConfirmEliminarDoc(d)}
                             className="p-1.5 rounded-lg hover:bg-red-100 text-texto-muted hover:text-error transition-colors">
                             <Trash2 size={15} />
@@ -1949,7 +1948,7 @@ function PaginaProcesarDocumentosInterna() {
                     <TablaTd>
                       <div className="flex items-center justify-end gap-1">
                         <BotonAccion
-                          tooltip="Eliminar"
+                          tooltip={t('tooltipEliminar')}
                           onClick={() => setConfirmEliminar(c)}
                           className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors">
                           <Trash2 size={14} />
@@ -1993,18 +1992,18 @@ function PaginaProcesarDocumentosInterna() {
         abierto={!!pendingCarga}
         alCerrar={cancelarCarga}
         alConfirmar={confirmarCarga}
-        titulo="Confirmar carga de documentos"
+        titulo={t('confirmarCargaTitulo')}
         mensaje={pendingCarga
           ? `Se encontraron ${pendingCarga.archivosParaCargar.length.toLocaleString()} archivos en "${pendingCarga.scan.nombreRaiz}". ¿Continuar con la carga?`
           : ''}
-        textoConfirmar="Cargar"
+        textoConfirmar={t('confirmarCargar')}
       />
 
       <ModalConfirmar
         abierto={!!confirmEliminarDoc}
         alCerrar={() => { setConfirmEliminarDoc(null); setEliminandoDoc(false) }}
         alConfirmar={ejecutarEliminarDoc}
-        titulo="Eliminar documento"
+        titulo={t('eliminarDocTitulo')}
         mensaje={confirmEliminarDoc ? `¿Eliminar "${confirmEliminarDoc.nombre_documento}"? Esta acción no se puede deshacer.` : ''}
         textoConfirmar={tc('eliminar')}
         cargando={eliminandoDoc}
@@ -2014,7 +2013,7 @@ function PaginaProcesarDocumentosInterna() {
         abierto={confirmEliminarBulkSinDisco}
         alCerrar={() => { setConfirmEliminarBulkSinDisco(false); setEliminandoBulkSinDisco(false) }}
         alConfirmar={ejecutarEliminarBulkSinDisco}
-        titulo="Eliminar índices de documentos no encontrados"
+        titulo={t('eliminarIndicesTitulo')}
         mensaje={`¿Eliminar los índices de ${docsSinDisco.length} documento(s) que no están en el directorio? Esta acción no se puede deshacer.`}
         textoConfirmar={tc('eliminar')}
         cargando={eliminandoBulkSinDisco}

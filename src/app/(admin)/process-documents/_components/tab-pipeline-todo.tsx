@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { FolderOpen, X, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, cargaDocumentosApi } from '@/lib/api'
@@ -53,6 +54,7 @@ interface TabPipelineTodoProps {
 }
 
 export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: ubicacionesProp = [] }: TabPipelineTodoProps) {
+  const t = useTranslations('processDocuments')
   const { grupoActivo, usuario } = useAuth()
   const userId = usuario?.codigo_usuario ?? null
 
@@ -490,19 +492,19 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
             <div className="relative">
               <button type="button" onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)} disabled={ejecutando} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50">
                 <FolderOpen size={15} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
-                <span className="flex-1 text-left truncate">{ubicacionSel ? (ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? 'Seleccionar ubicación') : 'Seleccionar ubicación'}</span>
+                <span className="flex-1 text-left truncate">{ubicacionSel ? (ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? t('seleccionarUbicacion')) : t('seleccionarUbicacion')}</span>
                 {ubicacionSel ? <X size={13} className="text-texto-muted hover:text-error shrink-0" onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }} /> : <ChevronDown size={13} className="text-texto-muted shrink-0" />}
               </button>
               {ubicDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '16rem' }}>
                   <div className="p-2 border-b border-borde shrink-0">
-                    <input type="text" placeholder="Buscar ubicación…" value={ubicBusqueda} onChange={(e) => setUbicBusqueda(e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted" autoFocus />
+                    <input type="text" placeholder={t('buscarUbicacion')} value={ubicBusqueda} onChange={(e) => setUbicBusqueda(e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted" autoFocus />
                   </div>
                   <div className="overflow-y-auto flex-1">
-                    <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}>Todas las ubicaciones</div>
+                    <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}>{t('todasUbicaciones')}</div>
                     {ubicBusqueda ? (() => {
                       const filtradas = ubicacionesProp.filter(u => u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) || (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase()))
-                      if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
+                      if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
                       return filtradas.map(u => {
                         const esArea = u.tipo_ubicacion === 'AREA'; const selec = ubicacionSel === u.codigo_ubicacion
                         return (
@@ -522,7 +524,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           <div className="flex flex-col items-end gap-1 shrink-0">
             <button onClick={seleccionarDirectorio} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-2 text-sm text-texto hover:border-primario transition-colors">
               <FolderOpen size={16} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
-              {dirHandle ? dirHandle.name : 'Seleccionar directorio'}
+              {dirHandle ? dirHandle.name : t('seleccionarDirectorio')}
             </button>
             {!dirHandle && carpetaRaiz && (
               <span className="text-xs text-texto-muted text-right">Selecciona: <strong className="text-texto">{carpetaRaiz}</strong></span>
@@ -532,17 +534,17 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
         <div className="flex items-end gap-4 flex-wrap">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-texto-muted font-medium">Paralelo</label>
+            <label className="text-xs text-texto-muted font-medium">{t('paralelo').replace(':', '')}</label>
             <input type="number" min={1} max={100} value={nParalelo} onChange={(e) => setNParalelo(Math.max(1, parseInt(e.target.value) || 1))} disabled={ejecutando} className="w-16 text-sm border border-borde rounded-lg px-2 py-1.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-texto-muted font-medium">Tope</label>
-            <input type="number" min={1} placeholder="todos" value={tope} onChange={(e) => setTope(e.target.value)} disabled={ejecutando} className="w-20 text-sm border border-borde rounded-lg px-2 py-1.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
+            <label className="text-xs text-texto-muted font-medium">{t('tope').replace(':', '')}</label>
+            <input type="number" min={1} placeholder={t('todosPlaceholder')} value={tope} onChange={(e) => setTope(e.target.value)} disabled={ejecutando} className="w-20 text-sm border border-borde rounded-lg px-2 py-1.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
           </div>
           <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-            <label className="text-xs text-texto-muted font-medium">Filtro libre</label>
+            <label className="text-xs text-texto-muted font-medium">{t('filtroLibreLabel')}</label>
             <div className="flex gap-2">
-              <input type="text" placeholder="Filtrar por nombre, directorio… (Enter para aplicar)" value={filtroLibreInput} onChange={(e) => setFiltroLibreInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') setFiltroLibre(filtroLibreInput) }} disabled={ejecutando} className="flex-1 text-sm border border-borde rounded-lg px-3 py-1.5 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
+              <input type="text" placeholder={t('filtroLibrePlaceholder')} value={filtroLibreInput} onChange={(e) => setFiltroLibreInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') setFiltroLibre(filtroLibreInput) }} disabled={ejecutando} className="flex-1 text-sm border border-borde rounded-lg px-3 py-1.5 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
               {filtroLibreInput && <button type="button" onClick={() => { setFiltroLibreInput(''); setFiltroLibre('') }} disabled={ejecutando} className="px-2 rounded-lg border border-borde text-texto-muted hover:text-error hover:border-error transition-colors disabled:opacity-50"><X size={14} /></button>}
             </div>
           </div>
@@ -555,8 +557,8 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       {!revertir ? (
         <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-3">
           <div className="grid grid-cols-6 gap-3">
-            <BarraHorizontal num={1} nombre="Ubicaciones" label="Indexar carpetas" estado={p1Estado} completados={p1Completados} total={p1Total} color="#6B7280" mensaje={p1Mensaje || undefined} />
-            <BarraHorizontal num={2} nombre="Cargar" label="FILESYSTEM → BD" estado={p2Estado} completados={p2Completados} total={p2Total} color="#3B82F6" mensaje={p2Mensaje || undefined} />
+            <BarraHorizontal num={1} nombre={t('p1Nombre')} label={t('p1Label')} estado={p1Estado} completados={p1Completados} total={p1Total} color="#6B7280" mensaje={p1Mensaje || undefined} />
+            <BarraHorizontal num={2} nombre={t('p2Nombre')} label={t('p2Label')} estado={p2Estado} completados={p2Completados} total={p2Total} color="#3B82F6" mensaje={p2Mensaje || undefined} />
             {PASOS_PIPELINE.map((paso, i) => {
               const prog = progresos[paso.key]
               return (
