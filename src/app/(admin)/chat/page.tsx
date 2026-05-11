@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink, CornerDownLeft } from 'lucide-react'
+import { Plus, Trash2, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink, CornerDownLeft, FileSpreadsheet, Archive, Pencil, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -505,11 +505,19 @@ export default function PaginaChatUsuario() {
   const [criterioCambios, setCriterioCambios] = useState(false)
   const [refrescando, setRefrescando] = useState(false)
   const [docsEspacio, setDocsEspacio] = useState<DocumentoEspacio[]>([])
+  const [totalDocsEspacio, setTotalDocsEspacio] = useState(0)
+  const [paginaDocsEspacio, setPaginaDocsEspacio] = useState(1)
+  const DOCS_POR_PAGINA = 20
   const [selectorEspacioAbierto, setSelectorEspacioAbierto] = useState(false)
   const [selectorEspacioBusqueda, setSelectorEspacioBusqueda] = useState('')
   const [cargandoDocsEspacio, setCargandoDocsEspacio] = useState(false)
   const [confirmEliminarEspacio, setConfirmEliminarEspacio] = useState<EspacioTrabajo | null>(null)
   const [reaplicando, setReaplicando] = useState(false)
+  // Edición inline nombre/tipo del espacio
+  const [editandoNombre, setEditandoNombre] = useState(false)
+  const [nombreEdit, setNombreEdit] = useState('')
+  const [editandoTipo, setEditandoTipo] = useState(false)
+  const [descargandoZip, setDescargandoZip] = useState(false)
 
   const espacioActivoObj = useMemo(
     () => espacios.find((e) => e.id_espacio === espacioActivoId),
@@ -534,21 +542,25 @@ export default function PaginaChatUsuario() {
   }, [espacioActivoObj])
 
   // Carga documentos cacheados del espacio activo
-  const cargarDocsEspacio = useCallback(async (id: number) => {
+  const cargarDocsEspacio = useCallback(async (id: number, pagina = 1) => {
     setCargandoDocsEspacio(true)
     try {
-      const r = await espaciosTrabajoApi.listarDocumentos(id, { page: 1, limit: 200 })
+      const r = await espaciosTrabajoApi.listarDocumentos(id, { page: pagina, limit: DOCS_POR_PAGINA })
       setDocsEspacio(r.items)
+      setTotalDocsEspacio(r.total)
+      setPaginaDocsEspacio(pagina)
     } catch {
       setDocsEspacio([])
+      setTotalDocsEspacio(0)
     } finally {
       setCargandoDocsEspacio(false)
     }
-  }, [])
+  }, [DOCS_POR_PAGINA])
 
   useEffect(() => {
     if (tabPagina === 'documentos' && espacioActivoId != null) {
-      cargarDocsEspacio(espacioActivoId)
+      cargarDocsEspacio(espacioActivoId, 1)
+      setPaginaDocsEspacio(1)
     }
   }, [tabPagina, espacioActivoId, cargarDocsEspacio])
 
@@ -604,6 +616,94 @@ export default function PaginaChatUsuario() {
       await cargarDocsEspacio(espacioActivoObj.id_espacio)
     } catch { /* */ } finally {
       setReaplicando(false)
+    }
+  }
+
+  const guardarNombreEspacio = async () => {
+    if (!espacioActivoObj || !nombreEdit.trim()) return
+    try {
+      await espaciosTrabajoApi.actualizar(espacioActivoObj.id_espacio, { nombre_espacio: nombreEdit.trim() })
+      await cargarEspacios()
+      setEditandoNombre(false)
+    } catch { /* */ }
+  }
+
+  const guardarTipoEspacio = async (nuevoTipo: string) => {
+    if (!espacioActivoObj) return
+    try {
+      await espaciosTrabajoApi.actualizar(espacioActivoObj.id_espacio, { tipo_espacio: nuevoTipo })
+      await cargarEspacios()
+      setEditandoTipo(false)
+    } catch { /* */ }
+  }
+
+  const descargarExcel = () => {
+    if (!docsEspacio.length || !espacioActivoObj) return
+    const headers = ['Documento', 'Ubicación', 'Estado área', 'Estado cola', 'Fin']
+    const filas = docsEspacio.map((d) => [
+      d.nombre_documento,
+      d.ubicacion_documento || '',
+      d.estado_area || '',
+      d.estado_cola || '',
+      d.fecha_fin ? new Date(d.fecha_fin).toLocaleString('es-CL') : '',
+    ])
+    const csv = [headers, ...filas]
+      .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
+      .join('\n')
+    const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${espacioActivoObj.nombre_espacio}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const descargarZip = async () => {
+    if (!espacioActivoObj) return
+    setDescargandoZip(true)
+    try {
+      const { default: JSZip } = await import('jszip')
+      const zip = new JSZip()
+      // Traer todos los docs (sin límite de página) para el zip
+      const todos: DocumentoEspacio[] = []
+      let p = 1
+      while (true) {
+        const r = await espaciosTrabajoApi.listarDocumentos(espacioActivoObj.id_espacio, { page: p, limit: 100 })
+        todos.push(...r.items)
+        if (todos.length >= r.total || r.items.length === 0) break
+        p++
+      }
+      for (const d of todos) {
+        const ubic = d.ubicacion_documento
+        if (!ubic || /^https?:\/\//i.test(ubic)) continue
+        try {
+          await new Promise<void>((resolve) => {
+            cargarBlobDocumento(
+              ubic,
+              (blobUrl: string) => {
+                fetch(blobUrl).then((r) => r.blob()).then((blob) => {
+                  zip.file(d.nombre_documento, blob)
+                  URL.revokeObjectURL(blobUrl)
+                  resolve()
+                }).catch(() => resolve())
+              },
+              () => resolve(),
+              codigoUsuario || null,
+              grupoActivo,
+            )
+          })
+        } catch { /* skip */ }
+      }
+      const content = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(content)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${espacioActivoObj.nombre_espacio}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch { /* */ } finally {
+      setDescargandoZip(false)
     }
   }
 
@@ -1091,13 +1191,79 @@ export default function PaginaChatUsuario() {
                 <div className="border-b border-borde p-4 flex flex-col gap-3">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h2 className="text-lg font-semibold text-texto">{espacioActivoObj.nombre_espacio}</h2>
-                      <Insignia variante={espacioActivoObj.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
-                        {labelTipoEspacio(espacioActivoObj.tipo_espacio)}
-                      </Insignia>
+                      {/* Nombre editable inline */}
+                      {editandoNombre && esCreador(espacioActivoObj) ? (
+                        <div className="flex items-center gap-1">
+                          <input
+                            autoFocus
+                            value={nombreEdit}
+                            onChange={(e) => setNombreEdit(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === 'Enter') guardarNombreEspacio(); if (e.key === 'Escape') setEditandoNombre(false) }}
+                            className="text-lg font-semibold border-b border-primario outline-none bg-transparent text-texto w-48"
+                          />
+                          <button onClick={guardarNombreEspacio} className="p-1 rounded hover:bg-primario-muy-claro text-primario" title="Guardar"><Check size={15} /></button>
+                          <button onClick={() => setEditandoNombre(false)} className="p-1 rounded hover:bg-fondo text-texto-muted" title="Cancelar"><X size={15} /></button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 group">
+                          <h2 className="text-lg font-semibold text-texto">{espacioActivoObj.nombre_espacio}</h2>
+                          {esCreador(espacioActivoObj) && (
+                            <button
+                              onClick={() => { setNombreEdit(espacioActivoObj.nombre_espacio); setEditandoNombre(true) }}
+                              className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-fondo text-texto-muted hover:text-primario transition-opacity"
+                              title="Renombrar"
+                            >
+                              <Pencil size={13} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {/* Tipo editable inline */}
+                      {editandoTipo && esCreador(espacioActivoObj) ? (
+                        <div className="flex items-center gap-1">
+                          <select
+                            autoFocus
+                            defaultValue={espacioActivoObj.tipo_espacio}
+                            onChange={(e) => guardarTipoEspacio(e.target.value)}
+                            onBlur={() => setEditandoTipo(false)}
+                            className="text-xs rounded border border-borde bg-surface px-2 py-0.5"
+                          >
+                            <option value="AREA">Temporal</option>
+                            <option value="ESPACIO">Permanente</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => esCreador(espacioActivoObj) && setEditandoTipo(true)}
+                          title={esCreador(espacioActivoObj) ? 'Cambiar tipo' : undefined}
+                          className={esCreador(espacioActivoObj) ? 'hover:opacity-70 transition-opacity' : ''}
+                        >
+                          <Insignia variante={espacioActivoObj.tipo_espacio === 'AREA' ? 'advertencia' : 'exito'}>
+                            {labelTipoEspacio(espacioActivoObj.tipo_espacio)}
+                          </Insignia>
+                        </button>
+                      )}
                       <Insignia variante="neutro">{labelAlcance(espacioActivoObj.alcance)}</Insignia>
                     </div>
-                    <div className="flex gap-1 shrink-0">
+                    <div className="flex gap-1 shrink-0 items-center flex-wrap justify-end">
+                      {/* Descargar Excel */}
+                      <button
+                        onClick={descargarExcel}
+                        disabled={docsEspacio.length === 0}
+                        className="p-1.5 rounded hover:bg-green-50 text-texto-muted hover:text-green-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        title="Descargar lista como Excel (CSV)"
+                      >
+                        <FileSpreadsheet size={16} />
+                      </button>
+                      {/* Descargar ZIP */}
+                      <button
+                        onClick={descargarZip}
+                        disabled={descargandoZip || docsEspacio.length === 0}
+                        className="p-1.5 rounded hover:bg-blue-50 text-texto-muted hover:text-blue-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        title="Descargar documentos como ZIP"
+                      >
+                        {descargandoZip ? <RefreshCw size={16} className="animate-spin" /> : <Archive size={16} />}
+                      </button>
                       <Boton variante="primario" tamano="sm" onClick={refrescarEspacio} cargando={refrescando}>
                         <RefreshCw size={14} className={refrescando ? 'animate-spin' : ''} />
                         <span className="ml-1">Refrescar</span>
@@ -1186,7 +1352,7 @@ export default function PaginaChatUsuario() {
                 <div className="flex-1 overflow-y-auto p-4">
                   <div className="flex items-center justify-between mb-2">
                     <h4 className="text-sm font-semibold text-texto">
-                      Documentos en la cola ({docsEspacio.length})
+                      Documentos en la cola ({totalDocsEspacio})
                     </h4>
                   </div>
                   <Tabla>
@@ -1282,6 +1448,30 @@ export default function PaginaChatUsuario() {
                       )}
                     </TablaCuerpo>
                   </Tabla>
+                  {/* Paginación */}
+                  {totalDocsEspacio > DOCS_POR_PAGINA && (
+                    <div className="flex items-center justify-between mt-3 text-xs text-texto-muted">
+                      <span>
+                        {((paginaDocsEspacio - 1) * DOCS_POR_PAGINA) + 1}–{Math.min(paginaDocsEspacio * DOCS_POR_PAGINA, totalDocsEspacio)} de {totalDocsEspacio}
+                      </span>
+                      <div className="flex gap-1">
+                        <button
+                          onClick={() => espacioActivoId && cargarDocsEspacio(espacioActivoId, paginaDocsEspacio - 1)}
+                          disabled={paginaDocsEspacio <= 1 || cargandoDocsEspacio}
+                          className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          ← Anterior
+                        </button>
+                        <button
+                          onClick={() => espacioActivoId && cargarDocsEspacio(espacioActivoId, paginaDocsEspacio + 1)}
+                          disabled={paginaDocsEspacio * DOCS_POR_PAGINA >= totalDocsEspacio || cargandoDocsEspacio}
+                          className="px-2 py-1 rounded border border-borde hover:bg-fondo disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          Siguiente →
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}
