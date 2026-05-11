@@ -107,6 +107,9 @@ export default function PaginaUbicacionesDocs() {
   } | null>(null)
   const [eliminando, setEliminando] = useState(false)
 
+  // ── Modal error árbol (directorio fuera del árbol) ────────────────────────
+  const [modalErrorArbol, setModalErrorArbol] = useState<{ nombreNuevo: string; raices: string } | null>(null)
+
   // ── Indexar Ubicaciones (escaneo) ──────────────────────────────────────────
   const [modalCarga, setModalCarga] = useState(false)
   const [escaneando, setEscaneando] = useState(false)
@@ -429,19 +432,21 @@ export default function PaginaUbicacionesDocs() {
     const nombresRoots = raices.map((r) => r.nombre_ubicacion)
 
     if (!persistido) {
-      // Sin handle persistido: permitir siempre. El backend maneja el caso de
-      // ancestro entrante (reparenteo) y de raíz nueva. Guardamos el handle
-      // para que cargas posteriores puedan validar parentesco.
+      // Sin handle persistido en esta sesión (caché limpiada, nuevo navegador, etc.).
+      // No podemos comparar directorios sin handle, así que aceptamos pero avisamos.
+      // El backend rechazará si hay conflicto estructural. Guardamos el handle para
+      // que cargas posteriores puedan validar parentesco correctamente.
+      toast.warning(
+        'No se puede verificar la relación con el árbol existente',
+        `Esta sesión no tiene referencia al directorio raíz anterior (raíces actuales: ${nombresRoots.join(', ')}). Asegúrate de que "${nombreNuevo}" pertenece al mismo árbol de carpetas.`,
+      )
       await idbSetHandle(nuevo, userId, grupoActivo)
       return true
     }
 
     const relacion = await compararHandles(persistido, nuevo)
     if (relacion === 'no-relacionados') {
-      toast.error(
-        `"${nombreNuevo}" no es ancestro ni descendiente del árbol cargado`,
-        `Solo se permiten cargas que extiendan el árbol existente (raíces actuales: ${nombresRoots.join(', ')}).`,
-      )
+      setModalErrorArbol({ nombreNuevo, raices: nombresRoots.join(', ') })
       return false
     }
 
@@ -1292,6 +1297,39 @@ export default function PaginaUbicacionesDocs() {
         cargando={eliminando || !previewEliminar}
         className="min-h-[680px]"
       />
+
+      {/* Modal Error — directorio fuera del árbol */}
+      <Modal
+        abierto={!!modalErrorArbol}
+        alCerrar={() => setModalErrorArbol(null)}
+        titulo="Directorio no permitido"
+      >
+        <div className="flex flex-col gap-4">
+          <div className="flex gap-3 items-start">
+            <div className="shrink-0 w-10 h-10 rounded-full bg-red-50 flex items-center justify-center">
+              <AlertTriangle size={20} className="text-error" />
+            </div>
+            <div className="text-sm text-texto-muted pt-1">
+              <p className="font-medium text-texto mb-1">
+                &ldquo;{modalErrorArbol?.nombreNuevo}&rdquo; no pertenece al árbol de ubicaciones.
+              </p>
+              <p>
+                Solo se pueden agregar directorios que sean ancestros o descendientes del árbol existente.
+              </p>
+              {modalErrorArbol?.raices && (
+                <p className="mt-2">
+                  <span className="font-medium">Raíces actuales:</span> {modalErrorArbol.raices}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex justify-end pt-2">
+            <Boton variante="primario" onClick={() => setModalErrorArbol(null)}>
+              Entendido
+            </Boton>
+          </div>
+        </div>
+      </Modal>
 
       {/* Modal Confirmar Cambio de Tipo */}
       <ModalConfirmar
