@@ -1072,26 +1072,6 @@ export default function PaginaCargaDocsUsuario() {
       ══════════════════════════════════════════════════════════════════════ */}
       {tabActiva === 'ubicaciones' && (
         <div className="flex flex-col gap-4">
-          {/* Contadores de documentos en la tab Ubicaciones */}
-          <div className="grid grid-cols-4 gap-4 rounded-lg border border-borde bg-fondo-tarjeta p-4">
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="page-heading">{totalDocs}</span>
-              <span className="text-xs text-texto-muted">{t('documentosTotales')}</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="stat-number text-green-600">{docsVectorizados}</span>
-              <span className="text-xs text-texto-muted">{t('vectorizados')}</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="stat-number text-sky-600">{docsPendientes}</span>
-              <span className="text-xs text-texto-muted">{t('pendientes')}</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="stat-number text-amber-500">{docsNoVectorizables}</span>
-              <span className="text-xs text-texto-muted">{t('noVectorizables')}</span>
-            </div>
-          </div>
-
           {/* Pipeline completo: Paso 1 (indexar ubicaciones) + Paso 2..6 (Documentos) */}
           <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-4">
             <BarraPaqueteOperativo />
@@ -1119,8 +1099,8 @@ export default function PaginaCargaDocsUsuario() {
             <div className="flex gap-3">
               {!ejecutando ? (
                 <Boton variante="primario" className="flex-1" onClick={ejecutarPipelineUbicaciones}>
-                  <ScanSearch size={15} />
-                  Ejecutar pipeline completo
+                  <FolderOpen size={15} />
+                  Vectorizar
                 </Boton>
               ) : (
                 <Boton variante="peligro" className="flex-1" onClick={detener}>{t('detener')}</Boton>
@@ -1128,87 +1108,7 @@ export default function PaginaCargaDocsUsuario() {
             </div>
           </div>
 
-          {/* Barra de progreso de sincronización inline (botón Indexar manual) */}
-          {syncEstado !== 'idle' && (
-            <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-2">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-semibold text-texto">
-                  {syncEstado === 'escaneando' ? 'Escaneando directorio…' : syncEstado === 'sincronizando' ? 'Sincronizando ubicaciones…' : syncEstado === 'listo' ? 'Listo' : 'Error'}
-                </span>
-                {syncEstado === 'listo' && <span className="text-texto-muted">✓</span>}
-              </div>
-              <div className="h-2 rounded-full overflow-hidden bg-gray-100">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${syncEstado === 'escaneando' || syncEstado === 'sincronizando' ? 'animate-pulse' : ''}`}
-                  style={{
-                    width: syncEstado === 'listo' ? '100%' : syncEstado === 'error' ? '100%' : '60%',
-                    backgroundColor: syncEstado === 'error' ? '#EF4444' : syncEstado === 'listo' ? '#22C55E' : '#074B91',
-                  }}
-                />
-              </div>
-              {syncMensaje && (
-                <p className={`text-xs ${syncEstado === 'error' ? 'text-red-600' : 'text-texto-muted'}`}>{syncMensaje}</p>
-              )}
-            </div>
-          )}
-
-          {/* Toolbar — misma presentación que /ubicaciones-docs */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex gap-2 flex-wrap items-start">
-              <div className="flex flex-col items-center">
-                <Boton variante="primario" onClick={sincronizarDirectamente} cargando={syncEstado === 'escaneando' || syncEstado === 'sincronizando'}>
-                  <FolderSync size={16} />
-                  Indexar ubicaciones
-                </Boton>
-                <span className="text-[11px] text-texto-muted mt-0.5">Escanea y sincroniza</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <Boton variante="contorno" onClick={iniciarEscaneoDir} cargando={escaneandoDir}>
-                  <FolderInput size={16} />
-                  {t('cargarUbicacionesDesdeDirectorio')}
-                </Boton>
-                <span className="text-[11px] text-texto-muted mt-0.5">{t('yTodosSubdirectorios')}</span>
-              </div>
-              <div className="flex flex-col items-center">
-                <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbIndividual}>
-                  <FolderPlus size={16} />
-                  {t('cargarUbicacion')}
-                </Boton>
-                <span className="text-[11px] text-texto-muted mt-0.5">{t('soloUnDirectorio')}</span>
-              </div>
-              <Boton variante="contorno" className="h-[38px]" onClick={() => setExpandidos(new Set(ubicaciones.map((u) => u.codigo_ubicacion)))} disabled={!ubicaciones.length}>
-                {t('expandirTodo')}
-              </Boton>
-              <Boton variante="contorno" className="h-[38px]" onClick={() => setExpandidos(new Set())} disabled={!ubicaciones.length}>
-                {t('colapsarTodo')}
-              </Boton>
-              <Boton
-                variante="contorno"
-                className="h-[38px]"
-                onClick={() =>
-                  exportarExcel(
-                    filtradosUbs as unknown as Record<string, unknown>[],
-                    [
-                      { titulo: t('colCodigo'), campo: 'codigo_ubicacion' },
-                      { titulo: t('colNombre'), campo: 'nombre_ubicacion' },
-                      { titulo: t('colRuta'), campo: 'url' },
-                      { titulo: t('colPadre'), campo: 'codigo_ubicacion_superior' },
-                      { titulo: t('colNivel'), campo: 'nivel' },
-                      { titulo: t('colHabilitada'), campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
-                      { titulo: t('colHabilitada'), campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? tc('activo') : tc('inactivo')) },
-                    ],
-                    'ubicaciones-docs'
-                  )
-                }
-                disabled={filtradosUbs.length === 0}
-              >
-                <Download size={15} />
-                {t('excel')}
-              </Boton>
-            </div>
-          </div>
-
-          {/* Árbol jerárquico — misma presentación que /ubicaciones-docs */}
+          {/* Árbol jerárquico */}
           <div className="border border-borde rounded-lg bg-fondo-tarjeta">
             {cargandoUbs ? (
               <div className="py-8 text-center text-texto-muted">{tc('cargando')}</div>
@@ -1221,6 +1121,26 @@ export default function PaginaCargaDocsUsuario() {
             ) : (
               <div className="py-2">{raices.map((u) => renderNodo(u))}</div>
             )}
+          </div>
+
+          {/* Contadores de documentos — al final */}
+          <div className="grid grid-cols-4 gap-4 rounded-lg border border-borde bg-fondo-tarjeta p-4">
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="page-heading">{totalDocs}</span>
+              <span className="text-xs text-texto-muted">{t('documentosTotales')}</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="stat-number text-green-600">{docsVectorizados}</span>
+              <span className="text-xs text-texto-muted">{t('vectorizados')}</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="stat-number text-sky-600">{docsPendientes}</span>
+              <span className="text-xs text-texto-muted">{t('pendientes')}</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="stat-number text-amber-500">{docsNoVectorizables}</span>
+              <span className="text-xs text-texto-muted">{t('noVectorizables')}</span>
+            </div>
           </div>
         </div>
       )}
