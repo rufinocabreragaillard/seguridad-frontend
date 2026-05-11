@@ -511,43 +511,10 @@ export default function PaginaUbicacionesDocs() {
         codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
       })
       setResultadoSync(res)
-      // Tras sync: cargar el árbol completo y auto-expandir la raíz
-      // sincronizada para que las nuevas ubicaciones queden visibles sin
-      // que el usuario tenga que ir clicando subdirectorio por subdirectorio.
+      // Tras sync: recargar desde raíces (colapsado) para no abrumar con miles de nodos expandidos.
       try {
-        const todas = await ubicacionesDocsApi.listar({ todo: true })
-        setUbicaciones(todas)
-        const padres = new Set(
-          todas.map((u) => u.codigo_ubicacion_superior).filter((c): c is string => !!c)
-        )
-        setPadresCargados(padres)
-        if (raiz?.codigo_ubicacion) {
-          // Expandir la raíz + todos los ancestros de las ubicaciones nuevas
-          // para que las nuevas hojas queden accesibles con un par de clics
-          // (no abrimos todo el árbol — con miles de nodos sería ruidoso).
-          const nuevosCodigos = new Set(
-            datosEscaneo.directorios
-              .map((d) => d.codigo_ubicacion)
-              .filter((c) => !arbolCompletoCache.some((u) => u.codigo_ubicacion === c))
-          )
-          const aExpandir = new Set<string>([raiz.codigo_ubicacion])
-          const padreDe = new Map<string, string | null>(
-            todas.map((u) => [u.codigo_ubicacion, u.codigo_ubicacion_superior || null])
-          )
-          const nivelDe = new Map<string, number>(
-            todas.map((u) => [u.codigo_ubicacion, u.nivel ?? 99])
-          )
-          for (const cod of nuevosCodigos) {
-            let p = padreDe.get(cod) ?? null
-            while (p) {
-              if ((nivelDe.get(p) ?? 99) <= 1) aExpandir.add(p)
-              p = padreDe.get(p) ?? null
-            }
-          }
-          setExpandidos(aExpandir)
-        }
+        await cargarRaices()
       } catch {
-        // si falla la recarga, al menos refrescamos las raíces
         cargar()
       }
     } catch (e: unknown) {
@@ -1254,7 +1221,7 @@ export default function PaginaUbicacionesDocs() {
                     Generar
                   </Boton>
                   <Boton
-                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    variante="accion-sincronizar"
                     onClick={async () => {
                       setSincronizandoMd(true); setMensajeMd(null)
                       try {
