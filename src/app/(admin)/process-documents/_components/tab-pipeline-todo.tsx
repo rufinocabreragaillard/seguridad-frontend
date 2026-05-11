@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { FolderOpen, X, ChevronDown, ChevronRight } from 'lucide-react'
+import { FolderOpen, X, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, cargaDocumentosApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
@@ -117,14 +117,21 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     return () => document.removeEventListener('mousedown', handler)
   }, [])
 
+  const conteosTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
   useEffect(() => {
     if (ejecutando && tiempoInicio) {
       timerRef.current = setInterval(() => setTiempoTranscurrido(Math.floor((Date.now() - tiempoInicio) / 1000)), 1000)
+      conteosTimerRef.current = setInterval(cargarConteos, 5000)
     } else {
       if (timerRef.current) clearInterval(timerRef.current)
+      if (conteosTimerRef.current) clearInterval(conteosTimerRef.current)
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current) }
-  }, [ejecutando, tiempoInicio])
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      if (conteosTimerRef.current) clearInterval(conteosTimerRef.current)
+    }
+  }, [ejecutando, tiempoInicio, cargarConteos])
 
   const cargarConteos = useCallback(async () => {
     try {
@@ -447,7 +454,8 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     return (
       <div className="flex flex-col gap-1.5 flex-1 min-w-0">
         <div className="flex items-center justify-between gap-1">
-          <span className={`text-[11px] font-semibold truncate ${estaActivo ? 'text-texto' : estaListo ? 'text-texto-muted' : 'text-texto-muted opacity-50'}`}>
+          <span className={`text-[11px] font-semibold truncate flex items-center gap-1 ${estaActivo ? 'text-texto' : estaListo ? 'text-texto-muted' : 'text-texto-muted opacity-50'}`}>
+            {estaActivo && <Loader2 size={10} className="animate-spin shrink-0" />}
             {num}. {nombre}
           </span>
           <span className="text-[11px] text-texto-muted tabular-nums shrink-0">
@@ -558,7 +566,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           {pendingCarga && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-center gap-4">
               <p className="text-sm text-blue-800 flex-1">
-                <strong>{pendingCarga.archivos.length} archivos</strong> encontrados en <strong>{pendingCarga.nombreRaiz}</strong>. ¿Confirmas cargarlos a la BD?
+                <strong>{pendingCarga.archivos.length} archivos</strong> encontrados en <strong>{pendingCarga.nombreRaiz}</strong>. ¿Confirmas registrarlos en la BD?
               </p>
               <div className="flex gap-2 shrink-0">
                 <Boton variante="primario" tamano="sm" onClick={confirmarCarga}>Confirmar</Boton>
@@ -598,7 +606,12 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
             </Boton>
             {/* Pasos 3-6 */}
             <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando}>
-              Procesar (3-6)
+              {ejecutando ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 size={14} className="animate-spin" />
+                  Procesando…
+                </span>
+              ) : 'Procesar documentos (3-6)'}
             </Boton>
             <Boton variante="peligro" onClick={detener} disabled={!ejecutando}>
               Cancelar
@@ -614,8 +627,11 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       {/* ── Estado del pipeline ──────────────────────────────────────────────── */}
       <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4">
         <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-texto-muted uppercase">Estado del pipeline</p>
-          <button type="button" onClick={cargarConteos} className="text-xs text-texto-muted hover:text-primario transition-colors" disabled={ejecutando}>Actualizar</button>
+          <p className="text-xs font-semibold text-texto-muted uppercase flex items-center gap-2">
+            Estado del pipeline
+            {ejecutando && <Loader2 size={11} className="animate-spin text-primario" />}
+          </p>
+          {!ejecutando && <button type="button" onClick={cargarConteos} className="text-xs text-texto-muted hover:text-primario transition-colors">Actualizar</button>}
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
           {ESTADOS_PIPELINE.map((estado) => {
