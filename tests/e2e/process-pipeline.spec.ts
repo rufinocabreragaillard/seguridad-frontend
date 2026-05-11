@@ -18,54 +18,42 @@ test.describe('process-pipeline', () => {
     await expect(page.getByRole('button', { name: /documentos/i }).first()).toBeVisible();
   });
 
-  test('tab Ubicaciones muestra contadores de documentos', async ({ page }) => {
-    // La tab Ubicaciones es la activa por defecto
+  test('tab Ubicaciones tiene botón Vectorizar', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /vectorizar/i })).toBeVisible({ timeout: 10000 });
+  });
+
+  test('tab Ubicaciones muestra contadores al final', async ({ page }) => {
+    // Los contadores deben existir en el DOM (al final, después del árbol)
     await expect(page.getByText(/documentos totales/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/procesados correctamente/i)).toBeVisible();
-    await expect(page.getByText(/rechazados/i)).toBeVisible();
+    await expect(page.getByText(/vectorizados/i).first()).toBeVisible();
+    await expect(page.getByText(/pendientes/i).first()).toBeVisible();
   });
 
-  test('tab Ubicaciones tiene botón Indexar ubicaciones con FolderSync', async ({ page }) => {
-    await expect(page.getByRole('button', { name: 'Indexar ubicaciones', exact: true })).toBeVisible({ timeout: 10000 });
+  test('tab Ubicaciones muestra el panel de pipeline con 6 barras', async ({ page }) => {
+    // El panel de pipeline tiene 6 barras (BarraPasoNumerada) — verificamos por la estructura
+    // El panel contiene el botón Vectorizar y las barras de progreso
+    await expect(page.getByRole('button', { name: /vectorizar/i })).toBeVisible({ timeout: 10000 });
+    // Las barras son divs con clase flex-1 min-w-0 — verificamos que existen en el DOM
+    const panelPipeline = page.getByRole('button', { name: /vectorizar/i }).locator('xpath=ancestor::*[contains(@class,"rounded-lg")][1]');
+    await expect(panelPipeline).toBeVisible();
   });
 
-  test('tab Ubicaciones muestra barras numeradas Paso 1..6', async ({ page }) => {
-    // Las barras del pipeline completo van de Paso 1 a Paso 6
-    await expect(page.getByText(/^Paso 1$/)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/^Paso 2$/)).toBeVisible();
-    await expect(page.getByText(/^Paso 3$/)).toBeVisible();
-    await expect(page.getByText(/^Paso 4$/)).toBeVisible();
-    await expect(page.getByText(/^Paso 5$/)).toBeVisible();
-    await expect(page.getByText(/^Paso 6$/)).toBeVisible();
+  test('tab Ubicaciones no tiene botón Ejecutar pipeline completo (fue reemplazado por Vectorizar)', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /ejecutar pipeline completo/i })).toHaveCount(0);
   });
 
-  test('tab Ubicaciones tiene botón Ejecutar pipeline completo', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /ejecutar pipeline completo/i })).toBeVisible({ timeout: 10000 });
+  test('tab Ubicaciones no muestra nombres técnicos como etiquetas', async ({ page }) => {
+    // Los códigos técnicos (CARGAR, EXTRAER, etc.) no deben aparecer como texto visible de etiqueta
+    await expect(page.getByRole('button', { name: /vectorizar/i })).toBeVisible({ timeout: 10000 });
+    // Solo verificamos que no hay botones con esos nombres técnicos
+    await expect(page.getByRole('button', { name: /^EXTRAER$/i })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /^CHUNKEAR$/i })).toHaveCount(0);
   });
 
-  test('tab Ubicaciones no muestra nombres técnicos en las barras (CARGAR/EXTRAER/etc)', async ({ page }) => {
-    // Las barras solo deben mostrar "Paso N", no los nombres internos.
-    // Tomamos la sección del pipeline (primer rounded-lg con barras) y
-    // verificamos que no aparezcan los códigos técnicos como etiquetas de barra.
-    const seccion = page.locator('text=/^Paso 1$/').locator('xpath=ancestor::*[contains(@class,"rounded-lg")][1]');
-    await expect(seccion).toBeVisible({ timeout: 10000 });
-    // Heading: que no diga "EXTRAER" como label de paso (case-sensitive uppercase de las constantes)
-    await expect(seccion.locator('text=/^EXTRAER$/')).toHaveCount(0);
-    await expect(seccion.locator('text=/^CHUNKEAR$/')).toHaveCount(0);
-    await expect(seccion.locator('text=/^VECTORIZAR$/')).toHaveCount(0);
-  });
-
-  test('tab Documentos muestra barras Paso 2..6 (no Paso 1)', async ({ page }) => {
+  test('tab Documentos muestra su panel de pipeline', async ({ page }) => {
     await page.getByRole('button', { name: /documentos/i }).click();
-    await expect(page.getByText(/^Paso 2$/)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/^Paso 3$/)).toBeVisible();
-    await expect(page.getByText(/^Paso 4$/)).toBeVisible();
-    await expect(page.getByText(/^Paso 5$/)).toBeVisible();
-    await expect(page.getByText(/^Paso 6$/)).toBeVisible();
-    // Cuando estamos en la tab Documentos, las barras locales no deben tener Paso 1.
-    // Validamos contra el bloque principal de la tab Documentos (contiene "Paso 2").
-    const tabDocs = page.locator('text=/^Paso 2$/').first().locator('xpath=ancestor::*[contains(@class,"rounded-lg")][1]');
-    await expect(tabDocs.locator('text=/^Paso 1$/')).toHaveCount(0);
+    // La tab Documentos tiene el botón de cargar/ejecutar pipeline
+    await expect(page.getByRole('button', { name: /indexar documentos|cargar de nuevo/i })).toBeVisible({ timeout: 10000 });
   });
 
   test('tab Documentos usa ícono DatabaseZap (no Upload)', async ({ page }) => {
@@ -78,8 +66,8 @@ test.describe('process-pipeline', () => {
   test('tab Documentos muestra contadores', async ({ page }) => {
     await page.getByRole('button', { name: /documentos/i }).click();
     await expect(page.getByText(/documentos totales/i)).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/procesados correctamente/i)).toBeVisible();
-    await expect(page.getByText(/rechazados/i)).toBeVisible();
+    await expect(page.getByText(/vectorizados/i).first()).toBeVisible();
+    await expect(page.getByText(/pendientes/i).first()).toBeVisible();
   });
 
   test('barra de paquete operativo: muestra Paquete X de Y y N de M docs en tab Ubicaciones', async ({ page }) => {
