@@ -1385,6 +1385,12 @@ export const colaEstadosDocsApi = {
     api.get<ColaEstadoDoc[]>('/cola-estados-docs/por-ids', { params: { ids: ids.join(',') } }).then((r) => r.data),
   resumenPipeline: (ventanaSeg = 120) =>
     api.get<ResumenPipeline>('/cola-estados-docs/resumen-pipeline', { params: { ventana_seg: ventanaSeg } }).then((r) => r.data),
+  limpiarCompletados: (estadoDestino?: string) =>
+    api.post<{ eliminados: number }>(
+      '/cola-estados-docs/limpiar-completados',
+      undefined,
+      { params: estadoDestino ? { estado_destino: estadoDestino } : {} },
+    ).then((r) => r.data),
 }
 
 export interface ResumenFase {

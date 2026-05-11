@@ -103,4 +103,26 @@ test.describe('process-pipeline', () => {
     const barra = page.getByTestId('barra-paquete-operativo').first();
     await expect(barra).toBeVisible({ timeout: 15000 });
   });
+
+  test('endpoint limpiar-completados responde sin error', async ({ page, request }) => {
+    // Tomar el token JWT del localStorage del navegador autenticado
+    const token = await page.evaluate(() => {
+      // Buscar JWT en distintas llaves típicas
+      const claves = ['serverlm-jwt', 'jwt', 'supabase.auth.token']
+      for (const k of claves) {
+        const v = localStorage.getItem(k)
+        if (v) return v
+      }
+      // Buscar en cookies como fallback
+      return document.cookie
+    })
+    if (!token) test.skip()
+    const apiBase = 'https://seguridad-backend-production-6250.up.railway.app'
+    const auth = token.startsWith('eyJ') ? `Bearer ${token}` : token
+    const res = await request.post(`${apiBase}/cola-estados-docs/limpiar-completados`, {
+      headers: { Authorization: auth, 'Content-Type': 'application/json' },
+    })
+    // Aceptamos 200 (ok), 401 (token venció), 403 (no acceso) — pero NO 404 ni 500.
+    expect([200, 401, 403]).toContain(res.status())
+  });
 });

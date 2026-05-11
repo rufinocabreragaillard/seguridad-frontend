@@ -643,8 +643,9 @@ export default function PaginaCargaDocsUsuario() {
     return true
   }
 
-  const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string): Promise<boolean> => {
-    const docs = await documentosApi.listar({ codigo_estado_doc: estadoOrigen })
+  const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string, tope?: number): Promise<boolean> => {
+    let docs = await documentosApi.listar({ codigo_estado_doc: estadoOrigen })
+    if (tope && tope > 0 && docs.length > tope) docs = docs.slice(0, tope)
     if (!docs.length) { setPaso(key, { estado: 'listo' }); return true }
     setPaso(key, { total: docs.length, completados: 0, estado: 'activo' })
     const items = docs.map((d) => ({ codigo_documento: d.codigo_documento, codigo_estado_doc_destino: estadoDestino }))
@@ -724,21 +725,79 @@ export default function PaginaCargaDocsUsuario() {
     }
   }
 
-  const ejecutarUnPaso = async (key: string): Promise<boolean> => {
+  const ejecutarUnPaso = async (key: string, tope?: number): Promise<boolean> => {
     if (key === 'CARGAR') return ejecutarCargar()
     if (key === 'EXTRAER') return ejecutarExtraer()
     const paso = PASOS.find((p) => p.key === key)
     if (!paso) return true
-    return ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
+    return ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino, tope)
   }
 
+  // Recorre las fases del pipeline en una sola ventana de hasta `tope` docs.
+  // Si tope no viene, procesa todo lo pendiente (compatibilidad hacia atrás).
+  const ejecutarFasesDelPipeline = async (tope?: number): Promise<boolean> => {
+    for (const paso of PASOS) {
+      if (abortRef.current) return false
+      // Solo aplico tope a las fases que leen desde un estado intermedio del pipeline.
+      // CARGAR (filesystem→CARGADO) y EXTRAER (client-side) procesan lo que el usuario
+      // seleccionó, sin tope adicional.
+      const topeFase = paso.clienteSide ? undefined : tope
+      const ok = await ejecutarUnPaso(paso.key, topeFase)
+      if (!ok) return false
+    }
+    return true
+  }
+
+  // Pipeline por paquetes operativos: procesa ventanas de TAMANO_PAQUETE docs,
+  // limpia COMPLETADOs entre paquetes para acotar SQLite/WAL en cliente y dar
+  // feedback amigable al usuario en pasos discretos. Ver:
+  // docs/planes/PLAN_PROCESAMIENTO_PAQUETES.md § Paquete operativo
   const ejecutarPipeline = async () => {
     setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); suscribirCola()
     try {
-      for (const paso of PASOS) {
-        if (abortRef.current) break
-        const ok = await ejecutarUnPaso(paso.key)
-        if (!ok) break
+      // Leer tamaño de paquete del resumen del pipeline
+      let tamanoPaquete = 0
+      try {
+        const resumen = await colaEstadosDocsApi.resumenPipeline(120)
+        tamanoPaquete = resumen?.paquete?.tamano_paquete ?? 0
+      } catch { /* si falla, modo legacy sin paquetes */ }
+
+      if (tamanoPaquete <= 0) {
+        // Modo legacy: procesa todo en una sola corrida
+        for (const paso of PASOS) {
+          if (abortRef.current) break
+          const ok = await ejecutarUnPaso(paso.key)
+          if (!ok) break
+        }
+      } else {
+        // Loop de paquetes: corre fases con tope = TAMANO_PAQUETE, limpia, repite
+        const ESTADOS_PIPELINE_INTERMEDIOS = ['CARGADO', 'METADATA', 'ESCANEADO', 'CHUNKEADO']
+        let iteraciones = 0
+        const MAX_ITERACIONES = 200 // safety guard
+        while (!abortRef.current && iteraciones < MAX_ITERACIONES) {
+          iteraciones += 1
+          // Refrescar resumen para saber si quedan docs pendientes
+          let pendientes = 0
+          try {
+            const conteos = await documentosApi.contarPorEstado()
+            pendientes = ESTADOS_PIPELINE_INTERMEDIOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
+          } catch { break }
+          if (pendientes <= 0) break
+
+          // Procesar UNA ventana
+          const ok = await ejecutarFasesDelPipeline(tamanoPaquete)
+          if (!ok) break
+
+          // Cierre del paquete: limpia COMPLETADOs para acotar la cola
+          try { await colaEstadosDocsApi.limpiarCompletados() } catch { /* no bloquear si falla */ }
+
+          // Refrescar contadores para que la BarraPaqueteOperativo avance
+          await cargarConteos()
+          try {
+            const resumen2 = await colaEstadosDocsApi.resumenPipeline(120)
+            setResumenPipeline(resumen2)
+          } catch { /* ignorar */ }
+        }
       }
     } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
     finally { desuscribirCola(); setEjecutando(false); await cargarConteos() }
@@ -767,11 +826,40 @@ export default function PaginaCargaDocsUsuario() {
         return
       }
       if (abortRef.current) return
-      // Pasos 2-6: pipeline de Documentos
-      for (const paso of PASOS) {
-        if (abortRef.current) break
-        const ok = await ejecutarUnPaso(paso.key)
-        if (!ok) break
+      // Pasos 2-6: pipeline de Documentos en paquetes operativos
+      let tamanoPaquete = 0
+      try {
+        const resumen = await colaEstadosDocsApi.resumenPipeline(120)
+        tamanoPaquete = resumen?.paquete?.tamano_paquete ?? 0
+      } catch { /* modo legacy */ }
+
+      if (tamanoPaquete <= 0) {
+        for (const paso of PASOS) {
+          if (abortRef.current) break
+          const ok = await ejecutarUnPaso(paso.key)
+          if (!ok) break
+        }
+      } else {
+        const ESTADOS_PIPELINE_INTERMEDIOS = ['CARGADO', 'METADATA', 'ESCANEADO', 'CHUNKEADO']
+        let iteraciones = 0
+        const MAX_ITERACIONES = 200
+        while (!abortRef.current && iteraciones < MAX_ITERACIONES) {
+          iteraciones += 1
+          let pendientes = 0
+          try {
+            const conteos = await documentosApi.contarPorEstado()
+            pendientes = ESTADOS_PIPELINE_INTERMEDIOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
+          } catch { break }
+          if (pendientes <= 0) break
+          const ok = await ejecutarFasesDelPipeline(tamanoPaquete)
+          if (!ok) break
+          try { await colaEstadosDocsApi.limpiarCompletados() } catch { /* no bloquear */ }
+          await cargarConteos()
+          try {
+            const resumen2 = await colaEstadosDocsApi.resumenPipeline(120)
+            setResumenPipeline(resumen2)
+          } catch { /* ignorar */ }
+        }
       }
     } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
     finally { desuscribirCola(); setEjecutando(false); await cargarConteos() }
