@@ -433,6 +433,15 @@ export default function PaginaCargaDocsUsuario() {
   const [resumenPipeline, setResumenPipeline] = useState<ResumenPipeline | null>(null)
   const resumenPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Diálogo de reanudación: detecta items EN_PROCESO huérfanos de sesión previa
+  // (típicamente tras reinicio de Railway). Se chequea una vez al montar/cambiar
+  // de grupo. Si hay > 0, abre ModalConfirmar; el usuario elige Continuar (libera
+  // + reanuda) o Dejar pausados (cierra y no vuelve a preguntar en esa sesión).
+  const HUERFANOS_MINUTOS = 5
+  const [huerfanosCount, setHuerfanosCount] = useState<number>(0)
+  const [mostrarModalReanudacion, setMostrarModalReanudacion] = useState(false)
+  const [reanudando, setReanudando] = useState(false)
+
   const handleColaChange = useCallback(() => {
     if (resolveColaRef.current) { resolveColaRef.current(); resolveColaRef.current = null }
   }, [])
@@ -507,6 +516,34 @@ export default function PaginaCargaDocsUsuario() {
     cargarConteos()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grupoActivo])
+
+  // Chequeo de huérfanos al montar / cambiar de grupo. Sólo abre el modal si hay > 0.
+  useEffect(() => {
+    if (!grupoActivo) return
+    colaEstadosDocsApi.contarHuerfanos(HUERFANOS_MINUTOS)
+      .then(({ cantidad }) => {
+        if (cantidad > 0) {
+          setHuerfanosCount(cantidad)
+          setMostrarModalReanudacion(true)
+        }
+      })
+      .catch(() => { /* silencioso: si falla el chequeo no bloqueamos la pantalla */ })
+  }, [grupoActivo])
+
+  const confirmarReanudacion = async () => {
+    setReanudando(true)
+    try {
+      await colaEstadosDocsApi.recuperarHuerfanos(HUERFANOS_MINUTOS)
+      await colaEstadosDocsApi.ejecutar()
+      setMostrarModalReanudacion(false)
+      cargarConteos()
+    } catch {
+      // Si falla, el usuario puede reintentar manualmente desde el botón Ejecutar
+      setMostrarModalReanudacion(false)
+    } finally {
+      setReanudando(false)
+    }
+  }
 
   const setPaso = (key: string, patch: Partial<ProgresoPaso>) =>
     setProgresos((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
@@ -1678,6 +1715,19 @@ export default function PaginaCargaDocsUsuario() {
         mensaje={confirmEliminarDoc ? t('quitarDocumentoMensaje', { nombre: confirmEliminarDoc.nombre_documento }) : ''}
         textoConfirmar={t('btnQuitar')}
         cargando={eliminandoDoc}
+      />
+
+      {/* Modal reanudación: items EN_PROCESO huérfanos de sesión previa */}
+      <ModalConfirmar
+        abierto={mostrarModalReanudacion}
+        alCerrar={() => setMostrarModalReanudacion(false)}
+        alConfirmar={confirmarReanudacion}
+        titulo="Reanudar procesamiento"
+        mensaje={`Hay ${huerfanosCount} documento${huerfanosCount === 1 ? '' : 's'} colgado${huerfanosCount === 1 ? '' : 's'} de la última sesión (más de ${HUERFANOS_MINUTOS} min en proceso). ¿Reanudar el procesamiento ahora?`}
+        textoConfirmar="Reanudar"
+        textoCancelar="Dejar pausados"
+        variante="primario"
+        cargando={reanudando}
       />
     </div>
   )

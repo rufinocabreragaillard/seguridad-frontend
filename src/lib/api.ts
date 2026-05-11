@@ -1364,6 +1364,11 @@ export const colaEstadosDocsApi = {
       undefined,
       { params: { minutos } },
     ).then((r) => r.data),
+  contarHuerfanos: (minutos = 5) =>
+    api.get<{ cantidad: number; minutos: number }>(
+      '/cola-estados-docs/huerfanos',
+      { params: { minutos } },
+    ).then((r) => r.data),
   idsInvalidos: (estadoDestino: string) =>
     api.get<number[]>('/cola-estados-docs/ids-invalidos', { params: { estado_destino: estadoDestino } }).then((r) => r.data),
   porDocumento: (codigoDocumento: number) =>
