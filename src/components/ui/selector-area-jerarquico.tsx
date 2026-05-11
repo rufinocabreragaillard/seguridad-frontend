@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Search, ChevronDown, X, FolderOpen } from 'lucide-react'
 import type { Area } from '@/lib/tipos'
 
@@ -51,6 +52,7 @@ function ordenarJerarquico(areas: Area[]): Area[] {
 }
 
 export function SelectorAreaJerarquico({ areas, valor, onChange, deshabilitado, cargando }: Props) {
+  const tc = useTranslations('common')
   const [abierto, setAbierto] = useState(false)
   const [busqueda, setBusqueda] = useState('')
   const ref = useRef<HTMLDivElement>(null)
@@ -59,7 +61,7 @@ export function SelectorAreaJerarquico({ areas, valor, onChange, deshabilitado, 
   const areaSeleccionada = areas.find((a) => a.codigo_area === valor)
   const etiquetaSeleccionada = areaSeleccionada
     ? construirEtiqueta(areaSeleccionada, areas)
-    : 'Sin área'
+    : tc('sinArea')
 
   const areasOrdenadas = useMemo(() => ordenarJerarquico(areas), [areas])
 
@@ -107,7 +109,7 @@ export function SelectorAreaJerarquico({ areas, valor, onChange, deshabilitado, 
         className={claseBoton}
       >
         <span className={areaSeleccionada ? 'text-texto' : 'text-texto-muted'}>
-          {cargando ? 'Cargando áreas…' : etiquetaSeleccionada}
+          {cargando ? tc('cargandoAreas') : etiquetaSeleccionada}
         </span>
         <ChevronDown size={14} className="shrink-0 text-texto-muted" />
       </button>
@@ -121,7 +123,7 @@ export function SelectorAreaJerarquico({ areas, valor, onChange, deshabilitado, 
               <input
                 ref={inputRef}
                 type="text"
-                placeholder="Buscar área…"
+                placeholder={tc('buscarArea')}
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 className="w-full pl-7 pr-6 py-1.5 text-sm rounded border border-borde bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario"
@@ -147,11 +149,11 @@ export function SelectorAreaJerarquico({ areas, valor, onChange, deshabilitado, 
                 !valor ? 'bg-primario/10 font-medium text-primario' : 'text-texto-muted'
               }`}
             >
-              Sin área
+              {tc('sinArea')}
             </button>
 
             {filtradas.length === 0 && (
-              <div className="px-3 py-2 text-sm text-texto-muted">Sin resultados</div>
+              <div className="px-3 py-2 text-sm text-texto-muted">{tc('sinResultados')}</div>
             )}
 
             {filtradas.map((area) => {
@@ -176,7 +178,7 @@ export function SelectorAreaJerarquico({ areas, valor, onChange, deshabilitado, 
                     <span className="text-xs text-texto-muted">({area.alias})</span>
                   )}
                   <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 bg-amber-100 text-amber-700">
-                    Área
+                    {tc('area')}
                   </span>
                 </button>
               )

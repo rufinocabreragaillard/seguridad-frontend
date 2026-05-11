@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Lock, Unlock } from 'lucide-react'
 import {
   descifrarPayload,
@@ -25,6 +26,7 @@ interface Props {
  * ingresada en la sesión, descifra automáticamente.
  */
 export function TextoCifrado({ payload, render, className, vacioLabel }: Props) {
+  const tc = useTranslations('common')
   const [textoPlano, setTextoPlano] = useState<string | null>(null)
   const [pidiendoClave, setPidiendoClave] = useState(false)
   const [claveInput, setClaveInput] = useState('')
@@ -41,7 +43,7 @@ export function TextoCifrado({ payload, render, className, vacioLabel }: Props) 
   }, [payload])
 
   if (!payload || !payload.cifrado) {
-    return <span className="text-sm text-texto-muted italic">{vacioLabel ?? 'Sin contenido.'}</span>
+    return <span className="text-sm text-texto-muted italic">{vacioLabel ?? tc('sinContenido')}</span>
   }
 
   if (textoPlano !== null) {
@@ -62,7 +64,7 @@ export function TextoCifrado({ payload, render, className, vacioLabel }: Props) 
       setClaveInput('')
     } catch (e) {
       const msg = (e as Error).message
-      setError(msg === 'clave-incorrecta' ? 'Clave incorrecta.' : 'Ingresa una clave.')
+      setError(msg === 'clave-incorrecta' ? tc('claveIncorrecta') : tc('ingresaUnaClave'))
     }
   }
 
@@ -70,17 +72,17 @@ export function TextoCifrado({ payload, render, className, vacioLabel }: Props) 
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2 text-sm text-texto-muted border border-dashed border-borde rounded p-3 bg-fondo">
         <Lock size={16} />
-        <span className="flex-1">Contenido cifrado. Nivel de clave: <b>{payload.nivel_clave}</b>.</span>
+        <span className="flex-1">{tc('contenidoCifrado', { nivel: payload.nivel_clave })}</span>
         {!pidiendoClave ? (
           <Boton variante="contorno" onClick={() => setPidiendoClave(true)}>
-            <Unlock size={14} className="mr-1" /> Descifrar
+            <Unlock size={14} className="mr-1" /> {tc('descifrar')}
           </Boton>
         ) : null}
       </div>
 
       {pidiendoClave && (
         <div className="flex flex-col gap-2 border border-borde rounded p-3 bg-fondo-tarjeta">
-          <label className="text-xs text-texto-muted">Clave de descifrado</label>
+          <label className="text-xs text-texto-muted">{tc('claveDescifrado')}</label>
           <input
             type="password"
             autoFocus
@@ -88,14 +90,14 @@ export function TextoCifrado({ payload, render, className, vacioLabel }: Props) 
             onChange={(e) => setClaveInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter') intentarDescifrar() }}
             className="w-full rounded border border-borde bg-fondo px-3 py-2 text-sm focus:border-primario focus:ring-1 focus:ring-primario outline-none"
-            placeholder="Ingresa la clave"
+            placeholder={tc('ingresarPlaceholder')}
           />
           {error && <span className="text-xs text-red-600">{error}</span>}
           <div className="flex gap-2 justify-end">
             <Boton variante="contorno" onClick={() => { setPidiendoClave(false); setClaveInput(''); setError(null) }}>
-              Cancelar
+              {tc('cancelar')}
             </Boton>
-            <Boton variante="primario" onClick={intentarDescifrar}>Descifrar</Boton>
+            <Boton variante="primario" onClick={intentarDescifrar}>{tc('descifrar')}</Boton>
           </div>
         </div>
       )}

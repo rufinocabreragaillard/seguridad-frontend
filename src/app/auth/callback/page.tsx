@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { supabase } from '@/lib/supabase'
 import { authApi } from '@/lib/api'
 
@@ -15,6 +16,7 @@ async function irAInicio(router: ReturnType<typeof useRouter>) {
 }
 
 export default function AuthCallback() {
+  const t = useTranslations('authCallback')
   const router = useRouter()
   const redirigido = useRef(false)
 
@@ -64,7 +66,7 @@ export default function AuthCallback() {
     <div className="min-h-screen flex items-center justify-center bg-fondo">
       <div className="flex flex-col items-center gap-4">
         <div className="h-8 w-8 rounded-full border-4 border-primario border-t-transparent animate-spin" />
-        <p className="text-sm text-texto-muted">Verificando sesión...</p>
+        <p className="text-sm text-texto-muted">{t('verificandoSesion')}</p>
       </div>
     </div>
   )

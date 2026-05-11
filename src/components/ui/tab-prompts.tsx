@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Brain, Code2, Lock, Unlock } from 'lucide-react'
 
 export interface CamposPrompt {
@@ -55,6 +56,7 @@ export function TabPrompts({
   mostrarJavaScript = false,
   mostrarBotones: _mostrarBotones,
 }: TabPromptsProps) {
+  const t = useTranslations('tabPrompts')
   const [updateEditadoManual, setUpdateEditadoManual] = useState(false)
   return (
     <div className="space-y-5">
@@ -65,13 +67,13 @@ export function TabPrompts({
           {mostrarPromptInsert && (
             <div>
               <label className="block text-sm font-medium mb-1 flex items-center gap-1">
-                <Brain className="w-4 h-4" /> Prompt INSERT
+                <Brain className="w-4 h-4" /> {t('promptInsert')}
               </label>
               <textarea
                 className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[100px] font-mono"
                 value={campos.prompt_insert || ''}
                 onChange={(e) => onCampoCambiado('prompt_insert', e.target.value)}
-                placeholder="Instrucción que ejecutará el LLM al crear este registro..."
+                placeholder={t('placeholderPromptInsert')}
                 disabled={deshabilitado}
               />
             </div>
@@ -81,7 +83,7 @@ export function TabPrompts({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-sm font-medium flex items-center gap-1">
-                  <Code2 className="w-4 h-4" /> Python INSERT compilado
+                  <Code2 className="w-4 h-4" /> {t('pythonInsertCompilado')}
                 </label>
                 <label className="text-xs flex items-center gap-1 cursor-pointer">
                   <input
@@ -92,7 +94,7 @@ export function TabPrompts({
                   {campos.python_editado_manual
                     ? <Lock className="w-3 h-3 text-amber-600" />
                     : <Unlock className="w-3 h-3" />}
-                  edición manual
+                  {t('edicionManual')}
                 </label>
               </div>
               <textarea
@@ -102,7 +104,7 @@ export function TabPrompts({
                   onCampoCambiado('python_insert', e.target.value)
                   onCampoCambiado('python_editado_manual', true)
                 }}
-                placeholder="# Se genera automáticamente al apretar Generar"
+                placeholder={t('placeholderPythonAuto')}
                 disabled={deshabilitado}
               />
             </div>
@@ -116,13 +118,13 @@ export function TabPrompts({
           {mostrarPromptUpdate && (
             <div>
               <label className="block text-sm font-medium mb-1 flex items-center gap-1">
-                <Brain className="w-4 h-4" /> Prompt UPDATE
+                <Brain className="w-4 h-4" /> {t('promptUpdate')}
               </label>
               <textarea
                 className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[100px] font-mono"
                 value={campos.prompt_update || ''}
                 onChange={(e) => onCampoCambiado('prompt_update', e.target.value)}
-                placeholder="Instrucción que ejecutará el LLM al modificar este registro..."
+                placeholder={t('placeholderPromptUpdate')}
                 disabled={deshabilitado}
               />
             </div>
@@ -132,7 +134,7 @@ export function TabPrompts({
             <div>
               <div className="flex items-center justify-between mb-1">
                 <label className="text-sm font-medium flex items-center gap-1">
-                  <Code2 className="w-4 h-4" /> Python UPDATE compilado
+                  <Code2 className="w-4 h-4" /> {t('pythonUpdateCompilado')}
                 </label>
                 <label className="text-xs flex items-center gap-1 cursor-pointer">
                   <input
@@ -143,14 +145,14 @@ export function TabPrompts({
                   {updateEditadoManual
                     ? <Lock className="w-3 h-3 text-amber-600" />
                     : <Unlock className="w-3 h-3" />}
-                  edición manual
+                  {t('edicionManual')}
                 </label>
               </div>
               <textarea
                 className="w-full border border-borde rounded px-3 py-2 text-xs min-h-[100px] font-mono bg-gris-fondo"
                 value={campos.python_update || ''}
                 onChange={(e) => onCampoCambiado('python_update', e.target.value)}
-                placeholder="# Se genera automáticamente al apretar Generar"
+                placeholder={t('placeholderPythonAuto')}
                 disabled={deshabilitado}
               />
             </div>
@@ -161,12 +163,12 @@ export function TabPrompts({
       {/* System Prompt */}
       {mostrarSystemPrompt && (
         <div>
-          <label className="block text-sm font-medium mb-1">System Prompt (instrucción base LLM)</label>
+          <label className="block text-sm font-medium mb-1">{t('systemPromptLabel')}</label>
           <textarea
             className="w-full border border-borde rounded px-3 py-2 text-sm min-h-[150px] font-mono"
             value={campos.system_prompt || ''}
             onChange={(e) => onCampoCambiado('system_prompt', e.target.value)}
-            placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."
+            placeholder={t('placeholderSystemPrompt')}
             disabled={deshabilitado}
           />
         </div>
@@ -177,7 +179,7 @@ export function TabPrompts({
         <div>
           <div className="flex items-center justify-between mb-1">
             <label className="text-sm font-medium flex items-center gap-1">
-              <Code2 className="w-4 h-4" /> JavaScript compilado
+              <Code2 className="w-4 h-4" /> {t('javascriptCompilado')}
             </label>
             <label className="text-xs flex items-center gap-1 cursor-pointer">
               <input
@@ -188,7 +190,7 @@ export function TabPrompts({
               {campos.javascript_editado_manual
                 ? <Lock className="w-3 h-3 text-amber-600" />
                 : <Unlock className="w-3 h-3" />}
-              edición manual
+              {t('edicionManual')}
             </label>
           </div>
           <textarea
@@ -198,7 +200,7 @@ export function TabPrompts({
               onCampoCambiado('javascript', e.target.value)
               onCampoCambiado('javascript_editado_manual', true)
             }}
-            placeholder="// Se genera automáticamente al apretar Generar"
+            placeholder={t('placeholderJsAuto')}
             disabled={deshabilitado}
           />
         </div>

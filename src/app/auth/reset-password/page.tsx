@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import Image from 'next/image'
 import { Lock, Eye, EyeOff, CheckCircle } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
@@ -10,6 +11,7 @@ import { supabase } from '@/lib/supabase'
 import { tema } from '@/config/tema.config'
 
 export default function ResetPasswordPage() {
+  const t = useTranslations('resetPassword')
   const router = useRouter()
   const [password, setPassword] = useState('')
   const [confirmarPassword, setConfirmarPassword] = useState('')
@@ -53,15 +55,15 @@ export default function ResetPasswordPage() {
     setError('')
 
     if (!password || !confirmarPassword) {
-      setError('Completa ambos campos')
+      setError(t('completaAmbosCampos'))
       return
     }
     if (password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres')
+      setError(t('passwordMinimo8'))
       return
     }
     if (password !== confirmarPassword) {
-      setError('Las contraseñas no coinciden')
+      setError(t('passwordsNoCoinciden'))
       return
     }
 
@@ -76,7 +78,7 @@ export default function ResetPasswordPage() {
         router.push('/login')
       }, 3000)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al actualizar la contraseña')
+      setError(err instanceof Error ? err.message : t('errorAlActualizar'))
     } finally {
       setCargando(false)
     }
@@ -87,7 +89,7 @@ export default function ResetPasswordPage() {
       <div className="min-h-screen flex items-center justify-center bg-fondo">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 rounded-full border-4 border-primario border-t-transparent animate-spin" />
-          <p className="text-sm text-texto-muted">Verificando enlace...</p>
+          <p className="text-sm text-texto-muted">{t('verificandoEnlace')}</p>
         </div>
       </div>
     )
@@ -97,15 +99,15 @@ export default function ResetPasswordPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-fondo p-6">
         <div className="w-full max-w-md bg-surface rounded-2xl border border-borde shadow-sm p-8 text-center">
-          <h1 className="auth-heading mb-2">Enlace no válido</h1>
+          <h1 className="auth-heading mb-2">{t('enlaceNoValido')}</h1>
           <p className="text-sm text-texto-muted mb-6">
-            El enlace de recuperación ha expirado o no es válido. Solicita uno nuevo desde la página de inicio de sesión.
+            {t('enlaceExpirado')}
           </p>
           <Boton
             variante="primario"
             onClick={() => router.push('/login')}
           >
-            Ir al login
+            {t('irAlLogin')}
           </Boton>
         </div>
       </div>
@@ -133,22 +135,22 @@ export default function ResetPasswordPage() {
           {exito ? (
             <div className="flex flex-col items-center gap-4 text-center">
               <CheckCircle size={48} className="text-green-500" />
-              <h1 className="auth-heading">Contraseña actualizada</h1>
+              <h1 className="auth-heading">{t('passwordActualizada')}</h1>
               <p className="text-sm text-texto-muted">
-                Tu contraseña ha sido actualizada correctamente. Serás redirigido al login...
+                {t('redirigiendoLogin')}
               </p>
             </div>
           ) : (
             <>
-              <h1 className="auth-heading mb-1">Nueva contraseña</h1>
+              <h1 className="auth-heading mb-1">{t('nuevaPassword')}</h1>
               <p className="text-sm text-texto-muted mb-8">
-                Ingresa tu nueva contraseña
+                {t('ingresaNuevaPassword')}
               </p>
 
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 <div className="relative">
                   <Input
-                    etiqueta="Nueva contraseña"
+                    etiqueta={t('nuevaPassword')}
                     type={verPassword ? 'text' : 'password'}
                     id="password"
                     value={password}
@@ -170,7 +172,7 @@ export default function ResetPasswordPage() {
 
                 <div className="relative">
                   <Input
-                    etiqueta="Confirmar contraseña"
+                    etiqueta={t('confirmarPassword')}
                     type={verConfirmar ? 'text' : 'password'}
                     id="confirmarPassword"
                     value={confirmarPassword}
@@ -203,7 +205,7 @@ export default function ResetPasswordPage() {
                   cargando={cargando}
                   disabled={cargando}
                 >
-                  Actualizar contraseña
+                  {t('actualizarPassword')}
                 </Boton>
               </form>
             </>

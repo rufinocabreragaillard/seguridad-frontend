@@ -92,7 +92,7 @@ export function Header({ titulo }: { titulo?: string }) {
         await usuariosApi.actualizar(usuario.codigo_usuario, { locale: nuevoLocale })
       } catch (e) {
         console.error('[locale] error al guardar preferencia:', e)
-        alert('No se pudo guardar el idioma. Intenta nuevamente.')
+        alert(t('errorAlGuardarIdioma'))
         return
       }
     }
@@ -192,7 +192,7 @@ export function Header({ titulo }: { titulo?: string }) {
       setDatosOriginales({ ...formCuenta })
       return true
     } catch (e) {
-      setErrorCuenta(e instanceof Error ? e.message : 'Error al guardar')
+      setErrorCuenta(e instanceof Error ? e.message : tc('errorAlGuardar'))
       return false
     } finally {
       setGuardandoCuenta(false)

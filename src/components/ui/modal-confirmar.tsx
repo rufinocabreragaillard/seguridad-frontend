@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { Modal } from './modal'
 import { Boton } from './boton'
 import { AlertTriangle } from 'lucide-react'
@@ -21,16 +22,20 @@ export function ModalConfirmar({
   abierto,
   alCerrar,
   alConfirmar,
-  titulo = 'Confirmar acción',
+  titulo,
   mensaje,
-  textoConfirmar = 'Confirmar',
-  textoCancelar = 'Cancelar',
+  textoConfirmar,
+  textoCancelar,
   variante = 'peligro',
   cargando = false,
   className,
 }: ModalConfirmarProps) {
+  const tc = useTranslations('common')
+  const tituloFinal = titulo ?? tc('confirmarAccion')
+  const textoConfirmarFinal = textoConfirmar ?? tc('confirmar')
+  const textoCancelarFinal = textoCancelar ?? tc('cancelar')
   return (
-    <Modal abierto={abierto} alCerrar={alCerrar} titulo={titulo} className={className}>
+    <Modal abierto={abierto} alCerrar={alCerrar} titulo={tituloFinal} className={className}>
       <div className="flex flex-col gap-4">
         <div className="flex gap-3 items-start">
           {variante === 'peligro' && (
@@ -42,10 +47,10 @@ export function ModalConfirmar({
         </div>
         <div className="flex gap-3 justify-end pt-2">
           <Boton variante="contorno" onClick={alCerrar}>
-            {textoCancelar}
+            {textoCancelarFinal}
           </Boton>
           <Boton variante={variante} onClick={alConfirmar} cargando={cargando}>
-            {textoConfirmar}
+            {textoConfirmarFinal}
           </Boton>
         </div>
       </div>

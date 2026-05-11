@@ -66,6 +66,8 @@ export class ErrorService {
         },
       })
     } catch {
+      // Fallback de último recurso: el backend que devuelve el mensaje traducido
+      // está caído, así que aquí debe quedar hardcoded en español como red de seguridad.
       return {
         mensaje_usuario: 'Se produjo un error en la interfaz. Recargue la página o contacte al administrador.',
         sugerencia: null,

@@ -8,6 +8,56 @@ type WinWithPicker = Window & {
 const IS_CLIENT_MODE = process.env.NEXT_PUBLIC_MODE === 'client'
 const API_LOCAL = 'http://localhost:27182'
 
+// ── Mensajes i18n ─────────────────────────────────────────────────────────
+// Esta librería no es componente React, no puede usar useTranslations.
+// Los callers deben pasar `mensajes` con las traducciones ya resueltas.
+// Si no se pasan, se usan los defaults en español (fallback).
+export interface MensajesAbrirDocumento {
+  selectCarpetaRaiz: string
+  permisoCaducado: string
+  noSeEncontroArchivo: string
+  navegadorNoSoporta: string
+  permisoDenegado: string
+  noSeEncontroArchivoEn: (ubicacion: string) => string
+  sinUbicacionRegistrada: string
+  errorAlAbrir: (error: string) => string
+  errorAlDescargar: (error: string) => string
+  noHayCarpetaRaiz: string
+  noSeEncontroPath: (ubicacion: string) => string
+  abriendo: string
+  cargandoDocumento: string
+  noPreviewBrowser: string
+  descargarArchivo: string
+}
+
+const MENSAJES_DEFAULT: MensajesAbrirDocumento = {
+  selectCarpetaRaiz: 'Selecciona primero una carpeta raíz en Adm. Indexación Docs.',
+  permisoCaducado: 'Permiso de lectura del directorio caducado. Vuelve a seleccionar la carpeta raíz.',
+  noSeEncontroArchivo: 'No se encontró el archivo.',
+  navegadorNoSoporta: 'Tu navegador no soporta File System Access API. Usa Chrome o Edge.',
+  permisoDenegado: 'Permiso de lectura denegado.',
+  noSeEncontroArchivoEn: (u) => `No se encontró el archivo: ${u}`,
+  sinUbicacionRegistrada: 'Este documento no tiene ubicación registrada.',
+  errorAlAbrir: (e) => `Error al abrir: ${e}`,
+  errorAlDescargar: (e) => `Error al descargar: ${e}`,
+  noHayCarpetaRaiz: 'No hay carpeta raíz seleccionada. Ve a "Procesar Documentos" y selecciona el directorio raíz primero.',
+  noSeEncontroPath: (u) => `No se encontró: ${u}`,
+  abriendo: 'Abriendo…',
+  cargandoDocumento: 'Cargando documento…',
+  noPreviewBrowser: 'Este tipo de archivo no se puede previsualizar en el navegador.',
+  descargarArchivo: 'Descargar archivo',
+}
+
+let mensajesActivos: MensajesAbrirDocumento = MENSAJES_DEFAULT
+
+/**
+ * Setter para inyectar mensajes traducidos desde un componente React.
+ * Llamar desde un hook que escucha cambios de locale.
+ */
+export function setMensajesAbrirDocumento(m: Partial<MensajesAbrirDocumento>): void {
+  mensajesActivos = { ...MENSAJES_DEFAULT, ...m }
+}
+
 async function abrirViaApiLocal(ruta: string): Promise<boolean> {
   try {
     const res = await fetch(`${API_LOCAL}/abrir`, {
@@ -51,18 +101,17 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
   setTimeout(() => URL.revokeObjectURL(url), 5 * 60_000)
 
   if (!inline) {
-    // Para tipos que el browser no renderiza inline, abrir en pestaña nueva
-    // con un wrapper HTML que muestra el nombre del archivo como título y un
-    // enlace de descarga. No descargar automáticamente — el usuario eligió "ver".
     const titulo = _escapeHtml(nombre)
     const src = _escapeHtml(url)
+    const noPreview = _escapeHtml(mensajesActivos.noPreviewBrowser)
+    const dl = _escapeHtml(mensajesActivos.descargarArchivo)
     const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>${titulo}</title></head>
 <body style="margin:0;background:#1f1f1f;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;font-family:sans-serif;gap:1rem">
-<p style="color:#ccc;font-size:15px">Este tipo de archivo no se puede previsualizar en el navegador.</p>
+<p style="color:#ccc;font-size:15px">${noPreview}</p>
 <p style="color:#888;font-size:13px">${titulo}</p>
-<a href="${src}" download="${titulo}" style="color:#6ab0f5;font-size:14px">Descargar archivo</a>
+<a href="${src}" download="${titulo}" style="color:#6ab0f5;font-size:14px">${dl}</a>
 </body>
 </html>`
     const wrapperBlob = new Blob([html], { type: 'text/html' })
@@ -78,10 +127,6 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
 
   const isPdf = (nombre.split('.').pop() || '').toLowerCase() === 'pdf'
 
-  // PDF: abrir el blob DIRECTAMENTE en la pestaña. Chrome bloquea blobs
-  // anidados (object/iframe/embed con src blob: dentro de un wrapper blob:),
-  // por eso no podemos usar un wrapper HTML para fijar el título. En su lugar
-  // sobrescribimos document.title vía postMessage al abrir.
   if (isPdf) {
     const setTitle = (win: Window) => {
       const trySetTitle = (attempts: number) => {
@@ -100,14 +145,11 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
     if (win) {
       setTitle(win)
     } else {
-      // Popup bloqueado: mostrar en modal inline
       window.dispatchEvent(new CustomEvent('serverlm:preview', { detail: { url, nombre } }))
     }
     return
   }
 
-  // No-PDF inline (imágenes, html, etc): wrapper HTML con <iframe> para
-  // mostrar el título real en la pestaña.
   const titulo = _escapeHtml(nombre)
   const src = _escapeHtml(url)
   const html = `<!DOCTYPE html>
@@ -135,25 +177,22 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
   }
 }
 
-// Abre una ventana de loading síncronamente (dentro de un click handler)
-// para evitar que el popup blocker la bloquee cuando hay awaits intermedios.
 export function abrirVentanaLoading(): Window | null {
   const win = window.open('', '_blank')
   if (!win) return null
+  const titulo = _escapeHtml(mensajesActivos.abriendo)
+  const cargando = _escapeHtml(mensajesActivos.cargandoDocumento)
   win.document.write(`<!DOCTYPE html>
 <html>
-<head><meta charset="utf-8"><title>Abriendo…</title></head>
+<head><meta charset="utf-8"><title>${titulo}</title></head>
 <body style="margin:0;background:#1f1f1f;display:flex;align-items:center;justify-content:center;height:100vh">
-<p style="color:#888;font-family:sans-serif;font-size:14px">Cargando documento…</p>
+<p style="color:#888;font-family:sans-serif;font-size:14px">${cargando}</p>
 </body>
 </html>`)
   win.document.close()
   return win
 }
 
-// Carga el archivo desde el filesystem y llama onBlob(blobUrl, nombre).
-// Útil cuando el caller quiere renderizar el blob en su propio contenedor (ej. modal con iframe)
-// en lugar de abrir una ventana nueva.
 export async function cargarBlobDocumento(
   ubicacion: string,
   onBlob: (blobUrl: string, nombre: string) => void,
@@ -175,14 +214,12 @@ export async function cargarBlobDocumento(
     } catch { /* fallback */ }
   }
 
-  // Si el caller no preseleccionó handle, asumimos que ya está concedido en
-  // IndexedDB (no podemos llamar al picker aquí: estamos fuera del user gesture).
   const handle = handlePreseleccionado || await getDirectoryHandle(userId, grupoActivo)
-  if (!handle) { onError('Selecciona primero una carpeta raíz en Adm. Indexación Docs.'); return }
+  if (!handle) { onError(mensajesActivos.selectCarpetaRaiz); return }
   const ok = await ensureReadPermission(handle)
-  if (!ok) { onError('Permiso de lectura del directorio caducado. Vuelve a seleccionar la carpeta raíz.'); return }
+  if (!ok) { onError(mensajesActivos.permisoCaducado); return }
   const fileHandle = await abrirArchivoPorRuta(handle, ubicacion)
-  if (!fileHandle) { onError(`No se encontró el archivo.`); return }
+  if (!fileHandle) { onError(mensajesActivos.noSeEncontroArchivo); return }
   const file = await fileHandle.getFile()
   const url = URL.createObjectURL(file)
   onBlob(url, file.name)
@@ -198,11 +235,10 @@ async function abrirViaFileSystemApi(
   let handle = handlePreseleccionado || await getDirectoryHandle(userId, grupoActivo)
 
   if (!handle) {
-    // No hay carpeta guardada: pedir al usuario que seleccione la raíz
     const picker = (window as WinWithPicker).showDirectoryPicker
     if (!picker) {
       if (winPreAbierta) winPreAbierta.close()
-      alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
+      alert(mensajesActivos.navegadorNoSoporta)
       return
     }
     try {
@@ -215,22 +251,20 @@ async function abrirViaFileSystemApi(
   }
 
   const ok = await ensureReadPermission(handle)
-  if (!ok) { if (winPreAbierta) winPreAbierta.close(); alert('Permiso de lectura denegado.'); return }
+  if (!ok) { if (winPreAbierta) winPreAbierta.close(); alert(mensajesActivos.permisoDenegado); return }
   const fileHandle = await abrirArchivoPorRuta(handle, ubicacion)
-  if (!fileHandle) { if (winPreAbierta) winPreAbierta.close(); alert(`No se encontró el archivo: ${ubicacion}`); return }
+  if (!fileHandle) { if (winPreAbierta) winPreAbierta.close(); alert(mensajesActivos.noSeEncontroArchivoEn(ubicacion)); return }
   const file = await fileHandle.getFile()
   _abrirEnPestanaConNombre(file, file.name, winPreAbierta)
 }
 
-// Invoca showDirectoryPicker sincrónicamente respecto al gesto del usuario.
-// Debe llamarse ANTES de cualquier await (ej. antes de abrirVentanaLoading).
 export async function seleccionarDirectorioRaiz(
   userId?: string | null,
   grupoActivo?: string | null,
 ): Promise<FileSystemDirectoryHandle | null> {
   const picker = (window as WinWithPicker).showDirectoryPicker
   if (!picker) {
-    alert('Tu navegador no soporta File System Access API. Usa Chrome o Edge.')
+    alert(mensajesActivos.navegadorNoSoporta)
     return null
   }
   try {
@@ -242,21 +276,8 @@ export async function seleccionarDirectorioRaiz(
   }
 }
 
-/**
- * Resultado de asegurarHandleConPermiso.
- * - `continuar`: si false, el caller debe abortar (usuario canceló picker).
- * - `handle`: handle a pasar a abrirDocumento/cargarBlobDocumento. null en
- *   modo cliente (la API local resuelve sin handle).
- */
 export type ResultadoHandle = { continuar: boolean; handle: FileSystemDirectoryHandle | null }
 
-// Asegura que haya un handle con permiso de lectura concedido. DEBE llamarse en
-// el handler del click ANTES de window.open() o cualquier await largo:
-// requestPermission() y showDirectoryPicker() requieren un user gesture activo,
-// y se pierde si hay awaits intermedios.
-//
-// En modo cliente devuelve { continuar: true, handle: null } — la API local
-// resuelve sin necesidad de handle.
 export async function asegurarHandleConPermiso(
   userId?: string | null,
   grupoActivo?: string | null,
@@ -279,23 +300,20 @@ export async function abrirDocumento(
   grupoActivo?: string | null,
   handlePreseleccionado?: FileSystemDirectoryHandle | null,
 ): Promise<void> {
-  if (!ubicacion) { if (winPreAbierta) winPreAbierta.close(); alert('Este documento no tiene ubicación registrada.'); return }
+  if (!ubicacion) { if (winPreAbierta) winPreAbierta.close(); alert(mensajesActivos.sinUbicacionRegistrada); return }
 
   if (IS_CLIENT_MODE) {
     const ok = await abrirViaApiLocal(ubicacion)
     if (ok) { if (winPreAbierta) winPreAbierta.close(); return }
-    // Fallback a File System Access API si la API local no responde
   }
 
   try {
     await abrirViaFileSystemApi(ubicacion, winPreAbierta, userId, grupoActivo, handlePreseleccionado)
   } catch (e) {
     if (winPreAbierta) winPreAbierta.close()
-    alert(`Error al abrir: ${e instanceof Error ? e.message : e}`)
+    alert(mensajesActivos.errorAlAbrir(e instanceof Error ? e.message : String(e)))
   }
 }
-
-// ── Descargar ─────────────────────────────────────────────────────────────
 
 function _triggerDownload(blob: Blob, nombre: string) {
   const url = URL.createObjectURL(blob)
@@ -328,13 +346,13 @@ async function descargarViaFileSystemApi(
 ): Promise<void> {
   const handle = await getDirectoryHandle(userId, grupoActivo)
   if (!handle) {
-    alert('No hay carpeta raíz seleccionada. Ve a "Procesar Documentos" y selecciona el directorio raíz primero.')
+    alert(mensajesActivos.noHayCarpetaRaiz)
     return
   }
   const ok = await ensureReadPermission(handle)
-  if (!ok) { alert('Permiso de lectura denegado.'); return }
+  if (!ok) { alert(mensajesActivos.permisoDenegado); return }
   const fileHandle = await abrirArchivoPorRuta(handle, ubicacion)
-  if (!fileHandle) { alert(`No se encontró: ${ubicacion}`); return }
+  if (!fileHandle) { alert(mensajesActivos.noSeEncontroPath(ubicacion)); return }
   const file = await fileHandle.getFile()
   _triggerDownload(file, nombre || file.name)
 }
@@ -345,9 +363,8 @@ export async function descargarDocumento(
   userId?: string | null,
   grupoActivo?: string | null,
 ): Promise<void> {
-  if (!ubicacion) { alert('Este documento no tiene ubicación registrada.'); return }
+  if (!ubicacion) { alert(mensajesActivos.sinUbicacionRegistrada); return }
 
-  // URL pública: delega al browser con <a download>
   if (/^https?:\/\//i.test(ubicacion)) {
     const a = document.createElement('a')
     a.href = ubicacion
@@ -363,12 +380,11 @@ export async function descargarDocumento(
   if (IS_CLIENT_MODE) {
     const ok = await descargarViaApiLocal(ubicacion, nombre)
     if (ok) return
-    // Fallback a File System Access API si la API local no responde
   }
 
   try {
     await descargarViaFileSystemApi(ubicacion, nombre, userId, grupoActivo)
   } catch (e) {
-    alert(`Error al descargar: ${e instanceof Error ? e.message : e}`)
+    alert(mensajesActivos.errorAlDescargar(e instanceof Error ? e.message : String(e)))
   }
 }

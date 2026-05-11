@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from 'lucide-react'
 import { Boton } from './boton'
 
@@ -28,6 +29,7 @@ export function Paginador({
   cargando,
   opcionesLimit = [25, 50, 100, 200],
 }: PaginadorProps) {
+  const tc = useTranslations('common')
   const totalPages = Math.max(1, Math.ceil(total / limit))
   const desde = total === 0 ? 0 : (page - 1) * limit + 1
   const hasta = Math.min(page * limit, total)
@@ -41,13 +43,9 @@ export function Paginador({
     <div className="flex items-center justify-between gap-4 flex-wrap py-2">
       <div className="text-sm text-texto-muted">
         {total === 0 ? (
-          'Sin resultados'
+          tc('sinResultados')
         ) : (
-          <>
-            Mostrando <span className="font-medium text-texto">{desde}</span>–
-            <span className="font-medium text-texto">{hasta}</span> de{' '}
-            <span className="font-medium text-texto">{total}</span>
-          </>
+          tc('mostrandoDeTotal', { desde, hasta, total })
         )}
       </div>
 
@@ -61,7 +59,7 @@ export function Paginador({
           >
             {opcionesLimit.map((n) => (
               <option key={n} value={n}>
-                {n} / página
+                {tc('porPagina', { n })}
               </option>
             ))}
           </select>
@@ -76,8 +74,7 @@ export function Paginador({
           </Boton>
 
           <span className="px-3 text-sm text-texto-muted">
-            Página <span className="font-medium text-texto">{page}</span> de{' '}
-            <span className="font-medium text-texto">{totalPages}</span>
+            {tc('pagina', { pagina: page, total: totalPages })}
           </span>
 
           <Boton variante="contorno" tamano="sm" onClick={() => ir(page + 1)} disabled={cargando || page >= totalPages}>

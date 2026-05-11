@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Search, ExternalLink, FileText, Download, Copy, Check } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Boton } from '@/components/ui/boton'
@@ -17,6 +18,7 @@ const ESTADOS_CON_CHUNKS = new Set(['CHUNKEADO', 'VECTORIZADO'])
 const ESTADOS_CON_TEXTO = new Set(['METADATA', 'ESCANEADO', 'CHUNKEADO', 'VECTORIZADO'])
 
 function BotonCopiar({ texto }: { texto: string }) {
+  const t = useTranslations('documentoDetalle')
   const [copiado, setCopiado] = useState(false)
   const copiar = () => {
     navigator.clipboard.writeText(texto).then(() => {
@@ -25,7 +27,7 @@ function BotonCopiar({ texto }: { texto: string }) {
     })
   }
   return (
-    <button onClick={copiar} className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Copiar">
+    <button onClick={copiar} className="shrink-0 p-1 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('copiar')}>
       {copiado ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
     </button>
   )
@@ -59,6 +61,8 @@ export function DocumentoDetalleModal({
   grupoActivo,
   tabInicial = 'datos',
 }: DocumentoDetalleModalProps) {
+  const t = useTranslations('documentoDetalle')
+  const tc = useTranslations('common')
   const [tab, setTab] = useState<TabDetalle>(tabInicial)
   const [colaItem, setColaItem] = useState<ColaEstadoDoc | null>(null)
   const [categoriasConCaract, setCategoriasConCaract] = useState<CategoriaConCaracteristicasDocs[]>([])
@@ -318,7 +322,7 @@ export function DocumentoDetalleModal({
                 <pre className="rounded-lg border border-borde bg-fondo px-3 py-3 text-xs text-texto whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono leading-relaxed">{documento.md}</pre>
               </div>
             ) : (
-              <p className="text-sm text-texto-muted py-4 text-center">Sin MD generado aún. Se genera al ejecutar CHUNKEAR.</p>
+              <p className="text-sm text-texto-muted py-4 text-center">{t('sinMdGenerado')}</p>
             )}
           </div>
         )}
@@ -327,21 +331,21 @@ export function DocumentoDetalleModal({
         {tab === 'texto' && (
           <div className="flex flex-col gap-3">
             {cargandoTexto ? (
-              <div className="text-sm text-texto-muted text-center py-8">Cargando texto…</div>
+              <div className="text-sm text-texto-muted text-center py-8">{tc('cargandoTexto')}</div>
             ) : !textoData ? (
-              <div className="text-sm text-texto-muted text-center py-8">No se pudo cargar el texto.</div>
+              <div className="text-sm text-texto-muted text-center py-8">{t('noSePudoCargarTexto')}</div>
             ) : !textoData.tiene_texto ? (
               <div className="text-sm text-texto-muted text-center py-8 border border-dashed border-borde rounded p-4">
-                Este documento no tiene texto extraído. Estado actual: <b>{textoData.codigo_estado_doc}</b>
-                {textoData.detalle_estado ? <><br /><span className="text-xs">Detalle: {textoData.detalle_estado}</span></> : null}
+                {t('sinTextoExtraido')} <b>{textoData.codigo_estado_doc}</b>
+                {textoData.detalle_estado ? <><br /><span className="text-xs">{t('detalle')} {textoData.detalle_estado}</span></> : null}
               </div>
             ) : (
               <>
                 <div className="flex gap-4 text-sm text-texto-muted pb-2 border-b border-borde">
-                  <span><b className="text-texto">{(textoData.caracteres || 0).toLocaleString()}</b> caracteres</span>
-                  {textoData.paginas ? <span><b className="text-texto">{textoData.paginas}</b> páginas</span> : null}
+                  <span><b className="text-texto">{(textoData.caracteres || 0).toLocaleString()}</b> {t('caracteres')}</span>
+                  {textoData.paginas ? <span><b className="text-texto">{textoData.paginas}</b> {t('paginas')}</span> : null}
                   {textoData.fecha_extraccion ? (
-                    <span>Extraído: <b className="text-texto">{new Date(textoData.fecha_extraccion).toLocaleString('es-CL')}</b></span>
+                    <span>{t('extraido')} <b className="text-texto">{new Date(textoData.fecha_extraccion).toLocaleString('es-CL')}</b></span>
                   ) : null}
                 </div>
                 <TextoCifrado payload={textoData.texto_fuente} />
@@ -354,9 +358,9 @@ export function DocumentoDetalleModal({
         {tab === 'caracteristicas' && (
           <div className="flex flex-col gap-3">
             {cargandoCaract ? (
-              <p className="text-sm text-texto-muted py-4 text-center">Cargando…</p>
+              <p className="text-sm text-texto-muted py-4 text-center">{tc('cargando2')}</p>
             ) : categoriasConCaract.filter((cc) => cc.caracteristicas.length > 0).length === 0 ? (
-              <p className="text-sm text-texto-muted py-4 text-center">Sin características registradas.</p>
+              <p className="text-sm text-texto-muted py-4 text-center">{t('sinCaracteristicas')}</p>
             ) : (
               categoriasConCaract.filter((cc) => cc.caracteristicas.length > 0).map((cc) => {
                 const cat = cc.categoria
@@ -395,7 +399,7 @@ export function DocumentoDetalleModal({
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
                 <input
                   className="w-full rounded-lg border border-borde bg-fondo-tarjeta pl-8 pr-3 py-2 text-sm text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none"
-                  placeholder="Buscar en chunks…"
+                  placeholder={t('buscarChunks')}
                   value={busquedaChunkInput}
                   onChange={(e) => setBusquedaChunkInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -411,30 +415,30 @@ export function DocumentoDetalleModal({
                 setBusquedaChunk(busquedaChunkInput)
                 setPaginaChunk(1)
                 cargarChunks(documento.codigo_documento, busquedaChunkInput, 1)
-              }}>Buscar</Boton>
+              }}>{tc('buscar')}</Boton>
               {busquedaChunk && (
                 <Boton variante="contorno" onClick={() => {
                   setBusquedaChunk(''); setBusquedaChunkInput(''); setPaginaChunk(1)
                   cargarChunks(documento.codigo_documento, '', 1)
-                }}>Limpiar</Boton>
+                }}>{t('limpiar')}</Boton>
               )}
             </div>
             {chunksData && (
               <div className="flex gap-4 text-xs text-texto-muted bg-fondo px-3 py-2 rounded-lg">
-                <span><b className="text-texto">{chunksData.stats.total_chunks}</b> chunks</span>
-                <span><b className="text-texto">{chunksData.stats.avg_chars.toLocaleString()}</b> chars promedio</span>
-                <span><b className="text-texto">{(chunksData.stats.n_chars_total / 1000).toFixed(1)}k</b> chars total</span>
+                <span><b className="text-texto">{chunksData.stats.total_chunks}</b> {t('chunks')}</span>
+                <span><b className="text-texto">{chunksData.stats.avg_chars.toLocaleString()}</b> {t('charsPromedio')}</span>
+                <span><b className="text-texto">{(chunksData.stats.n_chars_total / 1000).toFixed(1)}k</b> {t('charsTotal')}</span>
                 {chunksData.stats.vectorizado
-                  ? <span className="text-green-600 font-medium">Vectorizado</span>
-                  : <span className="text-amber-600">Sin vectorizar</span>}
+                  ? <span className="text-green-600 font-medium">{t('vectorizado')}</span>
+                  : <span className="text-amber-600">{t('sinVectorizar')}</span>}
               </div>
             )}
             {cargandoChunks ? (
-              <p className="text-sm text-texto-muted py-4 text-center">Cargando chunks…</p>
+              <p className="text-sm text-texto-muted py-4 text-center">{tc('cargandoChunks')}</p>
             ) : !chunksData ? (
-              <p className="text-sm text-texto-muted py-4 text-center">Sin datos de chunks.</p>
+              <p className="text-sm text-texto-muted py-4 text-center">{t('sinDatosChunks')}</p>
             ) : chunksData.chunks.length === 0 ? (
-              <p className="text-sm text-texto-muted py-4 text-center">Sin chunks{busquedaChunk ? ` para "${busquedaChunk}"` : ' generados'}.</p>
+              <p className="text-sm text-texto-muted py-4 text-center">{busquedaChunk ? t('sinChunksPara', { busqueda: busquedaChunk }) : t('sinChunksGenerados')}</p>
             ) : (
               <div className="flex flex-col gap-2 max-h-[380px] overflow-y-auto pr-1">
                 {chunksData.chunks.map((chunk) => {
@@ -455,8 +459,8 @@ export function DocumentoDetalleModal({
                   return (
                     <div key={chunk.id_chunk} className="rounded-lg border border-borde bg-fondo px-3 py-2">
                       <div className="flex items-center justify-between mb-1">
-                        <span className="text-xs font-semibold text-texto-muted">Chunk {chunk.nro_chunk}</span>
-                        <span className="text-xs text-texto-muted">{chunk.n_chars.toLocaleString()} chars</span>
+                        <span className="text-xs font-semibold text-texto-muted">{t('chunk', { nro: chunk.nro_chunk })}</span>
+                        <span className="text-xs text-texto-muted">{chunk.n_chars.toLocaleString()} {t('chars')}</span>
                       </div>
                       <TextoCifrado payload={chunk.texto} render={renderTexto} />
                     </div>

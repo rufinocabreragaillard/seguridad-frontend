@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { X, Send, HelpCircle } from 'lucide-react'
 import { useSoporte } from '@/context/SoporteContext'
 import { chatApi } from '@/lib/api'
@@ -14,6 +15,8 @@ interface MensajeUI {
 }
 
 export function DrawerSoporte() {
+  const tr = useTranslations('drawerSoporte')
+  const tc = useTranslations('common')
   const { abierto, cerrar } = useSoporte()
   const [idConversacion, setIdConversacion] = useState<number | null>(null)
   const [mensajes, setMensajes] = useState<MensajeUI[]>([])
@@ -46,13 +49,12 @@ export function DrawerSoporte() {
           setMensajes([
             {
               rol: 'assistant',
-              contenido:
-                '¡Hola! Soy el asistente de soporte de Server LM. ¿En qué te puedo ayudar? Puedo revisar tu configuración o registrar una solicitud para el equipo.',
+              contenido: tr('mensajeBienvenida'),
             },
           ])
         }
       } catch (e) {
-        setError(e instanceof Error ? e.message : 'No se pudo iniciar el chat de soporte.')
+        setError(e instanceof Error ? e.message : tr('errorInicioChat'))
       } finally {
         setCargandoConv(false)
       }
@@ -93,7 +95,7 @@ export function DrawerSoporte() {
         },
       })
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al enviar el mensaje.')
+      setError(e instanceof Error ? e.message : tr('errorEnvioMensaje'))
       setEnviando(false)
     }
   }
@@ -110,16 +112,16 @@ export function DrawerSoporte() {
         <header className="flex items-center justify-between px-4 py-3 border-b bg-sidebar border-sidebar-texto/20">
           <div className="flex items-center gap-2 text-sidebar-texto">
             <HelpCircle size={20} />
-            <h2 className="font-semibold">Soporte</h2>
+            <h2 className="font-semibold">{tr('titulo')}</h2>
           </div>
-          <button onClick={cerrar} className="text-sidebar-texto hover:opacity-80" aria-label="Cerrar soporte">
+          <button onClick={cerrar} className="text-sidebar-texto hover:opacity-80" aria-label={tr('cerrarSoporte')}>
             <X size={20} />
           </button>
         </header>
 
         <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 bg-gray-50">
           {cargandoConv && (
-            <p className="text-sm text-gray-500 text-center">Cargando…</p>
+            <p className="text-sm text-gray-500 text-center">{tc('cargando2')}</p>
           )}
           {mensajes.map((m, i) => (
             <div key={i} className={m.rol === 'user' ? 'flex justify-end' : 'flex justify-start'}>
@@ -150,7 +152,7 @@ export function DrawerSoporte() {
                   enviar()
                 }
               }}
-              placeholder="Escribe tu consulta…"
+              placeholder={tr('placeholderConsulta')}
               className="flex-1 resize-none border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2"
               style={{ minHeight: '40px', maxHeight: '120px' }}
               rows={1}
@@ -160,7 +162,7 @@ export function DrawerSoporte() {
               onClick={enviar}
               disabled={enviando || !texto.trim() || !idConversacion}
               className="px-3 rounded-lg bg-sidebar text-sidebar-texto disabled:opacity-50"
-              aria-label="Enviar"
+              aria-label={tr('enviar')}
             >
               <Send size={18} />
             </button>

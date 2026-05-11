@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { supabase } from '@/lib/supabase'
 import { authApi, actualizarMapaFunciones, setOverrideSesion, clearOverridesSesion } from '@/lib/api'
 import { invalidarTodosLosCatalogos } from '@/lib/catalogos'
@@ -42,6 +43,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const t = useTranslations('authContext')
   const [usuario, setUsuario] = useState<UsuarioContexto | null>(null)
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -98,7 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (!esUltimoIntento && esConexion) {
           // Mostrar aviso suave (no error rojo) mientras Railway despierta
-          setError(`Conectando con el servidor… (intento ${intento}/${MAX_INTENTOS})`)
+          setError(t('conectandoServidor', { intento, total: MAX_INTENTOS }))
           await new Promise((r) => setTimeout(r, PAUSA_MS))
           continue
         }
@@ -106,10 +108,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Último intento fallido o error no recuperable
         setUsuario(null)
         actualizarMapaFunciones()
-        let msg = 'Error al cargar datos del usuario'
+        let msg = t('errorCargarUsuario')
         if (e instanceof Error) {
           if (esConexion) {
-            msg = 'No se pudo conectar con el servidor. Intente recargar la página.'
+            msg = t('noSePudoConectar')
           } else {
             msg = e.message
           }

@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { PanelLeftClose, PanelLeftOpen, Search, X, HelpCircle } from 'lucide-react'
 import { useMemo, useRef, useCallback, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/context/AuthContext'
@@ -35,6 +36,7 @@ function TooltipPortal({ texto, rect }: { texto: string; rect: DOMRect }) {
 }
 
 export function Sidebar() {
+  const t = useTranslations('sidebar')
   const pathname = usePathname()
   const { usuario } = useAuth()
   const { logo } = useTema()
@@ -134,7 +136,7 @@ export function Sidebar() {
         <button
           onClick={() => setColapsado(!colapsado)}
           className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-sidebar-hover text-texto-muted hover:text-sidebar-texto transition-colors"
-          title={colapsado ? 'Expandir menú' : 'Colapsar menú'}
+          title={colapsado ? t('expandirMenu') : t('colapsarMenu')}
         >
           {colapsado
             ? <PanelLeftOpen size={18} />
@@ -149,8 +151,8 @@ export function Sidebar() {
           <button
             onClick={enfocarBusqueda}
             className="mx-auto mt-3 p-2 rounded-lg hover:bg-sidebar-hover text-sidebar-texto-muted hover:text-sidebar-texto transition-colors"
-            title="Buscar función"
-            aria-label="Buscar función"
+            title={t('buscarFuncion')}
+            aria-label={t('buscarFuncion')}
           >
             <Search size={18} />
           </button>
@@ -167,15 +169,15 @@ export function Sidebar() {
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Escape') setBusqueda('') }}
-                placeholder="Buscar función..."
+                placeholder={t('buscarFuncionPlaceholder')}
                 className="w-full pl-8 pr-7 py-1.5 text-sm rounded-md bg-gray-200 text-gray-800 placeholder:text-gray-500 border border-gray-300 focus:outline-none focus:border-gray-400"
               />
               {busqueda && (
                 <button
                   onClick={() => setBusqueda('')}
                   className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-300"
-                  title="Limpiar búsqueda"
-                  aria-label="Limpiar búsqueda"
+                  title={t('limpiarBusqueda')}
+                  aria-label={t('limpiarBusqueda')}
                 >
                   <X size={14} />
                 </button>
@@ -192,8 +194,8 @@ export function Sidebar() {
           !colapsado && usuario?.menu && (
             <div className="px-3 py-2 text-xs text-sidebar-texto-muted">
               {busqueda
-                ? `Sin resultados para "${busqueda}"`
-                : 'Sin funciones disponibles en este grupo/aplicación.'}
+                ? t('sinResultadosPara', { busqueda })
+                : t('sinFunciones')}
             </div>
           )
         ) : (
@@ -241,11 +243,11 @@ export function Sidebar() {
         type="button"
         onClick={abrirSoporte}
         className="mx-2 mt-2 mb-1 flex items-center gap-2 rounded-md px-2 py-2 text-sm text-sidebar-texto/80 hover:bg-sidebar-texto/10 hover:text-sidebar-texto transition-colors"
-        title="Soporte y ayuda"
-        aria-label="Abrir chat de soporte"
+        title={t('soporteYAyuda')}
+        aria-label={t('abrirChatSoporte')}
       >
         <HelpCircle size={16} className="shrink-0" />
-        {!colapsado && <span className="text-xs">Soporte</span>}
+        {!colapsado && <span className="text-xs">{t('soporte')}</span>}
       </button>
 
       {/* Pie con versión */}

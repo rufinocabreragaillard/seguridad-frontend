@@ -21,6 +21,7 @@ function cambiarLocale(nuevoLocale: Locale) {
 
 export default function PaginaLogin() {
   const t = useTranslations('login')
+  const tc = useTranslations('common')
   const { login, loginConGoogle, loginConMicrosoft, error } = useAuth()
   // Loading local: solo se activa durante el click del usuario en cada acción.
   // NO usar el `cargando` global del AuthContext para deshabilitar botones aquí —
@@ -48,14 +49,14 @@ export default function PaginaLogin() {
     e.preventDefault()
     setErrorLocal('')
     if (!email || !password) {
-      setErrorLocal('Ingresa tu correo y contraseña')
+      setErrorLocal(t('ingresaCorreoPassword'))
       return
     }
     setCargandoEmail(true)
     try {
       await login(email, password)
     } catch (err) {
-      setErrorLocal(err instanceof Error ? err.message : 'Error al iniciar sesión')
+      setErrorLocal(err instanceof Error ? err.message : t('errorAlIniciar'))
     } finally {
       setCargandoEmail(false)
     }
@@ -67,7 +68,7 @@ export default function PaginaLogin() {
     try {
       await loginConGoogle()
     } catch (err) {
-      setErrorLocal(err instanceof Error ? err.message : 'Error con Google')
+      setErrorLocal(err instanceof Error ? err.message : t('errorConGoogle'))
       setCargandoGoogle(false)
     }
   }
@@ -78,7 +79,7 @@ export default function PaginaLogin() {
     try {
       await loginConMicrosoft()
     } catch (err) {
-      setErrorLocal(err instanceof Error ? err.message : 'Error con Microsoft')
+      setErrorLocal(err instanceof Error ? err.message : t('errorConMicrosoft'))
       setCargandoMicrosoft(false)
     }
   }
@@ -88,7 +89,7 @@ export default function PaginaLogin() {
     setErrorLocal('')
     setMensajeRecuperacion('')
     if (!emailRecuperacion) {
-      setErrorLocal('Ingresa tu correo electrónico')
+      setErrorLocal(t('ingresaCorreo'))
       return
     }
     setEnviandoRecuperacion(true)
@@ -96,7 +97,7 @@ export default function PaginaLogin() {
       const res = await api.post('/auth/recuperar-clave', { email: emailRecuperacion })
       setMensajeRecuperacion(res.data.mensaje)
     } catch (err) {
-      setMensajeRecuperacion('Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.')
+      setMensajeRecuperacion(t('correoEnviado'))
     } finally {
       setEnviandoRecuperacion(false)
     }
@@ -108,7 +109,7 @@ export default function PaginaLogin() {
     setMensajeRegistro('')
     const { email, nombre, empresa } = formRegistro
     if (!email || !nombre || !empresa) {
-      setErrorLocal('Todos los campos son obligatorios')
+      setErrorLocal(tc('todosCamposObligatorios'))
       return
     }
     setEnviandoRegistro(true)
@@ -117,7 +118,7 @@ export default function PaginaLogin() {
       setMensajeRegistro(res.data.mensaje)
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      setErrorLocal(detail || 'Error al procesar el registro. Intenta nuevamente.')
+      setErrorLocal(detail || t('errorRegistro'))
     } finally {
       setEnviandoRegistro(false)
     }
@@ -186,9 +187,9 @@ export default function PaginaLogin() {
                   <ArrowLeft size={14} />
                   {t('volverLogin')}
                 </button>
-                <h1 className="auth-heading mb-1">Regístrate</h1>
+                <h1 className="auth-heading mb-1">{t('registrarTitulo')}</h1>
                 <p className="text-sm text-texto-muted mb-6">
-                  Recibirás una invitación por correo, para confirmar tu mail.
+                  {t('registrarSubtitulo')}
                 </p>
 
                 {mensajeRegistro ? (
@@ -209,7 +210,7 @@ export default function PaginaLogin() {
                       disabled={enviandoRegistro}
                     />
                     <Input
-                      etiqueta="Nombre completo"
+                      etiqueta={t('nombreCompleto')}
                       type="text"
                       id="reg-nombre"
                       value={formRegistro.nombre}
@@ -219,7 +220,7 @@ export default function PaginaLogin() {
                       disabled={enviandoRegistro}
                     />
                     <Input
-                      etiqueta="Nombre de empresa"
+                      etiqueta={t('nombreEmpresa')}
                       type="text"
                       id="reg-empresa"
                       value={formRegistro.empresa}
@@ -242,7 +243,7 @@ export default function PaginaLogin() {
                       cargando={enviandoRegistro}
                       disabled={enviandoRegistro}
                     >
-                      Registrarme
+                      {t('registrarme')}
                     </Boton>
                   </form>
                 )}
@@ -419,7 +420,7 @@ export default function PaginaLogin() {
                     }}
                     className="text-sm text-primario hover:text-primario-hover transition-colors"
                   >
-                    ¿No tienes cuenta? <span className="font-medium">Regístrate</span>
+                    {t('noTienesCuenta')} <span className="font-medium">{t('registrate')}</span>
                   </button>
                   <button
                     type="button"

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Zap, Plus, Pencil } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -16,28 +17,6 @@ import type { Habilidad, AplicaA, TipoHabilidad, SalidaDestino, FormatoSalida } 
 import type { RegistroLLM } from '@/lib/tipos'
 
 type TabModal = 'datos' | 'prompts'
-
-const APLICA_A_OPTS: { value: AplicaA; label: string }[] = [
-  { value: 'DOCUMENTO',          label: 'DOCUMENTO — sobre un doc' },
-  { value: 'CONJUNTO_DOCUMENTOS', label: 'CONJUNTO_DOCUMENTOS — sobre varios docs' },
-  { value: 'ESPACIO',            label: 'ESPACIO — sobre un espacio completo' },
-  { value: 'TEXTOS',             label: 'TEXTOS — sobre textos sueltos (sin doc)' },
-]
-
-const TIPO_HABILIDAD_OPTS: { value: TipoHabilidad; label: string }[] = [
-  { value: 'LLM',       label: 'LLM — invoca un modelo de lenguaje' },
-  { value: 'PRIMITIVA', label: 'PRIMITIVA — código Python en backend' },
-  { value: 'HEURISTICA', label: 'HEURISTICA — orquesta otras habilidades' },
-]
-
-const SALIDAS_DESTINO: { value: SalidaDestino; label: string }[] = [
-  { value: 'DOC_COLUMNA',    label: 'DOC_COLUMNA — guarda en columna del doc' },
-  { value: 'CHAT_INLINE',    label: 'CHAT_INLINE — responde en el chat' },
-  { value: 'CARACTERISTICA', label: 'CARACTERISTICA — guarda como característica' },
-  { value: 'NUEVO_DOC',      label: 'NUEVO_DOC — genera documento nuevo' },
-  { value: 'CUSTOM',         label: 'CUSTOM — destino manejado por la habilidad' },
-  { value: 'ARCHIVO',        label: 'ARCHIVO — escribe a un archivo' },
-]
 
 const FORMATOS: { value: FormatoSalida; label: string }[] = [
   { value: 'TEXTO', label: 'TEXTO' },
@@ -71,8 +50,32 @@ const FORM_VACIO = {
 const selectCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
 export default function PaginaHabilidades() {
+  const t = useTranslations('skills')
+  const tc = useTranslations('common')
   const funcion     = useFuncionActual()
   const { grupoActivo } = useAuth()
+
+  const APLICA_A_OPTS: { value: AplicaA; label: string }[] = useMemo(() => [
+    { value: 'DOCUMENTO',          label: t('aplicaA.documento') },
+    { value: 'CONJUNTO_DOCUMENTOS', label: t('aplicaA.conjuntoDocumentos') },
+    { value: 'ESPACIO',            label: t('aplicaA.espacio') },
+    { value: 'TEXTOS',             label: t('aplicaA.textos') },
+  ], [t])
+
+  const TIPO_HABILIDAD_OPTS: { value: TipoHabilidad; label: string }[] = useMemo(() => [
+    { value: 'LLM',       label: t('tipoHabilidad.llm') },
+    { value: 'PRIMITIVA', label: t('tipoHabilidad.primitiva') },
+    { value: 'HEURISTICA', label: t('tipoHabilidad.heuristica') },
+  ], [t])
+
+  const SALIDAS_DESTINO: { value: SalidaDestino; label: string }[] = useMemo(() => [
+    { value: 'DOC_COLUMNA',    label: t('salidaDestino.docColumna') },
+    { value: 'CHAT_INLINE',    label: t('salidaDestino.chatInline') },
+    { value: 'CARACTERISTICA', label: t('salidaDestino.caracteristica') },
+    { value: 'NUEVO_DOC',      label: t('salidaDestino.nuevoDoc') },
+    { value: 'CUSTOM',         label: t('salidaDestino.custom') },
+    { value: 'ARCHIVO',        label: t('salidaDestino.archivo') },
+  ], [t])
   const esSuperAdmin = grupoActivo === 'ADMIN'
 
   const [habilidades, setHabilidades] = useState<Habilidad[]>([])
@@ -215,7 +218,7 @@ export default function PaginaHabilidades() {
       <div className="flex flex-wrap items-center gap-3 mb-4">
         <div className="max-w-xs flex-1">
           <Input
-            placeholder="Buscar habilidad…"
+            placeholder={t('buscarHabilidad')}
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
           />
@@ -344,7 +347,7 @@ export default function PaginaHabilidades() {
             <div className="space-y-3">
               {!editando && (
                 <div>
-                  <label className="block text-sm font-medium text-texto mb-1">Código (dejar vacío para autogenerar)</label>
+                  <label className="block text-sm font-medium text-texto mb-1">{t('codigoOpcional')}</label>
                   <Input
                     value={form.codigo_habilidad}
                     onChange={(e) => setForm({ ...form, codigo_habilidad: e.target.value })}
@@ -369,7 +372,7 @@ export default function PaginaHabilidades() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
+                <label className="block text-sm font-medium text-texto mb-1">{tc('descripcion')}</label>
                 <Input
                   value={form.descripcion}
                   onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
@@ -439,7 +442,7 @@ export default function PaginaHabilidades() {
                 </div>
               )}
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Modelo LLM (opcional — hereda del chat si vacío)</label>
+                <label className="block text-sm font-medium text-texto mb-1">{t('modeloLlmOpcional')}</label>
                 <select
                   value={form.id_modelo}
                   onChange={(e) => setForm({ ...form, id_modelo: e.target.value })}
@@ -452,7 +455,7 @@ export default function PaginaHabilidades() {
                 </select>
               </div>
               {editando && (
-                <p className="text-xs text-texto-muted font-mono">Código: {editando.codigo_habilidad}</p>
+                <p className="text-xs text-texto-muted font-mono">{t('codigoLabel', { codigo: editando.codigo_habilidad })}</p>
               )}
             </div>
           )}
@@ -467,7 +470,7 @@ export default function PaginaHabilidades() {
                 <Textarea
                   value={form.prompt}
                   onChange={(e) => setForm({ ...form, prompt: e.target.value })}
-                  placeholder={'Resume el siguiente documento en 3 párrafos:\n\n{{texto}}'}
+                  placeholder={t('placeholderPromptResumen')}
                   rows={8}
                 />
               </div>
@@ -479,7 +482,7 @@ export default function PaginaHabilidades() {
                 <Textarea
                   value={form.system_prompt}
                   onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
-                  placeholder="Eres un asistente experto en síntesis de documentos legales."
+                  placeholder={t('placeholderSystemPromptSintesis')}
                   rows={5}
                 />
               </div>

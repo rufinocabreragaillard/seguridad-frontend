@@ -14,9 +14,11 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { VisorDocumento } from '@/components/ui/visor-documento'
 import { SoporteProvider } from '@/context/SoporteContext'
 import { DrawerSoporte } from '@/components/soporte/DrawerSoporte'
+import { useMensajesAbrirDocumento } from '@/hooks/useMensajesAbrirDocumento'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const t = useTranslations('layout')
+  useMensajesAbrirDocumento()
   const { usuario, cargando, tieneAccesoRuta } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
