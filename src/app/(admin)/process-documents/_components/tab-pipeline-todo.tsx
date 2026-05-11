@@ -473,8 +473,8 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-4">
         <p className="text-xs font-semibold text-texto-muted uppercase">Filtros del pipeline</p>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="flex flex-col gap-1.5" ref={ubicDropdownRef}>
+        <div className="flex items-end gap-2" ref={ubicDropdownRef}>
+          <div className="flex flex-col gap-1.5 flex-1">
             <label className="text-sm font-medium text-texto">Ubicación</label>
             <div className="relative">
               <button type="button" onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)} disabled={ejecutando} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50">
@@ -508,14 +508,15 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
               )}
             </div>
           </div>
-        </div>
-
-        <div className="flex items-center gap-3 pt-1 border-t border-borde">
-          <label className="flex items-center gap-2 cursor-pointer select-none">
-            <input type="checkbox" checked={revertir} onChange={(e) => { setRevertir(e.target.checked); setMensajeRevertir(''); setProgresoRevertir({ total: 0, revertidos: 0, estado: 'esperando' }) }} disabled={ejecutando} className="w-4 h-4 rounded border-borde text-amber-600 focus:ring-amber-500 disabled:opacity-50" />
-            <span className="text-sm font-medium text-texto">Revertir</span>
-          </label>
-          {revertir && <span className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded px-2 py-0.5">Cambiará documentos <strong>VECTORIZADO → CHUNKEADO</strong></span>}
+          <div className="flex flex-col items-end gap-1 shrink-0">
+            <button onClick={seleccionarDirectorio} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-2 text-sm text-texto hover:border-primario transition-colors">
+              <FolderOpen size={16} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
+              {dirHandle ? dirHandle.name : 'Seleccionar directorio'}
+            </button>
+            {!dirHandle && carpetaRaiz && (
+              <span className="text-xs text-texto-muted text-right">Selecciona: <strong className="text-texto">{carpetaRaiz}</strong></span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-end gap-4 flex-wrap">
@@ -534,22 +535,6 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
               {filtroLibreInput && <button type="button" onClick={() => { setFiltroLibreInput(''); setFiltroLibre('') }} disabled={ejecutando} className="px-2 rounded-lg border border-borde text-texto-muted hover:text-error hover:border-error transition-colors disabled:opacity-50"><X size={14} /></button>}
             </div>
           </div>
-        </div>
-      </div>
-
-      {/* ── Selector de directorio ─────────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <p className="text-sm text-texto-muted">
-          Pipeline completo: Ubicaciones → Cargar → Extraer → Analizar → Chunkear → Vectorizar
-        </p>
-        <div className="flex flex-col items-end gap-1">
-          <button onClick={seleccionarDirectorio} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-2 text-sm text-texto hover:border-primario transition-colors">
-            <FolderOpen size={16} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
-            {dirHandle ? dirHandle.name : 'Seleccionar directorio'}
-          </button>
-          {!dirHandle && carpetaRaiz && (
-            <span className="text-xs text-texto-muted text-right">Al ejecutar se pedirá acceso. Selecciona: <strong className="text-texto">{carpetaRaiz}</strong></span>
-          )}
         </div>
       </div>
 
