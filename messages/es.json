@@ -792,7 +792,9 @@
     "p1Nombre": "Ubicaciones",
     "p1Label": "Indexar carpetas",
     "p2Nombre": "Cargar",
-    "p2Label": "FILESYSTEM → BD"
+    "p2Label": "FILESYSTEM → BD",
+    "paraleloLabel": "Paralelo",
+    "topeLabel": "Tope"
   },
   "processPipeline": {
     "titulo": "Indexar Documentos",

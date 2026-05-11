@@ -534,11 +534,11 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
         <div className="flex items-end gap-4 flex-wrap">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-texto-muted font-medium">{t('paralelo').replace(':', '')}</label>
+            <label className="text-xs text-texto-muted font-medium">{t('paraleloLabel')}</label>
             <input type="number" min={1} max={100} value={nParalelo} onChange={(e) => setNParalelo(Math.max(1, parseInt(e.target.value) || 1))} disabled={ejecutando} className="w-16 text-sm border border-borde rounded-lg px-2 py-1.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50" />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-texto-muted font-medium">{t('tope').replace(':', '')}</label>
+            <label className="text-xs text-texto-muted font-medium">{t('topeLabel')}</label>
             <input type="number" min={1} placeholder={t('todosPlaceholder')} value={tope} onChange={(e) => setTope(e.target.value)} disabled={ejecutando} className="w-20 text-sm border border-borde rounded-lg px-2 py-1.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
           </div>
           <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">

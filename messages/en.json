@@ -792,7 +792,9 @@
     "p1Nombre": "Locations",
     "p1Label": "Index folders",
     "p2Nombre": "Load",
-    "p2Label": "FILESYSTEM → DB"
+    "p2Label": "FILESYSTEM → DB",
+    "paraleloLabel": "Parallel",
+    "topeLabel": "Limit"
   },
   "processPipeline": {
     "titulo": "Index Documents",
