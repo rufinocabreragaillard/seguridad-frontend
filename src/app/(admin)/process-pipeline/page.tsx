@@ -819,14 +819,6 @@ export default function PaginaCargaDocsUsuario() {
 
     return (
       <div className="flex flex-col gap-1 flex-1 min-w-0">
-        <div className="flex items-center justify-between text-xs">
-          <span className={`font-semibold ${estaActivo ? 'text-texto' : estaListo ? 'text-texto-muted' : 'text-texto-muted opacity-60'}`}>
-            Paso {numero}
-          </span>
-          <span className="text-texto-muted tabular-nums">
-            {estaError ? '!' : estaListo ? '✓' : estaActivo ? (total > 0 ? `${completados}/${total}` : '…') : '—'}
-          </span>
-        </div>
         <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#E5E7EB' }}>
           <div
             className={`h-full rounded-full transition-all duration-500 ${estaActivo ? 'animate-pulse' : ''}`}

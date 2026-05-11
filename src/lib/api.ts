@@ -170,10 +170,18 @@ api.interceptors.response.use(
   async (error: AxiosError) => {
     // Sin respuesta del servidor (red caída, timeout, CORS, servidor dormido)
     if (!error.response) {
-      const msg =
-        error.code === 'ECONNABORTED'
-          ? 'La solicitud tardó demasiado. Intente nuevamente en unos segundos.'
-          : 'No se pudo conectar con el servidor. Verifique su conexión o intente más tarde.'
+      let msg: string
+      if (error.code === 'ECONNABORTED') {
+        msg = 'La solicitud tardó demasiado y fue cancelada. Intente nuevamente o reduzca la cantidad de documentos.'
+      } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
+        msg = 'Error de red: no se recibió respuesta del servidor. Verifique su conexión a internet.'
+      } else if (error.code === 'ERR_CANCELED') {
+        msg = 'La solicitud fue cancelada.'
+      } else {
+        // Incluir código técnico para facilitar diagnóstico
+        const codigo = error.code ? ` (${error.code})` : ''
+        msg = `No se recibió respuesta del servidor${codigo}. Verifique su conexión o intente más tarde.`
+      }
       return Promise.reject(new Error(msg))
     }
 
