@@ -122,20 +122,6 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
   const conteosTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
-  useEffect(() => {
-    if (ejecutando && tiempoInicio) {
-      timerRef.current = setInterval(() => setTiempoTranscurrido(Math.floor((Date.now() - tiempoInicio) / 1000)), 1000)
-      conteosTimerRef.current = setInterval(cargarConteos, 5000)
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current)
-      if (conteosTimerRef.current) clearInterval(conteosTimerRef.current)
-    }
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-      if (conteosTimerRef.current) clearInterval(conteosTimerRef.current)
-    }
-  }, [ejecutando, tiempoInicio, cargarConteos])
-
   const cargarConteos = useCallback(async () => {
     try {
       const conteos = await documentosApi.contarPorEstado()
@@ -149,6 +135,20 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       })
     } catch { /* ignorar */ }
   }, [])
+
+  useEffect(() => {
+    if (ejecutando && tiempoInicio) {
+      timerRef.current = setInterval(() => setTiempoTranscurrido(Math.floor((Date.now() - tiempoInicio) / 1000)), 1000)
+      conteosTimerRef.current = setInterval(cargarConteos, 5000)
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current)
+      if (conteosTimerRef.current) clearInterval(conteosTimerRef.current)
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+      if (conteosTimerRef.current) clearInterval(conteosTimerRef.current)
+    }
+  }, [ejecutando, tiempoInicio, cargarConteos])
 
   useEffect(() => {
     getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) setDirHandleState(h) })
