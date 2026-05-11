@@ -395,16 +395,20 @@ function PaginaProcesarDocumentosInterna() {
     })
   }, [ubicDropdownOpen, ubicaciones])
 
-  // Restaurar dirHandle persistido al entrar (solo escanea filesystem; cargarDocumentos lo maneja el efecto de filtros)
+  // Restaurar dirHandle persistido al entrar.
+  // El walker del filesystem SOLO es útil para EXTRAER (matching client-side
+  // contra `archivosEnDir`). Para el resto de procesos backend (CHUNKEAR,
+  // ESCANEAR, VECTORIZAR, ANALIZAR, etc.) no se consume `archivosEnDir`, así
+  // que solo restauramos el handle sin escanear.
   useEffect(() => {
     (async () => {
       const h = await idbGetHandle(userId, grupoActivo)
       if (!h) return
       try {
-        // Verificar permisos; si los perdió, ignorar (el usuario re-pickeará manualmente)
         const perm = await (h as unknown as { queryPermission: (opts: { mode: string }) => Promise<PermissionState> }).queryPermission({ mode: 'read' })
         if (perm !== 'granted') return
         setDirHandle(h)
+        if (!esExtraer) return
         setEscaneandoDir(true)
         try {
           const archivos = await escanearDirectorio(h)
@@ -415,7 +419,7 @@ function PaginaProcesarDocumentosInterna() {
       } catch { /* ignore */ }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [esExtraer])
 
   // Cargar documentos candidatos (paginado server-side para procesos backend; all para EXTRAER)
   const cargarDocumentos = useCallback(async (pagina = 1) => {
