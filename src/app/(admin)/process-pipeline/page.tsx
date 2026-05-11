@@ -1,12 +1,12 @@
 'use client'
 
-import React, { useEffect, useRef, useState, useCallback } from 'react'
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   FolderOpen, Folder, FolderInput, FolderPlus, FolderTree, FolderSync,
   CheckCircle, AlertTriangle, RefreshCw, Upload, Download, DatabaseZap, ScanSearch,
   ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
-  Eye, FileText, XCircle, ExternalLink,
+  Eye, FileText, XCircle, ExternalLink, Search,
 } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -18,6 +18,8 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi, cargaDocumentosApi } from '@/lib/api'
+import { getEstadosDocs } from '@/lib/catalogos'
+import type { EstadoDoc } from '@/lib/tipos'
 import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { abrirDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
@@ -52,9 +54,14 @@ const PASOS = [
   { key: 'VECTORIZAR', estadoOrigen: 'CHUNKEADO', estadoDestino: 'VECTORIZADO', colorBarra: '#22C55E', clienteSide: false },
 ] as const
 
-// Estados válidos (documentos que avanzaron correctamente) e inválidos (rechazados)
-const ESTADOS_VALIDOS = ['METADATA', 'ESCANEADO', 'CHUNKEADO', 'VECTORIZADO']
-const ESTADOS_INVALIDOS = ['NO_ANALIZABLE', 'NO_ESCANEABLE']
+// Clasificación final de cada documento respecto al pipeline:
+//   VECTORIZADOS      → llegaron al final OK (verde)
+//   PENDIENTES        → en alguna etapa intermedia, recuperables (gris/azul)
+//   NO_VECTORIZABLES  → quedaron en un estado terminal de error NO_* (amarillo)
+// Total = VECTORIZADOS + PENDIENTES + NO_VECTORIZABLES (debe cuadrar con el total).
+const ESTADOS_VECTORIZADOS = ['VECTORIZADO']
+const ESTADOS_PENDIENTES = ['CARGADO', 'METADATA', 'ESCANEADO', 'CHUNKEADO']
+const ESTADOS_NO_VECTORIZABLES = ['NO_ENCONTRADO', 'NO_METADATA', 'NO_ESCANEABLE', 'NO_ANALIZABLE', 'NO_CHUNKEADO', 'NO_VECTORIZADO']
 
 type EstadoPaso = 'esperando' | 'activo' | 'listo' | 'error'
 interface ProgresoPaso { total: number; completados: number; estado: EstadoPaso }
@@ -369,8 +376,9 @@ export default function PaginaCargaDocsUsuario() {
   const [tiempoTranscurrido, setTiempoTranscurrido] = useState(0)
   const [mensajeError, setMensajeError] = useState('')
   const [totalDocs, setTotalDocs] = useState(0)
-  const [docsValidos, setDocsValidos] = useState(0)
-  const [docsRechazados, setDocsRechazados] = useState(0)
+  const [docsVectorizados, setDocsVectorizados] = useState(0)
+  const [docsPendientes, setDocsPendientes] = useState(0)
+  const [docsNoVectorizables, setDocsNoVectorizables] = useState(0)
 
   // Lista paginada de documentos en etapa 2
   const [docsLista, setDocsLista] = useState<Documento[]>([])
@@ -378,6 +386,26 @@ export default function PaginaCargaDocsUsuario() {
   const [docsListaTotal, setDocsListaTotal] = useState(0)
   const [cargandoDocsLista, setCargandoDocsLista] = useState(false)
   const DOCS_LISTA_POR_PAGINA = 20
+
+  // Filtros de la lista de documentos (similar a /documents)
+  const [estadosCat, setEstadosCat] = useState<EstadoDoc[]>([])
+  const [docsFiltroEstado, setDocsFiltroEstado] = useState('')
+  const [docsBusqueda, setDocsBusqueda] = useState('')
+
+  useEffect(() => {
+    getEstadosDocs().then(setEstadosCat).catch(() => setEstadosCat([]))
+  }, [])
+
+  // Estados ordenados: válidos (ruta feliz, múltiplo de 10) primero
+  const estadosOrdenadosCat = useMemo(() => {
+    const esValido = (e: EstadoDoc) => e.orden % 10 === 0
+    return [...estadosCat].sort((a, b) => {
+      const va = esValido(a) ? 0 : 1
+      const vb = esValido(b) ? 0 : 1
+      if (va !== vb) return va - vb
+      return a.orden - b.orden
+    })
+  }, [estadosCat])
 
   // Selector de ubicación para etapa 2 (árbol de ubicaciones, no directorio físico)
   const [ubicacionDocSel, setUbicacionDocSel] = useState('')
@@ -445,30 +473,34 @@ export default function PaginaCargaDocsUsuario() {
         }
         return next
       })
-      const validos = ESTADOS_VALIDOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
-      const rechazados = ESTADOS_INVALIDOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
+      const vectorizados = ESTADOS_VECTORIZADOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
+      const pendientes = ESTADOS_PENDIENTES.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
+      const noVectorizables = ESTADOS_NO_VECTORIZABLES.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
       const total = Object.values(conteos as Record<string, number>).reduce((a, b) => a + b, 0)
       setTotalDocs(total)
-      setDocsValidos(validos)
-      setDocsRechazados(rechazados)
+      setDocsVectorizados(vectorizados)
+      setDocsPendientes(pendientes)
+      setDocsNoVectorizables(noVectorizables)
     } catch { /* ignorar */ }
   }, [])
 
   const cargarDocsLista = useCallback(async (pagina: number, estadoDoc: string) => {
     setCargandoDocsLista(true)
     try {
-      const res = await documentosApi.listarPaginado({ page: pagina, limit: 20, codigo_estado_doc: estadoDoc })
-      // Filtrar por ubicación si hay una seleccionada (client-side, la API no tiene ese param)
       const ubic = ubicacionDocSel ? ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel) : null
-      const rutaUbic = ubic?.url ?? null
-      const items = rutaUbic
-        ? res.items.filter(d => d.ubicacion_documento?.startsWith(rutaUbic))
-        : res.items
-      setDocsLista(items)
-      setDocsListaTotal(ubic ? items.length : res.total)
+      const rutaUbic = ubic?.url ?? undefined
+      const res = await documentosApi.listarPaginado({
+        page: pagina,
+        limit: DOCS_LISTA_POR_PAGINA,
+        codigo_estado_doc: estadoDoc || undefined,
+        q: docsBusqueda.trim() || undefined,
+        ruta_prefijo: rutaUbic,
+      })
+      setDocsLista(res.items)
+      setDocsListaTotal(res.total)
     } catch { /* ignorar */ }
     finally { setCargandoDocsLista(false) }
-  }, [ubicacionDocSel, ubicaciones])
+  }, [ubicacionDocSel, ubicaciones, docsBusqueda])
 
   useEffect(() => {
     getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) setDirHandleState(h) })
@@ -717,17 +749,20 @@ export default function PaginaCargaDocsUsuario() {
   const todosListos = PASOS.every((p) => progresos[p.key]?.estado === 'listo')
   const etapa2Estado: EstadoEtapa = ejecutando ? 'activo' : todosListos ? 'completado' : 'pendiente'
 
-  // Cargar lista de docs cuando cambia la paginación, el estado del pipeline o la ubicación
+  // Cargar lista de docs cuando cambia la paginación, el estado del pipeline o los filtros
   useEffect(() => {
     setDocsListaPagina(1)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todosListos, ubicacionDocSel])
+  }, [todosListos, ubicacionDocSel, docsFiltroEstado, docsBusqueda])
 
   useEffect(() => {
-    const estadoDoc = todosListos ? 'CHUNKEADO' : 'CARGADO'
-    cargarDocsLista(docsListaPagina, estadoDoc)
+    // Filtro de estado explícito → usa ese; si no, fallback al estado del pipeline.
+    const estadoDoc = docsFiltroEstado || (todosListos ? 'CHUNKEADO' : 'CARGADO')
+    // Debounce simple para la búsqueda libre.
+    const t = setTimeout(() => cargarDocsLista(docsListaPagina, estadoDoc), 250)
+    return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docsListaPagina, todosListos, ubicacionDocSel])
+  }, [docsListaPagina, todosListos, ubicacionDocSel, docsFiltroEstado, docsBusqueda])
 
   // Barra de progreso individual numerada — etiqueta "Paso N", conteo + desglose backend
   const BarraPasoNumerada = ({ pasoKey, numero, color }: { pasoKey: string; numero: number; color: string }) => {
@@ -883,18 +918,22 @@ export default function PaginaCargaDocsUsuario() {
       {tabActiva === 'ubicaciones' && (
         <div className="flex flex-col gap-4">
           {/* Contadores de documentos en la tab Ubicaciones */}
-          <div className="grid grid-cols-3 gap-4 rounded-lg border border-borde bg-fondo-tarjeta p-4">
+          <div className="grid grid-cols-4 gap-4 rounded-lg border border-borde bg-fondo-tarjeta p-4">
             <div className="flex flex-col items-center gap-0.5">
               <span className="page-heading">{totalDocs}</span>
               <span className="text-xs text-texto-muted">{t('documentosTotales')}</span>
             </div>
             <div className="flex flex-col items-center gap-0.5">
-              <span className="stat-number text-green-600">{docsValidos}</span>
-              <span className="text-xs text-texto-muted">{t('procesadosCorrectamente')}</span>
+              <span className="stat-number text-green-600">{docsVectorizados}</span>
+              <span className="text-xs text-texto-muted">{t('vectorizados')}</span>
             </div>
             <div className="flex flex-col items-center gap-0.5">
-              <span className="stat-number text-red-500">{docsRechazados}</span>
-              <span className="text-xs text-texto-muted">{t('rechazados')}</span>
+              <span className="stat-number text-sky-600">{docsPendientes}</span>
+              <span className="text-xs text-texto-muted">{t('pendientes')}</span>
+            </div>
+            <div className="flex flex-col items-center gap-0.5">
+              <span className="stat-number text-amber-500">{docsNoVectorizables}</span>
+              <span className="text-xs text-texto-muted">{t('noVectorizables')}</span>
             </div>
           </div>
 
@@ -1148,6 +1187,34 @@ export default function PaginaCargaDocsUsuario() {
                   </div>
                 )}
               </div>
+
+              {/* Filtro libre (texto) */}
+              <div className="relative flex-1 min-w-[180px]">
+                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder={t('buscarDocumentoPlaceholder')}
+                  value={docsBusqueda}
+                  onChange={(e) => setDocsBusqueda(e.target.value)}
+                  disabled={ejecutando}
+                  className="w-full pl-8 pr-3 py-2 text-sm border border-borde rounded-lg bg-fondo-tarjeta text-texto focus:outline-none focus:ring-2 focus:ring-primario placeholder:text-texto-muted disabled:opacity-50"
+                />
+              </div>
+
+              {/* Filtro por estado */}
+              <select
+                value={docsFiltroEstado}
+                onChange={(e) => setDocsFiltroEstado(e.target.value)}
+                disabled={ejecutando}
+                className="text-sm border border-borde rounded-lg px-3 py-2 bg-fondo-tarjeta text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50"
+              >
+                <option value="">{t('todosLosEstados')}</option>
+                {estadosOrdenadosCat.map((e) => (
+                  <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
+                    {e.nombre_estado || e.codigo_estado_doc}
+                  </option>
+                ))}
+              </select>
             </div>
 
             {mensajeError && (
@@ -1164,18 +1231,22 @@ export default function PaginaCargaDocsUsuario() {
             </div>
 
             {/* Contadores */}
-            <div className="grid grid-cols-3 gap-4 pt-1">
+            <div className="grid grid-cols-4 gap-4 pt-1">
               <div className="flex flex-col items-center gap-0.5">
                 <span className="page-heading">{totalDocs}</span>
                 <span className="text-xs text-texto-muted">{t('documentosTotales')}</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="stat-number text-green-600">{docsValidos}</span>
-                <span className="text-xs text-texto-muted">{t('procesadosCorrectamente')}</span>
+                <span className="stat-number text-green-600">{docsVectorizados}</span>
+                <span className="text-xs text-texto-muted">{t('vectorizados')}</span>
               </div>
               <div className="flex flex-col items-center gap-0.5">
-                <span className="stat-number text-red-500">{docsRechazados}</span>
-                <span className="text-xs text-texto-muted">{t('rechazados')}</span>
+                <span className="stat-number text-sky-600">{docsPendientes}</span>
+                <span className="text-xs text-texto-muted">{t('pendientes')}</span>
+              </div>
+              <div className="flex flex-col items-center gap-0.5">
+                <span className="stat-number text-amber-500">{docsNoVectorizables}</span>
+                <span className="text-xs text-texto-muted">{t('noVectorizables')}</span>
               </div>
             </div>
 
@@ -1183,7 +1254,11 @@ export default function PaginaCargaDocsUsuario() {
             <div className="flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-texto-muted uppercase">
-                  {todosListos ? t('docsProcesadosChunkeado') : t('docsPendientesCargado')}
+                  {(() => {
+                    const estadoActivo = docsFiltroEstado || (todosListos ? 'CHUNKEADO' : 'CARGADO')
+                    const nombre = estadosCat.find(e => e.codigo_estado_doc === estadoActivo)?.nombre_estado || estadoActivo
+                    return t('docsEnEstado', { estado: nombre })
+                  })()}
                 </p>
                 {cargandoDocsLista && <span className="text-xs text-texto-muted animate-pulse">{tc('cargando')}</span>}
               </div>
