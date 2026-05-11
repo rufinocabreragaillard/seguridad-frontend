@@ -80,6 +80,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   const [tiempoTranscurrido, setTiempoTranscurrido] = useState(0)
   const [mensajeError, setMensajeError] = useState('')
   const [carpetaRaiz, setCarpetaRaiz] = useState<string>('')
+  const [pasoActualIdx, setPasoActualIdx] = useState<number | null>(null)
 
   // Filtros
   const [ubicacionSel, setUbicacionSel] = useState('')
@@ -392,19 +393,21 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   }
 
   const ejecutarPipeline = async () => {
-    setMensajeError(''); abortRef.current = false; setEjecutando(true)
+    setMensajeError(''); abortRef.current = false; setEjecutando(true); setPasoActualIdx(null)
     setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales())
     suscribirCola()
     try {
-      for (const paso of PASOS_PIPELINE) {
+      for (let i = 0; i < PASOS_PIPELINE.length; i++) {
         if (abortRef.current) break
+        setPasoActualIdx(i)
+        const paso = PASOS_PIPELINE[i]
         const ok = paso.clienteSide ? await ejecutarExtraer() : await ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
         if (!ok) break
       }
     } catch (e) {
       setMensajeError(e instanceof Error ? e.message : 'Error inesperado en el pipeline')
     } finally {
-      desuscribirCola(); setEjecutando(false); await cargarConteos()
+      desuscribirCola(); setEjecutando(false); setPasoActualIdx(null); await cargarConteos()
     }
   }
 
@@ -566,7 +569,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           {pendingCarga && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-center gap-4">
               <p className="text-sm text-blue-800 flex-1">
-                <strong>{pendingCarga.archivos.length} archivos</strong> encontrados en <strong>{pendingCarga.nombreRaiz}</strong>. ¿Confirmas registrarlos en la BD?
+                <strong>{pendingCarga.archivos.length} archivos</strong> encontrados en <strong>{pendingCarga.nombreRaiz}</strong>. ¿Confirmas que quieres vectorizarlos?
               </p>
               <div className="flex gap-2 shrink-0">
                 <Boton variante="primario" tamano="sm" onClick={confirmarCarga}>Confirmar</Boton>
@@ -606,12 +609,12 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
             </Boton>
             {/* Pasos 3-6 */}
             <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando}>
-              {ejecutando ? (
+              {ejecutando && pasoActualIdx !== null ? (
                 <span className="flex items-center gap-2">
                   <Loader2 size={14} className="animate-spin" />
-                  Procesando…
+                  {`Etapa ${pasoActualIdx + 3} de 6 — ${PASOS_PIPELINE[pasoActualIdx].nombre}…`}
                 </span>
-              ) : 'Procesar documentos (3-6)'}
+              ) : 'Vectorizar documentos'}
             </Boton>
             <Boton variante="peligro" onClick={detener} disabled={!ejecutando}>
               Cancelar
