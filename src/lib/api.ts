@@ -1396,9 +1396,18 @@ export interface ResumenFase {
   velocidad_docs_por_min: number
 }
 
+export interface ResumenPaquete {
+  tamano_paquete: number
+  docs_totales: number
+  docs_completados: number
+  paquete_actual: number
+  paquetes_totales: number
+}
+
 export interface ResumenPipeline {
   por_destino: Record<string, ResumenFase>
   ventana_velocidad_seg: number
+  paquete: ResumenPaquete
 }
 
 // ─── SQL Ejecutados ─────────────────────────────────────────────────────────

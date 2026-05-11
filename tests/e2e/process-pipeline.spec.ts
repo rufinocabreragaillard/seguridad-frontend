@@ -81,4 +81,26 @@ test.describe('process-pipeline', () => {
     await expect(page.getByText(/procesados correctamente/i)).toBeVisible();
     await expect(page.getByText(/rechazados/i)).toBeVisible();
   });
+
+  test('barra de paquete operativo: muestra Paquete X de Y y N de M docs en tab Ubicaciones', async ({ page }) => {
+    const barra = page.getByTestId('barra-paquete-operativo').first();
+    await expect(barra).toBeVisible({ timeout: 15000 });
+    await expect(barra.getByText(/Paquete\s+\d+\s+de\s+\d+/i)).toBeVisible();
+    await expect(barra.getByText(/\d[\d.,]*\s+de\s+\d[\d.,]*\s+docs/i)).toBeVisible();
+    await expect(barra.getByText(/lote\s+\d[\d.,]+/i)).toBeVisible();
+
+    const tamano = (await barra.getByTestId('tamano-paquete').innerText()).trim();
+    expect(['3.000', '3,000', '3000']).toContain(tamano);
+
+    const paqueteActual = parseInt((await barra.getByTestId('paquete-actual').innerText()).replace(/\D/g, ''));
+    const paquetesTotales = parseInt((await barra.getByTestId('paquetes-totales').innerText()).replace(/\D/g, ''));
+    expect(paqueteActual).toBeGreaterThanOrEqual(1);
+    expect(paquetesTotales).toBeGreaterThanOrEqual(paqueteActual);
+  });
+
+  test('barra de paquete operativo: aparece también en tab Documentos', async ({ page }) => {
+    await page.getByRole('button', { name: /documentos/i }).click();
+    const barra = page.getByTestId('barra-paquete-operativo').first();
+    await expect(barra).toBeVisible({ timeout: 15000 });
+  });
 });

@@ -801,6 +801,44 @@ export default function PaginaCargaDocsUsuario() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [docsListaPagina, todosListos, ubicacionDocSel, docsFiltroEstado, docsBusqueda])
 
+  // Barra de paquete operativo — vista lógica sobre la corrida. Doble propósito:
+  // (a) acotar SQLite/WAL en cliente para soportar 100k+ docs;
+  // (b) mostrar avance al usuario en pasos discretos visibles aunque la corrida sea larga.
+  // Detalle: docs/planes/PLAN_PROCESAMIENTO_PAQUETES.md § Paquete operativo
+  const BarraPaqueteOperativo = () => {
+    const paq = resumenPipeline?.paquete
+    if (!paq || paq.docs_totales === 0) return null
+    const pct = paq.docs_totales > 0
+      ? Math.min(100, Math.round((paq.docs_completados / paq.docs_totales) * 100))
+      : 0
+    return (
+      <div
+        className="flex flex-col gap-1.5 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-3"
+        data-testid="barra-paquete-operativo"
+      >
+        <div className="flex items-center justify-between text-xs">
+          <span className="font-semibold text-texto">
+            Paquete <span data-testid="paquete-actual" className="tabular-nums">{paq.paquete_actual}</span> de <span data-testid="paquetes-totales" className="tabular-nums">{paq.paquetes_totales}</span>
+          </span>
+          <span className="tabular-nums text-texto-muted">
+            <span data-testid="docs-completados">{paq.docs_completados.toLocaleString()}</span>
+            {' de '}
+            <span data-testid="docs-totales">{paq.docs_totales.toLocaleString()}</span>
+            {' docs · lote '}
+            <span data-testid="tamano-paquete">{paq.tamano_paquete.toLocaleString()}</span>
+          </span>
+        </div>
+        <div className="h-2.5 rounded-full overflow-hidden bg-gray-200">
+          <div
+            className="h-full rounded-full transition-all duration-500"
+            style={{ width: `${pct}%`, backgroundColor: '#074B91' }}
+            data-testid="paquete-progreso"
+          />
+        </div>
+      </div>
+    )
+  }
+
   // Barra de progreso individual numerada — etiqueta "Paso N", conteo + desglose backend
   const BarraPasoNumerada = ({ pasoKey, numero, color }: { pasoKey: string; numero: number; color: string }) => {
     const prog = progresos[pasoKey]
@@ -968,6 +1006,7 @@ export default function PaginaCargaDocsUsuario() {
 
           {/* Pipeline completo: Paso 1 (indexar ubicaciones) + Paso 2..6 (Documentos) */}
           <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-4">
+            <BarraPaqueteOperativo />
             <div className="flex items-stretch gap-3">
               <BarraPasoNumerada pasoKey={PASO_INDEXAR} numero={1} color="#7C3AED" />
               {PASOS.map((paso, i) => (
@@ -1252,7 +1291,8 @@ export default function PaginaCargaDocsUsuario() {
               </div>
             )}
 
-            {/* Barras de progreso del pipeline (Paso 2..6) */}
+            {/* Barra de paquete operativo (visión global) + barras de progreso del pipeline (Paso 2..6) */}
+            <BarraPaqueteOperativo />
             <div className="flex items-stretch gap-3">
               {PASOS.map((paso, i) => (
                 <BarraPasoNumerada key={paso.key} pasoKey={paso.key} numero={i + 2} color={paso.colorBarra} />
