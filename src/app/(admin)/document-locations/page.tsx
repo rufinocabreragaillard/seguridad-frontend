@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
-import { Pencil, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle, XCircle, Upload, FileText, AlertTriangle, CheckCircle, Search, Loader2 } from 'lucide-react'
+import { Pencil, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle, XCircle, AlertTriangle, Search, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -10,12 +10,12 @@ import { Textarea } from '@/components/ui/textarea'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
-import { ubicacionesDocsApi, cargaDocumentosApi, parametrosApi, promptsApi } from '@/lib/api'
+import { ubicacionesDocsApi, promptsApi } from '@/lib/api'
 import type { UbicacionDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
 import { PageHeader } from '@/components/layout/PageHeader'
-import { escanearDirectorio, escanearDirectorioSinHijos, soportaDirectoryPicker, type DirectorioEscaneado, escanearArchivosDirectorio, type ArchivoEscaneado } from '@/lib/escanear-directorio'
+import { escanearDirectorio, escanearDirectorioSinHijos, soportaDirectoryPicker, type DirectorioEscaneado } from '@/lib/escanear-directorio'
 import { getDirectoryHandle as idbGetHandle, setDirectoryHandle as idbSetHandle, compararHandles } from '@/lib/file-handle-store'
 import { useToast } from '@/context/ToastContext'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -61,8 +61,6 @@ export default function PaginaUbicacionesDocs() {
   const toast = useToast()
   const t = useTranslations('documentLocations')
   const tc = useTranslations('common')
-  const tcd = useTranslations('cargarDocumentos')
-
   // ── State ─────────────────────────────────────────────────────────────────
   const [ubicaciones, setUbicaciones] = useState<UbicacionDoc[]>([])
   const [cargando, setCargando] = useState(true)
@@ -494,7 +492,6 @@ export default function PaginaUbicacionesDocs() {
       // Persistir el handle para que luego se puedan abrir documentos
       // sin volver a pedir la carpeta al usuario.
       idbSetHandle(resultado.dirHandle, userId, grupoActivo)
-      setCdDirHandle(resultado.dirHandle)
       // El preview/sincronización compara contra TODAS las ubicaciones del grupo.
       await asegurarArbolCompleto()
       setDatosEscaneo(resultado)
@@ -558,7 +555,6 @@ export default function PaginaUbicacionesDocs() {
       if (!ok) { setCargandoUbicacion(false); return }
       // Persistir el handle para que luego se puedan abrir documentos.
       idbSetHandle(dirHandle, userId, grupoActivo)
-      setCdDirHandle(dirHandle)
       await ubicacionesDocsApi.crear({
         codigo_ubicacion: directorio.codigo_ubicacion,
         codigo_grupo: grupoActivo!,
@@ -642,191 +638,6 @@ export default function PaginaUbicacionesDocs() {
 
   // La búsqueda es server-side (modo q en el endpoint). Aquí filtrados === ubicaciones.
   const filtrados = ubicaciones
-
-  // ── Indexar Documentos (sección inferior) ──────────────────────────────────
-  const [cdNiveles, setCdNiveles] = useState(5)
-  const [cdDirHandle, setCdDirHandle] = useState<FileSystemDirectoryHandle | null>(null)
-  const [cdEscaneando, setCdEscaneando] = useState(false)
-  const [cdDatos, setCdDatos] = useState<{
-    nombreRaiz: string
-    archivos: ArchivoEscaneado[]
-    carpetasSinMatch: string[]
-    archivosConMatch: ArchivoEscaneado[]
-    archivosEnNoHabilitadas: ArchivoEscaneado[]
-    codigosUbicacionEscaneadas: string[]
-  } | null>(null)
-  const [cdCargando, setCdCargando] = useState(false)
-  const [cdResultado, setCdResultado] = useState<{
-    insertados: number
-    actualizados: number
-    revertidos: number
-    eliminados: number
-    total: number
-  } | null>(null)
-  const [cdBusqueda, setCdBusqueda] = useState('')
-
-  useEffect(() => {
-    const init = async () => {
-      const nivelParam = await parametrosApi.obtenerValor('DOCUMENTOS', 'NIVELES_DIRECTORIO').catch(() => null)
-      if (nivelParam?.valor != null) {
-        const n = parseInt(nivelParam.valor, 10)
-        if (!isNaN(n) && n >= 0 && n <= 5) setCdNiveles(n)
-      }
-      const h = await idbGetHandle(userId, grupoActivo)
-      if (!h) return
-      try {
-        const perm = await (h as unknown as { queryPermission: (opts: { mode: string }) => Promise<PermissionState> }).queryPermission({ mode: 'read' })
-        if (perm === 'granted') setCdDirHandle(h)
-      } catch { /* ignore */ }
-    }
-    init()
-  }, [])
-
-  const cdClasificar = useCallback((
-    scan: Awaited<ReturnType<typeof escanearArchivosDirectorio>> & object,
-    ubicacionesAct: UbicacionDoc[],
-  ) => {
-    const rutaRaizFS = `/${scan.nombreRaiz}`
-    const ubicacionRaiz = ubicacionesAct.find(
-      (u) => u.url?.endsWith(`/${scan.nombreRaiz}`) || u.url === `/${scan.nombreRaiz}`
-    )
-    let prefijoRemap = ''
-    if (ubicacionRaiz?.url) {
-      prefijoRemap = ubicacionRaiz.url.slice(0, ubicacionRaiz.url.length - rutaRaizFS.length)
-    }
-    const remapear = (rutaFS: string) => prefijoRemap + rutaFS
-    const rutasHabilitadas = new Set<string>()
-    const rutasNoHabilitadas = new Set<string>()
-    const todasRutasBD = new Set<string>()
-    const rutaToCodigoHabilitado = new Map<string, string>()
-    for (const u of ubicacionesAct) {
-      if (u.url) {
-        todasRutasBD.add(u.url)
-        if (u.ubicacion_habilitada) {
-          rutasHabilitadas.add(u.url)
-          rutaToCodigoHabilitado.set(u.url, u.codigo_ubicacion)
-        } else {
-          rutasNoHabilitadas.add(u.url)
-        }
-      }
-    }
-    const archivosConMatch: ArchivoEscaneado[] = []
-    const archivosEnNoHabilitadas: ArchivoEscaneado[] = []
-    for (const archivo of scan.archivos) {
-      const rutaBD = remapear(archivo.ruta_directorio)
-      if (rutasHabilitadas.has(rutaBD)) {
-        archivosConMatch.push({ ...archivo, ruta_directorio: rutaBD, ruta_completa: remapear(archivo.ruta_completa) })
-      } else if (rutasNoHabilitadas.has(rutaBD)) {
-        archivosEnNoHabilitadas.push(archivo)
-      }
-    }
-    const carpetasSinMatch = scan.rutasEscaneadas.map(remapear).filter((ruta) => !todasRutasBD.has(ruta))
-    // Códigos de ubicaciones HABILITADAS que el usuario acaba de escanear.
-    // El backend usa esto para detectar documentos huérfanos (en BD bajo esas
-    // ubicaciones pero ya no presentes en el filesystem) y eliminarlos.
-    const codigosUbicacionEscaneadas = Array.from(
-      new Set(
-        scan.rutasEscaneadas
-          .map(remapear)
-          .map((ruta) => rutaToCodigoHabilitado.get(ruta))
-          .filter((c): c is string => Boolean(c))
-      )
-    )
-    return {
-      nombreRaiz: scan.nombreRaiz,
-      archivos: scan.archivos,
-      carpetasSinMatch,
-      archivosConMatch,
-      archivosEnNoHabilitadas,
-      codigosUbicacionEscaneadas,
-    }
-  }, [])
-
-  const cdEjecutarEscaneo = useCallback(async (handle: FileSystemDirectoryHandle) => {
-    setCdEscaneando(true)
-    setCdResultado(null)
-    setCdDatos(null)
-    setCdBusqueda('')
-    try {
-      const scan = await escanearArchivosDirectorio(handle, cdNiveles)
-      if (!scan) return
-      // La clasificación necesita TODAS las ubicaciones del grupo (con url);
-      // el árbol del lado izquierdo está en modo lazy, así que aquí pedimos full.
-      const todas = await ubicacionesDocsApi.listar({ todo: true })
-      setCdDatos(cdClasificar(scan, todas))
-    } catch (e: unknown) {
-      toast.error('Error al escanear el directorio.', detalleError(e))
-    } finally {
-      setCdEscaneando(false)
-    }
-  }, [cdNiveles, cdClasificar])
-
-  const cdSeleccionarDirectorio = async () => {
-    if (!soportaDirectoryPicker()) {
-      toast.error('Su navegador no soporta la selección de directorios. Use Chrome, Edge o Safari.')
-      return
-    }
-    try {
-      const opts: Record<string, unknown> = { mode: 'read', id: 'serverlm-docs' }
-      if (cdDirHandle) opts.startIn = cdDirHandle
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const handle = await (window as any).showDirectoryPicker(opts)
-      setCdDirHandle(handle)
-      idbSetHandle(handle, userId, grupoActivo)
-      await cdEjecutarEscaneo(handle)
-    } catch { /* cancelado */ }
-  }
-
-  const cdEjecutarCarga = async () => {
-    if (!cdDatos) return
-    setCdCargando(true)
-    try {
-      const res = await cargaDocumentosApi.cargar({
-        archivos: cdDatos.archivosConMatch.map((a) => ({
-          nombre: a.nombre,
-          ruta_completa: a.ruta_completa,
-          ruta_directorio: a.ruta_directorio,
-          tamano_kb: a.tamano_kb,
-          fecha_modificacion: a.fecha_modificacion,
-        })),
-        codigos_ubicacion_escaneadas: cdDatos.codigosUbicacionEscaneadas,
-      })
-      setCdResultado(res)
-    } catch (e: unknown) {
-      toast.error('Error al cargar documentos.', detalleError(e))
-    } finally {
-      setCdCargando(false)
-    }
-  }
-
-  const cdResetear = () => {
-    setCdDatos(null)
-    setCdResultado(null)
-    setCdBusqueda('')
-  }
-
-  // Contadores agregados (vienen del endpoint /contadores; no requieren cargar todo el árbol).
-  const [contadores, setContadores] = useState<{ total: number; habilitadas: number }>({ total: 0, habilitadas: 0 })
-  useEffect(() => {
-    let cancelado = false
-    ubicacionesDocsApi.contadores().then((c) => { if (!cancelado) setContadores(c) }).catch(() => { /* ignore */ })
-    return () => { cancelado = true }
-  }, [grupoActivo, ubicaciones])
-
-  const cdCarpetaRaiz = (() => {
-    const raicesArr = hijosPorPadre.get('') ?? []
-    return raicesArr.length > 0
-      ? raicesArr.reduce((min, u) => (u.nivel ?? 99) < (min.nivel ?? 99) ? u : min, raicesArr[0])
-      : null
-  })()
-  const cdArchivosFiltrados = cdDatos
-    ? cdBusqueda
-      ? cdDatos.archivosConMatch.filter((a) =>
-          a.nombre.toLowerCase().includes(cdBusqueda.toLowerCase()) ||
-          a.ruta_directorio.toLowerCase().includes(cdBusqueda.toLowerCase())
-        )
-      : cdDatos.archivosConMatch
-    : []
 
   // ── Render nodos jerárquicos ──────────────────────────────────────────────
   const renderNodo = (u: UbicacionDoc) => {
@@ -1345,215 +1156,6 @@ export default function PaginaUbicacionesDocs() {
         textoConfirmar={tc('guardar')}
         cargando={cambiandoTipo}
       />
-
-      {/* ── Sección Indexar Documentos ─────────────────────────────────────── */}
-      <div className="border-t border-borde pt-6 flex flex-col gap-4">
-        <div>
-          <h3 className="modal-heading">{tcd('titulo')}</h3>
-          <p className="text-sm text-texto-muted mt-1">{tcd('subtitulo')}</p>
-        </div>
-
-        {/* Info ubicaciones habilitadas */}
-        <div className="border border-borde rounded-lg bg-fondo-tarjeta p-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Folder size={20} className="text-primario shrink-0" />
-            <div>
-              <p className="text-sm font-medium text-texto">
-                {cargando ? tc('cargando') : tcd('ubicacionesHabilitadas', { n: contadores.habilitadas })}
-              </p>
-              <p className="text-xs text-texto-muted">
-                {!cargando && contadores.total > 0
-                  ? tcd('deTotales', { n: contadores.total })
-                  : tcd('configUbicaciones')}
-              </p>
-            </div>
-          </div>
-          {!cargando && contadores.habilitadas > 0 && (
-            <Insignia variante="exito">{tcd('activas', { n: contadores.habilitadas })}</Insignia>
-          )}
-        </div>
-
-        {/* Selector de directorio */}
-        {!cdDatos && !cdResultado && (
-          <div className="border-2 border-dashed border-borde rounded-lg p-8 text-center flex flex-col items-center gap-4">
-            <Upload size={48} className="text-texto-muted/50" />
-            <div>
-              <p className="text-texto mb-1">{tcd('seleccionarDirectorioTitulo')}</p>
-              <p className="text-sm text-texto-muted">{tcd('seleccionarDirectorioDesc')}</p>
-            </div>
-            <div className="flex items-center gap-3 flex-wrap justify-center">
-              <Boton
-                variante="primario"
-                onClick={cdSeleccionarDirectorio}
-                disabled={contadores.habilitadas === 0 || cdEscaneando}
-              >
-                {cdEscaneando
-                  ? <><Loader2 size={16} className="animate-spin" />{tcd('escaneando')}</>
-                  : <><FolderOpen size={16} />{cdDirHandle ? `📂 ${cdDirHandle.name}` : tcd('seleccionarDirectorioBtn')}</>
-                }
-              </Boton>
-              {cdDirHandle && !cdEscaneando && (
-                <Boton variante="contorno" onClick={() => cdEjecutarEscaneo(cdDirHandle!)}>
-                  {tcd('reEscanear')}
-                </Boton>
-              )}
-            </div>
-            <p className="text-xs text-texto-muted">
-              {cdCarpetaRaiz?.url
-                ? <>{tcd('seleccionarCarpetaRaiz')} <strong className="text-texto">{cdCarpetaRaiz.url.split('/').filter(Boolean)[0] ?? cdCarpetaRaiz.url}</strong> {tcd('noSubcarpetas')} · </>
-                : null}
-              {cdNiveles === 0 ? tcd('soloRaiz') : tcd('hastaXNiveles', { n: cdNiveles })}
-              {' '}· {tcd('configNiveles')}
-            </p>
-          </div>
-        )}
-
-        {/* Preview */}
-        {cdDatos && !cdResultado && (
-          <div className="flex flex-col gap-4">
-            <div className="bg-fondo rounded-lg p-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <FolderOpen size={24} className="text-primario shrink-0" />
-                <div>
-                  <p className="font-medium text-texto">{cdDatos.nombreRaiz}</p>
-                  <p className="text-sm text-texto-muted">
-                    {tcd('xArchivosEncontrados', { n: cdDatos.archivos.length })}
-                    {' '}· {cdNiveles === 0 ? tcd('soloRaiz') : tcd('hastaXNiveles', { n: cdNiveles })}
-                  </p>
-                </div>
-              </div>
-              <Boton variante="contorno" tamano="sm" onClick={cdSeleccionarDirectorio} disabled={cdEscaneando}>
-                <FolderOpen size={14} />{tcd('cambiar')}
-              </Boton>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3">
-              <div className="border border-borde rounded-lg p-3 text-center">
-                <p className="stat-number text-green-600">{cdDatos.archivosConMatch.length}</p>
-                <p className="text-xs text-texto-muted">{tcd('aCargar')}</p>
-              </div>
-              <div className="border border-borde rounded-lg p-3 text-center">
-                <p className="stat-number text-amber-600">{cdDatos.archivosEnNoHabilitadas.length}</p>
-                <p className="text-xs text-texto-muted">{tcd('enInhabilitadas')}</p>
-              </div>
-              <div className="border border-borde rounded-lg p-3 text-center">
-                <p className="stat-number text-texto-muted">
-                  {cdDatos.archivos.length - cdDatos.archivosConMatch.length - cdDatos.archivosEnNoHabilitadas.length}
-                </p>
-                <p className="text-xs text-texto-muted">{tcd('sinUbicacion')}</p>
-              </div>
-            </div>
-
-            {cdDatos.carpetasSinMatch.length > 0 && (
-              <details className="bg-amber-50 border border-amber-200 rounded-lg">
-                <summary className="px-4 py-3 cursor-pointer flex items-center gap-2">
-                  <AlertTriangle size={16} className="text-amber-600 shrink-0" />
-                  <span className="text-sm font-medium text-amber-800">
-                    {tcd('carpetasSinMatch', { n: cdDatos.carpetasSinMatch.length })}
-                  </span>
-                </summary>
-                <div className="px-4 pb-3 max-h-[150px] overflow-y-auto border-t border-amber-200 pt-2">
-                  {cdDatos.carpetasSinMatch.map((ruta) => (
-                    <p key={ruta} className="text-xs text-amber-700 py-0.5">{ruta}</p>
-                  ))}
-                </div>
-              </details>
-            )}
-
-            {cdDatos.archivosConMatch.length > 0 && (
-              <div className="border border-borde rounded-lg">
-                <div className="px-3 py-2 border-b border-borde bg-fondo rounded-t-lg">
-                  <Input
-                    placeholder={tcd('filtrarArchivos')}
-                    value={cdBusqueda}
-                    onChange={(e) => setCdBusqueda(e.target.value)}
-                    icono={<Search size={14} />}
-                  />
-                </div>
-                <div className="max-h-[300px] overflow-y-auto">
-                  <div className="py-1">
-                    {cdArchivosFiltrados.slice(0, 30).map((a, i) => (
-                      <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-sm hover:bg-fondo">
-                        <FileText size={14} className="text-texto-muted shrink-0" />
-                        <span className="flex-1 truncate">{a.nombre}</span>
-                        <span className="text-xs text-texto-muted shrink-0">
-                          {a.tamano_kb < 1024 ? `${a.tamano_kb.toFixed(1)} KB` : `${(a.tamano_kb / 1024).toFixed(1)} MB`}
-                        </span>
-                        <span className="text-xs text-texto-muted truncate max-w-[200px] hidden lg:block">
-                          {a.ruta_directorio}
-                        </span>
-                      </div>
-                    ))}
-                    {cdArchivosFiltrados.length > 30 && (
-                      <p className="px-4 py-2 text-xs text-texto-muted text-center">
-                        {tcd('yMasArchivos', { n: cdArchivosFiltrados.length - 30 })}
-                      </p>
-                    )}
-                    {cdArchivosFiltrados.length === 0 && cdBusqueda && (
-                      <p className="px-4 py-3 text-sm text-texto-muted text-center">
-                        {tcd('sinResultadosFiltro', { filtro: cdBusqueda })}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="px-3 py-2 border-t border-borde bg-fondo rounded-b-lg text-xs text-texto-muted">
-                  {cdBusqueda
-                    ? tcd('xDenArchivos', { filtrados: cdArchivosFiltrados.length, total: cdDatos.archivosConMatch.length })
-                    : tcd('xArchivosACargar', { n: cdDatos.archivosConMatch.length })}
-                </div>
-              </div>
-            )}
-
-            <div className="flex gap-3 justify-end pt-2">
-              <Boton variante="contorno" onClick={cdResetear}>{tc('cancelar')}</Boton>
-              <Boton
-                variante="primario"
-                onClick={cdEjecutarCarga}
-                cargando={cdCargando}
-                disabled={cdDatos.archivosConMatch.length === 0}
-              >
-                <Upload size={15} />
-                {tcd('cargarNDocumentos', { n: cdDatos.archivosConMatch.length })}
-              </Boton>
-            </div>
-          </div>
-        )}
-
-        {/* Resultado */}
-        {cdResultado && (
-          <div className="flex flex-col gap-4">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-              <CheckCircle size={32} className="mx-auto text-green-600 mb-2" />
-              <p className="text-lg font-medium text-green-800">{tcd('cargaCompletada')}</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-              <div className="border border-borde rounded-lg p-3 text-center">
-                <p className="stat-number text-green-600">{cdResultado.insertados}</p>
-                <p className="text-xs text-texto-muted">{tcd('nuevos')}</p>
-              </div>
-              <div className="border border-borde rounded-lg p-3 text-center">
-                <p className="stat-number text-primario">{cdResultado.actualizados}</p>
-                <p className="text-xs text-texto-muted">{tcd('actualizados')}</p>
-              </div>
-              <div className="border border-borde rounded-lg p-3 text-center">
-                <p className="stat-number text-amber-600">{cdResultado.revertidos}</p>
-                <p className="text-xs text-texto-muted">Modificados</p>
-              </div>
-              <div className="border border-borde rounded-lg p-3 text-center">
-                <p className="stat-number text-red-600">{cdResultado.eliminados}</p>
-                <p className="text-xs text-texto-muted">Eliminados</p>
-              </div>
-              <div className="border border-borde rounded-lg p-3 text-center">
-                <p className="stat-number text-texto-muted">{cdResultado.total}</p>
-                <p className="text-xs text-texto-muted">{tcd('totalProcesados')}</p>
-              </div>
-            </div>
-            <div className="flex justify-end pt-2">
-              <Boton variante="primario" onClick={cdResetear}>{tcd('nuevaCarga')}</Boton>
-            </div>
-          </div>
-        )}
-      </div>
 
       {/* Modal Indexar Ubicaciones */}
       <Modal
