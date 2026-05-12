@@ -196,29 +196,29 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
         .filter((u) => u.url && scan.rutasEscaneadas.includes(u.url))
         .map((u) => u.codigo_ubicacion)
       setP2Total(scan.archivos.length)
-      setP2Mensaje(`${scan.archivos.length} archivos encontrados`)
+      setP2Mensaje(t('nArchivosEncontrados', { n: scan.archivos.length }))
       setPendingCarga({ archivos: scan.archivos, codigosUbicacion, nombreRaiz: scan.nombreRaiz })
       setP2Estado('esperando')
       return false
     } catch (e) {
-      setP2Estado('error'); setP2Mensaje(e instanceof Error ? e.message : 'Error al escanear'); return false
+      setP2Estado('error'); setP2Mensaje(e instanceof Error ? e.message : t('errorEscanear')); return false
     }
   }
 
   const confirmarCarga = async () => {
     if (!pendingCarga) return
     const { archivos, codigosUbicacion } = pendingCarga
-    setPendingCarga(null); setP2Estado('activo'); setP2Completados(0); setP2Mensaje(`Cargando ${archivos.length} archivos…`)
+    setPendingCarga(null); setP2Estado('activo'); setP2Completados(0); setP2Mensaje(t('cargandoNArchivos', { n: archivos.length }))
     try {
       const res = await cargaDocumentosApi.cargar({
         archivos,
         codigos_ubicacion_escaneadas: codigosUbicacion.length > 0 ? codigosUbicacion : undefined,
       })
       setP2Completados(archivos.length); setP2Estado('listo')
-      setP2Mensaje(`${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`)
+      setP2Mensaje(t('cargaResultado', { insertados: res.insertados, actualizados: res.actualizados, eliminados: res.eliminados ?? 0 }))
       await cargarConteos()
     } catch (e) {
-      setP2Estado('error'); setP2Mensaje(e instanceof Error ? e.message : 'Error al cargar documentos')
+      setP2Estado('error'); setP2Mensaje(e instanceof Error ? e.message : t('errorCargar'))
     }
   }
 
@@ -378,17 +378,17 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       const docs = topeNum > 0 ? docsRaw.slice(0, topeNum) : docsRaw
       if (docs.length === 0) {
         setProgresoRevertir({ total: 0, revertidos: 0, estado: 'listo' })
-        setMensajeRevertir('No hay documentos en estado VECTORIZADO ni NO_VECTORIZADO con los filtros aplicados.')
+        setMensajeRevertir(t('sinDocsRevertir'))
         return
       }
       setProgresoRevertir({ total: docs.length, revertidos: 0, estado: 'activo' })
       const ids = docs.map((d) => d.codigo_documento)
       const resultado = await documentosApi.revertirEstado(ids, [...ESTADOS_VECTORIZAR], 'CHUNKEADO')
       setProgresoRevertir({ total: docs.length, revertidos: resultado.revertidos, estado: 'listo' })
-      setMensajeRevertir(`${resultado.revertidos} documento(s) revertidos a CHUNKEADO.`)
+      setMensajeRevertir(t('nDocsRevertidosA', { n: resultado.revertidos }))
     } catch (e) {
       setProgresoRevertir((prev) => ({ ...prev, estado: 'error' }))
-      setMensajeError(e instanceof Error ? e.message : 'Error al revertir estado')
+      setMensajeError(e instanceof Error ? e.message : t('errorRevertir'))
     } finally {
       setEjecutando(false); await cargarConteos()
     }
@@ -407,7 +407,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
         if (!ok) break
       }
     } catch (e) {
-      setMensajeError(e instanceof Error ? e.message : 'Error inesperado en el pipeline')
+      setMensajeError(e instanceof Error ? e.message : t('errorPipeline'))
     } finally {
       desuscribirCola(); setEjecutando(false); setPasoActualIdx(null); await cargarConteos()
     }
@@ -439,7 +439,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           {tieneHijos ? <button onClick={(e) => toggleExpandirUbic(e, u.codigo_ubicacion)} className="shrink-0 hover:text-primario text-texto-muted p-0.5 -ml-0.5 rounded">{expandido ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</button> : <span className="w-3 shrink-0" />}
           <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
           <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+          <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('tipoArea') : t('tipoContenido')}</span>
         </div>
         {expandido && hijos.map(h => renderNodoDropdown(h))}
       </div>
@@ -484,11 +484,11 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
       {/* ── Filtros ─────────────────────────────────────────────── */}
       <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-4">
-        <p className="text-xs font-semibold text-texto-muted uppercase">Filtros del pipeline</p>
+        <p className="text-xs font-semibold text-texto-muted uppercase">{t('filtrosPipeline')}</p>
 
         <div className="flex items-end gap-2" ref={ubicDropdownRef}>
           <div className="flex flex-col gap-1.5 flex-1">
-            <label className="text-sm font-medium text-texto">Ubicación</label>
+            <label className="text-sm font-medium text-texto">{t('etiquetaUbicacion')}</label>
             <div className="relative">
               <button type="button" onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)} disabled={ejecutando} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50">
                 <FolderOpen size={15} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
@@ -511,11 +511,11 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
                           <div key={u.codigo_ubicacion} className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`} style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }} onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}>
                             <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
                             <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('tipoArea') : t('tipoContenido')}</span>
                           </div>
                         )
                       })
-                    })() : (raicesUbic.length === 0 ? <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin ubicaciones</div> : raicesUbic.map(u => renderNodoDropdown(u)))}
+                    })() : (raicesUbic.length === 0 ? <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinUbicaciones')}</div> : raicesUbic.map(u => renderNodoDropdown(u)))}
                   </div>
                 </div>
               )}
@@ -527,7 +527,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
               {dirHandle ? dirHandle.name : t('seleccionarDirectorio')}
             </button>
             {!dirHandle && carpetaRaiz && (
-              <span className="text-xs text-texto-muted text-right">Selecciona: <strong className="text-texto">{carpetaRaiz}</strong></span>
+              <span className="text-xs text-texto-muted text-right">{t('selecciona')} <strong className="text-texto">{carpetaRaiz}</strong></span>
             )}
           </div>
         </div>
@@ -571,11 +571,11 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           {pendingCarga && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-center gap-4">
               <p className="text-sm text-blue-800 flex-1">
-                <strong>{pendingCarga.archivos.length} archivos</strong> encontrados en <strong>{pendingCarga.nombreRaiz}</strong>. ¿Confirmas que quieres vectorizarlos?
+                {t('archivosEncontradosConfirmar', { n: pendingCarga.archivos.length, raiz: pendingCarga.nombreRaiz })}
               </p>
               <div className="flex gap-2 shrink-0">
-                <Boton variante="primario" tamano="sm" onClick={confirmarCarga}>Confirmar</Boton>
-                <Boton variante="contorno" tamano="sm" onClick={() => { setPendingCarga(null); setP2Estado('esperando'); setP2Mensaje('') }}>Cancelar</Boton>
+                <Boton variante="primario" tamano="sm" onClick={confirmarCarga}>{t('confirmar')}</Boton>
+                <Boton variante="contorno" tamano="sm" onClick={() => { setPendingCarga(null); setP2Estado('esperando'); setP2Mensaje('') }}>{t('cancelar')}</Boton>
               </div>
             </div>
           )}
@@ -583,9 +583,9 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       ) : (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 flex flex-col gap-3">
           <div className="flex items-center justify-between text-xs">
-            <span className="font-semibold text-amber-800">Revertir VECTORIZADO → CHUNKEADO</span>
+            <span className="font-semibold text-amber-800">{t('revertirEncabezado')}</span>
             <span className="text-amber-700 tabular-nums">
-              {progresoRevertir.estado === 'listo' ? `${progresoRevertir.revertidos} revertidos` : progresoRevertir.estado === 'activo' ? `${progresoRevertir.revertidos}/${progresoRevertir.total}` : `${(conteosPorEstado['VECTORIZADO'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0)} docs`}
+              {progresoRevertir.estado === 'listo' ? t('nRevertidos', { n: progresoRevertir.revertidos }) : progresoRevertir.estado === 'activo' ? `${progresoRevertir.revertidos}/${progresoRevertir.total}` : t('nDocs', { n: (conteosPorEstado['VECTORIZADO'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0) })}
             </span>
           </div>
           <div className="h-3 rounded-full overflow-hidden" style={{ backgroundColor: '#FEF3C7' }}>
@@ -597,7 +597,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
       {(ejecutando || todosListos || (revertir && progresoRevertir.estado === 'listo')) && (
         <p className="text-center text-sm text-texto-muted">
-          {ejecutando ? `Tiempo transcurrido: ${formatTiempo(tiempoTranscurrido)}` : `Completado en ${formatTiempo(tiempoTranscurrido)}`}
+          {ejecutando ? t('tiempoTranscurridoFmt', { t: formatTiempo(tiempoTranscurrido) }) : t('completadoEnFmt', { t: formatTiempo(tiempoTranscurrido) })}
         </p>
       )}
 
@@ -607,24 +607,24 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           <>
             {/* Paso 1+2 */}
             <Boton variante="contorno" onClick={async () => { const ok = await ejecutarPaso1(); if (ok) await ejecutarPaso2Escaneo() }} disabled={ejecutando || p1Estado === 'activo' || p2Estado === 'activo' || !!pendingCarga}>
-              Sincronizar ubicaciones y cargar
+              {t('botonSincronizarYCargar')}
             </Boton>
             {/* Pasos 3-6 */}
             <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando}>
               {ejecutando && pasoActualIdx !== null ? (
                 <span className="flex items-center gap-2">
                   <Loader2 size={14} className="animate-spin" />
-                  {`Etapa ${pasoActualIdx + 3} de 6 — ${PASOS_PIPELINE[pasoActualIdx].nombre}…`}
+                  {t('etapaXdeY', { n: pasoActualIdx + 3, total: 6, nombre: PASOS_PIPELINE[pasoActualIdx].nombre })}
                 </span>
-              ) : 'Vectorizar documentos'}
+              ) : t('botonVectorizar')}
             </Boton>
-            <Boton variante="peligro" onClick={detener} disabled={!ejecutando}>
-              Cancelar
+            <Boton variante="contorno" onClick={detener} disabled={!ejecutando}>
+              {t('cancelar')}
             </Boton>
           </>
         ) : (
           <Boton variante="primario" onClick={ejecutarRevertir} disabled={ejecutando} className="bg-amber-600 hover:bg-amber-700 border-amber-600">
-            {ejecutando ? 'Revirtiendo…' : 'Revertir VECTORIZADO → CHUNKEADO'}
+            {ejecutando ? t('revirtiendo') : t('botonRevertirEstado')}
           </Boton>
         )}
       </div>
@@ -633,10 +633,10 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-semibold text-texto-muted uppercase flex items-center gap-2">
-            Estado del pipeline
+            {t('estadoPipeline')}
             {ejecutando && <Loader2 size={11} className="animate-spin text-primario" />}
           </p>
-          {!ejecutando && <button type="button" onClick={cargarConteos} className="text-xs text-texto-muted hover:text-primario transition-colors">Actualizar</button>}
+          {!ejecutando && <button type="button" onClick={cargarConteos} className="text-xs text-texto-muted hover:text-primario transition-colors">{t('actualizar')}</button>}
         </div>
         <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
           {ESTADOS_PIPELINE.map((estado) => {
