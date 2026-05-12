@@ -399,6 +399,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales())
     suscribirCola()
     try {
+      if (pendingCarga) await confirmarCarga()
       for (let i = 0; i < PASOS_PIPELINE.length; i++) {
         if (abortRef.current) break
         setPasoActualIdx(i)
