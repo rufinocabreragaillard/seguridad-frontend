@@ -371,7 +371,11 @@ export default function PaginaCargaDocsUsuario() {
 
   const [progresos, setProgresos] = useState<Record<string, ProgresoPaso>>(progresosIniciales)
   const [ejecutando, setEjecutando] = useState(false)
-  const [dirHandle, setDirHandleState] = useState<FileSystemDirectoryHandle | null>(null)
+  const [dirHandle, _setDirHandleState] = useState<FileSystemDirectoryHandle | null>(null)
+  const setDirHandleState = (h: FileSystemDirectoryHandle | null) => {
+    dirHandleRef.current = h
+    _setDirHandleState(h)
+  }
   const [tiempoInicio, setTiempoInicio] = useState<number | null>(null)
   const [tiempoTranscurrido, setTiempoTranscurrido] = useState(0)
   const [mensajeError, setMensajeError] = useState('')
@@ -428,6 +432,8 @@ export default function PaginaCargaDocsUsuario() {
   const abortRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const resolveColaRef = useRef<(() => void) | null>(null)
+  // Ref que siempre apunta al handle actual, evita stale closure en funciones async
+  const dirHandleRef = useRef<FileSystemDirectoryHandle | null>(null)
 
   // Resumen pipeline (polling backend) — desglose por fase + workers + velocidad
   const [resumenPipeline, setResumenPipeline] = useState<ResumenPipeline | null>(null)
@@ -512,7 +518,7 @@ export default function PaginaCargaDocsUsuario() {
   }, [ubicacionDocSel, ubicaciones, docsBusqueda])
 
   useEffect(() => {
-    getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) setDirHandleState(h) })
+    getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) { dirHandleRef.current = h; setDirHandleState(h) } })
     cargarConteos()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grupoActivo])
@@ -553,7 +559,7 @@ export default function PaginaCargaDocsUsuario() {
     if (!docs.length) { setPaso('EXTRAER', { estado: 'listo' }); return true }
 
     // Solo pedimos handle cuando hay docs CARGADO que necesitan lectura física
-    let handle = dirHandle
+    let handle = dirHandleRef.current ?? dirHandle
     if (!handle || !(await ensureReadPermission(handle))) {
       const stored = await getDirectoryHandle(userId, grupoActivo)
       if (stored && (await ensureReadPermission(stored))) {
@@ -677,7 +683,7 @@ export default function PaginaCargaDocsUsuario() {
   // Paso 2 — CARGAR: escanear filesystem y subir lista de archivos al backend
   const ejecutarCargar = async (): Promise<boolean> => {
     // Solicitar handle si hace falta (igual lógica que extraer)
-    let handle = dirHandle
+    let handle = dirHandleRef.current ?? dirHandle
     if (!handle || !(await ensureReadPermission(handle))) {
       const stored = await getDirectoryHandle(userId, grupoActivo)
       if (stored && (await ensureReadPermission(stored))) {
@@ -774,15 +780,9 @@ export default function PaginaCargaDocsUsuario() {
         const ESTADOS_PIPELINE_INTERMEDIOS = ['CARGADO', 'METADATA', 'ESCANEADO', 'CHUNKEADO']
         let iteraciones = 0
         const MAX_ITERACIONES = 200 // safety guard
+        // Siempre ejecutar al menos una ronda completa (incluye CARGAR).
         while (!abortRef.current && iteraciones < MAX_ITERACIONES) {
           iteraciones += 1
-          // Refrescar resumen para saber si quedan docs pendientes
-          let pendientes = 0
-          try {
-            const conteos = await documentosApi.contarPorEstado()
-            pendientes = ESTADOS_PIPELINE_INTERMEDIOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
-          } catch { break }
-          if (pendientes <= 0) break
 
           // Procesar UNA ventana
           const ok = await ejecutarFasesDelPipeline(tamanoPaquete)
@@ -797,6 +797,14 @@ export default function PaginaCargaDocsUsuario() {
             const resumen2 = await colaEstadosDocsApi.resumenPipeline(120)
             setResumenPipeline(resumen2)
           } catch { /* ignorar */ }
+
+          // Verificar si quedaron pendientes para seguir iterando
+          let pendientes = 0
+          try {
+            const conteos = await documentosApi.contarPorEstado()
+            pendientes = ESTADOS_PIPELINE_INTERMEDIOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
+          } catch { break }
+          if (pendientes <= 0) break
         }
       }
     } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
@@ -843,14 +851,10 @@ export default function PaginaCargaDocsUsuario() {
         const ESTADOS_PIPELINE_INTERMEDIOS = ['CARGADO', 'METADATA', 'ESCANEADO', 'CHUNKEADO']
         let iteraciones = 0
         const MAX_ITERACIONES = 200
+        // Siempre ejecutar al menos una ronda completa (incluye CARGAR que llena los docs).
+        // Luego verificar pendientes para decidir si hay que repetir con más paquetes.
         while (!abortRef.current && iteraciones < MAX_ITERACIONES) {
           iteraciones += 1
-          let pendientes = 0
-          try {
-            const conteos = await documentosApi.contarPorEstado()
-            pendientes = ESTADOS_PIPELINE_INTERMEDIOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
-          } catch { break }
-          if (pendientes <= 0) break
           const ok = await ejecutarFasesDelPipeline(tamanoPaquete)
           if (!ok) break
           try { await colaEstadosDocsApi.limpiarCompletados() } catch { /* no bloquear */ }
@@ -859,6 +863,13 @@ export default function PaginaCargaDocsUsuario() {
             const resumen2 = await colaEstadosDocsApi.resumenPipeline(120)
             setResumenPipeline(resumen2)
           } catch { /* ignorar */ }
+          // Verificar si quedaron pendientes para seguir iterando
+          let pendientes = 0
+          try {
+            const conteos = await documentosApi.contarPorEstado()
+            pendientes = ESTADOS_PIPELINE_INTERMEDIOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
+          } catch { break }
+          if (pendientes <= 0) break
         }
       }
     } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
