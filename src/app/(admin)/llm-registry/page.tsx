@@ -550,7 +550,7 @@ export default function PaginaRegistroLLM() {
                           setSincronizandoMd(true); setMensajeMd(null)
                           try {
                             const r = await promptsApi.sincronizarFila('registro_llm', 'id_modelo', String(editandoModelo.id_modelo))
-                            setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                            setMensajeMd({ tipo: 'ok', texto: tc('documentoListoParaVectorizar', { accion: r.accion, codigo: r.codigo_documento }) })
                           } catch (e) {
                             setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
                           } finally { setSincronizandoMd(false) }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useTranslations } from 'next-intl'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
@@ -57,6 +58,8 @@ const FORM_INICIAL: FormInstancia = {
 }
 
 export default function PaginaProcesoInstancias() {
+  const tc = useTranslations('common')
+  const tpx = useTranslations('processesExtra')
   const { usuario } = useAuth()
   const [categorias, setCategorias] = useState<CategoriaProceso[]>([])
   const [tiposProc, setTiposProc] = useState<TipoProceso[]>([])
@@ -84,7 +87,7 @@ export default function PaginaProcesoInstancias() {
     cargarFn: () => procesosInstanciasApi.listar({ limit: 500 }),
     crearFn: async (f) => {
       if (!f.codigo_categoria_proceso || !f.codigo_tipo_proceso || !f.codigo_estado) {
-        throw new Error('Categoría, tipo y estado son obligatorios.')
+        throw new Error(tpx('categoriaTipoEstado'))
       }
       return procesosInstanciasApi.crear({
         codigo_categoria_proceso: f.codigo_categoria_proceso,
@@ -417,7 +420,7 @@ export default function PaginaProcesoInstancias() {
                     crud.updateForm('codigo_tipo_proceso', '')
                     crud.updateForm('codigo_estado', '')
                   }}
-                  placeholder="Buscar categoría..."
+                  placeholder={tpx('buscarCategoria')}
                   disabled={!!crud.editando}
                 />
                 <SelectorBuscable
@@ -428,7 +431,7 @@ export default function PaginaProcesoInstancias() {
                     crud.updateForm('codigo_tipo_proceso', v)
                     crud.updateForm('codigo_estado', '')
                   }}
-                  placeholder={crud.form.codigo_categoria_proceso ? 'Buscar tipo...' : 'Seleccione categoría primero'}
+                  placeholder={crud.form.codigo_categoria_proceso ? 'Buscar tipo...' : tpx('seleccioneCategoria')}
                   disabled={!crud.form.codigo_categoria_proceso || !!crud.editando}
                 />
                 <Input
@@ -444,7 +447,7 @@ export default function PaginaProcesoInstancias() {
                   disabled
                 />
                 {crud.editando && (
-                  <Input etiqueta="Código" value={crud.editando.codigo_proceso} onChange={() => {}} disabled />
+                  <Input etiqueta={tc('codigo')} value={crud.editando.codigo_proceso} onChange={() => {}} disabled />
                 )}
                 <Input
                   etiqueta="Nombre"
@@ -473,7 +476,7 @@ export default function PaginaProcesoInstancias() {
                 etiqueta="Descripción"
                 value={crud.form.descripcion_proceso}
                 onChange={(e) => crud.updateForm('descripcion_proceso', e.target.value)}
-                placeholder="Descripción del proceso"
+                placeholder={tpx('descripcionProceso')}
                 rows={3}
               />
             </div>
@@ -541,7 +544,7 @@ export default function PaginaProcesoInstancias() {
       <ModalConfirmar
         abierto={!!crud.confirmacion}
         titulo="Eliminar proceso"
-        mensaje={`¿Eliminar la instancia "${crud.confirmacion?.nombre_proceso ?? crud.confirmacion?.codigo_proceso}"? Esta acción no se puede deshacer.`}
+        mensaje={tpx('eliminarInstancia', { nombre: crud.confirmacion?.nombre_proceso ?? crud.confirmacion?.codigo_proceso ?? '' })}
         alConfirmar={crud.ejecutarEliminacion}
         alCerrar={() => crud.setConfirmacion(null)}
         cargando={crud.eliminando}

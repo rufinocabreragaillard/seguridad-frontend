@@ -47,8 +47,9 @@ export default function PaginaRolesGenerales() {
 // ── CRUD de Roles ─────────────────────────────────────────────────────────
 
 function TabRolesGlobales() {
-  const t = useTranslations('roles')
   const tc = useTranslations('common')
+  const trx = useTranslations('rolesExtra')
+  const t = useTranslations('roles')
   const { aplicacionActiva } = useAuth()
   const { esDescendiente, tiposVisibles } = useTipoAccesoGrafo()
   const [roles, setRoles] = useState<Rol[]>([])
@@ -119,7 +120,7 @@ function TabRolesGlobales() {
       setBusquedaFuncion('')
       cargarFuncionesRol(editando.id_rol)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al asignar función')
+      setError(e instanceof Error ? e.message : trx('errorAlAsignar'))
     } finally {
       setAsignandoFuncion(false)
     }
@@ -131,7 +132,7 @@ function TabRolesGlobales() {
       await rolesApi.quitarFuncion(editando.id_rol, codigoFuncion)
       cargarFuncionesRol(editando.id_rol)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error al quitar función')
+      setError(e instanceof Error ? e.message : trx('errorAlQuitar'))
     }
   }
 
@@ -252,7 +253,7 @@ function TabRolesGlobales() {
 
   const guardar = async (cerrar: boolean) => {
     if (!form.codigo_rol.trim() || !form.nombre.trim()) {
-      setError('Código y nombre son obligatorios')
+      setError(tc('codigoNombreObligatorios'))
       return
     }
     setGuardando(true)
@@ -472,7 +473,7 @@ function TabRolesGlobales() {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-texto">Aplicación origen</label>
+                  <label className="text-sm font-medium text-texto">{trx('aplicacionOrigen')}</label>
                   <select
                     value={form.codigo_aplicacion_origen}
                     onChange={(e) => setForm({ ...form, codigo_aplicacion_origen: e.target.value })}
@@ -515,7 +516,7 @@ function TabRolesGlobales() {
                     onChange={(e) => setForm({ ...form, inicial: e.target.checked })}
                     className="w-4 h-4 rounded accent-primario"
                   />
-                  <span className="text-sm text-texto">Rol inicial (asignar automáticamente a nuevos usuarios)</span>
+                  <span className="text-sm text-texto">{trx('rolInicialAuto')}</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer select-none">
                   <input
@@ -649,11 +650,11 @@ function TabRolesGlobales() {
           {tabModal === 'system_prompt' && editando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">System Prompt (instrucción base LLM)</label>
+                <label className="text-sm font-medium text-texto">{trx('systemPromptLabel')}</label>
                 <textarea
                   value={form.system_prompt}
                   onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
-                  placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."
+                  placeholder={trx('placeholderSystemPrompt')}
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono min-h-[200px] resize-y focus:outline-none focus:ring-2 focus:ring-primario"
                 />
               </div>

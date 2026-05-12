@@ -662,7 +662,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                       setSincronizandoMdCat(true); setMensajeMdCat(null)
                       try {
                         const r = await promptsApi.sincronizarFila('categorias_caract_docs', 'codigo_cat_docs', catEditando.codigo_cat_docs)
-                        setMensajeMdCat({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        setMensajeMdCat({ tipo: 'ok', texto: tc('documentoListoParaVectorizar', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
                         setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
                       } finally { setSincronizandoMdCat(false) }

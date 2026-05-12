@@ -24,6 +24,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 export default function PaginaEntidades() {
   const t = useTranslations('entities')
   const tc = useTranslations('common')
+  const tex = useTranslations('entidadesExtra')
   const { grupoActivo } = useAuth()
 
   const [tabActiva, setTabActiva] = useState<'entidades' | 'areas' | 'grupo'>('entidades')
@@ -165,7 +166,7 @@ export default function PaginaEntidades() {
   }
 
   const guardarEntidad = async (cerrar: boolean) => {
-    if (!formEntidad.nombre) { setError('El nombre es obligatorio'); return }
+    if (!formEntidad.nombre) { setError(tc('nombreObligatorio')); return }
     setGuardando(true)
     try {
       if (entidadEditando) {
@@ -183,7 +184,7 @@ export default function PaginaEntidades() {
       }
       cargar()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error')
+      setError(e instanceof Error ? e.message : tc('error'))
     } finally {
       setGuardando(false)
     }
@@ -211,7 +212,7 @@ export default function PaginaEntidades() {
   }
 
   const guardarArea = async () => {
-    if (!entidadSeleccionada || !formArea.nombre) { setError('El nombre es obligatorio'); return }
+    if (!entidadSeleccionada || !formArea.nombre) { setError(tc('nombreObligatorio')); return }
     setGuardando(true)
     try {
       if (areaEditando) {
@@ -238,7 +239,7 @@ export default function PaginaEntidades() {
       setModalArea(false)
       cargarAreas(entidadSeleccionada.codigo_entidad)
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Error')
+      setError(e instanceof Error ? e.message : tc('error'))
     } finally {
       setGuardando(false)
     }
@@ -281,7 +282,7 @@ export default function PaginaEntidades() {
 
       {/* Tabs */}
       <div className="flex gap-1 p-1 bg-fondo rounded-lg border border-borde w-fit">
-        {([{ id: 'entidades', label: 'Entidades' }, { id: 'areas', label: 'Áreas' }, { id: 'grupo', label: 'Grupo' }] as const).map((tab) => (
+        {([{ id: 'entidades', label: tex('tabEntidades') }, { id: 'areas', label: tex('tabAreas') }, { id: 'grupo', label: tex('tabGrupo') }] as const).map((tab) => (
           <button key={tab.id} onClick={() => setTabActiva(tab.id)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tabActiva === tab.id ? 'bg-surface text-primario-oscuro shadow-sm border border-borde' : 'text-texto-muted hover:text-texto'}`}
           >{tab.label}</button>
@@ -312,7 +313,7 @@ export default function PaginaEntidades() {
           </div>
 
           <div className="max-w-sm">
-            <Input placeholder="Buscar por nombre, código o descripción..." value={busquedaEntidades} onChange={(e) => setBusquedaEntidades(e.target.value)} icono={<Search size={15} />} />
+            <Input placeholder={tc('buscarPorNombreCodigoDescripcion')} value={busquedaEntidades} onChange={(e) => setBusquedaEntidades(e.target.value)} icono={<Search size={15} />} />
           </div>
 
           {cargando ? (
@@ -342,8 +343,8 @@ export default function PaginaEntidades() {
                         <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setEntidadSeleccionada(e); setTabActiva('areas') }}>{e.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                         <TablaTd>
                           <div className="flex items-center justify-end gap-1">
-                            <button onClick={() => { setEntidadSeleccionada(e); setTabActiva('areas') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Ver áreas"><Eye size={14} /></button>
-                            <button onClick={() => abrirEditarEntidad(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
+                            <button onClick={() => { setEntidadSeleccionada(e); setTabActiva('areas') }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tex('verAreas')}><Eye size={14} /></button>
+                            <button onClick={() => abrirEditarEntidad(e)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
                           </div>
                         </TablaTd>
                       </SortableRow>
@@ -399,7 +400,7 @@ export default function PaginaEntidades() {
 
           {!entidadSeleccionada ? (
             <div className="bg-primario-muy-claro/50 border border-primario/20 rounded-lg px-4 py-3">
-              <p className="text-sm text-primario-oscuro">Selecciona una entidad para ver sus áreas, o haz doble clic en una entidad de la lengüeta anterior.</p>
+              <p className="text-sm text-primario-oscuro">{tex('seleccionaEntidad')}</p>
             </div>
           ) : (
             <>
@@ -408,16 +409,16 @@ export default function PaginaEntidades() {
               </div>
               <Tabla>
                 <TablaCabecera><tr>
-                  <TablaTh className="w-14">Código</TablaTh>
-                  <TablaTh>Nombre</TablaTh>
-                  <TablaTh className="w-36">Alias</TablaTh>
+                  <TablaTh className="w-14">{tc('codigo')}</TablaTh>
+                  <TablaTh>{tc('nombre')}</TablaTh>
+                  <TablaTh className="w-36">{tc('alias')}</TablaTh>
                   <TablaTh className="w-16">Ubic. Superior</TablaTh>
-                  <TablaTh className="w-24">Tipo</TablaTh>
-                  <TablaTh className="w-20 text-right">Acciones</TablaTh>
+                  <TablaTh className="w-24">{tc('tipo')}</TablaTh>
+                  <TablaTh className="w-20 text-right">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
                 <TablaCuerpo>
                   {cargandoAreas ? (
-                    <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>Cargando áreas...</TablaTd></TablaFila>
+                    <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>{tc('cargandoAreas')}</TablaTd></TablaFila>
                   ) : areasFiltradas.length === 0 ? (
                     <TablaFila>
                       <TablaTd className="py-8 text-center" colSpan={6 as never}>
@@ -445,10 +446,10 @@ export default function PaginaEntidades() {
                       </TablaTd>
                       <TablaTd>
                         <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => abrirEditarArea(a)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar ubicación">
+                          <button onClick={() => abrirEditarArea(a)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tex('editarUbicacion')}>
                             <Pencil size={14} />
                           </button>
-                          <button onClick={() => { setAreaEliminando(a); setModalEliminarArea(true) }} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar ubicación">
+                          <button onClick={() => { setAreaEliminando(a); setModalEliminarArea(true) }} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tex('eliminarUbicacion')}>
                             <Trash2 size={14} />
                           </button>
                         </div>
@@ -474,17 +475,17 @@ export default function PaginaEntidades() {
           ) : (
             <div className="flex flex-col gap-4 max-w-2xl bg-surface border border-borde rounded-lg p-6">
               <Input
-                etiqueta="Alias"
+                etiqueta={tc('alias')}
                 value={formGrupo.alias}
                 onChange={(e) => setFormGrupo({ ...formGrupo, alias: e.target.value })}
-                placeholder="Alias del grupo (opcional)"
+                placeholder={tex('aliasPlaceholder')}
               />
               <Textarea
-                etiqueta="Descripción"
+                etiqueta={tc('descripcion')}
                 value={formGrupo.descripcion}
                 onChange={(e) => setFormGrupo({ ...formGrupo, descripcion: e.target.value })}
                 rows={4}
-                placeholder="Descripción del grupo"
+                placeholder={tex('descripcionGrupo')}
               />
               {errorGrupo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorGrupo}</p></div>}
               {okGrupo && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3"><p className="text-sm text-green-700">{okGrupo}</p></div>}
@@ -523,11 +524,11 @@ export default function PaginaEntidades() {
             <>
               <div className="grid grid-cols-[1fr_220px] gap-3">
                 <Input etiqueta={t('etiquetaNombreEntidad')} value={formEntidad.nombre} onChange={(e) => setFormEntidad({ ...formEntidad, nombre: e.target.value })} placeholder={t('placeholderNombreEntidad')} />
-                <Input etiqueta="Alias" value={formEntidad.alias} onChange={(e) => setFormEntidad({ ...formEntidad, alias: e.target.value })} placeholder="(igual al nombre si vacío)" />
+                <Input etiqueta={tc('alias')} value={formEntidad.alias} onChange={(e) => setFormEntidad({ ...formEntidad, alias: e.target.value })} placeholder={tex('aliasPlaceholder')} />
               </div>
               <Textarea etiqueta={t('etiquetaDescripcion')} value={formEntidad.descripcion} onChange={(e) => setFormEntidad({ ...formEntidad, descripcion: e.target.value })} rows={3} />
               {entidadEditando && (
-                <Input etiqueta="Código" value={formEntidad.codigo_entidad} disabled readOnly />
+                <Input etiqueta={tc('codigo')} value={formEntidad.codigo_entidad} disabled readOnly />
               )}
               {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
               <PieBotonesModal
@@ -714,25 +715,25 @@ export default function PaginaEntidades() {
           {/* Fila 1: Código + Nombre */}
           <div className="grid grid-cols-2 gap-4">
             {!areaEditando ? (
-              <Input etiqueta="Código" value={formArea.codigo_area} onChange={(e) => setFormArea({ ...formArea, codigo_area: e.target.value.toUpperCase() })} placeholder="Ej: SEC-01" />
+              <Input etiqueta={tc('codigo')} value={formArea.codigo_area} onChange={(e) => setFormArea({ ...formArea, codigo_area: e.target.value.toUpperCase() })} placeholder="Ej: SEC-01" />
             ) : (
-              <Input etiqueta="Código" value={formArea.codigo_area} disabled readOnly />
+              <Input etiqueta={tc('codigo')} value={formArea.codigo_area} disabled readOnly />
             )}
-            <Input etiqueta="Nombre" value={formArea.nombre} onChange={(e) => setFormArea({ ...formArea, nombre: e.target.value })} placeholder="Nombre de la ubicación" />
+            <Input etiqueta={tc('nombre')} value={formArea.nombre} onChange={(e) => setFormArea({ ...formArea, nombre: e.target.value })} placeholder={tex('nombreUbicacionPlaceholder')} />
           </div>
           {/* Fila 2: Alias + Descripción */}
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col gap-1.5">
-              <Input etiqueta="Alias" value={formArea.alias} onChange={(e) => setFormArea({ ...formArea, alias: e.target.value })} placeholder={formArea.nombre || 'Igual al nombre por defecto'} />
+              <Input etiqueta={tc('alias')} value={formArea.alias} onChange={(e) => setFormArea({ ...formArea, alias: e.target.value })} placeholder={formArea.nombre || tex('aliasPlaceholder')} />
               <p className="text-xs text-texto-muted">Nombre corto de visualización (por defecto = nombre)</p>
             </div>
-            <Input etiqueta="Descripción" value={formArea.descripcion} onChange={(e) => setFormArea({ ...formArea, descripcion: e.target.value })} placeholder="Descripción opcional" />
+            <Input etiqueta={tc('descripcion')} value={formArea.descripcion} onChange={(e) => setFormArea({ ...formArea, descripcion: e.target.value })} placeholder={tex('descripcionOpcional')} />
           </div>
           {/* Fila 3: Tipo (solo edición) + Ubicación superior */}
           <div className="grid grid-cols-2 gap-4">
             {areaEditando && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Tipo</label>
+                <label className="text-sm font-medium text-texto">{tc('tipo')}</label>
                 <select
                   value={formArea.tipo_ubicacion}
                   onChange={(e) => setFormArea({ ...formArea, tipo_ubicacion: e.target.value as 'AREA' | 'CONTENIDO' | 'VIRTUAL' })}
@@ -744,18 +745,18 @@ export default function PaginaEntidades() {
                   {formArea.tipo_ubicacion === 'VIRTUAL' && <option value="VIRTUAL">VIRTUAL</option>}
                 </select>
                 {formArea.tipo_ubicacion === 'VIRTUAL' && (
-                  <p className="text-xs text-texto-muted">Tipo VIRTUAL — no editable (ubicación manual)</p>
+                  <p className="text-xs text-texto-muted">{tex('tipoVirtualNoEditable')}</p>
                 )}
               </div>
             )}
             <div className="flex flex-col gap-1.5">
-              <label className="text-sm font-medium text-texto">Ubicación superior</label>
+              <label className="text-sm font-medium text-texto">{tex('ubicacionSuperior')}</label>
               <select
                 value={formArea.codigo_area_superior}
                 onChange={(e) => setFormArea({ ...formArea, codigo_area_superior: e.target.value })}
                 className={selectClass}
               >
-                <option value="">Sin ubicación superior (raíz)</option>
+                <option value="">{tc('sinUbicacionSuperiorRaiz')}</option>
                 {areas.filter((a) => a.codigo_area !== formArea.codigo_area).map((a) => (
                   <option key={a.codigo_area} value={a.codigo_area}>
                     {'  '.repeat(a.nivel || 0)}{(a.nivel || 0) > 0 ? '└ ' : ''}{a.alias || a.nombre} ({a.codigo_area})

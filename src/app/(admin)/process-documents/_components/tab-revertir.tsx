@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useTranslations } from 'next-intl'
 import { Play, AlertTriangle, Loader2, ChevronDown, ChevronRight, X, CheckCircle, FolderOpen, Search, Square } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { Boton } from '@/components/ui/boton'
@@ -31,6 +32,8 @@ interface TabRevertirProps {
 }
 
 export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: procesosCorregirProp = [], ubicaciones: ubicacionesProp = [], estadosDocs: estadosDocsProp = [] }: TabRevertirProps) {
+  const tc = useTranslations('common')
+  const tpdx = useTranslations('processDocumentsExtra')
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([...procesosProp])
   const [procesosCorregir, setProcesosCorregir] = useState<ProcesoCatalogo[]>([...procesosCorregirProp])
   const [ubicaciones, setUbicaciones] = useState<UbicacionOption[]>(ubicacionesProp)
@@ -231,7 +234,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                     </button>
                     {procesos.length > 0 && (
                       <>
-                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide">Reversa de éxito</div>
+                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide">{tpdx('reversaDeExito')}</div>
                         {procesos.map((p) => {
                           const flecha = `${p.estado_origen || '—'} → ${p.estado_destino}`
                           const selec = procesoSel === String(p.id_transicion)
@@ -256,7 +259,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                     )}
                     {procesosCorregir.length > 0 && (
                       <>
-                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide border-t border-borde mt-1">Corregir inválidos</div>
+                        <div className="px-3 pt-2 pb-1 text-xs font-semibold text-texto-muted uppercase tracking-wide border-t border-borde mt-1">{tpdx('corregirInvalidos')}</div>
                         {procesosCorregir.map((p) => {
                           const flecha = `${p.estado_origen || '—'} → ${p.estado_destino}`
                           const selec = procesoSel === String(p.id_transicion)
@@ -324,8 +327,8 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                   <FolderOpen size={16} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
                   <span className="flex-1 text-left truncate">
                     {ubicacionSel
-                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion || 'Seleccionar ubicación')
-                      : 'Seleccionar ubicación'}
+                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion || tc('seleccionarUbicacion'))
+                      : tc('seleccionarUbicacion')}
                   </span>
                   {ubicacionSel ? (
                     <X
@@ -342,7 +345,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                     <div className="p-2 border-b border-borde shrink-0">
                       <input
                         type="text"
-                        placeholder="Buscar ubicación…"
+                        placeholder={tc('buscarUbicacion')}
                         value={ubicBusqueda}
                         onChange={(e) => setUbicBusqueda(e.target.value)}
                         onClick={(e) => e.stopPropagation()}
@@ -377,7 +380,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                               >
                                 <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
                                 <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? tc('area') : tpdx('contenido')}</span>
                               </div>
                             )
                           })
@@ -411,7 +414,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                                 }
                                 <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
                                 <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? tc('area') : tpdx('contenido')}</span>
                               </div>
                               {expandido && hijos.map(h => renderNodoUbic(h))}
                             </div>
@@ -437,7 +440,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
               <div className="flex gap-2">
                 <input
                   type="text"
-                  placeholder="Filtrar por nombre, directorio… (Enter para aplicar)"
+                  placeholder={tpdx('filtrarPlaceholder')}
                   value={filtroLibreInput}
                   onChange={(e) => setFiltroLibreInput(e.target.value)}
                   onKeyDown={(e) => {
@@ -477,7 +480,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
             <span className="text-sm text-texto-muted">
               {cargando
-                ? 'Cargando…'
+                ? tc('cargando2')
                 : yaCargado
                   ? `${totalDocs} documento${totalDocs !== 1 ? 's' : ''} en estado ${estadoFiltro || pasoActual?.estado_origen || '—'}`
                   : ''}
@@ -490,7 +493,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
               >
                 {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
                 {ejecutando
-                  ? (esEliminacion ? 'Eliminando…' : 'Ejecutando…')
+                  ? (esEliminacion ? tc('eliminando') : tc('ejecutando'))
                   : totalDocs > 0
                     ? (esEliminacion ? `Eliminar (${totalDocs})` : `Ejecutar (${totalDocs})`)
                     : (esEliminacion ? 'Eliminar' : 'Ejecutar')}
@@ -549,7 +552,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
               {cargando ? (
                 <TablaFila>
                   <TablaTd colSpan={3 as never} className="py-8 text-center text-texto-muted">
-                    <Loader2 size={16} className="animate-spin inline mr-2" />Cargando…
+                    <Loader2 size={16} className="animate-spin inline mr-2" />{tc('cargando2')}
                   </TablaTd>
                 </TablaFila>
               ) : documentos.length === 0 ? (
@@ -601,7 +604,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
 
       <ModalConfirmar
         abierto={confirmEjecutar}
-        titulo={esEliminacion ? 'Confirmar eliminación' : 'Confirmar reversa'}
+        titulo={esEliminacion ? tc('confirmarEliminacion') : tc('confirmarReversa')}
         mensaje={
           esEliminacion
             ? `¿ELIMINAR ${totalDocs} documento${totalDocs !== 1 ? 's' : ''} en estado "${estadoFiltro || pasoActual?.estado_origen}"? Se borrarán también su texto extraído, chunks, embeddings y características. Esta acción no se puede deshacer.`

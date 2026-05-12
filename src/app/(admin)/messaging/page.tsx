@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Mail, MessageSquare, Smartphone, Plus, Pencil, Trash2, Play, RefreshCw } from 'lucide-react'
@@ -82,6 +83,8 @@ export default function PaginaMensajeria() {
 // ════════════════════════════════════════════════════════════════════════════
 
 function TabPlantillas() {
+  const tc = useTranslations('common')
+  const tmx = useTranslations('messagingExtra')
   const toast = useToast()
   const [plantillas, setPlantillas] = useState<PlantillaMensaje[]>([])
   const [canales, setCanales] = useState<CanalMensajeria[]>([])
@@ -150,7 +153,7 @@ function TabPlantillas() {
     try {
       if (modoCrear) {
         if (!editando.codigo_plantilla || !editando.codigo_canal || !editando.tipo_evento || !editando.cuerpo) {
-          toast.error('Faltan campos', 'Código, canal, tipo de evento y cuerpo son requeridos.')
+          toast.error(tmx('faltanCampos'), tmx('faltanCamposDesc'))
           setEnviando(false)
           return
         }
@@ -194,7 +197,7 @@ function TabPlantillas() {
 
   const probar = async () => {
     if (!editando?.codigo_plantilla || modoCrear) {
-      toast.error('Guarda la plantilla primero', 'No se puede probar una plantilla aún no creada.')
+      toast.error(tmx('guardaPlantillaPrimero'), tmx('guardaPlantillaPrimeroDesc'))
       return
     }
     setEnviando(true)
@@ -213,7 +216,7 @@ function TabPlantillas() {
       {/* Filtros */}
       <div className="flex flex-wrap gap-2 items-center">
         <Input
-          placeholder="Buscar por código, evento o asunto..."
+          placeholder={tmx('buscarPlaceholder')}
           value={busqueda}
           onChange={(e) => setBusqueda(e.target.value)}
           className="max-w-xs"
@@ -410,7 +413,7 @@ function TabPlantillas() {
                       checked={editando.requiere_accion ?? false}
                       onChange={(e) => setEditando({ ...editando, requiere_accion: e.target.checked })}
                     />
-                    <span className="text-sm">Requiere acción del usuario</span>
+                    <span className="text-sm">{tmx('requiereAccionUsuario')}</span>
                   </label>
                 </div>
 
@@ -522,8 +525,8 @@ function TabPlantillas() {
           abierto={true}
           alCerrar={() => setAEliminar(null)}
           alConfirmar={eliminar}
-          titulo="Eliminar plantilla"
-          mensaje={`¿Eliminar plantilla "${aEliminar.codigo_plantilla}"? El historial de envíos quedará huérfano.`}
+          titulo={tc('eliminar')}
+          mensaje={tmx('eliminarPlantilla', { codigo: aEliminar.codigo_plantilla })}
         />
       )}
     </div>
@@ -535,6 +538,8 @@ function TabPlantillas() {
 // ════════════════════════════════════════════════════════════════════════════
 
 function TabCanales() {
+  const tc = useTranslations('common')
+  const tmx = useTranslations('messagingExtra')
   const toast = useToast()
   const [canales, setCanales] = useState<CanalMensajeria[]>([])
   const [cargando, setCargando] = useState(true)
@@ -600,12 +605,12 @@ function TabCanales() {
               <TablaTd>{c.nombre_canal}</TablaTd>
               <TablaTd>
                 <Insignia variante={c.soporta_salida ? 'exito' : 'neutro'}>
-                  {c.soporta_salida ? 'Sí' : 'No'}
+                  {c.soporta_salida ? tc('si') : tc('no')}
                 </Insignia>
               </TablaTd>
               <TablaTd>
                 <Insignia variante={c.soporta_entrada ? 'exito' : 'neutro'}>
-                  {c.soporta_entrada ? 'Sí' : 'No'}
+                  {c.soporta_entrada ? tc('si') : tc('no')}
                 </Insignia>
               </TablaTd>
               <TablaTd>
@@ -639,7 +644,7 @@ function TabCanales() {
                 checked={editando.soporta_salida}
                 onChange={(e) => setEditando({ ...editando, soporta_salida: e.target.checked })}
               />
-              <span className="text-sm">Soporta envío (salida)</span>
+              <span className="text-sm">{tmx('soportaEnvio')}</span>
             </label>
             <label className="flex items-center gap-2 cursor-pointer">
               <input
@@ -647,10 +652,10 @@ function TabCanales() {
                 checked={editando.soporta_entrada}
                 onChange={(e) => setEditando({ ...editando, soporta_entrada: e.target.checked })}
               />
-              <span className="text-sm">Soporta recepción (entrada)</span>
+              <span className="text-sm">{tmx('soportaRecepcion')}</span>
             </label>
             <div className="col-span-2">
-              <label className="text-xs text-texto-muted">System prompt común al canal</label>
+              <label className="text-xs text-texto-muted">{tmx('systemPromptCanal')}</label>
               <textarea
                 value={editando.system_prompt || ''}
                 onChange={(e) => setEditando({ ...editando, system_prompt: e.target.value })}
@@ -659,7 +664,7 @@ function TabCanales() {
               />
             </div>
             <div className="col-span-2">
-              <label className="text-xs text-texto-muted">Prompt insert común al canal</label>
+              <label className="text-xs text-texto-muted">{tmx('promptInsertCanal')}</label>
               <textarea
                 value={editando.prompt_insert || ''}
                 onChange={(e) => setEditando({ ...editando, prompt_insert: e.target.value })}
@@ -688,6 +693,7 @@ function TabCanales() {
 // ════════════════════════════════════════════════════════════════════════════
 
 function TabHistorial() {
+  const tmx = useTranslations('messagingExtra')
   const toast = useToast()
   const [filtroCanal, setFiltroCanal] = useState('')
   const [filtroEstado, setFiltroEstado] = useState('')
@@ -782,7 +788,7 @@ function TabHistorial() {
           {cargando ? (
             <TablaFila><TablaTd colSpan={7} className="text-center text-texto-muted">Cargando...</TablaTd></TablaFila>
           ) : items.length === 0 ? (
-            <TablaFila><TablaTd colSpan={7} className="text-center text-texto-muted">Sin envíos</TablaTd></TablaFila>
+            <TablaFila><TablaTd colSpan={7} className="text-center text-texto-muted">{tmx('sinEnvios')}</TablaTd></TablaFila>
           ) : items.map((m) => (
             <TablaFila key={m.id_mensaje}>
               <TablaTd className="text-xs text-texto-muted whitespace-nowrap">

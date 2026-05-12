@@ -61,6 +61,7 @@ export default function PaginaUbicacionesDocs() {
   const toast = useToast()
   const t = useTranslations('documentLocations')
   const tc = useTranslations('common')
+  const tdlx = useTranslations('documentLocationsExtra')
   // ── State ─────────────────────────────────────────────────────────────────
   const [ubicaciones, setUbicaciones] = useState<UbicacionDoc[]>([])
   const [cargando, setCargando] = useState(true)
@@ -435,8 +436,8 @@ export default function PaginaUbicacionesDocs() {
       // El backend rechazará si hay conflicto estructural. Guardamos el handle para
       // que cargas posteriores puedan validar parentesco correctamente.
       toast.warning(
-        'No se puede verificar la relación con el árbol existente',
-        `Esta sesión no tiene referencia al directorio raíz anterior (raíces actuales: ${nombresRoots.join(', ')}). Asegúrate de que "${nombreNuevo}" pertenece al mismo árbol de carpetas.`,
+        tdlx('errorVerificarRelacion'),
+        tdlx('raicesActuales', { nombre: nombreNuevo }),
       )
       await idbSetHandle(nuevo, userId, grupoActivo)
       return true
@@ -562,7 +563,7 @@ export default function PaginaUbicacionesDocs() {
       })
       cargar()
     } catch (e: unknown) {
-      toast.error('Error al crear ubicación.', detalleError(e))
+      toast.error(tdlx('errorCrearUbicacion'), detalleError(e))
     } finally {
       setCargandoUbicacion(false)
     }
@@ -755,7 +756,7 @@ export default function PaginaUbicacionesDocs() {
             type="text"
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar ubicación..."
+            placeholder={tdlx('buscarUbicacion')}
             className="pl-8 pr-3 py-2 text-sm rounded-lg border border-borde bg-fondo-tarjeta text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none w-56"
           />
           {busqueda && (
@@ -841,7 +842,7 @@ export default function PaginaUbicacionesDocs() {
       <Modal
         abierto={modal}
         alCerrar={() => setModal(false)}
-        titulo={editando ? `Editar Ubicación: ${editando.nombre_ubicacion} - ${editando.codigo_ubicacion}` : 'Nueva ubicación'}
+        titulo={editando ? tdlx('editarUbicacion', { nombre: editando.nombre_ubicacion, codigo: editando.codigo_ubicacion }) : tdlx('nuevaUbicacion')}
         className="max-w-3xl"
       >
         <div className="flex flex-col gap-4 min-h-[700px]">
@@ -1042,7 +1043,7 @@ export default function PaginaUbicacionesDocs() {
                       setSincronizandoMd(true); setMensajeMd(null)
                       try {
                         const r = await promptsApi.sincronizarFila('ubicaciones_docs', 'codigo_ubicacion', editando.codigo_ubicacion)
-                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        setMensajeMd({ tipo: 'ok', texto: tc('documentoListoParaVectorizar', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
                         setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
                       } finally { setSincronizandoMd(false) }
@@ -1294,7 +1295,7 @@ export default function PaginaUbicacionesDocs() {
           {resultadoSync && (
             <>
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
-                <p className="text-lg font-medium text-green-800">Sincronización completada</p>
+                <p className="text-lg font-medium text-green-800">{tdlx('sincronizacionCompletada')}</p>
               </div>
 
               <div className={`grid ${resultadoSync.excluidas > 0 ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>

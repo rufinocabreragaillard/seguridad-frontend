@@ -31,6 +31,7 @@ const PAGE_SIZE = 10
 export default function PaginaGrupos() {
   const t = useTranslations('groups')
   const tc = useTranslations('common')
+  const tgx = useTranslations('gruposExtra')
   const { esSuperAdmin, usuario } = useAuth()
   const router = useRouter()
 
@@ -539,7 +540,7 @@ export default function PaginaGrupos() {
       {tabPrincipal === 'grupos' && (
         !esSuperAdmin() ? (
           <div className="flex items-center justify-center h-48 text-texto-muted text-sm">
-            No tienes permisos para acceder a esta sección.
+            {tc('noTienesPermisos')}
           </div>
         ) : (
           <>
@@ -614,7 +615,7 @@ export default function PaginaGrupos() {
       {/* ═══════════════════ TAB 2: ENTIDADES ═══════════════════ */}
       {tabPrincipal === 'entidades' && (
         !esSuperAdmin() ? (
-          <div className="flex items-center justify-center h-48 text-texto-muted text-sm">No tienes permisos para acceder a esta sección.</div>
+          <div className="flex items-center justify-center h-48 text-texto-muted text-sm">{tc('noTienesPermisos')}</div>
         ) : (
           <>
             <div className="flex items-center gap-3">
@@ -637,7 +638,7 @@ export default function PaginaGrupos() {
 
             {!grupoSeleccionado ? (
               <div className="bg-primario-muy-claro/50 border border-primario/20 rounded-lg px-4 py-3">
-                <p className="text-sm text-primario-oscuro">Selecciona un grupo para ver sus entidades, o haz doble clic en un grupo de la lengüeta anterior.</p>
+                <p className="text-sm text-primario-oscuro">{tgx('seleccionaGrupo')}</p>
               </div>
             ) : cargandoDetalle ? (
               <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
@@ -684,7 +685,7 @@ export default function PaginaGrupos() {
           </p>
 
           {cargando ? (
-            <div className="text-sm text-texto-muted py-4">Cargando grupos…</div>
+            <div className="text-sm text-texto-muted py-4">{tc('cargandoGrupos')}</div>
           ) : (
             <>
               <div className="mb-6">
@@ -693,7 +694,7 @@ export default function PaginaGrupos() {
                   <input
                     type="text"
                     className="w-full border border-borde rounded-lg px-3 py-2 text-sm text-texto bg-fondo focus:outline-none focus:ring-2 focus:ring-primario/40"
-                    placeholder="Buscar grupo…"
+                    placeholder={tgx('buscarGrupo')}
                     value={grupoCambioSeleccionado ? (dropdownCambioAbierto ? busquedaCambio : grupoCambioNombre || '') : busquedaCambio}
                     onFocus={() => { setDropdownCambioAbierto(true); if (grupoCambioSeleccionado) setBusquedaCambio('') }}
                     onBlur={() => setTimeout(() => setDropdownCambioAbierto(false), 150)}
@@ -748,7 +749,7 @@ export default function PaginaGrupos() {
                 disabled={!grupoCambioSeleccionado || grupoCambioSeleccionado === usuario?.grupo_activo || guardandoCambio}
                 className="w-full bg-primario text-primario-texto rounded-lg py-2 text-sm font-medium hover:bg-primario-hover transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                {guardandoCambio ? 'Cambiando…' : 'Confirmar cambio de grupo'}
+                {guardandoCambio ? tc('cambiando') : tgx('confirmarCambioGrupo')}
               </button>
             </>
           )}
@@ -759,13 +760,13 @@ export default function PaginaGrupos() {
       {tabPrincipal === 'borrar' && (
         !esSuperAdmin() ? (
           <div className="flex items-center justify-center h-48 text-texto-muted text-sm">
-            No tienes permisos para acceder a esta sección.
+            {tc('noTienesPermisos')}
           </div>
         ) : (
           <div className="flex flex-col gap-6 max-w-3xl">
             <p className="text-sm text-texto-muted -mt-2">
               Elimina permanentemente un grupo junto con todas sus entidades, usuarios, documentos, roles y parámetros.
-              Esta acción es irreversible.
+              {tc('accionIrreversible')}
             </p>
 
             {exitoBorrarTab && (
@@ -802,7 +803,7 @@ export default function PaginaGrupos() {
                 <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted" />
                 <input
                   type="text"
-                  placeholder="Buscar por nombre o código..."
+                  placeholder={tc('buscarPorNombreCodigo')}
                   value={busquedaBorrar}
                   onChange={(e) => setBusquedaBorrar(e.target.value)}
                   className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
@@ -1069,7 +1070,7 @@ export default function PaginaGrupos() {
                       setSincronizandoMdGrupo(true); setMensajeMdGrupo(null)
                       try {
                         const r = await promptsApi.sincronizarFila('grupos_entidades', 'codigo_grupo', grupoEditando.codigo_grupo)
-                        setMensajeMdGrupo({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        setMensajeMdGrupo({ tipo: 'ok', texto: tc('documentoListoParaVectorizar', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
                         setMensajeMdGrupo({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
                       } finally { setSincronizandoMdGrupo(false) }
@@ -1131,7 +1132,7 @@ export default function PaginaGrupos() {
                 <Input etiqueta="Código" value={formEntidad.codigo_entidad} disabled readOnly placeholder="(autogenerado)" />
                 <Input etiqueta={t('etiquetaNombre')} value={formEntidad.nombre} onChange={(e) => setFormEntidad({ ...formEntidad, nombre: e.target.value })} placeholder={t('placeholderNombreEntidad')} />
               </div>
-              <Textarea etiqueta="Descripción" value={formEntidad.descripcion} onChange={(e) => setFormEntidad({ ...formEntidad, descripcion: e.target.value })} placeholder="Descripción opcional" rows={3} />
+              <Textarea etiqueta={tc('descripcion')} value={formEntidad.descripcion} onChange={(e) => setFormEntidad({ ...formEntidad, descripcion: e.target.value })} placeholder={tgx('descripcionOpcional')} rows={3} />
               {errorEntidad && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorEntidad}</p></div>}
               <PieBotonesModal editando={!!entidadEditando} onGuardar={() => guardarEntidad(false)} onGuardarYSalir={() => guardarEntidad(true)} onCerrar={() => setModalEntidad(false)} cargando={guardandoEntidad} />
             </>
@@ -1294,7 +1295,7 @@ export default function PaginaGrupos() {
                       setSincronizandoMdEntidad(true); setMensajeMdEntidad(null)
                       try {
                         const r = await promptsApi.sincronizarFila('entidades', 'codigo_entidad', entidadEditando.codigo_entidad)
-                        setMensajeMdEntidad({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        setMensajeMdEntidad({ tipo: 'ok', texto: tc('documentoListoParaVectorizar', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
                         setMensajeMdEntidad({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
                       } finally { setSincronizandoMdEntidad(false) }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useTranslations } from 'next-intl'
 import { MessageSquare, X, Send, Loader2, Bot, User } from 'lucide-react'
 import { documentosApi } from '@/lib/api'
 import type { EstadoDoc } from '@/lib/tipos'
@@ -52,6 +53,7 @@ interface Props {
 }
 
 export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, onCambiarEstado, onAbiertoChange }: Props) {
+  const tpdx = useTranslations('processDocumentsExtra')
   const [abierto, setAbierto] = useState(false)
 
   const cambiarAbierto = (valor: boolean) => {
@@ -60,7 +62,7 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
   }
   const [mensajes, setMensajes] = useState<Mensaje[]>([{
     rol: 'assistant',
-    texto: '¡Hola! Puedo ayudarte a procesar documentos. Escribe comandos como:\n• "Ejecuta ANALIZAR en los primeros 10"\n• "Cambia a ESCANEADO los de la ubicación X"\n• "¿Cuántos hay en METADATA?"'
+    texto: tpdx('asistenteBienvenida')
   }])
   const [input, setInput] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -117,7 +119,7 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
     } catch {
       setMensajes((prev) => [...prev, {
         rol: 'assistant',
-        texto: 'Lo siento, ocurrió un error al procesar tu comando. Intenta de nuevo.',
+        texto: tpdx('errorAlProcesar'),
       }])
     } finally {
       setEnviando(false)
@@ -154,10 +156,10 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
                 }`}>
                   {m.texto}
                   {m.acciones && m.acciones.length > 0 && !m.ejecutado && (
-                    <p className="text-[10px] mt-1 opacity-70">⚡ Acción preparada en el formulario</p>
+                    <p className="text-[10px] mt-1 opacity-70">{tpdx('accionPreparada')}</p>
                   )}
                   {m.ejecutado && (
-                    <p className="text-[10px] mt-1 opacity-70">✓ Acción aplicada</p>
+                    <p className="text-[10px] mt-1 opacity-70">{tpdx('accionAplicada')}</p>
                   )}
                 </div>
                 {m.rol === 'user' && (
@@ -186,7 +188,7 @@ export function ChatProcesar({ procesos, ubicaciones, estadosDocs, onEjecutar, o
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar() } }}
-              placeholder="Escribe un comando... (Enter para enviar, Shift+Enter nueva línea)"
+              placeholder={tpdx('placeholderComando')}
               disabled={enviando}
               rows={2}
               className="flex-1 text-xs border border-borde rounded-lg px-2.5 py-1.5 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted disabled:opacity-50 resize-none overflow-y-auto"

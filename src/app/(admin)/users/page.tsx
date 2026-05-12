@@ -45,6 +45,7 @@ const selectClass = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 
 export default function PaginaUsuarios() {
   const t = useTranslations('users')
   const tc = useTranslations('common')
+  const tux = useTranslations('usersExtra')
   const { usuario: usuarioActual } = useAuth()
   const grupoActivo = usuarioActual?.grupo_activo ?? ''
   const { esDescendiente, tiposVisibles } = useTipoAccesoGrafo()
@@ -148,7 +149,7 @@ export default function PaginaUsuarios() {
       .then(([r, e, a, g]) => {
         setRoles(r); setEntidades(e); setCatalogoApps(a); setCatalogoGrupos(g)
       })
-      .catch((e) => setErrorCarga(e instanceof Error ? e.message : 'Error al cargar catálogos'))
+      .catch((e) => setErrorCarga(e instanceof Error ? e.message : tux('errorCargarCatalogos')))
   }, [])
 
   // Alias para mantener compat con llamadas post-CRUD que usaban cargar().
@@ -399,7 +400,7 @@ export default function PaginaUsuarios() {
       setAreasParaEntidad([])
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error al asignar entidad'
-      setError(msg.includes('timeout') ? 'El servidor tardó demasiado. Intente nuevamente.' : msg)
+      setError(msg.includes('timeout') ? tux('servidorTardo') : msg)
       return
     } finally {
       setAsignandoEntidad(false)
@@ -532,7 +533,7 @@ export default function PaginaUsuarios() {
       <div className="flex items-center justify-between pr-28">
         <div>
           <PageHeader i18nNamespace="users" conSubtitulo={false} />
-          <p className="text-sm text-texto-muted mt-1">Gestión de usuarios del sistema</p>
+          <p className="text-sm text-texto-muted mt-1">{tux('subtitulo')}</p>
         </div>
         <Boton variante="primario" onClick={abrirNuevo}>
           <Plus size={16} />
@@ -665,7 +666,7 @@ export default function PaginaUsuarios() {
         abierto={modalAbierto}
         alCerrar={() => setModalAbierto(false)}
         titulo={usuarioEditando ? `Editar Usuario: ${usuarioEditando.nombre} - ${usuarioEditando.codigo_usuario}` : 'Nuevo usuario'}
-        descripcion={usuarioEditando ? undefined : 'El usuario recibirá una invitación por correo'}
+        descripcion={usuarioEditando ? undefined : tux('invitacionEnviada')}
         className="w-[min(95vw,42rem)] max-w-none min-h-[32rem]"
       >
         <div className="flex flex-col gap-4 min-h-[500px]">
@@ -821,13 +822,13 @@ export default function PaginaUsuarios() {
                     ))}
                   </select>
                   {form.grupo_por_defecto && entidadesParaDefault.length === 0 && (
-                    <p className="text-xs text-texto-muted">Asigne entidades en la pestaña &quot;Entidades&quot; primero</p>
+                    <p className="text-xs text-texto-muted">{tux('asigneEntidadesPrimero')}</p>
                   )}
                 </div>
 
                 {/* Área por defecto */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-texto">Área por defecto <span className="text-texto-muted font-normal">(opcional)</span></label>
+                  <label className="text-sm font-medium text-texto">{tux('areaPorDefectoOpcional')}</label>
                   <SelectorAreaJerarquico
                     areas={areasParaDefault}
                     valor={form.codigo_area}
@@ -860,7 +861,7 @@ export default function PaginaUsuarios() {
 
                 {/* Aplicación por defecto */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-texto">Aplicación por defecto</label>
+                  <label className="text-sm font-medium text-texto">{tux('aplicacionPorDefecto')}</label>
                   <select
                     value={form.aplicacion_por_defecto}
                     onChange={(e) => setForm({ ...form, aplicacion_por_defecto: e.target.value })}

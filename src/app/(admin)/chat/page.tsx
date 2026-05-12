@@ -74,6 +74,8 @@ export default function PaginaChatUsuario() {
   const { grupoActivo, usuario } = useAuth()
   const codigoUsuario = usuario?.codigo_usuario ?? ''
   const t = useTranslations('chat')
+  const tc = useTranslations('common')
+  const tcx = useTranslations('chatExtra')
 
   // ── Tabs de la página ──
   const [tabPagina, setTabPagina] = useState<'chat' | 'documentos'>('chat')
@@ -219,7 +221,7 @@ export default function PaginaChatUsuario() {
       const data = await chatApi.obtenerConversacion(id)
       setMensajes(data.mensajes || [])
     } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Error al cargar conversación'
+      const msg = e instanceof Error ? e.message : tcx('errorCargarConversacion')
       setErrorConv(msg)
     } finally {
       setCargandoConv(false)
@@ -241,7 +243,7 @@ export default function PaginaChatUsuario() {
       await cargarLista()
       setConvActivaId(nueva.id_conversacion)
     } catch (e: unknown) {
-      let msg = 'Error al crear conversación'
+      let msg = tcx('errorCrearConversacion')
       if (e && typeof e === 'object' && 'response' in e) {
         const r = (e as { response?: { data?: { detail?: string } } }).response
         msg = r?.data?.detail || msg
@@ -429,7 +431,7 @@ export default function PaginaChatUsuario() {
   const labelTipoEspacio = (tipo: string) => tipo === 'AREA' ? 'Temporal' : 'Permanente'
   const labelAlcance = (alcance: string) => {
     if (alcance === 'USUARIO') return 'Solo yo'
-    if (alcance === 'AREA') return 'Por área'
+    if (alcance === 'AREA') return tcx('porArea')
     if (alcance === 'ENTIDAD') return 'Toda la entidad'
     return alcance
   }
@@ -472,7 +474,7 @@ export default function PaginaChatUsuario() {
   const guardarEspacioNuevo = async () => {
     setCrearError(null)
     if (crearForm.alcance === 'AREA' && !crearForm.codigo_ubicacion_area) {
-      setCrearError('Debes seleccionar un área cuando el alcance es "Por área".')
+      setCrearError(tcx('debesSeleccionarArea'))
       return
     }
     setCrearGuardando(true)
@@ -905,7 +907,7 @@ export default function PaginaChatUsuario() {
                     <div className="p-2 pr-8 border-b border-borde">
                       <Input
                         autoFocus
-                        placeholder="Buscar área…"
+                        placeholder={tc('buscarArea')}
                         value={areaBusqueda}
                         onChange={(e) => setAreaBusqueda(e.target.value)}
                         icono={<Search size={13} />}
@@ -1360,7 +1362,7 @@ export default function PaginaChatUsuario() {
                       <tr>
                         <TablaTh>Documento</TablaTh>
                         <TablaTh>Ubicación</TablaTh>
-                        <TablaTh>Estado área</TablaTh>
+                        <TablaTh>{tcx('estadoArea')}</TablaTh>
                         <TablaTh>Estado cola</TablaTh>
                         <TablaTh>Fin</TablaTh>
                         <TablaTh className="text-right">Acciones</TablaTh>
@@ -1491,7 +1493,7 @@ export default function PaginaChatUsuario() {
             <Input
               value={crearForm.nombre}
               onChange={(e) => setCrearForm({ ...crearForm, nombre: e.target.value })}
-              placeholder="(automático si lo dejas vacío)"
+              placeholder={tcx('nombrePlaceholderAuto')}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -1502,7 +1504,7 @@ export default function PaginaChatUsuario() {
                 onChange={(e) => setCrearForm({ ...crearForm, tipo: e.target.value as TipoEspacio })}
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto"
               >
-                <option value="AREA">Temporal (se borra en 15 días)</option>
+                <option value="AREA">{tcx('temporalSeBorra')}</option>
                 <option value="ESPACIO">Permanente (sin vencimiento)</option>
               </select>
             </div>
@@ -1518,7 +1520,7 @@ export default function PaginaChatUsuario() {
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto"
               >
                 <option value="USUARIO">Solo yo</option>
-                <option value="AREA">Por área (usuarios del área)</option>
+                <option value="AREA">{tcx('porAreaUsuarios')}</option>
                 <option value="ENTIDAD">Toda la entidad</option>
               </select>
             </div>
@@ -1531,7 +1533,7 @@ export default function PaginaChatUsuario() {
                 onChange={(e) => setCrearForm({ ...crearForm, codigo_ubicacion_area: e.target.value })}
                 className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto"
               >
-                <option value="">— Selecciona un área —</option>
+                <option value="">{tcx('seleccionaUnArea')}</option>
                 {areas.map((a) => (
                   <option key={a.codigo_ubicacion} value={a.codigo_ubicacion}>
                     {a.alias_ubicacion || a.nombre_ubicacion}

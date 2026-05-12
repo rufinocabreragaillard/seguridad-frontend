@@ -44,6 +44,7 @@ type RolAsignado = {
 export default function PaginaUsuariosSemilla() {
   const t = useTranslations('seedUsers')
   const tc = useTranslations('common')
+  const tsux = useTranslations('seedUsersExtra')
   const { usuario: usuarioActual, esSuperAdmin, aplicacionActiva } = useAuth()
   const { esDescendiente, tiposVisibles } = useTipoAccesoGrafo()
 
@@ -597,7 +598,7 @@ export default function PaginaUsuariosSemilla() {
         <TablaCuerpo>
           {cargando ? (
             <TablaFila>
-              <TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>Cargando...</TablaTd>
+              <TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>{tc('cargando')}</TablaTd>
             </TablaFila>
           ) : usuariosFiltrados.length === 0 ? (
             <TablaFila>
@@ -678,7 +679,7 @@ export default function PaginaUsuariosSemilla() {
                       : 'border-transparent text-texto-muted hover:text-texto'
                   }`}
                 >
-                  {tab === 'datos' ? t('tabDatos') : tab === 'inicializacion' ? 'Inicialización' : `${t('tabRoles')} (${rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).length})`}
+                  {tab === 'datos' ? t('tabDatos') : tab === 'inicializacion' ? tsux('inicializacion') : `${t('tabRoles')} (${rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).length})`}
                 </button>
               ))}
             </div>
@@ -692,7 +693,7 @@ export default function PaginaUsuariosSemilla() {
 
               <div className="flex flex-col gap-3">
                 <Input
-                  etiqueta="Correo electrónico *"
+                  etiqueta={tsux('correoElectronicoObligatorio')}
                   type="email"
                   value={formNuevo.correo}
                   onChange={(e) => setFormNuevo({ ...formNuevo, correo: e.target.value.toLowerCase() })}
@@ -725,7 +726,7 @@ export default function PaginaUsuariosSemilla() {
 
                   {modoGrupo === 'nuevo' ? (
                     <Input
-                      etiqueta="Nombre de empresa (será el nombre del grupo) *"
+                      etiqueta={tsux('nombreEmpresaObligatorio')}
                       value={formNuevo.empresa}
                       onChange={(e) => setFormNuevo({ ...formNuevo, empresa: e.target.value })}
                       placeholder="Mi Empresa S.A."
@@ -791,7 +792,7 @@ export default function PaginaUsuariosSemilla() {
               etiqueta="Nombre completo *"
               value={form.nombre}
               onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-              placeholder="Juan Pérez"
+              placeholder={tsux('nombreEjemplo')}
             />
             <Input
               etiqueta="Alias"
@@ -800,7 +801,7 @@ export default function PaginaUsuariosSemilla() {
               placeholder="Juan"
             />
             <Input
-              etiqueta="Teléfono"
+              etiqueta={tc('telefono')}
               value={form.telefono}
               onChange={(e) => setForm({ ...form, telefono: e.target.value })}
               placeholder="+56 9 1234 5678"
@@ -828,7 +829,7 @@ export default function PaginaUsuariosSemilla() {
               onChange={(e) => setForm({ ...form, sidebar_colapsado: e.target.checked })}
               className="w-4 h-4 rounded border-borde text-primario focus:ring-primario"
             />
-            <span className="text-sm text-texto">Menú lateral colapsado por defecto</span>
+            <span className="text-sm text-texto">{tsux('menuColapsadoDefecto')}</span>
           </label>
 
           {error && (
@@ -911,10 +912,10 @@ export default function PaginaUsuariosSemilla() {
 
                   {/* Área buscable */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-texto">Área por defecto</label>
+                    <label className="text-sm font-medium text-texto">{tsux('areaPorDefecto')}</label>
                     <div className="relative" ref={dropdownAreaFormRef}>
                       <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
-                      <input type="text" placeholder={!form.entidad_por_defecto ? 'Seleccione entidad primero' : cargandoAreas ? 'Cargando...' : 'Buscar área...'}
+                      <input type="text" placeholder={!form.entidad_por_defecto ? tsux('seleccioneEntidadPrimero') : cargandoAreas ? tc('cargando') : tsux('buscarArea')}
                         value={busquedaAreaForm}
                         onChange={(e) => { setBusquedaAreaForm(e.target.value); setDropdownAreaFormAbierto(true); if (!e.target.value) setForm({ ...form, codigo_area: '' }) }}
                         onFocus={() => { if (form.entidad_por_defecto) { setBusquedaAreaForm(''); setDropdownAreaFormAbierto(true) } }}
@@ -931,7 +932,7 @@ export default function PaginaUsuariosSemilla() {
                               <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 bg-amber-100 text-amber-700">Área</span>
                             </button>
                           ))}
-                          {areasEntidad.length === 0 && <div className="px-3 py-2 text-sm text-texto-muted">Sin áreas en esta entidad</div>}
+                          {areasEntidad.length === 0 && <div className="px-3 py-2 text-sm text-texto-muted">{tsux('sinAreasEnEntidad')}</div>}
                         </div>
                       )}
                     </div>
@@ -976,17 +977,17 @@ export default function PaginaUsuariosSemilla() {
 
                   {/* Aplicación buscable */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-texto">Aplicación por defecto</label>
+                    <label className="text-sm font-medium text-texto">{tsux('aplicacionPorDefecto')}</label>
                     <div className="relative" ref={dropdownAppFormRef}>
                       <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
-                      <input type="text" placeholder="Buscar aplicación..."
+                      <input type="text" placeholder={tsux('buscarAplicacion')}
                         value={busquedaAppForm}
                         onChange={(e) => { setBusquedaAppForm(e.target.value); setDropdownAppFormAbierto(true); if (!e.target.value) setForm({ ...form, aplicacion_por_defecto: '' }) }}
                         onFocus={() => setDropdownAppFormAbierto(true)}
                         className="w-full rounded-lg border border-borde bg-surface pl-9 pr-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario" />
                       {dropdownAppFormAbierto && (
                         <div className="absolute z-50 w-full mt-1 bg-surface border border-borde rounded-lg shadow-lg max-h-48 overflow-y-auto">
-                          {[{ codigo_aplicacion: '', nombre: '— Sin aplicación —', tipo_acceso: tipoGrupoForm } as Aplicacion,
+                          {[{ codigo_aplicacion: '', nombre: tsux('sinAplicacion'), tipo_acceso: tipoGrupoForm } as Aplicacion,
                             ...(appsGrupo.length > 0 ? appsGrupo : aplicaciones).filter((a) =>
                               esDescendiente(tipoGrupoForm, normalizarTipo(a.tipo_acceso))
                             )]
@@ -1030,7 +1031,7 @@ export default function PaginaUsuariosSemilla() {
                 </div>
               ) : (
                 <div className="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3">
-                  <p className="text-sm text-yellow-700">Debe seleccionar un grupo por defecto en la pestaña &quot;Datos&quot; primero.</p>
+                  <p className="text-sm text-yellow-700">{tsux('debeSeleccionarGrupo')}</p>
                 </div>
               )}
 

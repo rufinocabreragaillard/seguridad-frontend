@@ -29,6 +29,7 @@ type TipoFuncion = TipoElemento
 export default function PaginaFunciones() {
   const t = useTranslations('functions')
   const tc = useTranslations('common')
+  const tfx = useTranslations('functionsExtra')
   const tte = useTranslations('tipoElemento')
   const { grupoActivo, aplicacionActiva } = useAuth()
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([])
@@ -324,7 +325,7 @@ export default function PaginaFunciones() {
   const traducirFuncion = async (f: Funcion) => {
     if (traduciendo) return
     if (f.traducir === false) {
-      alert(`La función "${f.nombre}" tiene desactivada la traducción (campo "traducir" = false).`)
+      alert(tfx('traduccionDesactivada', { nombre: f.nombre }))
       return
     }
     setTraduciendo(f.codigo_funcion)
@@ -332,9 +333,9 @@ export default function PaginaFunciones() {
       const res = await funcionesApi.traducir(f.codigo_funcion)
       const idiomas = res.idiomas?.join(', ') || '—'
       const campos = res.campos_traducidos?.join(', ') || '—'
-      alert(`Traducción generada para "${f.nombre}".\nIdiomas: ${idiomas}\nCampos: ${campos}\nRegistros guardados: ${res.generadas}`)
+      alert(tfx('traduccionGenerada', { nombre: f.nombre, idiomas, campos, generadas: res.generadas }))
     } catch (e) {
-      alert(`Error traduciendo: ${e instanceof Error ? e.message : 'desconocido'}`)
+      alert(tfx('errorTraduciendo', { error: e instanceof Error ? e.message : 'desconocido' }))
     } finally {
       setTraduciendo(null)
     }
@@ -394,8 +395,8 @@ export default function PaginaFunciones() {
         <Tabla>
           <TablaCabecera><tr><TablaTh className="w-8" /><TablaTh className="w-28">{t('colTipo')}</TablaTh><TablaTh className="w-32">{t('colAlias')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh className="w-40">{t('colUrl')}</TablaTh><TablaTh className="w-40">{t('colCodigo')}</TablaTh><TablaTh className="text-right w-28">{tc('acciones')}</TablaTh></tr></TablaCabecera>
           <TablaCuerpo>
-            {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>Cargando...</TablaTd></TablaFila>
-            ) : funcionesFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>No se encontraron funciones</TablaTd></TablaFila>
+            {cargando ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{tc('cargando')}</TablaTd></TablaFila>
+            ) : funcionesFiltradas.length === 0 ? (<TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>{tfx('noEncontradas')}</TablaTd></TablaFila>
             ) : funcionesFiltradas.map((f) => (
               <SortableRow key={f.codigo_funcion} id={f.codigo_funcion}>
                 <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><InsigniaTipo tipo={f.tipo_acceso} /></TablaTd>
@@ -418,10 +419,10 @@ export default function PaginaFunciones() {
                       }`}
                       title={
                         f.traducir === false
-                          ? 'Traducción desactivada para esta función'
+                          ? tfx('tooltipTraduccionDesactivada')
                           : f.traducir_registros && !f.tabla_traducible
-                          ? '⚠ Configuración incompleta: "Tabla a traducir" no asignada. La generación omitirá esta función.'
-                          : 'Traducir esta función a todos los idiomas destino'
+                          ? tfx('tooltipTablaTraducibleNoAsignada')
+                          : tfx('tooltipTraducirAhora')
                       }
                     >
                       {traduciendo === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <Languages size={14} />}
@@ -437,8 +438,8 @@ export default function PaginaFunciones() {
                         }`}
                         title={
                           f.python_editado_manual
-                            ? '⚠ Código Python editado manualmente — puede estar desincronizado respecto al prompt'
-                            : 'Editor de programación (triggers Python)'
+                            ? tfx('tooltipPythonEditadoManual')
+                            : tfx('tooltipEditorProgramacion')
                         }
                       >
                         <Brain size={14} />
@@ -456,15 +457,15 @@ export default function PaginaFunciones() {
                         }`}
                         title={
                           f.sincronizacion_pendiente
-                            ? '⚠ Sincronización pendiente — hay cambios sin aplicar al grafo de dependencias'
-                            : 'Sincronizar (refrescar grafo de dependencias + APIs)'
+                            ? tfx('tooltipSincronizacionPendiente')
+                            : tfx('tooltipSincronizar')
                         }
                       >
                         {sincronizando === f.codigo_funcion ? <RefreshCw size={14} className="animate-spin" /> : <RefreshCw size={14} />}
                       </button>
                     )}
-                    <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title="Editar"><Pencil size={14} /></button>
-                    <button onClick={() => setConfirmacion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Eliminar"><Trash2 size={14} /></button>
+                    <button onClick={() => abrirEditarFuncion(f)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                    <button onClick={() => setConfirmacion(f)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
                   </div>
                 </TablaTd>
               </SortableRow>
@@ -514,14 +515,14 @@ export default function PaginaFunciones() {
               </div>
               {funcionEditando && (
                 <div className="col-span-2">
-                  <label className="text-sm font-medium text-texto">Código</label>
+                  <label className="text-sm font-medium text-texto">{tc('codigo')}</label>
                   <Input value={formFuncion.codigo_funcion} disabled readOnly />
                 </div>
               )}
               {!funcionEditando && (
                 <div className="col-span-2">
-                  <label className="text-sm font-medium text-texto">Código <span className="text-texto-muted">(opcional, autogenerado)</span></label>
-                  <Input value={formFuncion.codigo_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, codigo_funcion: e.target.value.toUpperCase() })} placeholder="Dejar vacío para autogenerar" />
+                  <label className="text-sm font-medium text-texto">{tfx('codigoAutogenerado')}</label>
+                  <Input value={formFuncion.codigo_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, codigo_funcion: e.target.value.toUpperCase() })} placeholder={tfx('dejarVacioAutogenerar')} />
                 </div>
               )}
             </div>
@@ -593,7 +594,7 @@ export default function PaginaFunciones() {
                         </div>
                         <div>
                           <label className="text-xs font-medium text-texto block mb-1">
-                            Campos a traducir <span className="text-texto-muted">(separados por coma; vacío = inferir)</span>
+                            {tfx('camposATraducir')}
                           </label>
                           <Input
                             value={formFuncion.campos_traducibles}
@@ -619,16 +620,16 @@ export default function PaginaFunciones() {
               <div className="flex flex-col gap-3">
                 <div>
                   <label className="text-sm font-medium text-texto">Ayuda para el usuario</label>
-                  <textarea value={formFuncion.ayuda_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, ayuda_de_funcion: e.target.value })} rows={3} placeholder="Texto descriptivo visible para el usuario final bajo el ícono de la función" className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none placeholder:text-texto-muted" />
+                  <textarea value={formFuncion.ayuda_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, ayuda_de_funcion: e.target.value })} rows={3} placeholder={tfx('descripcionPlaceholder')} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none placeholder:text-texto-muted" />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-texto mb-2 block">Permisos de operación</label>
+                  <label className="text-sm font-medium text-texto mb-2 block">{tfx('permisosOperacion')}</label>
                   <div className="grid grid-cols-2 gap-2 p-3 bg-fondo rounded-lg border border-borde">
                     {([
-                      { key: 'perm_select', label: 'Consultar (SELECT)', disabled: false },
-                      { key: 'perm_insert', label: 'Crear (INSERT)', disabled: false },
-                      { key: 'perm_update', label: 'Modificar (UPDATE)', disabled: false },
-                      { key: 'perm_delete', label: 'Eliminar (DELETE)', disabled: true },
+                      { key: 'perm_select', label: tc('operacionSelect'), disabled: false },
+                      { key: 'perm_insert', label: tc('operacionInsert'), disabled: false },
+                      { key: 'perm_update', label: tc('operacionUpdate'), disabled: false },
+                      { key: 'perm_delete', label: tc('operacionDelete'), disabled: true },
                     ] as { key: 'perm_select' | 'perm_insert' | 'perm_update' | 'perm_delete'; label: string; disabled: boolean }[]).map(({ key, label, disabled }) => (
                       <label key={key} className={`flex items-center gap-2 text-sm ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
                         <input type="checkbox" checked={formFuncion[key]} disabled={disabled}
@@ -675,7 +676,7 @@ export default function PaginaFunciones() {
               {cargandoRolesFuncion
                 ? <div className="flex flex-col gap-2">{[1,2].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
                 : rolesDeFuncion.length === 0
-                  ? <p className="text-sm text-texto-muted text-center py-4">Esta función no está asignada a ningún rol</p>
+                  ? <p className="text-sm text-texto-muted text-center py-4">{tfx('noAsignadaRol')}</p>
                   : <div className="flex flex-col gap-2">
                       {rolesDeFuncion.map((rf) => (
                         <div key={rf.id_rol} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
@@ -713,13 +714,13 @@ export default function PaginaFunciones() {
               {cargandoApisFuncion ? (
                 <div className="flex flex-col gap-2">{[1,2,3].map((i) => <div key={i} className="h-10 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
               ) : apisDeFuncion.length === 0 ? (
-                <p className="text-sm text-texto-muted text-center py-8">No hay endpoints API asociados a esta función</p>
+                <p className="text-sm text-texto-muted text-center py-8">{tfx('noEndpointsApi')}</p>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b border-borde">
-                        <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted w-20">Método</th>
+                        <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted w-20">{tc('metodo')}</th>
                         <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted w-24">Tipo</th>
                         <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted">Ruta</th>
                         <th className="text-left px-3 py-2 text-xs font-medium text-texto-muted">Nombre</th>
@@ -772,12 +773,12 @@ export default function PaginaFunciones() {
           {tabModalFuncion === 'system_prompt' && funcionEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">System Prompt (instrucción base para el LLM)</label>
+                <label className="text-sm font-medium text-texto">{tfx('systemPromptLabel')}</label>
                 <textarea
                   value={formFuncion.system_prompt || ''}
                   onChange={(e) => setFormFuncion({ ...formFuncion, system_prompt: e.target.value })}
                   rows={13}
-                  placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."
+                  placeholder={tfx('placeholderSystemPrompt')}
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono focus:outline-none focus:ring-2 focus:ring-primario"
                 />
               </div>
@@ -885,12 +886,12 @@ export default function PaginaFunciones() {
           {tabModalFuncion === 'vista' && funcionEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Prompt Vista (instrucción al LLM)</label>
+                <label className="text-sm font-medium text-texto">{tfx('promptVistaLabel')}</label>
                 <textarea
                   value={formFuncion.prompt_view || ''}
                   onChange={(e) => setFormFuncion({ ...formFuncion, prompt_view: e.target.value })}
                   rows={8}
-                  placeholder="Instrucción al LLM para generar la vista SQL del chat. Usa {codigo_funcion}, {codigo_funcion_snake}, {nombre_funcion} como placeholders."
+                  placeholder={tfx('placeholderPromptVista')}
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono focus:outline-none focus:ring-2 focus:ring-primario"
                 />
               </div>
@@ -900,7 +901,7 @@ export default function PaginaFunciones() {
                   value={formFuncion.sql_view || ''}
                   onChange={(e) => setFormFuncion({ ...formFuncion, sql_view: e.target.value })}
                   rows={12}
-                  placeholder="Aquí aparecerá el CREATE OR REPLACE VIEW generado. También se puede editar manualmente antes de Sincronizar."
+                  placeholder={tfx('placeholderVistaGenerada')}
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono focus:outline-none focus:ring-2 focus:ring-primario"
                 />
               </div>
@@ -1017,7 +1018,7 @@ export default function PaginaFunciones() {
           {/* Tab LLM */}
           {tabModalFuncion === 'llm' && funcionEditando && (
             <div className="flex flex-col gap-4">
-              <p className="text-sm text-texto-muted">Modelo LLM a usar cuando se invoca esta función. Si está vacío, la función no usa LLM directamente.</p>
+              <p className="text-sm text-texto-muted">{tfx('modeloLlmAyuda')}</p>
               <div>
                 <label className="text-sm font-medium text-texto">Modelo LLM</label>
                 <select
@@ -1034,7 +1035,7 @@ export default function PaginaFunciones() {
                 </select>
               </div>
               {!formFuncion.id_modelo && (
-                <p className="text-xs text-texto-muted">Sin modelo seleccionado. El chat fallará si esta función se usa para conversaciones LLM.</p>
+                <p className="text-xs text-texto-muted">{tfx('sinModeloSeleccionado')}</p>
               )}
               {errorFuncion && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorFuncion}</p></div>}
               <PieBotonesModal

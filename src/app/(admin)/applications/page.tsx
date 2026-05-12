@@ -28,6 +28,7 @@ type GrupoApp = { codigo_grupo: string; grupos_entidades: { nombre_grupo: string
 export default function PaginaAplicaciones() {
   const t = useTranslations('applications')
   const tc = useTranslations('common')
+  const tapx = useTranslations('applicationsExtra')
   const tte = useTranslations('tipoElemento')
   const { grupoActivo } = useAuth()
   const [aplicaciones, setAplicaciones] = useState<Aplicacion[]>([])
@@ -293,7 +294,7 @@ export default function PaginaAplicaciones() {
           </>)}
           {tabModalApp === 'funciones' && appEditando && (
             <div className="flex flex-col gap-4">
-              <p className="text-xs text-texto-muted">Solo se muestran funciones de tipo <span className="font-medium">{tte(normalizarTipo(appEditando.tipo_acceso))}</span> — una aplicación solo admite funciones de su mismo tipo.</p>
+              <p className="text-xs text-texto-muted">{tapx('soloMismoTipo', { tipo: tte(normalizarTipo(appEditando.tipo_acceso)) })}</p>
               <div className="flex gap-2">
                 <div className="flex-1 relative" ref={dropdownFuncionAppRef}>
                   <div className="relative">
@@ -343,7 +344,7 @@ export default function PaginaAplicaciones() {
                           <div className="font-medium truncate">{fa.funciones?.nombre_funcion || fa.codigo_funcion}</div>
                           <div className="text-xs text-texto-muted font-mono">{fa.codigo_funcion}</div>
                         </div>
-                        <label className="flex items-center gap-1.5 text-xs cursor-pointer" title="Marcar como función inicial de la aplicación">
+                        <label className="flex items-center gap-1.5 text-xs cursor-pointer" title={tapx('marcarFuncionInicial')}>
                           <input
                             type="checkbox"
                             checked={!!fa.inicial}
@@ -373,12 +374,12 @@ export default function PaginaAplicaciones() {
           {tabModalApp === 'system_prompt' && appEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">System Prompt (instrucción base para el LLM)</label>
+                <label className="text-sm font-medium text-texto">{tapx('systemPromptLabel')}</label>
                 <textarea
                   value={formApp.system_prompt || ''}
                   onChange={(e) => setFormApp({ ...formApp, system_prompt: e.target.value })}
                   rows={17}
-                  placeholder="Instrucción base al LLM (se inyecta en system_prompt del chat)."
+                  placeholder={tapx('placeholderSystemPrompt')}
                   className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto font-mono focus:outline-none focus:ring-2 focus:ring-primario"
                 />
               </div>
@@ -518,7 +519,7 @@ export default function PaginaAplicaciones() {
                       setSincronizandoMd(true); setMensajeMd(null)
                       try {
                         const r = await promptsApi.sincronizarFila('aplicaciones', 'codigo_aplicacion', appEditando.codigo_aplicacion)
-                        setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
+                        setMensajeMd({ tipo: 'ok', texto: tc('documentoListoParaVectorizar', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
                         setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
                       } finally { setSincronizandoMd(false) }
