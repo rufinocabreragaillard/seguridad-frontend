@@ -4,62 +4,58 @@ import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import { FolderOpen, X, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
-import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, cargaDocumentosApi } from '@/lib/api'
+import { documentosApi, ubicacionesDocsApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
-import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
-import { escanearArchivosDirectorio, escanearDirectorio as escanearDirectorioUbicaciones } from '@/lib/escanear-directorio'
+import { getDirectoryHandle, setDirectoryHandle } from '@/lib/file-handle-store'
+import { escanearDirectorio as escanearDirectorioUbicaciones } from '@/lib/escanear-directorio'
 import { useAuth } from '@/context/AuthContext'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import type { EstadoDoc } from '@/lib/tipos'
+import {
+  escanearParaCarga,
+  ejecutarCarga,
+  ejecutarExtraer,
+  ejecutarPasoBackend,
+  type PendingCarga,
+  type UbicacionOpt,
+} from '../_lib/ejecutar-paso'
 
 // Pasos 3-6: procesamiento de documentos
 const PASOS_PIPELINE = [
-  { key: 'EXTRAER',    nombre: 'Extraer',    label: 'CARGADO → METADATA',    estadoOrigen: 'CARGADO',   estadoDestino: 'METADATA',    color: '#EF4444', clienteSide: true },
-  { key: 'ANALIZAR',   nombre: 'Analizar',   label: 'METADATA → ESCANEADO',  estadoOrigen: 'METADATA',  estadoDestino: 'ESCANEADO',   color: '#F97316', clienteSide: false },
-  { key: 'CHUNKEAR',   nombre: 'Chunkear',   label: 'ESCANEADO → CHUNKEADO', estadoOrigen: 'ESCANEADO', estadoDestino: 'CHUNKEADO',   color: '#84CC16', clienteSide: false },
-  { key: 'VECTORIZAR', nombre: 'Vectorizar', label: 'CHUNKEADO → VECTORIZADO',estadoOrigen: 'CHUNKEADO', estadoDestino: 'VECTORIZADO', color: '#22C55E', clienteSide: false },
+  { key: 'EXTRAER',    nombre: 'Extraer',    label: 'CARGADO → METADATA',     estadoOrigen: 'CARGADO',   estadoDestino: 'METADATA',    color: '#EF4444', clienteSide: true  },
+  { key: 'ANALIZAR',   nombre: 'Analizar',   label: 'METADATA → ESCANEADO',   estadoOrigen: 'METADATA',  estadoDestino: 'ESCANEADO',   color: '#F97316', clienteSide: false },
+  { key: 'CHUNKEAR',   nombre: 'Chunkear',   label: 'ESCANEADO → CHUNKEADO',  estadoOrigen: 'ESCANEADO', estadoDestino: 'CHUNKEADO',   color: '#84CC16', clienteSide: false },
+  { key: 'VECTORIZAR', nombre: 'Vectorizar', label: 'CHUNKEADO → VECTORIZADO', estadoOrigen: 'CHUNKEADO', estadoDestino: 'VECTORIZADO', color: '#22C55E', clienteSide: false },
 ] as const
 
-type EstadoPaso = 'esperando' | 'activo' | 'listo' | 'error'
-interface ProgresoPaso { total: number; completados: number; estado: EstadoPaso; error?: string }
+type EstadoBarra = 'esperando' | 'activo' | 'listo' | 'error'
+interface ProgresoPaso { total: number; completados: number; estado: EstadoBarra; error?: string }
 
 const progresosIniciales = (): Record<string, ProgresoPaso> =>
   Object.fromEntries(PASOS_PIPELINE.map((p) => [p.key, { total: 0, completados: 0, estado: 'esperando' }]))
 
 const ESTADOS_PIPELINE = [
-  { codigo: 'CARGADO',        nombre: 'Cargado',        color: '#6B7280' },
-  { codigo: 'METADATA',       nombre: 'Metadata',       color: '#3B82F6' },
-  { codigo: 'ESCANEADO',      nombre: 'Escaneado',      color: '#F97316' },
-  { codigo: 'CHUNKEADO',      nombre: 'Chunkeado',      color: '#84CC16' },
-  { codigo: 'VECTORIZADO',    nombre: 'Vectorizado',    color: '#22C55E' },
-  { codigo: 'NO_ANALIZABLE',  nombre: 'No analizable',  color: '#EF4444' },
-  { codigo: 'NO_ESCANEABLE',  nombre: 'No escaneable',  color: '#DC2626' },
+  { codigo: 'CARGADO',       nombre: 'Cargado',       color: '#6B7280' },
+  { codigo: 'METADATA',      nombre: 'Metadata',      color: '#3B82F6' },
+  { codigo: 'ESCANEADO',     nombre: 'Escaneado',     color: '#F97316' },
+  { codigo: 'CHUNKEADO',     nombre: 'Chunkeado',     color: '#84CC16' },
+  { codigo: 'VECTORIZADO',   nombre: 'Vectorizado',   color: '#22C55E' },
+  { codigo: 'NO_ANALIZABLE', nombre: 'No analizable', color: '#EF4444' },
+  { codigo: 'NO_ESCANEABLE', nombre: 'No escaneable', color: '#DC2626' },
 ] as const
-
-interface UbicacionOption {
-  codigo_ubicacion: string
-  nombre_ubicacion: string
-  url: string
-  nivel: number
-  tipo_ubicacion?: 'AREA' | 'CONTENIDO'
-  codigo_ubicacion_superior?: string
-  ubicacion_habilitada?: boolean
-}
 
 interface TabPipelineTodoProps {
   procesos?: ProcesoCatalogo[]
   estadosDocs?: EstadoDoc[]
-  ubicaciones?: UbicacionOption[]
+  ubicaciones?: UbicacionOpt[]
 }
 
-export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: ubicacionesProp = [] }: TabPipelineTodoProps) {
+export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = [] }: TabPipelineTodoProps) {
   const t = useTranslations('processDocuments')
   const { grupoActivo, usuario } = useAuth()
   const userId = usuario?.codigo_usuario ?? null
 
   // ── Pasos 1-2 (ubicaciones + cargar) ──────────────────────────────────────
-  type EstadoBarra = 'esperando' | 'activo' | 'listo' | 'error'
   const [p1Estado, setP1Estado] = useState<EstadoBarra>('esperando')
   const [p1Total, setP1Total] = useState(0)
   const [p1Completados, setP1Completados] = useState(0)
@@ -70,8 +66,6 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   const [p2Completados, setP2Completados] = useState(0)
   const [p2Mensaje, setP2Mensaje] = useState('')
 
-  type ScanResult = NonNullable<Awaited<ReturnType<typeof escanearArchivosDirectorio>>>
-  type PendingCarga = { archivos: ScanResult['archivos']; codigosUbicacion: string[]; nombreRaiz: string }
   const [pendingCarga, setPendingCarga] = useState<PendingCarga | null>(null)
 
   // ── Pasos 3-6 (pipeline) ──────────────────────────────────────────────────
@@ -89,7 +83,6 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   const [ubicBusqueda, setUbicBusqueda] = useState('')
   const [ubicDropdownOpen, setUbicDropdownOpen] = useState(false)
   const [ubicExpandidos, setUbicExpandidos] = useState<Set<string>>(new Set())
-  const [nParalelo, setNParalelo] = useState<number>(10)
   const [tope, setTope] = useState<string>('')
   const [filtroLibreInput, setFiltroLibreInput] = useState<string>('')
   const [filtroLibre, setFiltroLibre] = useState<string>('')
@@ -105,11 +98,11 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   const abortRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const resolveColaRef = useRef<(() => void) | null>(null)
+  const scanAbortRef = useRef<AbortController | null>(null)
 
   const handleColaChange = useCallback(() => {
     if (resolveColaRef.current) { resolveColaRef.current(); resolveColaRef.current = null }
   }, [])
-
   const { suscribir: suscribirCola, desuscribir: desuscribirCola } = useColaRealtime(grupoActivo, handleColaChange)
 
   useEffect(() => {
@@ -181,48 +174,61 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   }
 
   // ── Paso 2: FILESYSTEM → CARGADO (escaneo) ────────────────────────────────
+  // Usa exactamente escanearParaCarga de _lib/ejecutar-paso — misma lógica que page.tsx
   const ejecutarPaso2Escaneo = async (): Promise<boolean> => {
     setP2Estado('activo'); setP2Total(0); setP2Completados(0); setP2Mensaje(t('escaneandoDirectorio')); setPendingCarga(null)
+    const scanAbort = new AbortController()
+    scanAbortRef.current = scanAbort
     try {
-      const rutasDeshabilitadas = new Set(
-        ubicacionesProp.filter((u) => u.ubicacion_habilitada === false && u.url).map((u) => u.url)
-      )
-      const stored = await getDirectoryHandle(userId, grupoActivo)
-      const handleEfectivo = stored && (await ensureReadPermission(stored)) ? stored : undefined
-      const scan = await escanearArchivosDirectorio(handleEfectivo, 5, undefined, rutasDeshabilitadas)
-      if (!scan) { setP2Estado('esperando'); setP2Mensaje(''); return false }
-      if (stored !== scan.dirHandle) await setDirectoryHandle(scan.dirHandle, userId, grupoActivo)
-      const codigosUbicacion = ubicacionesProp
-        .filter((u) => u.url && scan.rutasEscaneadas.includes(u.url))
-        .map((u) => u.codigo_ubicacion)
-      setP2Total(scan.archivos.length)
-      setP2Mensaje(t('nArchivosEncontrados', { n: scan.archivos.length }))
-      setPendingCarga({ archivos: scan.archivos, codigosUbicacion, nombreRaiz: scan.nombreRaiz })
+      const pending = await escanearParaCarga({
+        userId,
+        grupoActivo,
+        ubicaciones: ubicacionesProp,
+        nivelesDirectorio: 5,
+        tope,
+        dirHandle,
+        abortSignal: scanAbort.signal,
+      })
+      if (!pending) { setP2Estado('esperando'); setP2Mensaje(''); return false }
+      if (pending.scan.dirHandle !== dirHandle) {
+        setDirHandleState(pending.scan.dirHandle)
+        await setDirectoryHandle(pending.scan.dirHandle, userId, grupoActivo)
+      }
+      setP2Total(pending.archivosParaCargar.length)
+      setP2Mensaje(t('nArchivosEncontrados', { n: pending.archivosParaCargar.length }))
+      setPendingCarga(pending)
       setP2Estado('esperando')
       return false
     } catch (e) {
       setP2Estado('error'); setP2Mensaje(e instanceof Error ? e.message : t('errorEscanear')); return false
+    } finally {
+      scanAbortRef.current = null
     }
   }
 
-  const confirmarCarga = async () => {
-    if (!pendingCarga) return
-    const { archivos, codigosUbicacion } = pendingCarga
-    setPendingCarga(null); setP2Estado('activo'); setP2Completados(0); setP2Mensaje(t('cargandoNArchivos', { n: archivos.length }))
+  // Usa ejecutarCarga de _lib/ejecutar-paso — misma lógica que page.tsx confirmarCarga()
+  const confirmarCarga = async (): Promise<boolean> => {
+    if (!pendingCarga) return true
+    const pending = pendingCarga
+    setPendingCarga(null)
+    setP2Estado('activo')
+    setP2Completados(0)
+    setP2Mensaje(t('cargandoNArchivos', { n: pending.archivosParaCargar.length }))
     try {
-      const res = await cargaDocumentosApi.cargar({
-        archivos,
-        codigos_ubicacion_escaneadas: codigosUbicacion.length > 0 ? codigosUbicacion : undefined,
-      })
-      setP2Completados(archivos.length); setP2Estado('listo')
-      setP2Mensaje(t('cargaResultado', { insertados: res.insertados, actualizados: res.actualizados, eliminados: res.eliminados ?? 0 }))
+      const res = await ejecutarCarga(pending)
+      setP2Completados(pending.archivosParaCargar.length)
+      setP2Estado('listo')
+      setP2Mensaje(t('cargaResultado', { insertados: res.insertados, actualizados: res.actualizados, eliminados: res.eliminados }))
       await cargarConteos()
+      return true
     } catch (e) {
-      setP2Estado('error'); setP2Mensaje(e instanceof Error ? e.message : t('errorCargar'))
+      setP2Estado('error')
+      setP2Mensaje(e instanceof Error ? e.message : t('errorCargar'))
+      return false
     }
   }
 
-  // ── Pasos 3-6 ─────────────────────────────────────────────────────────────
+  // ── Pasos 3-6: usa las mismas funciones que page.tsx ──────────────────────
   const seleccionarDirectorio = async () => {
     try {
       const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' })
@@ -234,129 +240,44 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   const setPaso = (key: string, patch: Partial<ProgresoPaso>) =>
     setProgresos((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
 
-  const ejecutarExtraer = async (): Promise<boolean> => {
-    const params: Record<string, unknown> = { codigo_estado_doc: 'CARGADO' }
-    if (ubicacionSel) params.codigo_ubicacion = ubicacionSel
-    if (filtroLibre.trim()) params.q = filtroLibre.trim()
-    const topeNum = tope ? parseInt(tope) : 0
-    const docs = await documentosApi.listar(params as Parameters<typeof documentosApi.listar>[0])
-    const docsFinal = topeNum > 0 ? docs.slice(0, topeNum) : docs
-    if (docsFinal.length === 0) { setPaso('EXTRAER', { estado: 'listo' }); return true }
+  const filtros = { ubicacionSel, filtroLibre, tope }
 
-    let handle = dirHandle
-    if (!handle || !(await ensureReadPermission(handle))) {
-      const stored = await getDirectoryHandle(userId, grupoActivo)
-      if (stored && (await ensureReadPermission(stored))) {
-        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
-      } else {
-        try {
-          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' })
-          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
-        } catch {
-          for (const doc of docsFinal) {
-            await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true }).catch(() => {})
-          }
-          setPaso('EXTRAER', { completados: docsFinal.length, estado: 'listo' })
-          return true
-        }
-      }
+  // Usa ejecutarExtraer de _lib/ejecutar-paso — misma lógica completa que page.tsx
+  // incluye: OCR, antiword, DEBUG_TIEMPOS, EXTENSIONES_NO_TEXTUALES, truncado 60k, etc.
+  const runExtraer = async (): Promise<boolean> => {
+    setPaso('EXTRAER', { estado: 'activo', completados: 0 })
+    const result = await ejecutarExtraer({
+      userId,
+      grupoActivo,
+      procesos,
+      filtros,
+      dirHandle,
+      abortRef,
+      onDirHandle: (h) => { setDirHandleState(h) },
+      onProgreso: (completados, total) => setPaso('EXTRAER', { completados, total }),
+    })
+    if (result.ok) {
+      setPaso('EXTRAER', { estado: 'listo' })
+    } else {
+      setPaso('EXTRAER', { estado: 'error' })
     }
-
-    setPaso('EXTRAER', { total: docsFinal.length, completados: 0, estado: 'activo' })
-    let completados = 0
-    const procesoExtraer = procesos.find((p) => p.estado_origen === 'CARGADO' && p.estado_destino === 'METADATA')
-    const N_CONCURRENTE = procesoExtraer?.n_parallel ?? 6
-    const timeoutExtraccionMs = procesoExtraer?.timeout_extraccion_seg ? procesoExtraer.timeout_extraccion_seg * 1000 : undefined
-    let nextIdx = 0
-    const procesarUno = async (doc: typeof docsFinal[0]) => {
-      if (abortRef.current) return
-      try {
-        const t0 = Date.now()
-        if (!doc.ubicacion_documento) {
-          await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true })
-        } else {
-          const fileHandle = await abrirArchivoPorRuta(handle, doc.ubicacion_documento)
-          if (!fileHandle) {
-            await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true })
-          } else {
-            const ext = (doc.ubicacion_documento.split('.').pop() || '').toLowerCase()
-            const tExtraccion = Date.now()
-            const contenidoRaw = await extraerTextoDeArchivo(fileHandle, timeoutExtraccionMs)
-            const subDuracionMs = Date.now() - tExtraccion
-            let contenido: string | typeof NECESITA_OCR | null
-            let paginasImagen: ExtraccionMixta['paginasImagen'] | undefined
-            if (typeof contenidoRaw === 'object' && contenidoRaw !== null && 'paginasImagen' in contenidoRaw) {
-              contenido = (contenidoRaw as ExtraccionMixta).texto
-              paginasImagen = (contenidoRaw as ExtraccionMixta).paginasImagen
-            } else {
-              contenido = contenidoRaw as string | typeof NECESITA_OCR | null
-            }
-            if (contenido === null || contenido === NECESITA_OCR) {
-              await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', formato_no_soportado: ext })
-            } else if (!contenido.trim() && !paginasImagen?.length) {
-              await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
-            } else {
-              await documentosApi.subirTexto(doc.codigo_documento, {
-                texto_fuente: contenido, caracteres: contenido.length,
-                fecha_inicio_extraccion: new Date(t0).toISOString(), sub_duracion_ms: subDuracionMs,
-                ...(paginasImagen ? { paginas_imagen: paginasImagen } : {}),
-              })
-            }
-          }
-        }
-      } catch (e) {
-        if (e instanceof PdfProtegidoError) {
-          await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', detalle_error: 'PDF protegido con contraseña (desproteger el archivo antes de procesar)' }).catch(() => {})
-        } else if (e instanceof ArchivoNoEscaneable) {
-          await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', detalle_error: e.message }).catch(() => {})
-        }
-      }
-      completados++; setPaso('EXTRAER', { completados })
-    }
-    const worker = async () => { while (!abortRef.current) { const myIdx = nextIdx++; if (myIdx >= docsFinal.length) return; await procesarUno(docsFinal[myIdx]) } }
-    await Promise.all(Array.from({ length: N_CONCURRENTE }, () => worker()))
-    setPaso('EXTRAER', { completados: docsFinal.length, estado: 'listo' })
-    return true
+    return result.ok
   }
 
-  const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string): Promise<boolean> => {
-    const params: Record<string, unknown> = { codigo_estado_doc: estadoOrigen }
-    if (ubicacionSel) params.codigo_ubicacion = ubicacionSel
-    if (filtroLibre.trim()) params.q = filtroLibre.trim()
-    const topeNum = tope ? parseInt(tope) : 0
-    const docsRaw = await documentosApi.listar(params as Parameters<typeof documentosApi.listar>[0])
-    const docs = topeNum > 0 ? docsRaw.slice(0, topeNum) : docsRaw
-    if (docs.length === 0) { setPaso(key, { estado: 'listo' }); return true }
-    setPaso(key, { total: docs.length, completados: 0, estado: 'activo' })
-    const items = docs.map((d) => ({ codigo_documento: d.codigo_documento, codigo_estado_doc_destino: estadoDestino }))
-    await colaEstadosDocsApi.inicializar(items, { codigo_proceso: key })
-    try { await colaEstadosDocsApi.ejecutar(estadoDestino, key) } catch { /* continuar */ }
-
-    const idsSet = new Set(docs.map((d) => d.codigo_documento))
-    const refrescarCola = async (): Promise<{ activos: number; completados: number }> => {
-      const cola = await colaEstadosDocsApi.listar(undefined, estadoDestino)
-      const propios = cola.filter((c) => idsSet.has(c.codigo_documento))
-      const activos = propios.filter((c) => c.estado_cola === 'PENDIENTE' || c.estado_cola === 'EN_PROCESO').length
-      const completados = propios.filter((c) => c.estado_cola === 'COMPLETADO').length
-      setPaso(key, { completados })
-      return { activos, completados }
-    }
-    const esperarCambio = () => new Promise<void>((resolve) => {
-      const timeoutId = setTimeout(() => { resolveColaRef.current = null; resolve() }, 30_000)
-      resolveColaRef.current = () => { clearTimeout(timeoutId); resolve() }
+  // Usa ejecutarPasoBackend de _lib/ejecutar-paso — misma lógica que page.tsx (LLM loop)
+  const runPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string): Promise<boolean> => {
+    setPaso(key, { estado: 'activo', completados: 0 })
+    const ok = await ejecutarPasoBackend({
+      estadoOrigen,
+      estadoDestino,
+      codigoProceso: key,
+      filtros,
+      abortRef,
+      resolveColaRef,
+      onProgreso: (completados, total) => setPaso(key, { completados, total }),
     })
-    try {
-      const { activos } = await refrescarCola()
-      if (activos === 0) { setPaso(key, { completados: docs.length, estado: 'listo' }); return true }
-    } catch { /* continuar */ }
-    while (!abortRef.current) {
-      await esperarCambio()
-      if (abortRef.current) return false
-      try { const { activos } = await refrescarCola(); if (activos === 0) break } catch { /* reintentar */ }
-    }
-    if (abortRef.current) return false
-    setPaso(key, { completados: docs.length, estado: 'listo' })
-    return true
+    setPaso(key, { estado: ok ? 'listo' : 'error' })
+    return ok
   }
 
   const ESTADOS_VECTORIZAR = ['VECTORIZADO', 'NO_VECTORIZADO'] as const
@@ -399,12 +320,18 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales())
     suscribirCola()
     try {
-      if (pendingCarga) await confirmarCarga()
+      // Si hay carga pendiente de confirmar, ejecutarla primero (misma lógica que page.tsx)
+      if (pendingCarga) {
+        const ok = await confirmarCarga()
+        if (!ok) return
+      }
       for (let i = 0; i < PASOS_PIPELINE.length; i++) {
         if (abortRef.current) break
         setPasoActualIdx(i)
         const paso = PASOS_PIPELINE[i]
-        const ok = paso.clienteSide ? await ejecutarExtraer() : await ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
+        const ok = paso.clienteSide
+          ? await runExtraer()
+          : await runPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino)
         if (!ok) break
       }
     } catch (e) {
@@ -416,6 +343,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
   const detener = () => {
     abortRef.current = true
+    if (scanAbortRef.current) { scanAbortRef.current.abort(); scanAbortRef.current = null }
     if (resolveColaRef.current) { resolveColaRef.current(); resolveColaRef.current = null }
   }
 
@@ -428,7 +356,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
     e.stopPropagation()
     setUbicExpandidos(prev => { const next = new Set(prev); next.has(cod) ? next.delete(cod) : next.add(cod); return next })
   }
-  const renderNodoDropdown = (u: UbicacionOption): React.ReactNode => {
+  const renderNodoDropdown = (u: UbicacionOpt): React.ReactNode => {
     const tieneHijos = tieneHijosUbic(u.codigo_ubicacion)
     const expandido = ubicExpandidos.has(u.codigo_ubicacion)
     const esArea = u.tipo_ubicacion === 'AREA'
@@ -483,7 +411,7 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
   return (
     <div className="flex flex-col gap-6">
 
-      {/* ── Filtros ─────────────────────────────────────────────── */}
+      {/* ── Filtros ──────────────────────────────────────────────────────── */}
       <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-4">
         <p className="text-xs font-semibold text-texto-muted uppercase">{t('filtrosPipeline')}</p>
 
@@ -535,10 +463,6 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
 
         <div className="flex items-end gap-4 flex-wrap">
           <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-texto-muted font-medium">{t('paraleloLabel')}</label>
-            <input type="number" min={1} max={100} value={nParalelo} onChange={(e) => setNParalelo(Math.max(1, parseInt(e.target.value) || 1))} disabled={ejecutando} className="w-16 text-sm border border-borde rounded-lg px-2 py-1.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50" />
-          </div>
-          <div className="flex flex-col gap-1.5">
             <label className="text-xs text-texto-muted font-medium">{t('topeLabel')}</label>
             <input type="number" min={1} placeholder={t('todosPlaceholder')} value={tope} onChange={(e) => setTope(e.target.value)} disabled={ejecutando} className="w-20 text-sm border border-borde rounded-lg px-2 py-1.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
           </div>
@@ -572,10 +496,10 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
           {pendingCarga && (
             <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-center gap-4">
               <p className="text-sm text-blue-800 flex-1">
-                {t('archivosEncontradosConfirmar', { n: pendingCarga.archivos.length, raiz: pendingCarga.nombreRaiz })}
+                {t('archivosEncontradosConfirmar', { n: pendingCarga.archivosParaCargar.length, raiz: pendingCarga.scan.nombreRaiz })}
               </p>
               <div className="flex gap-2 shrink-0">
-                <Boton variante="primario" tamano="sm" onClick={confirmarCarga}>{t('confirmar')}</Boton>
+                <Boton variante="primario" tamano="sm" onClick={() => confirmarCarga()}>{t('confirmar')}</Boton>
                 <Boton variante="contorno" tamano="sm" onClick={() => { setPendingCarga(null); setP2Estado('esperando'); setP2Mensaje('') }}>{t('cancelar')}</Boton>
               </div>
             </div>
@@ -602,15 +526,13 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
         </p>
       )}
 
-      {/* ── Botones de acción ─────────────────────────────────────────────── */}
-      <div className="flex gap-3 justify-center">
+      {/* ── Botones de acción ──────────────────────────────────────────────── */}
+      <div className="flex gap-3 justify-center flex-wrap">
         {!revertir ? (
           <>
-            {/* Paso 1+2 */}
             <Boton variante="contorno" onClick={async () => { const ok = await ejecutarPaso1(); if (ok) await ejecutarPaso2Escaneo() }} disabled={ejecutando || p1Estado === 'activo' || p2Estado === 'activo' || !!pendingCarga}>
               {t('botonSincronizarYCargar')}
             </Boton>
-            {/* Pasos 3-6 */}
             <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando}>
               {ejecutando && pasoActualIdx !== null ? (
                 <span className="flex items-center gap-2">
@@ -622,15 +544,23 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
             <Boton variante="contorno" onClick={detener} disabled={!ejecutando}>
               {t('cancelar')}
             </Boton>
+            <Boton variante="contorno" onClick={() => { setRevertir(true); setMensajeError('') }} disabled={ejecutando} className="text-amber-600 border-amber-300 hover:border-amber-500">
+              {t('modoRevertir')}
+            </Boton>
           </>
         ) : (
-          <Boton variante="primario" onClick={ejecutarRevertir} disabled={ejecutando} className="bg-amber-600 hover:bg-amber-700 border-amber-600">
-            {ejecutando ? t('revirtiendo') : t('botonRevertirEstado')}
-          </Boton>
+          <>
+            <Boton variante="primario" onClick={ejecutarRevertir} disabled={ejecutando} className="bg-amber-600 hover:bg-amber-700 border-amber-600">
+              {ejecutando ? t('revirtiendo') : t('botonRevertirEstado')}
+            </Boton>
+            <Boton variante="contorno" onClick={() => { setRevertir(false); setMensajeRevertir('') }} disabled={ejecutando}>
+              {t('cancelar')}
+            </Boton>
+          </>
         )}
       </div>
 
-      {/* ── Estado del pipeline ──────────────────────────────────────────────── */}
+      {/* ── Estado del pipeline ───────────────────────────────────────────── */}
       <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-semibold text-texto-muted uppercase flex items-center gap-2">
