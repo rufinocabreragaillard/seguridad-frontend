@@ -173,16 +173,16 @@ export function TabPipelineTodo({ procesos = [], estadosDocs = [], ubicaciones: 
       const sync = await ubicacionesDocsApi.sincronizar({ directorios: resultado.directorios })
       setP1Completados(total)
       setP1Estado('listo')
-      setP1Mensaje(`${sync.insertadas ?? 0} nuevas, ${sync.actualizadas ?? 0} actualizadas, ${sync.eliminadas ?? 0} eliminadas`)
+      setP1Mensaje(t('p1Resultado', { insertadas: sync.insertadas ?? 0, actualizadas: sync.actualizadas ?? 0, eliminadas: sync.eliminadas ?? 0 }))
       return true
     } catch (e) {
-      setP1Estado('error'); setP1Mensaje(e instanceof Error ? e.message : 'Error al indexar ubicaciones'); return false
+      setP1Estado('error'); setP1Mensaje(e instanceof Error ? e.message : t('errorIndexar')); return false
     }
   }
 
   // ── Paso 2: FILESYSTEM → CARGADO (escaneo) ────────────────────────────────
   const ejecutarPaso2Escaneo = async (): Promise<boolean> => {
-    setP2Estado('activo'); setP2Total(0); setP2Completados(0); setP2Mensaje('Escaneando directorio…'); setPendingCarga(null)
+    setP2Estado('activo'); setP2Total(0); setP2Completados(0); setP2Mensaje(t('escaneandoDirectorio')); setPendingCarga(null)
     try {
       const rutasDeshabilitadas = new Set(
         ubicacionesProp.filter((u) => u.ubicacion_habilitada === false && u.url).map((u) => u.url)

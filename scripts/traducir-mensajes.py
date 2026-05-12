@@ -56,40 +56,64 @@ def llamar_endpoint(backend: str, token: str, es_json: dict, idiomas: list[str])
     return data, dur
 
 
+def _intentar_lote(backend: str, token: str, lote_es: dict, idioma: str, lote_keys: list[str]):
+    """Intenta traducir un lote. Retorna (dict_traducciones | None, duracion_s, error_msg)."""
+    try:
+        data, dur = llamar_endpoint(backend, token, lote_es, [idioma])
+        traducido = data.get(idioma, {})
+        if isinstance(traducido, dict) and "error" in traducido and not any(
+            k in traducido for k in lote_keys
+        ):
+            return None, dur, f"backend: {traducido['error'][:100]}"
+        return traducido, dur, None
+    except Exception as e:
+        return None, 0, str(e)
+
+
 def traducir_por_batches(backend: str, token: str, es_json: dict, idioma: str,
-                         batch_size: int = 4) -> tuple[dict, int]:
+                         batch_size: int = 4, max_reintentos: int = 3) -> tuple[dict, list[str]]:
     """Traduce el JSON completo a UN idioma, batchando namespaces desde el cliente.
 
     Cada llamada al backend lleva pocos namespaces para no exceder el
-    timeout HTTP de Railway (~60-120s). Retorna (resultado_completo, num_lotes_ok).
+    timeout HTTP de Railway (~60-120s). Reintenta lotes fallidos hasta
+    `max_reintentos` veces antes de rendirse.
+
+    Retorna (resultado, namespaces_no_traducidos).
     """
     namespaces = list(es_json.keys())
     total_lotes = (len(namespaces) + batch_size - 1) // batch_size
     print(f"  {idioma}: {len(namespaces)} namespaces → {total_lotes} lotes de ≤{batch_size}")
 
     resultado: dict = {}
-    fallidos: list[str] = []
+    pendientes: list[list[str]] = [namespaces[i:i + batch_size]
+                                    for i in range(0, len(namespaces), batch_size)]
 
-    for i in range(0, len(namespaces), batch_size):
-        lote_keys = namespaces[i:i + batch_size]
-        lote_es = {k: es_json[k] for k in lote_keys}
-        n = i // batch_size + 1
-        try:
-            data, dur = llamar_endpoint(backend, token, lote_es, [idioma])
-            traducido = data.get(idioma, {})
-            if isinstance(traducido, dict) and "error" in traducido and not any(
-                k in traducido for k in lote_keys
-            ):
-                print(f"    lote {n}/{total_lotes} ✗ ({dur}s) — backend: {traducido['error'][:100]}")
-                fallidos.extend(lote_keys)
+    for intento in range(1, max_reintentos + 1):
+        if not pendientes:
+            break
+        if intento > 1:
+            print(f"  ↻ reintento #{intento - 1} — {len(pendientes)} lotes pendientes")
+
+        siguiente: list[list[str]] = []
+        for n, lote_keys in enumerate(pendientes, 1):
+            lote_es = {k: es_json[k] for k in lote_keys}
+            traducido, dur, err = _intentar_lote(backend, token, lote_es, idioma, lote_keys)
+            tag = f"lote {n}/{len(pendientes)}"
+            if traducido is None:
+                print(f"    {tag} ✗ — {err}", file=sys.stderr)
+                siguiente.append(lote_keys)
+                continue
+            faltan_en_lote = [k for k in lote_keys if k not in traducido]
+            resultado.update({k: v for k, v in traducido.items() if k in lote_keys})
+            if faltan_en_lote:
+                print(f"    {tag} ⚠ ({dur}s) — faltan: {','.join(faltan_en_lote)}")
+                siguiente.append(faltan_en_lote)
             else:
-                resultado.update(traducido)
-                print(f"    lote {n}/{total_lotes} ✓ ({dur}s) — {','.join(lote_keys[:2])}{'...' if len(lote_keys)>2 else ''}")
-        except Exception as e:
-            print(f"    lote {n}/{total_lotes} ✗ — {e}", file=sys.stderr)
-            fallidos.extend(lote_keys)
+                print(f"    {tag} ✓ ({dur}s) — {','.join(lote_keys[:2])}{'...' if len(lote_keys)>2 else ''}")
+        pendientes = siguiente
 
-    return resultado, len(namespaces) - len(fallidos)
+    no_traducidos = [k for lote in pendientes for k in lote]
+    return resultado, no_traducidos
 
 
 def main():
@@ -124,23 +148,39 @@ def main():
     print(f"Backend: {args.backend}")
     print()
 
+    incompletos: list[str] = []
     for idioma in idiomas:
         try:
-            traducido, ok_count = traducir_por_batches(args.backend, args.token, es_json, idioma)
+            traducido, no_traducidos = traducir_por_batches(args.backend, args.token, es_json, idioma)
         except Exception as e:
             print(f"  ✗ {idioma}: error global — {e}", file=sys.stderr)
+            incompletos.append(idioma)
             continue
 
-        if not traducido:
-            print(f"  ✗ {idioma}: ningún lote tradujo datos", file=sys.stderr)
+        if no_traducidos:
+            print(
+                f"  ✗ {idioma}: NO se escribe el archivo. Faltan {len(no_traducidos)} "
+                f"namespaces tras reintentos: {','.join(no_traducidos)}",
+                file=sys.stderr,
+            )
+            incompletos.append(idioma)
             continue
+
+        # Reordenar siguiendo el orden de es.json para que los diffs sean estables.
+        ordenado = {k: traducido[k] for k in es_json.keys() if k in traducido}
 
         dest_path = os.path.join(MESSAGES_DIR, f"{idioma}.json")
         with open(dest_path, "w", encoding="utf-8") as f:
-            json.dump(traducido, f, ensure_ascii=False, indent=2)
+            json.dump(ordenado, f, ensure_ascii=False, indent=2)
             f.write("\n")
-        print(f"  ✓ {idioma}: escrito {dest_path} ({len(traducido)} namespaces, {ok_count}/{len(es_json)} ok)")
+        print(f"  ✓ {idioma}: escrito {dest_path} ({len(ordenado)}/{len(es_json)} namespaces)")
         print()
+
+    if incompletos:
+        print(f"\n⚠ Idiomas INCOMPLETOS (archivo NO sobrescrito): {', '.join(incompletos)}",
+              file=sys.stderr)
+        print("  Vuelve a correr el script para los idiomas faltantes.", file=sys.stderr)
+        sys.exit(2)
 
     print("\nListo. Revisa los diffs y commitea cuando estés conforme.")
 
