@@ -13,6 +13,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { chatApi, documentosApi, ubicacionesDocsApi, espaciosTrabajoApi } from '@/lib/api'
+import { AvisoI18nAdmin } from '@/components/ui/aviso-pagina'
 import { abrirDocumento, descargarDocumento, cargarBlobDocumento, abrirVentanaLoading, asegurarHandleConPermiso } from '@/lib/abrir-documento'
 import { useAuth } from '@/context/AuthContext'
 import type { ChatConversacion, ChatMensaje, Documento, UbicacionDoc, EspacioTrabajo, TipoEspacio, AlcanceEspacio, DocumentoEspacio } from '@/lib/tipos'
@@ -803,6 +804,7 @@ export default function PaginaChatUsuario() {
                   </button>
                 </div>
               )}
+              <AvisoI18nAdmin tipoAcceso={usuario?.tipo_acceso} />
               <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
                 {cargandoConv ? (
                   <p className="text-sm text-texto-muted text-center">{t('cargando') ?? 'Cargando...'}</p>

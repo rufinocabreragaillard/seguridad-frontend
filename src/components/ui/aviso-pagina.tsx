@@ -20,13 +20,14 @@ import { obtenerAvisos, suscribir, type Aviso } from '@/lib/avisos-pagina'
 export function AvisoPagina() {
   const avisos = useSyncExternalStore(suscribir, obtenerAvisos, () => [])
 
-  if (avisos.length === 0) return null
-
+  // Los avisos i18n se muestran solo a admins en el chat (ver AvisoI18nAdmin).
+  // Este banner solo muestra timeouts y avisos genéricos.
   const porTipo = {
-    i18n: avisos.filter((a) => a.tipo === 'i18n'),
     timeout: avisos.filter((a) => a.tipo === 'timeout'),
     generico: avisos.filter((a) => a.tipo === 'generico'),
   }
+
+  if (porTipo.timeout.length === 0 && porTipo.generico.length === 0) return null
 
   return (
     <div
@@ -36,14 +37,6 @@ export function AvisoPagina() {
       <AlertTriangle className="h-5 w-5 mt-0.5 flex-shrink-0 text-red-600" />
       <div className="flex-1 space-y-2">
         <p className="font-semibold">Hay un problema en esta pantalla</p>
-
-        {porTipo.i18n.length > 0 && (
-          <BloqueAvisos
-            titulo={`Traducciones faltantes (${porTipo.i18n.length})`}
-            descripcion="La pantalla puede mostrar identificadores técnicos en lugar de los textos traducidos. Contacta al administrador para regenerar las traducciones desde el mantenedor de Idiomas."
-            items={porTipo.i18n}
-          />
-        )}
 
         {porTipo.timeout.length > 0 && (
           <BloqueAvisos
@@ -56,6 +49,37 @@ export function AvisoPagina() {
         {porTipo.generico.length > 0 && (
           <BloqueAvisos titulo="Otros avisos" descripcion="" items={porTipo.generico} />
         )}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Alerta de traducciones faltantes visible SOLO para administradores,
+ * renderizada al inicio del chat. Se auto-oculta si no hay avisos i18n.
+ */
+export function AvisoI18nAdmin({ tipoAcceso }: { tipoAcceso?: string | null }) {
+  const avisos = useSyncExternalStore(suscribir, obtenerAvisos, () => [])
+
+  const esAdmin = tipoAcceso === 'SISTEMA'
+  if (!esAdmin) return null
+
+  const i18nAvisos = avisos.filter((a) => a.tipo === 'i18n')
+  if (i18nAvisos.length === 0) return null
+
+  return (
+    <div
+      role="alert"
+      className="mb-3 flex items-start gap-3 rounded-md border border-amber-200 bg-amber-50 px-3 py-2.5 text-xs text-amber-800"
+    >
+      <AlertTriangle className="h-4 w-4 mt-0.5 flex-shrink-0 text-amber-600" />
+      <div className="flex-1 space-y-1">
+        <p className="font-semibold">Traducciones faltantes ({i18nAvisos.length}) — solo visible para administradores</p>
+        <BloqueAvisos
+          titulo=""
+          descripcion="Regenera las traducciones desde el mantenedor de Idiomas."
+          items={i18nAvisos}
+        />
       </div>
     </div>
   )
