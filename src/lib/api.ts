@@ -1745,7 +1745,7 @@ export const traduccionesApi = {
       tamano_bytes: number;
       fecha_generacion: string;
       modelo_usado: string;
-    }>('/traducciones/regenerar-glosario', {}, { timeout: 120_000 }).then((r) => r.data),
+    }>('/traducciones/regenerar-glosario', {}, { timeout: 300_000 }).then((r) => r.data),
 
   // Lee el Glosario.md actual y devuelve metadata + contenido.
   obtenerGlosario: () =>

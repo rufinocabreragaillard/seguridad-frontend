@@ -129,7 +129,11 @@ function SeccionGlosario() {
       })
       await cargar()
     } catch (e) {
-      const msg = e instanceof Error ? e.message : t('errorRegenerarGlosario')
+      const rawMsg = e instanceof Error ? e.message : t('errorRegenerarGlosario')
+      const esTimeout = rawMsg.includes('tardó demasiado') || rawMsg.includes('ECONNABORTED') || rawMsg.includes('timeout')
+      const msg = esTimeout
+        ? 'La generación del glosario superó el tiempo de espera (el modelo LLM puede tardar varios minutos con documentos extensos). El servidor puede haberlo completado de todas formas — recarga la página para verificar, o intenta de nuevo.'
+        : rawMsg
       setMensaje({ tipo: 'error', texto: msg })
     } finally {
       setGenerando(false)
