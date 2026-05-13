@@ -17,16 +17,23 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi, cargaDocumentosApi } from '@/lib/api'
+import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi } from '@/lib/api'
+import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { getEstadosDocs } from '@/lib/catalogos'
 import type { EstadoDoc } from '@/lib/tipos'
-import { extraerTextoDeArchivo, abrirArchivoPorRuta, NECESITA_OCR, PdfProtegidoError, ArchivoNoEscaneable, type ExtraccionMixta } from '@/lib/extraer-texto'
 import { abrirDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
-import { getDirectoryHandle, setDirectoryHandle, ensureReadPermission } from '@/lib/file-handle-store'
+import { getDirectoryHandle, setDirectoryHandle } from '@/lib/file-handle-store'
 import {
-  escanearDirectorio, escanearDirectorioSinHijos, escanearArchivosDirectorio,
+  escanearDirectorio, escanearDirectorioSinHijos,
   soportaDirectoryPicker, type DirectorioEscaneado,
 } from '@/lib/escanear-directorio'
+import {
+  escanearParaCarga,
+  ejecutarCarga as ejecutarCargaLib,
+  ejecutarExtraer as ejecutarExtraerLib,
+  ejecutarPasoBackend as ejecutarPasoBackendLib,
+  type UbicacionOpt,
+} from '../process-documents/_lib/ejecutar-paso'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
@@ -84,15 +91,10 @@ export default function PaginaCargaDocsUsuario() {
   const { grupoActivo, usuario } = useAuth()
   const userId = usuario?.codigo_usuario ?? null
 
-  const [nParaleloExtraer, setNParaleloExtraer] = useState(6)
-  const [timeoutExtraccionMs, setTimeoutExtraccionMs] = useState<number | undefined>(undefined)
+  const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([])
 
   useEffect(() => {
-    procesosApi.listar('PROCESAR').then((procs) => {
-      const p = procs.find((x) => x.estado_origen === 'CARGADO' && x.estado_destino === 'METADATA')
-      if (p?.n_parallel) setNParaleloExtraer(p.n_parallel)
-      if (p?.timeout_extraccion_seg) setTimeoutExtraccionMs(p.timeout_extraccion_seg * 1000)
-    }).catch(() => {})
+    procesosApi.listar('PROCESAR').then((procs) => setProcesos(procs)).catch(() => {})
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grupoActivo])
 
@@ -554,175 +556,73 @@ export default function PaginaCargaDocsUsuario() {
   const setPaso = (key: string, patch: Partial<ProgresoPaso>) =>
     setProgresos((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
 
-  const ejecutarExtraer = async (): Promise<boolean> => {
-    const docs = await documentosApi.listar({ codigo_estado_doc: 'CARGADO' })
-    if (!docs.length) { setPaso('EXTRAER', { estado: 'listo' }); return true }
-
-    // Solo pedimos handle cuando hay docs CARGADO que necesitan lectura física
-    let handle = dirHandleRef.current ?? dirHandle
-    if (!handle || !(await ensureReadPermission(handle))) {
-      const stored = await getDirectoryHandle(userId, grupoActivo)
-      if (stored && (await ensureReadPermission(stored))) {
-        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
-      } else {
-        try {
-          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' })
-          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
-        } catch {
-          // Sin permiso: marcar todos como no encontrados
-          for (const doc of docs) {
-            await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true }).catch(() => {})
-          }
-          setPaso('EXTRAER', { completados: docs.length, estado: 'listo' })
-          return true
-        }
-      }
-    }
-
-    setPaso('EXTRAER', { total: docs.length, completados: 0, estado: 'activo' })
-    let completados = 0
-
-    const N_CONCURRENTE = nParaleloExtraer
-    let nextIdx = 0
-    const procesarUno = async (doc: typeof docs[0]) => {
-      if (abortRef.current) return
-      try {
-        const t0 = Date.now()
-        if (!doc.ubicacion_documento) {
-          await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true })
-        } else {
-          const fh = await abrirArchivoPorRuta(handle, doc.ubicacion_documento)
-          if (!fh) {
-            await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true })
-          } else {
-            const ext = (doc.ubicacion_documento.split('.').pop() || '').toLowerCase()
-            const tExtraccion = Date.now()
-            const contenidoRaw = await extraerTextoDeArchivo(fh, timeoutExtraccionMs)
-            const subDuracionMs = Date.now() - tExtraccion
-            let contenido: string | typeof NECESITA_OCR | null
-            let paginasImagen: ExtraccionMixta['paginasImagen'] | undefined
-            if (typeof contenidoRaw === 'object' && contenidoRaw !== null && 'paginasImagen' in contenidoRaw) {
-              contenido = (contenidoRaw as ExtraccionMixta).texto
-              paginasImagen = (contenidoRaw as ExtraccionMixta).paginasImagen
-            } else {
-              contenido = contenidoRaw as string | typeof NECESITA_OCR | null
-            }
-            if (contenido === null || contenido === NECESITA_OCR) {
-              await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', formato_no_soportado: ext })
-            } else if (!contenido.trim() && !paginasImagen?.length) {
-              await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', contenido_vacio: true })
-            } else {
-              await documentosApi.subirTexto(doc.codigo_documento, {
-                texto_fuente: contenido,
-                caracteres: contenido.length,
-                fecha_inicio_extraccion: new Date(t0).toISOString(),
-                sub_duracion_ms: subDuracionMs,
-                ...(paginasImagen ? { paginas_imagen: paginasImagen } : {}),
-              })
-            }
-          }
-        }
-      } catch (e) {
-        if (e instanceof PdfProtegidoError) {
-          await documentosApi.subirTexto(doc.codigo_documento, {
-            texto_fuente: '', detalle_error: t('errorPdfProtegido'),
-          }).catch(() => {})
-        } else if (e instanceof ArchivoNoEscaneable) {
-          await documentosApi.subirTexto(doc.codigo_documento, {
-            texto_fuente: '', detalle_error: e.message,
-          }).catch(() => {})
-        }
-      }
-      completados++
-      setPaso('EXTRAER', { completados })
-    }
-    const worker = async () => {
-      while (!abortRef.current) {
-        const myIdx = nextIdx++
-        if (myIdx >= docs.length) return
-        await procesarUno(docs[myIdx])
-      }
-    }
-    await Promise.all(Array.from({ length: N_CONCURRENTE }, () => worker()))
-
-    setPaso('EXTRAER', { completados: docs.length, estado: 'listo' })
-    return true
-  }
-
-  const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string, tope?: number): Promise<boolean> => {
-    let docs = await documentosApi.listar({ codigo_estado_doc: estadoOrigen })
-    if (tope && tope > 0 && docs.length > tope) docs = docs.slice(0, tope)
-    if (!docs.length) { setPaso(key, { estado: 'listo' }); return true }
-    setPaso(key, { total: docs.length, completados: 0, estado: 'activo' })
-    const items = docs.map((d) => ({ codigo_documento: d.codigo_documento, codigo_estado_doc_destino: estadoDestino }))
-    await colaEstadosDocsApi.inicializar(items)
-    // Fase 2: el worker arranca solo (Realtime + polling). Ya no se llama /ejecutar.
-    const idsSet = new Set(docs.map((d) => d.codigo_documento))
-    const refrescarCola = async () => {
-      const cola = await colaEstadosDocsApi.listar(undefined, estadoDestino)
-      const propios = cola.filter((c) => idsSet.has(c.codigo_documento))
-      const activos = propios.filter((c) => c.estado_cola === 'PENDIENTE' || c.estado_cola === 'EN_PROCESO').length
-      setPaso(key, { completados: propios.filter((c) => c.estado_cola === 'COMPLETADO').length })
-      return activos
-    }
-    const esperarCambio = () => new Promise<void>((resolve) => {
-      const tid = setTimeout(() => { resolveColaRef.current = null; resolve() }, 30_000)
-      resolveColaRef.current = () => { clearTimeout(tid); resolve() }
+  // EXTRAER (CARGADO → METADATA, client-side): delega en _lib/ejecutar-paso para
+  // compartir lógica con /process-documents (OCR, antiword, fast-path de tipos no
+  // textuales, truncado MAX_CHARS, DEBUG_TIEMPOS_PIPELINE).
+  const ejecutarExtraer = async (tope?: number): Promise<boolean> => {
+    setPaso('EXTRAER', { total: 0, completados: 0, estado: 'activo' })
+    const result = await ejecutarExtraerLib({
+      userId,
+      grupoActivo,
+      procesos,
+      filtros: { tope: tope && tope > 0 ? String(tope) : undefined },
+      dirHandle: dirHandleRef.current ?? dirHandle ?? undefined,
+      abortRef,
+      onDirHandle: (h) => { dirHandleRef.current = h; setDirHandleState(h) },
+      onProgreso: (completados, total) => setPaso('EXTRAER', { completados, total }),
     })
-    try { if ((await refrescarCola()) === 0) { setPaso(key, { completados: docs.length, estado: 'listo' }); return true } } catch { /* continuar */ }
-    while (!abortRef.current) {
-      await esperarCambio()
-      if (abortRef.current) return false
-      try { if ((await refrescarCola()) === 0) break } catch { /* reintentar */ }
-    }
-    if (abortRef.current) return false
-    setPaso(key, { completados: docs.length, estado: 'listo' })
-    return true
+    setPaso('EXTRAER', { estado: result.ok ? 'listo' : (abortRef.current ? 'esperando' : 'error') })
+    return result.ok
   }
 
-  // Paso 2 — CARGAR: escanear filesystem y subir lista de archivos al backend
+  // ANALIZAR / CHUNKEAR / VECTORIZAR: delegan en _lib/ejecutar-paso → ejecutarPasoBackend
+  // que usa inicializarPorEstado (filtros server-side: tope, ubicación, q) + dispara /ejecutar.
+  const ejecutarPasoBackend = async (key: string, estadoOrigen: string, estadoDestino: string, tope?: number): Promise<boolean> => {
+    setPaso(key, { total: 0, completados: 0, estado: 'activo' })
+    const ok = await ejecutarPasoBackendLib({
+      estadoOrigen,
+      estadoDestino,
+      codigoProceso: key,
+      filtros: { tope: tope && tope > 0 ? String(tope) : undefined },
+      abortRef,
+      resolveColaRef,
+      onProgreso: (completados, total) => setPaso(key, { completados, total }),
+    })
+    setPaso(key, { estado: ok ? 'listo' : (abortRef.current ? 'esperando' : 'error') })
+    return ok
+  }
+
+  // Paso 2 — CARGAR: delega en _lib/ejecutar-paso (escanearParaCarga + ejecutarCarga).
+  // /process-pipeline auto-confirma (sin diálogo intermedio) — el botón Ejecutar ya
+  // es la confirmación implícita del usuario.
   const ejecutarCargar = async (): Promise<boolean> => {
-    // Solicitar handle si hace falta (igual lógica que extraer)
-    let handle = dirHandleRef.current ?? dirHandle
-    if (!handle || !(await ensureReadPermission(handle))) {
-      const stored = await getDirectoryHandle(userId, grupoActivo)
-      if (stored && (await ensureReadPermission(stored))) {
-        handle = stored; setDirHandleState(stored); await setDirectoryHandle(stored, userId, grupoActivo)
-      } else {
-        try {
-          handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' })
-          setDirHandleState(handle); await setDirectoryHandle(handle, userId, grupoActivo)
-        } catch {
-          setPaso('CARGAR', { estado: 'listo' })
-          return true
-        }
-      }
-    }
     setPaso('CARGAR', { total: 1, completados: 0, estado: 'activo' })
     try {
-      // Escaneo basado en ubicaciones existentes (la "indexación" ya se hizo).
-      // Si no hay ubicaciones, escaneamos el árbol completo.
-      const rutasDeshabilitadas = new Set(
-        ubicaciones.filter((u) => !u.ubicacion_habilitada).map((u) => u.url || '').filter(Boolean),
-      )
-      const scan = await escanearArchivosDirectorio(handle, 5, undefined, rutasDeshabilitadas)
-      if (!scan) { setPaso('CARGAR', { estado: 'listo' }); return true }
-      const codigosUbicacionEscaneadas = ubicaciones
-        .filter((u) => u.ubicacion_habilitada && (u.url || '').length > 0)
-        .map((u) => u.codigo_ubicacion)
-      const archivos = scan.archivos.map((a) => ({
-        nombre: a.nombre,
-        ruta_completa: a.ruta_completa,
-        ruta_directorio: a.ruta_directorio,
-        tamano_kb: a.tamano_kb,
-        fecha_modificacion: a.fecha_modificacion,
+      const ubicacionesLib: UbicacionOpt[] = ubicaciones.map((u) => ({
+        codigo_ubicacion: u.codigo_ubicacion,
+        nombre_ubicacion: u.nombre_ubicacion,
+        url: u.url ?? '',
+        nivel: u.nivel ?? 0,
+        tipo_ubicacion: u.tipo_ubicacion,
+        codigo_ubicacion_superior: u.codigo_ubicacion_superior ?? undefined,
+        ubicacion_habilitada: u.ubicacion_habilitada,
       }))
-      setPaso('CARGAR', { total: archivos.length || 1, completados: 0, estado: 'activo' })
-      await cargaDocumentosApi.cargar({
-        archivos,
-        codigos_ubicacion_escaneadas: codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined,
+      const pending = await escanearParaCarga({
+        userId,
+        grupoActivo,
+        ubicaciones: ubicacionesLib,
+        nivelesDirectorio: 5,
+        dirHandle: dirHandleRef.current ?? dirHandle ?? undefined,
       })
-      setPaso('CARGAR', { total: archivos.length || 1, completados: archivos.length || 1, estado: 'listo' })
+      if (!pending) { setPaso('CARGAR', { estado: 'listo' }); return true }
+      if (pending.scan.dirHandle && pending.scan.dirHandle !== dirHandle) {
+        dirHandleRef.current = pending.scan.dirHandle
+        setDirHandleState(pending.scan.dirHandle)
+      }
+      const totalArchivos = pending.archivosParaCargar.length || 1
+      setPaso('CARGAR', { total: totalArchivos, completados: 0, estado: 'activo' })
+      await ejecutarCargaLib(pending)
+      setPaso('CARGAR', { total: totalArchivos, completados: totalArchivos, estado: 'listo' })
       return true
     } catch (e) {
       setPaso('CARGAR', { estado: 'error' })
@@ -733,7 +633,7 @@ export default function PaginaCargaDocsUsuario() {
 
   const ejecutarUnPaso = async (key: string, tope?: number): Promise<boolean> => {
     if (key === 'CARGAR') return ejecutarCargar()
-    if (key === 'EXTRAER') return ejecutarExtraer()
+    if (key === 'EXTRAER') return ejecutarExtraer(tope)
     const paso = PASOS.find((p) => p.key === key)
     if (!paso) return true
     return ejecutarPasoBackend(paso.key, paso.estadoOrigen, paso.estadoDestino, tope)
