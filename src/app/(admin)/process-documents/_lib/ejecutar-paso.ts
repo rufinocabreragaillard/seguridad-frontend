@@ -83,10 +83,19 @@ export async function escanearParaCarga(opts: {
   const { userId, grupoActivo, ubicaciones, nivelesDirectorio, tope, dirHandle, abortSignal } = opts
 
   let handleEfectivo: FileSystemDirectoryHandle | null = dirHandle ?? null
-  if (!handleEfectivo || !(await ensureReadPermission(handleEfectivo))) {
+  if (!handleEfectivo) {
     const stored = await idbGetHandle(userId, grupoActivo)
-    if (stored && (await ensureReadPermission(stored))) {
-      handleEfectivo = stored
+    if (stored) handleEfectivo = stored
+  }
+  // Si tenemos handle pero el permiso está en "prompt", intentar pedirlo;
+  // si falla (sin gesto de usuario), igual usamos el handle — Chrome suele
+  // permitir el acceso aunque queryPermission diga "prompt" cuando el handle
+  // fue obtenido recientemente en la misma sesión.
+  if (handleEfectivo) {
+    const ok = await ensureReadPermission(handleEfectivo)
+    if (!ok) {
+      // Intentar de todas formas — si el handle no tiene acceso real,
+      // escanearArchivosDirectorio retornará null y el paso se saltará.
     }
   }
 
@@ -151,27 +160,28 @@ export async function ejecutarExtraer(opts: {
 
   // 2. Resolver handle de directorio
   let handle: FileSystemDirectoryHandle | null = opts.dirHandle ?? null
-  if (!handle || !(await ensureReadPermission(handle))) {
+  if (!handle) {
     const stored = await idbGetHandle(userId, grupoActivo)
-    if (stored && (await ensureReadPermission(stored))) {
+    if (stored) {
       handle = stored
       onDirHandle?.(stored)
-      await idbSetHandle(stored, userId, grupoActivo)
-    } else {
-      try {
-        handle = await (window as unknown as {
-          showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle>
-        }).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' })
-        onDirHandle?.(handle)
-        await idbSetHandle(handle, userId, grupoActivo)
-      } catch {
-        // Sin acceso: marcar todos como NO_ENCONTRADO
-        for (const doc of docsFinal) {
-          await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true }).catch(() => {})
-        }
-        return { ok: true }
-      }
     }
+  }
+  // Intentar obtener permiso si está en "prompt"; si falla (sin gesto de usuario),
+  // usamos el handle de todas formas — Chrome suele permitir el acceso cuando el
+  // handle fue obtenido en la misma sesión. Solo abrimos el picker si no hay handle.
+  if (handle) {
+    const ok = await ensureReadPermission(handle)
+    if (ok) {
+      await idbSetHandle(handle, userId, grupoActivo)
+    }
+    // Si !ok, intentamos igualmente con el handle existente
+  } else {
+    // Sin handle en absoluto: marcar todos como NO_ENCONTRADO
+    for (const doc of docsFinal) {
+      await documentosApi.subirTexto(doc.codigo_documento, { texto_fuente: '', archivo_no_encontrado: true }).catch(() => {})
+    }
+    return { ok: true }
   }
 
   // 3. Config del proceso EXTRAER
@@ -422,7 +432,8 @@ export async function ejecutarPasoBackend(opts: {
   const misIdsSet = new Set(misItems.map((p) => p.id_cola))
 
   const esperarCambio = () => new Promise<void>((resolve) => {
-    const timeoutId = setTimeout(() => { resolveColaRef.current = null; resolve() }, 30_000)
+    // Timeout reducido a 5s: si el realtime no llega, polling frecuente evita bloqueos
+    const timeoutId = setTimeout(() => { resolveColaRef.current = null; resolve() }, 5_000)
     resolveColaRef.current = () => { clearTimeout(timeoutId); resolve() }
   })
 

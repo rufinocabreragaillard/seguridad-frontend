@@ -193,6 +193,7 @@ export async function escanearArchivosDirectorio(
   if (handleExterno) {
     dirHandle = handleExterno
   } else {
+    // Solo abrimos el picker cuando no hay handle externo (requiere gesto de usuario)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const picked = await (window as any).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' }).catch(() => null)
     if (!picked) return null
