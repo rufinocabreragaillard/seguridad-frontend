@@ -807,9 +807,29 @@ export default function PaginaCargaDocsUsuario() {
   const BarraPaqueteOperativo = () => {
     const paq = resumenPipeline?.paquete
     if (!paq || paq.docs_totales === 0) return null
-    const pct = paq.docs_totales > 0
-      ? Math.min(100, Math.round((paq.docs_completados / paq.docs_totales) * 100))
-      : 0
+
+    // Segmentos por estado del pipeline: cada uno muestra su porcentaje sobre el total de docs
+    const SEGMENTOS_PIPELINE = [
+      { estado: 'CARGADO',     color: '#0EA5E9', label: 'Cargado'     },
+      { estado: 'METADATA',    color: '#074B91', label: 'Metadata'    },
+      { estado: 'ESCANEADO',   color: '#F97316', label: 'Escaneado'   },
+      { estado: 'CHUNKEADO',   color: '#84CC16', label: 'Chunkeado'   },
+      { estado: 'VECTORIZADO', color: '#22C55E', label: 'Vectorizado' },
+    ]
+
+    // Conteos por estado provienen de por_destino (completado) más estimación desde paquete
+    // Usamos por_destino cuando está disponible; para CARGADO no hay destino en cola, estimamos.
+    const conteosPorEstado: Record<string, number> = {}
+    if (resumenPipeline?.por_destino) {
+      conteosPorEstado['METADATA']    = (resumenPipeline.por_destino['METADATA']?.completado    ?? 0) + (resumenPipeline.por_destino['METADATA']?.pendiente    ?? 0) + (resumenPipeline.por_destino['METADATA']?.en_proceso    ?? 0)
+      conteosPorEstado['ESCANEADO']   = (resumenPipeline.por_destino['ESCANEADO']?.completado   ?? 0) + (resumenPipeline.por_destino['ESCANEADO']?.pendiente    ?? 0) + (resumenPipeline.por_destino['ESCANEADO']?.en_proceso    ?? 0)
+      conteosPorEstado['CHUNKEADO']   = (resumenPipeline.por_destino['CHUNKEADO']?.completado   ?? 0) + (resumenPipeline.por_destino['CHUNKEADO']?.pendiente    ?? 0) + (resumenPipeline.por_destino['CHUNKEADO']?.en_proceso    ?? 0)
+      conteosPorEstado['VECTORIZADO'] = (resumenPipeline.por_destino['VECTORIZADO']?.completado ?? 0) + (resumenPipeline.por_destino['VECTORIZADO']?.pendiente   ?? 0) + (resumenPipeline.por_destino['VECTORIZADO']?.en_proceso   ?? 0)
+    }
+    // CARGADO = docs_totales - suma de los demás
+    const sumaOtros = (conteosPorEstado['METADATA'] ?? 0) + (conteosPorEstado['ESCANEADO'] ?? 0) + (conteosPorEstado['CHUNKEADO'] ?? 0) + (conteosPorEstado['VECTORIZADO'] ?? 0)
+    conteosPorEstado['CARGADO'] = Math.max(0, paq.docs_totales - sumaOtros)
+
     return (
       <div
         className="flex flex-col gap-1.5 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-3"
@@ -827,12 +847,34 @@ export default function PaginaCargaDocsUsuario() {
             <span data-testid="tamano-paquete">{paq.tamano_paquete.toLocaleString()}</span>
           </span>
         </div>
-        <div className="h-2.5 rounded-full overflow-hidden bg-gray-200">
-          <div
-            className="h-full rounded-full transition-all duration-500"
-            style={{ width: `${pct}%`, backgroundColor: '#074B91' }}
-            data-testid="paquete-progreso"
-          />
+        {/* Barra segmentada por estado */}
+        <div className="flex w-full h-2.5 rounded-full overflow-hidden gap-0.5" data-testid="paquete-progreso">
+          {SEGMENTOS_PIPELINE.map(({ estado, color, label }) => {
+            const count = conteosPorEstado[estado] ?? 0
+            const pct = paq.docs_totales > 0 ? (count / paq.docs_totales) * 100 : 0
+            if (pct <= 0) return null
+            return (
+              <div
+                key={estado}
+                title={`${label}: ${count.toLocaleString()}`}
+                className="h-full transition-all duration-500"
+                style={{ width: `${pct}%`, backgroundColor: color, minWidth: pct > 0 ? 4 : 0 }}
+              />
+            )
+          })}
+        </div>
+        {/* Leyenda de estados con docs */}
+        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] tabular-nums text-texto-muted pt-0.5">
+          {SEGMENTOS_PIPELINE.map(({ estado, color, label }) => {
+            const count = conteosPorEstado[estado] ?? 0
+            if (count === 0) return null
+            return (
+              <span key={estado} className="flex items-center gap-1">
+                <span className="inline-block w-2 h-2 rounded-sm" style={{ backgroundColor: color }} />
+                {label}: {count.toLocaleString()}
+              </span>
+            )
+          })}
         </div>
       </div>
     )
