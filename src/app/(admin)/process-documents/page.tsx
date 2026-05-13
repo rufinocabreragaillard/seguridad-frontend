@@ -1283,7 +1283,7 @@ function PaginaProcesarDocumentosInterna() {
                     <button
                       type="button"
                       className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro text-texto-muted"
-                      onClick={() => { setProcesoSel(''); setCategoriaSel(null); setDropdownProcesoAbierto(false) }}
+                      onClick={() => { setProcesoSel(''); setCategoriaSel(null); setEstadoFiltro(''); setDropdownProcesoAbierto(false) }}
                     >
                       {t('sinValor')}
                     </button>
@@ -1296,7 +1296,7 @@ function PaginaProcesarDocumentosInterna() {
                           key={p.codigo_proceso}
                           type="button"
                           className={`w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro flex items-baseline gap-1 ${selec ? 'bg-primario-muy-claro font-medium' : ''}`}
-                          onClick={() => { setProcesoSel(p.codigo_proceso); setCategoriaSel('PROCESAR'); setDropdownProcesoAbierto(false) }}
+                          onClick={() => { setProcesoSel(p.codigo_proceso); setCategoriaSel('PROCESAR'); setEstadoFiltro(''); setDropdownProcesoAbierto(false) }}
                         >
                           <span className="text-texto">{p.nombre_proceso}</span>
                           {flecha && <span className="text-xs text-texto-muted">({flecha})</span>}
@@ -1314,7 +1314,7 @@ function PaginaProcesarDocumentosInterna() {
                               key={`CORREGIR:${p.codigo_proceso}`}
                               type="button"
                               className={`w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro flex items-baseline gap-1 ${selec ? 'bg-primario-muy-claro font-medium' : ''}`}
-                              onClick={() => { setProcesoSel(p.codigo_proceso); setCategoriaSel('CORREGIR'); setDropdownProcesoAbierto(false) }}
+                              onClick={() => { setProcesoSel(p.codigo_proceso); setCategoriaSel('CORREGIR'); setEstadoFiltro(''); setDropdownProcesoAbierto(false) }}
                             >
                               <span className="text-texto">{p.nombre_proceso}</span>
                               {flecha && <span className="text-xs text-texto-muted">({flecha})</span>}
