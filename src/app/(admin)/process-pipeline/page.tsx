@@ -711,29 +711,35 @@ export default function PaginaCargaDocsUsuario() {
     finally { desuscribirCola(); setEjecutando(false); await cargarConteos() }
   }
 
-  // Pipeline completo desde la tab Ubicaciones: incluye Paso 1 (indexar ubicaciones)
-  // antes de ejecutar el pipeline de Documentos.
+  // Pipeline completo desde la tab Ubicaciones.
+  // - Si ya hay ubicaciones en BD → salta el Paso 1 (no abre el finder) y va directo al pipeline.
+  // - Si no hay ubicaciones → abre el finder para crearlas primero.
   const ejecutarPipelineUbicaciones = async () => {
     setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); suscribirCola()
     try {
-      // Paso 1: indexar ubicaciones (escaneo + sincronización)
-      if (!soportaDirectoryPicker()) { setMensajeError(t('alertNavegadorNoSoporta') || 'Navegador no soporta File System Access API'); return }
-      setPaso(PASO_INDEXAR, { total: 1, completados: 0, estado: 'activo' })
-      try {
-        const r = await escanearDirectorio()
-        if (!r) { setPaso(PASO_INDEXAR, { estado: 'listo' }) /* usuario canceló */; return }
-        setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
-        const res = await ubicacionesDocsApi.sincronizar({ directorios: r.directorios })
-        setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.eliminadas} eliminadas`)
+      // Paso 1: indexar ubicaciones — solo si no hay ubicaciones en BD
+      if (ubicaciones.length === 0) {
+        if (!soportaDirectoryPicker()) { setMensajeError(t('alertNavegadorNoSoporta') || 'Navegador no soporta File System Access API'); return }
+        setPaso(PASO_INDEXAR, { total: 1, completados: 0, estado: 'activo' })
+        try {
+          const r = await escanearDirectorio()
+          if (!r) { setPaso(PASO_INDEXAR, { estado: 'listo' }) /* usuario canceló */; return }
+          setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
+          const res = await ubicacionesDocsApi.sincronizar({ directorios: r.directorios })
+          setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.eliminadas} eliminadas`)
+          setPaso(PASO_INDEXAR, { total: 1, completados: 1, estado: 'listo' })
+          setEtapa1Estado('completado')
+          await cargarUbicaciones()
+        } catch (e) {
+          setPaso(PASO_INDEXAR, { estado: 'error' })
+          setMensajeError(e instanceof Error ? e.message : (t('alertErrorSincronizar') || 'Error al sincronizar'))
+          return
+        }
+        if (abortRef.current) return
+      } else {
+        // Ya hay ubicaciones — marcar Paso 1 como completado sin abrir el finder
         setPaso(PASO_INDEXAR, { total: 1, completados: 1, estado: 'listo' })
-        setEtapa1Estado('completado')
-        await cargarUbicaciones()
-      } catch (e) {
-        setPaso(PASO_INDEXAR, { estado: 'error' })
-        setMensajeError(e instanceof Error ? e.message : (t('alertErrorSincronizar') || 'Error al sincronizar'))
-        return
       }
-      if (abortRef.current) return
       // Pasos 2-6: pipeline de Documentos en paquetes operativos
       let tamanoPaquete = 0
       try {
