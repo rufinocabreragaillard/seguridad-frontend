@@ -595,7 +595,7 @@ export default function PaginaCargaDocsUsuario() {
   // Paso 2 — CARGAR: delega en _lib/ejecutar-paso (escanearParaCarga + ejecutarCarga).
   // /process-pipeline auto-confirma (sin diálogo intermedio) — el botón Ejecutar ya
   // es la confirmación implícita del usuario.
-  const ejecutarCargar = async (tope?: number): Promise<boolean> => {
+  const ejecutarCargar = async (): Promise<boolean> => {
     setPaso('CARGAR', { total: 1, completados: 0, estado: 'activo' })
     try {
       const ubicacionesLib: UbicacionOpt[] = ubicaciones.map((u) => ({
@@ -613,7 +613,6 @@ export default function PaginaCargaDocsUsuario() {
         ubicaciones: ubicacionesLib,
         nivelesDirectorio: 5,
         dirHandle: dirHandleRef.current ?? dirHandle ?? undefined,
-        tope: tope && tope > 0 ? String(tope) : undefined,
       })
       if (!pending) { setPaso('CARGAR', { estado: 'listo' }); return true }
       if (pending.scan.dirHandle && pending.scan.dirHandle !== dirHandle) {
@@ -633,7 +632,7 @@ export default function PaginaCargaDocsUsuario() {
   }
 
   const ejecutarUnPaso = async (key: string, tope?: number): Promise<boolean> => {
-    if (key === 'CARGAR') return ejecutarCargar(tope)
+    if (key === 'CARGAR') return ejecutarCargar()
     if (key === 'EXTRAER') return ejecutarExtraer(tope)
     const paso = PASOS.find((p) => p.key === key)
     if (!paso) return true
@@ -645,9 +644,9 @@ export default function PaginaCargaDocsUsuario() {
   const ejecutarFasesDelPipeline = async (tope?: number): Promise<boolean> => {
     for (const paso of PASOS) {
       if (abortRef.current) return false
-      // CARGAR recibe tope para no enviar miles de archivos en un solo request (→ 503).
-      // EXTRAER (client-side puro) no recibe tope — procesa lo que haya en CARGADO.
-      const topeFase = paso.key === 'EXTRAER' ? undefined : tope
+      // CARGAR y EXTRAER son client-side: no reciben tope (procesan lo que el filesystem tiene).
+      // Los pasos backend (ANALIZAR, CHUNKEAR, VECTORIZAR) sí reciben tope = TAMANO_PAQUETE.
+      const topeFase = paso.clienteSide ? undefined : tope
       const ok = await ejecutarUnPaso(paso.key, topeFase)
       if (!ok) return false
     }
