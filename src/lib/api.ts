@@ -1382,7 +1382,7 @@ export const colaEstadosDocsApi = {
   porDocumento: (codigoDocumento: number) =>
     api.get<ColaEstadoDoc[]>(`/cola-estados-docs/por-documento/${codigoDocumento}`).then((r) => r.data),
   porIds: (ids: number[]) =>
-    api.get<ColaEstadoDoc[]>('/cola-estados-docs/por-ids', { params: { ids: ids.join(',') } }).then((r) => r.data),
+    api.post<ColaEstadoDoc[]>('/cola-estados-docs/por-ids', { ids }).then((r) => r.data),
   resumenPipeline: (ventanaSeg = 120) =>
     api.get<ResumenPipeline>('/cola-estados-docs/resumen-pipeline', { params: { ventana_seg: ventanaSeg } }).then((r) => r.data),
   limpiarCompletados: (estadoDestino?: string) =>
