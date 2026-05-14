@@ -139,6 +139,18 @@ def main():
 
     idiomas = [l.strip() for l in args.idiomas.split(",") if l.strip()]
 
+    # Validar primero que es.json cubre todas las claves usadas en src/.
+    # Si el validador falla, no tiene sentido traducir un fuente incompleto.
+    print("Validando claves i18n contra src/ …")
+    import subprocess
+    validador = os.path.join(os.path.dirname(__file__), "validar-i18n.py")
+    rv = subprocess.run([sys.executable, validador, "--no-huerfanas"])
+    if rv.returncode != 0:
+        print("\nFALLO de validación i18n. Corrige messages/es.json antes de traducir.",
+              file=sys.stderr)
+        sys.exit(1)
+    print()
+
     es_path = os.path.join(MESSAGES_DIR, "es.json")
     with open(es_path, "r", encoding="utf-8") as f:
         es_json = json.load(f)

@@ -1625,7 +1625,7 @@ function PaginaProcesarDocumentosInterna() {
                   <TablaTh className="w-8">{t('colEstado')}</TablaTh>
                   <TablaTh className="w-[30%]">{t('colDocumento')}</TablaTh>
                   <TablaTh>{t('colResultado')}</TablaTh>
-                  <TablaTh className="w-40">
+                  <TablaTh className="w-80">
                     <span title="Modelo de lenguaje (LLM) usado para procesar el documento">LLM</span>
                   </TablaTh>
                   <TablaTh className="w-24">{t('colTiempo')}</TablaTh>
