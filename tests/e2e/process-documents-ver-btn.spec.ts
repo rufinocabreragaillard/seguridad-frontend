@@ -95,4 +95,45 @@ test.describe('process-documents — botón ver (Eye)', () => {
     const visible = await panelDetalle.isVisible().catch(() => false);
     console.log(`Panel de detalle visible: ${visible}`);
   });
+
+  test('modal de detalle muestra mensaje de error cuando estado_cola es ERROR', async ({ page }) => {
+    // Buscar un documento con estado ERROR en la tabla
+    await page.waitForTimeout(2000);
+    const filas = page.locator('table tbody tr');
+    const n = await filas.count();
+
+    let filaError = -1;
+    for (let i = 0; i < n; i++) {
+      const txt = await filas.nth(i).textContent();
+      if (txt?.includes('ERROR')) {
+        filaError = i;
+        break;
+      }
+    }
+
+    if (filaError === -1) {
+      console.log('No hay documentos con estado ERROR en la tabla — skip');
+      test.skip();
+      return;
+    }
+
+    console.log(`Fila con ERROR encontrada: ${filaError}`);
+    const btnVer = filas.nth(filaError).locator('button[title="Ver detalle"]').first();
+    if (await btnVer.count() === 0) {
+      console.log('No se encontró botón Ver detalle en fila con ERROR — skip');
+      test.skip();
+      return;
+    }
+
+    await btnVer.click();
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: '/tmp/pd-modal-error.png' });
+
+    // Verificar que el bloque de error rojo es visible
+    const bloqueError = page.locator('text=Mensaje de error').first();
+    const bloqueVisible = await bloqueError.isVisible().catch(() => false);
+    console.log(`Bloque "Mensaje de error" visible: ${bloqueVisible}`);
+
+    expect(bloqueVisible, 'El modal debe mostrar bloque "Mensaje de error" cuando estado_cola es ERROR').toBe(true);
+  });
 });
