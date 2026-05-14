@@ -2088,6 +2088,7 @@
     "eliminarEstadoConfirm": "¿Eliminar el estado \"{nombre}\"?",
     "eliminarCanonicoConfirm": "¿Eliminar el estado canónico \"{nombre}\"?",
     "tabTransiciones": "Transiciones de Estados",
+    "tabPrompts": "Prompts",
     "descripcionTransiciones": "Grafo de transiciones permitidas entre estados de documentos",
     "btnNuevaTransicion": "Nueva transición",
     "sinTransiciones": "No hay transiciones registradas",

@@ -2085,6 +2085,7 @@
     "eliminarEstadoConfirm": "Delete status \"{nombre}\"?",
     "eliminarCanonicoConfirm": "Delete canonical status \"{nombre}\"?",
     "tabTransiciones": "State Transitions",
+    "tabPrompts": "Prompts",
     "descripcionTransiciones": "Allowed state transitions graph for documents",
     "btnNuevaTransicion": "New transition",
     "sinTransiciones": "No transitions registered",

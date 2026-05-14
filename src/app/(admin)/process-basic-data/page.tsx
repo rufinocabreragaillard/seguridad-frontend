@@ -143,6 +143,7 @@ export default function PaginaProcesosDatosBasicos() {
   const [transiciones, setTransiciones] = useState<TransicionEstado[]>([])
   const [cargandoTrans, setCargandoTrans] = useState(true)
   const [modalTrans, setModalTrans] = useState(false)
+  const [tabModalTrans, setTabModalTrans] = useState<'datos' | 'prompts'>('datos')
   const [transEditando, setTransEditando] = useState<TransicionEstado | null>(null)
   const [formTrans, setFormTrans] = useState<Partial<TransicionEstado>>({
     categoria: 'PROCESAR', estado_origen: null, estado_destino: '',
@@ -595,6 +596,7 @@ export default function PaginaProcesosDatosBasicos() {
     setTransEditando(null)
     setFormTrans(formTransVacio)
     setErrorTrans('')
+    setTabModalTrans('datos')
     setModalTrans(true)
   }
 
@@ -624,6 +626,7 @@ export default function PaginaProcesosDatosBasicos() {
       max_intentos: tr.max_intentos,
     })
     setErrorTrans('')
+    setTabModalTrans('datos')
     setModalTrans(true)
   }
 
@@ -1786,84 +1789,105 @@ export default function PaginaProcesosDatosBasicos() {
       {/* Modal Canónico */}
       {/* Modal Transición de Estado */}
       <Modal abierto={modalTrans} alCerrar={() => setModalTrans(false)} titulo={transEditando ? `${t('modalTransicionEditar')}: ${transEditando.estado_origen ?? '—'} → ${transEditando.estado_destino}` : t('modalTransicionNuevo')}>
-        <div className="flex flex-col gap-4 min-w-[520px]">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-texto-muted">{t('colCategoriaTrans')}</label>
-              <select className={selectCls} value={formTrans.categoria ?? 'PROCESAR'} onChange={(e) => setFormTrans({ ...formTrans, categoria: e.target.value })}>
-                <option value="PROCESAR">PROCESAR</option>
-                <option value="REVERTIR">REVERTIR</option>
-                <option value="CORREGIR">CORREGIR</option>
-              </select>
-            </div>
-            <Input etiqueta={t('colOrden')} type="number" value={String(formTrans.orden ?? 0)} onChange={(e) => setFormTrans({ ...formTrans, orden: Number(e.target.value) })} />
+        <div className="flex flex-col min-w-[693px]">
+          {/* Lenguetas */}
+          <div className="flex border-b border-borde -mx-1 mb-4">
+            <button onClick={() => setTabModalTrans('datos')} className={tabModalCls(tabModalTrans, 'datos')}>{t('tabDatos')}</button>
+            <button onClick={() => setTabModalTrans('prompts')} className={tabModalCls(tabModalTrans, 'prompts')}>{t('tabPrompts')}</button>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-texto-muted">{t('colOrigenTrans')}</label>
-              <select className={selectCls} value={formTrans.estado_origen ?? ''} onChange={(e) => setFormTrans({ ...formTrans, estado_origen: e.target.value || null })}>
-                <option value="">{t('sinEstadoOrigen')}</option>
-                {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_ESTAN','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-texto-muted">{t('colDestinoTrans')} *</label>
-              <select className={selectCls} value={formTrans.estado_destino ?? ''} onChange={(e) => setFormTrans({ ...formTrans, estado_destino: e.target.value })}>
-                <option value="">— {t('seleccionar')} —</option>
-                {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_ESTAN','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
-              </select>
-            </div>
+
+          {/* Contenido con altura fija para que no cambie entre tabs */}
+          <div className="h-[400px] overflow-y-auto flex flex-col gap-4">
+            {/* ── Tab Datos ── */}
+            {tabModalTrans === 'datos' && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-texto-muted">{t('colCategoriaTrans')}</label>
+                    <select className={selectCls} value={formTrans.categoria ?? 'PROCESAR'} onChange={(e) => setFormTrans({ ...formTrans, categoria: e.target.value })}>
+                      <option value="PROCESAR">PROCESAR</option>
+                      <option value="REVERTIR">REVERTIR</option>
+                      <option value="CORREGIR">CORREGIR</option>
+                    </select>
+                  </div>
+                  <Input etiqueta={t('colOrden')} type="number" value={String(formTrans.orden ?? 0)} onChange={(e) => setFormTrans({ ...formTrans, orden: Number(e.target.value) })} />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-texto-muted">{t('colOrigenTrans')}</label>
+                    <select className={selectCls} value={formTrans.estado_origen ?? ''} onChange={(e) => setFormTrans({ ...formTrans, estado_origen: e.target.value || null })}>
+                      <option value="">{t('sinEstadoOrigen')}</option>
+                      {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_ESTAN','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-texto-muted">{t('colDestinoTrans')} *</label>
+                    <select className={selectCls} value={formTrans.estado_destino ?? ''} onChange={(e) => setFormTrans({ ...formTrans, estado_destino: e.target.value })}>
+                      <option value="">— {t('seleccionar')} —</option>
+                      {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_ESTAN','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-texto-muted">{t('colCategoriaProceso')}</label>
+                    <select className={selectCls} value={formTrans.codigo_categoria_proceso ?? ''} onChange={(e) => setFormTrans({ ...formTrans, codigo_categoria_proceso: e.target.value, codigo_tipo_proceso: '' })}>
+                      <option value="">— {t('seleccionar')} —</option>
+                      {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-xs font-medium text-texto-muted">{t('colTipoProceso')} *</label>
+                    <select className={selectCls} value={formTrans.codigo_tipo_proceso ?? ''} onChange={(e) => setFormTrans({ ...formTrans, codigo_tipo_proceso: e.target.value })}>
+                      <option value="">— {t('seleccionar')} —</option>
+                      {tipos.filter((tp) => !formTrans.codigo_categoria_proceso || tp.codigo_categoria_proceso === formTrans.codigo_categoria_proceso).map((tp) => <option key={tp.codigo_tipo_proceso} value={tp.codigo_tipo_proceso}>{tp.nombre_tipo_proceso}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-texto-muted">{t('colModelo')}</label>
+                  <select className={selectCls} value={formTrans.id_modelo ?? ''} onChange={(e) => setFormTrans({ ...formTrans, id_modelo: e.target.value ? Number(e.target.value) : null })}>
+                    <option value="">{t('sinModelo')}</option>
+                    {modelos.map((m) => <option key={m.id_modelo} value={m.id_modelo}>{m.nombre_visible}</option>)}
+                  </select>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <Input etiqueta="n_parallel" type="number" value={String(formTrans.n_parallel ?? 10)} onChange={(e) => setFormTrans({ ...formTrans, n_parallel: Number(e.target.value) })} />
+                  <Input etiqueta="batch_size" type="number" value={String(formTrans.batch_size ?? 0)} onChange={(e) => setFormTrans({ ...formTrans, batch_size: Number(e.target.value) })} />
+                  <Input etiqueta="max_intentos" type="number" value={String(formTrans.max_intentos ?? 3)} onChange={(e) => setFormTrans({ ...formTrans, max_intentos: Number(e.target.value) })} />
+                </div>
+              </>
+            )}
+
+            {/* ── Tab Prompts ── */}
+            {tabModalTrans === 'prompts' && (
+              <>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-texto-muted">system_prompt</label>
+                  <textarea className={textareaCls} rows={5} value={formTrans.system_prompt ?? ''} onChange={(e) => setFormTrans({ ...formTrans, system_prompt: e.target.value })} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-texto-muted">prompt_insert</label>
+                  <textarea className={textareaCls} rows={5} value={formTrans.prompt_insert ?? ''} onChange={(e) => setFormTrans({ ...formTrans, prompt_insert: e.target.value })} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-texto-muted">prompt_update</label>
+                  <textarea className={textareaCls} rows={5} value={formTrans.prompt_update ?? ''} onChange={(e) => setFormTrans({ ...formTrans, prompt_update: e.target.value })} />
+                </div>
+              </>
+            )}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-texto-muted">{t('colCategoriaProceso')}</label>
-              <select className={selectCls} value={formTrans.codigo_categoria_proceso ?? ''} onChange={(e) => setFormTrans({ ...formTrans, codigo_categoria_proceso: e.target.value, codigo_tipo_proceso: '' })}>
-                <option value="">— {t('seleccionar')} —</option>
-                {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-texto-muted">{t('colTipoProceso')} *</label>
-              <select className={selectCls} value={formTrans.codigo_tipo_proceso ?? ''} onChange={(e) => setFormTrans({ ...formTrans, codigo_tipo_proceso: e.target.value })}>
-                <option value="">— {t('seleccionar')} —</option>
-                {tipos.filter((tp) => !formTrans.codigo_categoria_proceso || tp.codigo_categoria_proceso === formTrans.codigo_categoria_proceso).map((tp) => <option key={tp.codigo_tipo_proceso} value={tp.codigo_tipo_proceso}>{tp.nombre_tipo_proceso}</option>)}
-              </select>
-            </div>
+
+          {errorTrans && <div className="mt-3 bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTrans}</p></div>}
+          <div className="mt-4">
+            <PieBotonesModal
+              editando={!!transEditando}
+              onGuardar={() => guardarTransicion(false)}
+              onGuardarYSalir={() => guardarTransicion(true)}
+              onCerrar={() => setModalTrans(false)}
+              cargando={guardandoTrans}
+            />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-texto-muted">{t('colModelo')}</label>
-            <select className={selectCls} value={formTrans.id_modelo ?? ''} onChange={(e) => setFormTrans({ ...formTrans, id_modelo: e.target.value ? Number(e.target.value) : null })}>
-              <option value="">{t('sinModelo')}</option>
-              {modelos.map((m) => <option key={m.id_modelo} value={m.id_modelo}>{m.nombre_visible}</option>)}
-            </select>
-          </div>
-          <div className="grid grid-cols-3 gap-3">
-            <Input etiqueta="n_parallel" type="number" value={String(formTrans.n_parallel ?? 10)} onChange={(e) => setFormTrans({ ...formTrans, n_parallel: Number(e.target.value) })} />
-            <Input etiqueta="batch_size" type="number" value={String(formTrans.batch_size ?? 0)} onChange={(e) => setFormTrans({ ...formTrans, batch_size: Number(e.target.value) })} />
-            <Input etiqueta="max_intentos" type="number" value={String(formTrans.max_intentos ?? 3)} onChange={(e) => setFormTrans({ ...formTrans, max_intentos: Number(e.target.value) })} />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-medium text-texto-muted">system_prompt</label>
-            <textarea className={textareaCls} rows={3} value={formTrans.system_prompt ?? ''} onChange={(e) => setFormTrans({ ...formTrans, system_prompt: e.target.value })} />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-texto-muted">prompt_insert</label>
-              <textarea className={textareaCls} rows={3} value={formTrans.prompt_insert ?? ''} onChange={(e) => setFormTrans({ ...formTrans, prompt_insert: e.target.value })} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-medium text-texto-muted">prompt_update</label>
-              <textarea className={textareaCls} rows={3} value={formTrans.prompt_update ?? ''} onChange={(e) => setFormTrans({ ...formTrans, prompt_update: e.target.value })} />
-            </div>
-          </div>
-          {errorTrans && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTrans}</p></div>}
-          <PieBotonesModal
-            editando={!!transEditando}
-            onGuardar={() => guardarTransicion(false)}
-            onGuardarYSalir={() => guardarTransicion(true)}
-            onCerrar={() => setModalTrans(false)}
-            cargando={guardandoTrans}
-          />
         </div>
       </Modal>
 
