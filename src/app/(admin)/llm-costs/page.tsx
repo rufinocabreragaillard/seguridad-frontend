@@ -52,36 +52,37 @@ export default function PaginaCostosLLM() {
   useEffect(() => { cargarResumen(); cargarFilas() }, [cargarResumen, cargarFilas])
 
   const exportarUso = () => {
-    exportarExcel(filas.map(f => ({
-      Fecha: new Date(f.created_at).toLocaleString('es-CL', { timeZone: 'America/Santiago' }),
-      Proveedor: f.proveedor,
-      Modelo: f.modelo,
-      Usuario: f.codigo_usuario ?? '',
-      Función: f.codigo_funcion ?? '',
-      Habilidad: f.codigo_habilidad ?? '',
-      'Tok. In': f.tokens_input,
-      'Tok. Out': f.tokens_output,
-      'Costo USD': f.costo_estimado_usd,
-      Estado: f.exito ? 'OK' : 'Error',
-    })), `costos-llm-${grupoActivo}`)
+    exportarExcel(
+      filas as unknown as Record<string, unknown>[],
+      [
+        { titulo: 'Fecha', campo: 'created_at' },
+        { titulo: 'Proveedor', campo: 'proveedor' },
+        { titulo: 'Modelo', campo: 'modelo' },
+        { titulo: 'Usuario', campo: 'codigo_usuario' },
+        { titulo: 'Función', campo: 'codigo_funcion' },
+        { titulo: 'Habilidad', campo: 'codigo_habilidad' },
+        { titulo: 'Tok. In', campo: 'tokens_input' },
+        { titulo: 'Tok. Out', campo: 'tokens_output' },
+        { titulo: 'Costo USD', campo: 'costo_estimado_usd' },
+        { titulo: 'Estado', campo: 'exito', formato: (v) => (v ? 'OK' : 'Error') },
+      ],
+      `costos-llm-${grupoActivo}`,
+    )
   }
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        titulo={tUso('titulo')}
-        descripcion={tUso('descripcion', { grupo: grupoActivo ?? '' })}
-        acciones={
-          <div className="flex gap-2">
-            <Boton variante="contorno" onClick={() => { cargarResumen(); cargarFilas() }}>
-              <RefreshCw className="w-4 h-4 mr-1" />{tUso('refrescar')}
-            </Boton>
-            <Boton variante="contorno" onClick={exportarUso}>
-              <Download className="w-4 h-4 mr-1" />{tUso('exportar')}
-            </Boton>
-          </div>
-        }
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader titulo={tUso('titulo')} subtitulo={tUso('descripcion', { grupo: grupoActivo ?? '' })} />
+        <div className="flex gap-2 shrink-0">
+          <Boton variante="contorno" onClick={() => { cargarResumen(); cargarFilas() }}>
+            <RefreshCw className="w-4 h-4 mr-1" />{tUso('refrescar')}
+          </Boton>
+          <Boton variante="contorno" onClick={exportarUso}>
+            <Download className="w-4 h-4 mr-1" />{tUso('exportar')}
+          </Boton>
+        </div>
+      </div>
 
       {/* Tarjetas resumen del mes */}
       {cargandoResumen ? (

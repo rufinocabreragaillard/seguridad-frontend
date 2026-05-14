@@ -94,20 +94,20 @@ export default function PaginaCostosSistema() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        titulo="Costos LLM — Sistema"
-        descripcion="Vista global de uso de modelos LLM en todos los grupos"
-        acciones={
-          <div className="flex gap-2">
-            <Boton variante="contorno" onClick={cargar}>
-              <RefreshCw className="w-4 h-4 mr-1" />Refrescar
-            </Boton>
-            <Boton variante="contorno" onClick={exportar}>
-              <Download className="w-4 h-4 mr-1" />Exportar
-            </Boton>
-          </div>
-        }
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          titulo="Costos LLM — Sistema"
+          subtitulo="Vista global de uso de modelos LLM en todos los grupos"
+        />
+        <div className="flex gap-2 shrink-0">
+          <Boton variante="contorno" onClick={cargar}>
+            <RefreshCw className="w-4 h-4 mr-1" />Refrescar
+          </Boton>
+          <Boton variante="contorno" onClick={exportar}>
+            <Download className="w-4 h-4 mr-1" />Exportar
+          </Boton>
+        </div>
+      </div>
 
       {/* Tarjetas resumen */}
       {resumen && (

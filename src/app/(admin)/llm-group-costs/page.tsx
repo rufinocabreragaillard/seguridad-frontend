@@ -76,20 +76,20 @@ export default function PaginaCostosGrupo() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        titulo="Costos LLM del Grupo"
-        descripcion={`Uso de modelos LLM para el grupo ${grupoActivo ?? ''}`}
-        acciones={
-          <div className="flex gap-2">
-            <Boton variante="contorno" onClick={cargar}>
-              <RefreshCw className="w-4 h-4 mr-1" />Refrescar
-            </Boton>
-            <Boton variante="contorno" onClick={exportar}>
-              <Download className="w-4 h-4 mr-1" />Exportar
-            </Boton>
-          </div>
-        }
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PageHeader
+          titulo="Costos LLM del Grupo"
+          subtitulo={`Uso de modelos LLM para el grupo ${grupoActivo ?? ''}`}
+        />
+        <div className="flex gap-2 shrink-0">
+          <Boton variante="contorno" onClick={cargar}>
+            <RefreshCw className="w-4 h-4 mr-1" />Refrescar
+          </Boton>
+          <Boton variante="contorno" onClick={exportar}>
+            <Download className="w-4 h-4 mr-1" />Exportar
+          </Boton>
+        </div>
+      </div>
 
       {/* Tarjetas resumen */}
       {resumen && (
