@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { CheckCircle, Download, Loader2, Pencil, Plus, RefreshCw, Search, Send, Trash2, XCircle } from 'lucide-react'
+import { CheckCircle, Loader2, Pencil, Plus, Search, Send, Trash2, XCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -11,10 +11,9 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { registroLLMApi, llmPreciosApi, llmUsoApi, promptsApi } from '@/lib/api'
-import type { LLMPrecio, LLMUsoFila, LLMUsoResumen } from '@/lib/api'
+import { registroLLMApi, llmPreciosApi, promptsApi } from '@/lib/api'
+import type { LLMPrecio } from '@/lib/api'
 import type { RegistroLLM } from '@/lib/tipos'
-import { exportarExcel } from '@/lib/exportar-excel'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -23,23 +22,14 @@ import { PageHeader } from '@/components/layout/PageHeader'
 
 type Proveedor = 'anthropic' | 'google' | 'openai' | 'deepseek'
 
-function fmtUsd(n: number | undefined | null) {
-  return `$${(Number(n) || 0).toFixed(4)}`
-}
-
-function fmtInt(n: number | undefined | null) {
-  return (Number(n) || 0).toLocaleString('es-CL')
-}
-
 export default function PaginaRegistroLLM() {
   const t = useTranslations('llmRegistry')
   const tc = useTranslations('common')
   const tConfig = useTranslations('llmConfiguracion')
-  const tUso = useTranslations('llmUso')
-  const { grupoActivo, esSuperAdmin: chkSuperAdmin } = useAuth()
+  const { esSuperAdmin: chkSuperAdmin } = useAuth()
   const esSuperAdmin = chkSuperAdmin()
 
-  const [tabPagina, setTabPagina] = useState<'modelos' | 'configuracion' | 'uso'>('modelos')
+  const [tabPagina, setTabPagina] = useState<'modelos' | 'configuracion'>('modelos')
 
   const tabStyle = (activo: boolean) =>
     `pb-3 text-sm font-medium border-b-2 transition ${
@@ -230,61 +220,6 @@ export default function PaginaRegistroLLM() {
   }
 
   // ══════════════════════════════════════════
-  // TAB 3 — Uso
-  // ══════════════════════════════════════════
-  const [resumen, setResumen] = useState<LLMUsoResumen | null>(null)
-  const [filas, setFilas] = useState<LLMUsoFila[]>([])
-  const [cargandoUso, setCargandoUso] = useState(true)
-  const [filtros, setFiltros] = useState({ desde: '', hasta: '', proveedor: '', modelo: '', codigo_usuario: '' })
-
-  const cargarUso = useCallback(async () => {
-    setCargandoUso(true)
-    try {
-      const [r, f] = await Promise.all([
-        llmUsoApi.resumen(),
-        llmUsoApi.listar({
-          desde: filtros.desde || undefined,
-          hasta: filtros.hasta || undefined,
-          proveedor: filtros.proveedor || undefined,
-          modelo: filtros.modelo || undefined,
-          codigo_usuario: filtros.codigo_usuario || undefined,
-          limit: 500,
-        }),
-      ])
-      setResumen(r)
-      setFilas(f)
-    } finally {
-      setCargandoUso(false)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grupoActivo])
-
-  useEffect(() => {
-    if (tabPagina === 'uso') cargarUso()
-  }, [tabPagina, cargarUso])
-
-  const exportarUso = () => {
-    exportarExcel(
-      filas as unknown as Record<string, unknown>[],
-      [
-        { titulo: 'Fecha', campo: 'created_at' },
-        { titulo: 'Proveedor', campo: 'proveedor' },
-        { titulo: 'Modelo', campo: 'modelo' },
-        { titulo: 'Alias', campo: 'alias_credencial' },
-        { titulo: 'Key casa', campo: 'uso_key_casa', formato: (v) => (v ? 'SI' : 'NO') },
-        { titulo: 'Usuario', campo: 'codigo_usuario' },
-        { titulo: 'Función', campo: 'codigo_funcion' },
-        { titulo: 'Operación', campo: 'operacion' },
-        { titulo: 'Tokens in', campo: 'tokens_input' },
-        { titulo: 'Tokens out', campo: 'tokens_output' },
-        { titulo: 'Costo USD', campo: 'costo_estimado_usd' },
-        { titulo: 'Éxito', campo: 'exito', formato: (v) => (v ? 'SI' : 'NO') },
-      ],
-      `uso-llm-${grupoActivo}-${new Date().toISOString().slice(0, 10)}`,
-    )
-  }
-
-  // ══════════════════════════════════════════
   // RENDER
   // ══════════════════════════════════════════
   return (
@@ -302,9 +237,6 @@ export default function PaginaRegistroLLM() {
           </button>
           <button onClick={() => setTabPagina('configuracion')} className={tabStyle(tabPagina === 'configuracion')}>
             {tConfig('titulo')}
-          </button>
-          <button onClick={() => setTabPagina('uso')} className={tabStyle(tabPagina === 'uso')}>
-            {tUso('titulo')}
           </button>
         </nav>
       </div>
@@ -667,155 +599,6 @@ export default function PaginaRegistroLLM() {
         </>
       )}
 
-      {/* ── TAB 3: Uso ── */}
-      {tabPagina === 'uso' && (
-        <div className="space-y-6">
-          <div className="flex justify-end gap-2">
-            <Boton variante="contorno" onClick={cargarUso}><RefreshCw className="w-4 h-4 mr-1" />{tUso('refrescar')}</Boton>
-            <Boton variante="contorno" onClick={exportarUso}><Download className="w-4 h-4 mr-1" />{tUso('exportar')}</Boton>
-          </div>
-
-          {resumen && (
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <div className="text-xs text-gray-500 uppercase">{tUso('mesActual')}</div>
-                <div className="stat-number text-[#074B91] mt-1">{resumen.mes}</div>
-              </div>
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <div className="text-xs text-gray-500 uppercase">{tUso('llamadas')}</div>
-                <div className="stat-number text-gray-900 mt-1">{fmtInt(resumen.total_llamadas)}</div>
-              </div>
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <div className="text-xs text-gray-500 uppercase">{tUso('costoTotal')}</div>
-                <div className="stat-number text-gray-900 mt-1">{fmtUsd(resumen.total_costo_usd)}</div>
-              </div>
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <div className="text-xs text-gray-500 uppercase">{tUso('keyCasaGrupo')}</div>
-                <div className="text-sm font-medium text-gray-900 mt-2">
-                  <span className="text-amber-600">{fmtUsd(resumen.costo_key_casa_usd)}</span>{' '}/{' '}
-                  <span className="text-green-600">{fmtUsd(resumen.costo_key_grupo_usd)}</span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {resumen && (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">{tUso('porModelo')}</h3>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-gray-500 text-xs uppercase border-b">
-                      <th className="text-left py-1">{tUso('colModelo')}</th>
-                      <th className="text-right py-1">{tUso('colLlamadas')}</th>
-                      <th className="text-right py-1">{tUso('colTokenIn')}</th>
-                      <th className="text-right py-1">{tUso('colTokenOut')}</th>
-                      <th className="text-right py-1">{tUso('colCosto')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resumen.por_modelo.map((m) => (
-                      <tr key={m.clave} className="border-b last:border-0">
-                        <td className="py-2 font-mono text-xs">{m.clave}</td>
-                        <td className="text-right">{fmtInt(m.llamadas)}</td>
-                        <td className="text-right">{fmtInt(m.tokens_input)}</td>
-                        <td className="text-right">{fmtInt(m.tokens_output)}</td>
-                        <td className="text-right font-medium">{fmtUsd(m.costo_usd)}</td>
-                      </tr>
-                    ))}
-                    {resumen.por_modelo.length === 0 && (
-                      <tr><td colSpan={5} className="py-4 text-center text-gray-400">{tUso('sinDatosMes')}</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="bg-white rounded-lg border border-gray-200 p-4">
-                <h3 className="text-sm font-semibold text-gray-900 mb-3">{tUso('porUsuario')}</h3>
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="text-gray-500 text-xs uppercase border-b">
-                      <th className="text-left py-1">{tUso('colNombre')}</th>
-                      <th className="text-right py-1">{tUso('colLlamadas')}</th>
-                      <th className="text-right py-1">{tUso('colCosto')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {resumen.por_usuario.map((u) => (
-                      <tr key={u.clave} className="border-b last:border-0">
-                        <td className="py-2 text-xs">{u.clave}</td>
-                        <td className="text-right">{fmtInt(u.llamadas)}</td>
-                        <td className="text-right font-medium">{fmtUsd(u.costo_usd)}</td>
-                      </tr>
-                    ))}
-                    {resumen.por_usuario.length === 0 && (
-                      <tr><td colSpan={3} className="py-4 text-center text-gray-400">{tUso('sinDatosMes')}</td></tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">{tUso('detalleLlamadas')}</h3>
-            <div className="grid grid-cols-2 md:grid-cols-6 gap-2 mb-3">
-              <Input type="date" value={filtros.desde} onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })} placeholder={tUso('filterDesde')} />
-              <Input type="date" value={filtros.hasta} onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })} placeholder={tUso('filterHasta')} />
-              <select value={filtros.proveedor} onChange={(e) => setFiltros({ ...filtros, proveedor: e.target.value })} className="border border-gray-300 rounded px-2 py-1 text-sm">
-                <option value="">{tUso('filterTodosProveedores')}</option>
-                <option value="anthropic">Anthropic</option>
-                <option value="google">Google</option>
-              </select>
-              <Input placeholder={tUso('filterModelo')} value={filtros.modelo} onChange={(e) => setFiltros({ ...filtros, modelo: e.target.value })} />
-              <Input placeholder={tUso('filterUsuario')} value={filtros.codigo_usuario} onChange={(e) => setFiltros({ ...filtros, codigo_usuario: e.target.value })} />
-              <Boton onClick={cargarUso}>{tUso('aplicar')}</Boton>
-            </div>
-            {cargandoUso ? (
-              <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
-            ) : (
-              <Tabla>
-                <TablaCabecera>
-                  <TablaFila>
-                    <TablaTh>{tUso('colFecha')}</TablaTh>
-                    <TablaTh>{tUso('colGrupo')}</TablaTh>
-                    <TablaTh>{tUso('colProveedor')}</TablaTh>
-                    <TablaTh>{tUso('colModelo')}</TablaTh>
-                    <TablaTh>{tUso('colKey')}</TablaTh>
-                    <TablaTh>{tUso('colUsuario')}</TablaTh>
-                    <TablaTh>{tUso('colFuncion')}</TablaTh>
-                    <TablaTh>{tUso('colHabilidad')}</TablaTh>
-                    <TablaTh className="text-right">{tUso('colTokIn')}</TablaTh>
-                    <TablaTh className="text-right">{tUso('colTokOut')}</TablaTh>
-                    <TablaTh className="text-right">{tUso('colCosto')}</TablaTh>
-                    <TablaTh>{tUso('colEstado')}</TablaTh>
-                  </TablaFila>
-                </TablaCabecera>
-                <TablaCuerpo>
-                  {filas.map((f) => (
-                    <TablaFila key={f.id}>
-                      <TablaTd className="text-xs">{new Date(f.created_at).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}</TablaTd>
-                      <TablaTd className="text-xs">{f.codigo_grupo}</TablaTd>
-                      <TablaTd className="capitalize">{f.proveedor}</TablaTd>
-                      <TablaTd className="font-mono text-xs">{f.modelo}</TablaTd>
-                      <TablaTd>{f.uso_key_casa ? <Insignia variante="advertencia">Casa</Insignia> : <Insignia variante="exito">{f.alias_credencial}</Insignia>}</TablaTd>
-                      <TablaTd className="text-xs">{f.codigo_usuario}</TablaTd>
-                      <TablaTd className="text-xs">{f.codigo_funcion ?? '—'}</TablaTd>
-                      <TablaTd className="text-xs">{f.codigo_habilidad ?? '—'}</TablaTd>
-                      <TablaTd className="text-right">{fmtInt(f.tokens_input)}</TablaTd>
-                      <TablaTd className="text-right">{fmtInt(f.tokens_output)}</TablaTd>
-                      <TablaTd className="text-right">{fmtUsd(f.costo_estimado_usd)}</TablaTd>
-                      <TablaTd>{f.exito ? <Insignia variante="exito">OK</Insignia> : <Insignia variante="error">Error</Insignia>}</TablaTd>
-                    </TablaFila>
-                  ))}
-                  {filas.length === 0 && (
-                    <TablaFila><TablaTd colSpan={12} className="text-center text-gray-400 py-6">{tUso('sinLlamadas')}</TablaTd></TablaFila>
-                  )}
-                </TablaCuerpo>
-              </Tabla>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

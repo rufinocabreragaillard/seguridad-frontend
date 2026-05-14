@@ -1111,16 +1111,30 @@ export interface LLMUsoResumen {
   por_usuario: Array<{ clave: string; llamadas: number; costo_usd: number; tokens_input: number; tokens_output: number; errores: number }>
 }
 
+export interface LLMUsoResumenGlobal extends LLMUsoResumen {
+  por_grupo: Array<{ clave: string; llamadas: number; costo_usd: number; tokens_input: number; tokens_output: number; errores: number }>
+}
+
+export interface LLMUsoFiltros {
+  desde?: string
+  hasta?: string
+  proveedor?: string
+  modelo?: string
+  codigo_funcion?: string
+  codigo_grupo?: string
+  codigo_usuario?: string
+  solo_errores?: boolean
+  limit?: number
+}
+
 export const llmUsoApi = {
-  listar: (params: {
-    desde?: string
-    hasta?: string
-    proveedor?: string
-    modelo?: string
-    codigo_usuario?: string
-    limit?: number
-  } = {}) => api.get<LLMUsoFila[]>('/llm-uso', { params }).then((r) => r.data),
+  listar: (params: LLMUsoFiltros = {}) =>
+    api.get<LLMUsoFila[]>('/llm-uso', { params }).then((r) => r.data),
+  listarGlobal: (params: LLMUsoFiltros = {}) =>
+    api.get<LLMUsoFila[]>('/llm-uso/global', { params }).then((r) => r.data),
   resumen: () => api.get<LLMUsoResumen>('/llm-uso/resumen').then((r) => r.data),
+  resumenGlobal: (codigo_grupo?: string) =>
+    api.get<LLMUsoResumenGlobal>('/llm-uso/resumen-global', { params: codigo_grupo ? { codigo_grupo } : {} }).then((r) => r.data),
   mensual: (meses = 6) =>
     api.get<Array<Record<string, unknown>>>('/llm-uso/mensual', { params: { meses } }).then((r) => r.data),
 }
