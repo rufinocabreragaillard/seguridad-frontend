@@ -1788,8 +1788,8 @@ export default function PaginaProcesosDatosBasicos() {
 
       {/* Modal Canónico */}
       {/* Modal Transición de Estado */}
-      <Modal abierto={modalTrans} alCerrar={() => setModalTrans(false)} titulo={transEditando ? `${t('modalTransicionEditar')}: ${transEditando.estado_origen ?? '—'} → ${transEditando.estado_destino}` : t('modalTransicionNuevo')}>
-        <div className="flex flex-col min-w-[693px]">
+      <Modal abierto={modalTrans} alCerrar={() => setModalTrans(false)} titulo={transEditando ? `${t('modalTransicionEditar')}: ${transEditando.estado_origen ?? '—'} → ${transEditando.estado_destino}` : t('modalTransicionNuevo')} className="max-w-3xl w-[780px]">
+        <div className="flex flex-col">
           {/* Lenguetas */}
           <div className="flex border-b border-borde -mx-1 mb-4">
             <button onClick={() => setTabModalTrans('datos')} className={tabModalCls(tabModalTrans, 'datos')}>{t('tabDatos')}</button>
