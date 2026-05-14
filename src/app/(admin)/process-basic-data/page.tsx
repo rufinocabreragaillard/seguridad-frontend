@@ -10,16 +10,16 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
-import { procesosDatosBasicosApi, tareasDatosBasicosApi, funcionesApi, promptsApi } from '@/lib/api'
+import { procesosDatosBasicosApi, tareasDatosBasicosApi, funcionesApi, promptsApi, transicionesEstadoApi, registroLLMApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { CategoriaProceso, TipoProceso, EstadoProceso, EstadoCanonicalProceso, Funcion } from '@/lib/tipos'
+import type { CategoriaProceso, TipoProceso, EstadoProceso, EstadoCanonicalProceso, Funcion, TransicionEstado, RegistroLLM } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { PageHeader } from '@/components/layout/PageHeader'
 
-type TabId = 'categorias' | 'tipos' | 'estados' | 'canonicos'
+type TabId = 'categorias' | 'tipos' | 'estados' | 'canonicos' | 'transiciones'
 type TabModal = 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
 type ItemEliminar =
@@ -27,6 +27,7 @@ type ItemEliminar =
   | { tipo: 'tipo'; item: TipoProceso }
   | { tipo: 'estado'; item: EstadoProceso }
   | { tipo: 'canonico'; item: EstadoCanonicalProceso }
+  | { tipo: 'transicion'; item: TransicionEstado }
 
 export default function PaginaProcesosDatosBasicos() {
   const t = useTranslations('processBasicData')
@@ -138,6 +139,26 @@ export default function PaginaProcesosDatosBasicos() {
   const [errorCan, setErrorCan] = useState('')
   const [busquedaCan, setBusquedaCan] = useState('')
 
+  // ── Transiciones de Estado ─────────────────────────────────────────────────
+  const [transiciones, setTransiciones] = useState<TransicionEstado[]>([])
+  const [cargandoTrans, setCargandoTrans] = useState(true)
+  const [modalTrans, setModalTrans] = useState(false)
+  const [transEditando, setTransEditando] = useState<TransicionEstado | null>(null)
+  const [formTrans, setFormTrans] = useState<Partial<TransicionEstado>>({
+    categoria: 'PROCESAR', estado_origen: null, estado_destino: '',
+    codigo_categoria_proceso: '', codigo_tipo_proceso: '',
+    id_modelo: null, orden: 0,
+    system_prompt: '', prompt_insert: '', python_insert: '',
+    prompt_update: '', python_update: '', md: '',
+    codigo_habilidad: null,
+    n_parallel: 10, batch_size: 0, batch_timeout_seg: 0,
+    timeout_extraccion_seg: 0, chunk_size: 0, overlap: 0, max_intentos: 3,
+  })
+  const [guardandoTrans, setGuardandoTrans] = useState(false)
+  const [errorTrans, setErrorTrans] = useState('')
+  const [filtroCategoriaTrans, setFiltroCategoriaTrans] = useState('')
+  const [modelos, setModelos] = useState<RegistroLLM[]>([])
+
   // ── Eliminación ────────────────────────────────────────────────────────────
   const [itemAEliminar, setItemAEliminar] = useState<ItemEliminar | null>(null)
   const [eliminando, setEliminando] = useState(false)
@@ -167,11 +188,19 @@ export default function PaginaProcesosDatosBasicos() {
     finally { setCargandoCan(false) }
   }, [])
 
+  const cargarTransiciones = useCallback(async () => {
+    setCargandoTrans(true)
+    try { setTransiciones(await transicionesEstadoApi.listar()) }
+    finally { setCargandoTrans(false) }
+  }, [])
+
   useEffect(() => { cargarCategorias() }, [cargarCategorias])
   useEffect(() => { cargarTipos() }, [cargarTipos])
   useEffect(() => { cargarEstados() }, [cargarEstados])
   useEffect(() => { cargarCanonicos() }, [cargarCanonicos])
+  useEffect(() => { cargarTransiciones() }, [cargarTransiciones])
   useEffect(() => { funcionesApi.listar().then(setFunciones).catch(() => setFunciones([])) }, [])
+  useEffect(() => { registroLLMApi.listar().then(setModelos).catch(() => setModelos([])) }, [])
 
   // ── CRUD Categorías ────────────────────────────────────────────────────────
   const abrirNuevaCat = () => {
@@ -501,6 +530,9 @@ export default function PaginaProcesosDatosBasicos() {
         const e = itemAEliminar.item as EstadoProceso
         await procesosDatosBasicosApi.eliminarEstado(e.codigo_categoria_proceso, e.codigo_tipo_proceso, e.codigo_estado_proceso)
         cargarEstados()
+      } else if (itemAEliminar.tipo === 'transicion') {
+        await transicionesEstadoApi.eliminar((itemAEliminar.item as TransicionEstado).id)
+        cargarTransiciones()
       } else {
         await tareasDatosBasicosApi.eliminarCanonicosPro((itemAEliminar.item as EstadoCanonicalProceso).codigo_estado_canonico)
         cargarCanonicos()
@@ -545,6 +577,81 @@ export default function PaginaProcesosDatosBasicos() {
     } catch (e) {
       setErrorCan(e instanceof Error ? e.message : tc('errorAlGuardar'))
     } finally { setGuardandoCan(false) }
+  }
+
+  // ── CRUD Transiciones de Estado ────────────────────────────────────────────
+  const formTransVacio: Partial<TransicionEstado> = {
+    categoria: 'PROCESAR', estado_origen: null, estado_destino: '',
+    codigo_categoria_proceso: '', codigo_tipo_proceso: '',
+    id_modelo: null, orden: 0,
+    system_prompt: '', prompt_insert: '', python_insert: '',
+    prompt_update: '', python_update: '', md: '',
+    codigo_habilidad: null,
+    n_parallel: 10, batch_size: 0, batch_timeout_seg: 0,
+    timeout_extraccion_seg: 0, chunk_size: 0, overlap: 0, max_intentos: 3,
+  }
+
+  const abrirNuevaTrans = () => {
+    setTransEditando(null)
+    setFormTrans(formTransVacio)
+    setErrorTrans('')
+    setModalTrans(true)
+  }
+
+  const abrirEditarTrans = (tr: TransicionEstado) => {
+    setTransEditando(tr)
+    setFormTrans({
+      categoria: tr.categoria,
+      estado_origen: tr.estado_origen,
+      estado_destino: tr.estado_destino,
+      codigo_categoria_proceso: tr.codigo_categoria_proceso,
+      codigo_tipo_proceso: tr.codigo_tipo_proceso,
+      id_modelo: tr.id_modelo,
+      orden: tr.orden,
+      system_prompt: tr.system_prompt ?? '',
+      prompt_insert: tr.prompt_insert ?? '',
+      python_insert: tr.python_insert ?? '',
+      prompt_update: tr.prompt_update ?? '',
+      python_update: tr.python_update ?? '',
+      md: tr.md ?? '',
+      codigo_habilidad: tr.codigo_habilidad,
+      n_parallel: tr.n_parallel,
+      batch_size: tr.batch_size,
+      batch_timeout_seg: tr.batch_timeout_seg,
+      timeout_extraccion_seg: tr.timeout_extraccion_seg,
+      chunk_size: tr.chunk_size,
+      overlap: tr.overlap,
+      max_intentos: tr.max_intentos,
+    })
+    setErrorTrans('')
+    setModalTrans(true)
+  }
+
+  const guardarTransicion = async (cerrar = true) => {
+    if (!formTrans.estado_destino?.trim()) { setErrorTrans(t('errorEstadoDestinoObligatorio')); return }
+    if (!formTrans.codigo_tipo_proceso?.trim()) { setErrorTrans(t('errorTipoProcesoObligatorio')); return }
+    setGuardandoTrans(true); setErrorTrans('')
+    try {
+      if (transEditando) {
+        await transicionesEstadoApi.actualizar(transEditando.id, {
+          ...formTrans,
+          estado_origen: formTrans.estado_origen || null,
+          id_modelo: formTrans.id_modelo || null,
+          codigo_habilidad: formTrans.codigo_habilidad || null,
+        })
+      } else {
+        await transicionesEstadoApi.crear({
+          ...formTrans,
+          estado_origen: formTrans.estado_origen || null,
+          id_modelo: formTrans.id_modelo || null,
+          codigo_habilidad: formTrans.codigo_habilidad || null,
+        })
+      }
+      if (cerrar) setModalTrans(false)
+      cargarTransiciones()
+    } catch (e) {
+      setErrorTrans(e instanceof Error ? e.message : tc('errorAlGuardar'))
+    } finally { setGuardandoTrans(false) }
   }
 
   // ── Filtros ────────────────────────────────────────────────────────────────
@@ -597,6 +704,10 @@ export default function PaginaProcesosDatosBasicos() {
       )
     : canonicos
 
+  const transicionesFiltradas = filtroCategoriaTrans
+    ? transiciones.filter((tr) => tr.categoria === filtroCategoriaTrans)
+    : transiciones
+
   const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-1.5 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
   const tabCls = (id: TabId) =>
     `px-5 py-2.5 text-sm font-medium transition-colors ${tabActiva === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
@@ -617,6 +728,7 @@ export default function PaginaProcesosDatosBasicos() {
         <button onClick={() => setTabActiva('categorias')} className={tabCls('categorias')}>{t('tabCategorias')}</button>
         <button onClick={() => setTabActiva('tipos')} className={tabCls('tipos')}>{t('tabTipos')}</button>
         <button onClick={() => setTabActiva('estados')} className={tabCls('estados')}>{t('tabEstados')}</button>
+        <button onClick={() => setTabActiva('transiciones')} className={tabCls('transiciones')}>{t('tabTransiciones')}</button>
         <button onClick={() => setTabActiva('canonicos')} className={tabCls('canonicos')}>{t('tabCanonicos')}</button>
       </div>
 
@@ -918,6 +1030,62 @@ export default function PaginaProcesosDatosBasicos() {
                 </TablaCuerpo>
               </Tabla>
             </SortableDndContext>
+          )}
+        </>
+      )}
+
+      {/* ── Tab: Transiciones de Estado ── */}
+      {tabActiva === 'transiciones' && (
+        <>
+          <div className="flex items-center justify-between gap-4">
+            <p className="text-sm text-texto-muted">{t('descripcionTransiciones')}</p>
+            <div className="flex gap-2 items-center">
+              <select className={selectCls} value={filtroCategoriaTrans} onChange={(e) => setFiltroCategoriaTrans(e.target.value)}>
+                <option value="">{t('todasCategorias')}</option>
+                <option value="PROCESAR">PROCESAR</option>
+                <option value="REVERTIR">REVERTIR</option>
+                <option value="CORREGIR">CORREGIR</option>
+              </select>
+              <Boton variante="primario" onClick={abrirNuevaTrans}><Plus size={16} /> {t('btnNuevaTransicion')}</Boton>
+            </div>
+          </div>
+
+          {cargandoTrans ? (
+            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+          ) : transicionesFiltradas.length === 0 ? (
+            <div className="text-sm text-texto-muted text-center py-8">{t('sinTransiciones')}</div>
+          ) : (
+            <Tabla>
+              <TablaCabecera>
+                <tr>
+                  <TablaTh>{t('colCategoriaTrans')}</TablaTh>
+                  <TablaTh>{t('colOrigenTrans')}</TablaTh>
+                  <TablaTh>{t('colDestinoTrans')}</TablaTh>
+                  <TablaTh>{t('colTipoProceso')}</TablaTh>
+                  <TablaTh>{t('colOrden')}</TablaTh>
+                  <TablaTh>{t('colModelo')}</TablaTh>
+                  <TablaTh className="text-right">{tc('acciones')}</TablaTh>
+                </tr>
+              </TablaCabecera>
+              <TablaCuerpo>
+                {transicionesFiltradas.map((tr) => (
+                  <TablaFila key={tr.id} onDoubleClick={() => abrirEditarTrans(tr)}>
+                    <TablaTd><span className="text-xs font-medium bg-primario-muy-claro text-primario px-2 py-0.5 rounded">{tr.categoria}</span></TablaTd>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tr.estado_origen ?? '—'}</code></TablaTd>
+                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tr.estado_destino}</code></TablaTd>
+                    <TablaTd className="text-sm text-texto-muted">{tr.codigo_tipo_proceso}</TablaTd>
+                    <TablaTd className="text-sm text-texto-muted">{tr.orden}</TablaTd>
+                    <TablaTd className="text-sm text-texto-muted">{modelos.find((m) => m.id_modelo === tr.id_modelo)?.nombre_visible ?? '—'}</TablaTd>
+                    <TablaTd className="text-right">
+                      <div className="flex gap-1 justify-end">
+                        <button onClick={() => abrirEditarTrans(tr)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                        <button onClick={() => setItemAEliminar({ tipo: 'transicion', item: tr })} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
+                      </div>
+                    </TablaTd>
+                  </TablaFila>
+                ))}
+              </TablaCuerpo>
+            </Tabla>
           )}
         </>
       )}
@@ -1616,6 +1784,89 @@ export default function PaginaProcesosDatosBasicos() {
       </Modal>
 
       {/* Modal Canónico */}
+      {/* Modal Transición de Estado */}
+      <Modal abierto={modalTrans} alCerrar={() => setModalTrans(false)} titulo={transEditando ? `${t('modalTransicionEditar')}: ${transEditando.estado_origen ?? '—'} → ${transEditando.estado_destino}` : t('modalTransicionNuevo')}>
+        <div className="flex flex-col gap-4 min-w-[520px]">
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-texto-muted">{t('colCategoriaTrans')}</label>
+              <select className={selectCls} value={formTrans.categoria ?? 'PROCESAR'} onChange={(e) => setFormTrans({ ...formTrans, categoria: e.target.value })}>
+                <option value="PROCESAR">PROCESAR</option>
+                <option value="REVERTIR">REVERTIR</option>
+                <option value="CORREGIR">CORREGIR</option>
+              </select>
+            </div>
+            <Input etiqueta={t('colOrden')} type="number" value={String(formTrans.orden ?? 0)} onChange={(e) => setFormTrans({ ...formTrans, orden: Number(e.target.value) })} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-texto-muted">{t('colOrigenTrans')}</label>
+              <select className={selectCls} value={formTrans.estado_origen ?? ''} onChange={(e) => setFormTrans({ ...formTrans, estado_origen: e.target.value || null })}>
+                <option value="">{t('sinEstadoOrigen')}</option>
+                {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_ESTAN','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-texto-muted">{t('colDestinoTrans')} *</label>
+              <select className={selectCls} value={formTrans.estado_destino ?? ''} onChange={(e) => setFormTrans({ ...formTrans, estado_destino: e.target.value })}>
+                <option value="">— {t('seleccionar')} —</option>
+                {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_ESTAN','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-texto-muted">{t('colCategoriaProceso')}</label>
+              <select className={selectCls} value={formTrans.codigo_categoria_proceso ?? ''} onChange={(e) => setFormTrans({ ...formTrans, codigo_categoria_proceso: e.target.value, codigo_tipo_proceso: '' })}>
+                <option value="">— {t('seleccionar')} —</option>
+                {categorias.map((c) => <option key={c.codigo_categoria_proceso} value={c.codigo_categoria_proceso}>{c.nombre_categoria_proceso}</option>)}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-texto-muted">{t('colTipoProceso')} *</label>
+              <select className={selectCls} value={formTrans.codigo_tipo_proceso ?? ''} onChange={(e) => setFormTrans({ ...formTrans, codigo_tipo_proceso: e.target.value })}>
+                <option value="">— {t('seleccionar')} —</option>
+                {tipos.filter((tp) => !formTrans.codigo_categoria_proceso || tp.codigo_categoria_proceso === formTrans.codigo_categoria_proceso).map((tp) => <option key={tp.codigo_tipo_proceso} value={tp.codigo_tipo_proceso}>{tp.nombre_tipo_proceso}</option>)}
+              </select>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-texto-muted">{t('colModelo')}</label>
+            <select className={selectCls} value={formTrans.id_modelo ?? ''} onChange={(e) => setFormTrans({ ...formTrans, id_modelo: e.target.value ? Number(e.target.value) : null })}>
+              <option value="">{t('sinModelo')}</option>
+              {modelos.map((m) => <option key={m.id_modelo} value={m.id_modelo}>{m.nombre_visible}</option>)}
+            </select>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Input etiqueta="n_parallel" type="number" value={String(formTrans.n_parallel ?? 10)} onChange={(e) => setFormTrans({ ...formTrans, n_parallel: Number(e.target.value) })} />
+            <Input etiqueta="batch_size" type="number" value={String(formTrans.batch_size ?? 0)} onChange={(e) => setFormTrans({ ...formTrans, batch_size: Number(e.target.value) })} />
+            <Input etiqueta="max_intentos" type="number" value={String(formTrans.max_intentos ?? 3)} onChange={(e) => setFormTrans({ ...formTrans, max_intentos: Number(e.target.value) })} />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-texto-muted">system_prompt</label>
+            <textarea className={textareaCls} rows={3} value={formTrans.system_prompt ?? ''} onChange={(e) => setFormTrans({ ...formTrans, system_prompt: e.target.value })} />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-texto-muted">prompt_insert</label>
+              <textarea className={textareaCls} rows={3} value={formTrans.prompt_insert ?? ''} onChange={(e) => setFormTrans({ ...formTrans, prompt_insert: e.target.value })} />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-xs font-medium text-texto-muted">prompt_update</label>
+              <textarea className={textareaCls} rows={3} value={formTrans.prompt_update ?? ''} onChange={(e) => setFormTrans({ ...formTrans, prompt_update: e.target.value })} />
+            </div>
+          </div>
+          {errorTrans && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTrans}</p></div>}
+          <PieBotonesModal
+            editando={!!transEditando}
+            onGuardar={() => guardarTransicion(false)}
+            onGuardarYSalir={() => guardarTransicion(true)}
+            onCerrar={() => setModalTrans(false)}
+            cargando={guardandoTrans}
+          />
+        </div>
+      </Modal>
+
       <Modal abierto={modalCan} alCerrar={() => setModalCan(false)} titulo={canEditando ? `Editar Estado Canónico: ${canEditando.nombre} - ${canEditando.codigo_estado_canonico}` : t('modalCanonicoNuevo')}>
         <div className="flex flex-col gap-4 min-w-[440px]">
           <Input etiqueta={t('etiquetaCodigo')} value={formCan.codigo_estado_canonico}
@@ -1648,7 +1899,8 @@ export default function PaginaProcesosDatosBasicos() {
         titulo={
           itemAEliminar?.tipo === 'categoria' ? t('eliminarCategoriaTitulo') :
           itemAEliminar?.tipo === 'tipo' ? t('eliminarTipoTitulo') :
-          itemAEliminar?.tipo === 'canonico' ? t('eliminarCanonicoTitulo') : t('eliminarEstadoTitulo')
+          itemAEliminar?.tipo === 'canonico' ? t('eliminarCanonicoTitulo') :
+          itemAEliminar?.tipo === 'transicion' ? t('eliminarTransicionTitulo') : t('eliminarEstadoTitulo')
         }
         mensaje={
           itemAEliminar?.tipo === 'categoria'
@@ -1657,6 +1909,8 @@ export default function PaginaProcesosDatosBasicos() {
             ? t('eliminarTipoConfirm', { nombre: (itemAEliminar.item as TipoProceso).nombre_tipo_proceso })
             : itemAEliminar?.tipo === 'canonico'
             ? t('eliminarCanonicoConfirm', { nombre: (itemAEliminar.item as EstadoCanonicalProceso).nombre })
+            : itemAEliminar?.tipo === 'transicion'
+            ? t('eliminarTransicionConfirm', { destino: (itemAEliminar.item as TransicionEstado).estado_destino })
             : t('eliminarEstadoConfirm', { nombre: (itemAEliminar?.item as EstadoProceso)?.nombre_estado ?? '' })
         }
         textoConfirmar={tc('eliminar')}

@@ -60,6 +60,7 @@ import type {
   ReeplicarEspacioRespuesta,
   Habilidad,
   TipoAcceso,
+  TransicionEstado,
 } from './tipos'
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
@@ -1286,6 +1287,21 @@ export const procesosDatosBasicosApi = {
     api.post<{ md: string }>(`/procesos-datos-basicos/tipos/${categoria}/${codigo}/generar-md`).then((r) => r.data),
   generarMdEstado: (categoria: string, tipo: string, codigo: string) =>
     api.post<{ md: string }>(`/procesos-datos-basicos/estados/${categoria}/${tipo}/${codigo}/generar-md`).then((r) => r.data),
+}
+
+// ─── Transiciones de Estado ──────────────────────────────────────────────────
+
+export const transicionesEstadoApi = {
+  listar: (categoria?: string) =>
+    api.get<TransicionEstado[]>('/procesos-datos-basicos/transiciones-estado', {
+      params: categoria ? { categoria } : {},
+    }).then((r) => r.data),
+  crear: (datos: Partial<TransicionEstado>) =>
+    api.post<TransicionEstado>('/procesos-datos-basicos/transiciones-estado', datos).then((r) => r.data),
+  actualizar: (id: number, datos: Partial<TransicionEstado>) =>
+    api.put<TransicionEstado>(`/procesos-datos-basicos/transiciones-estado/${id}`, datos).then((r) => r.data),
+  eliminar: (id: number) =>
+    api.delete(`/procesos-datos-basicos/transiciones-estado/${id}`),
 }
 
 // ─── Tareas: Operación ───────────────────────────────────────────────────────

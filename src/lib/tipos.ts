@@ -751,6 +751,35 @@ export interface RegistroLLM {
   fecha_validacion?: string | null
 }
 
+// ─── Transiciones de Estado ─────────────────────────────────────────────────
+
+export interface TransicionEstado {
+  id: number
+  categoria: string
+  estado_origen: string | null
+  estado_destino: string
+  codigo_categoria_proceso: string
+  codigo_tipo_proceso: string
+  id_modelo: number | null
+  orden: number
+  system_prompt: string | null
+  prompt_insert: string | null
+  python_insert: string | null
+  prompt_update: string | null
+  python_update: string | null
+  md: string | null
+  codigo_habilidad: string | null
+  n_parallel: number
+  batch_size: number
+  batch_timeout_seg: number
+  timeout_extraccion_seg: number
+  chunk_size: number
+  overlap: number
+  max_intentos: number
+  created_at?: string
+  updated_at?: string
+}
+
 // ─── Estados Docs ──────────────────────────────────────────────────────────
 
 export interface EstadoDoc {
