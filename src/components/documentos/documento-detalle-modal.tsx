@@ -295,6 +295,12 @@ export function DocumentoDetalleModal({
                   <p className="text-xs text-texto-muted">{colaItem.resultado}</p>
                 </div>
               )}
+              {colaItem?.estado_cola === 'ERROR' && colaItem?.mensaje_error && (
+                <div className="mt-1 rounded border border-error/30 bg-red-50 px-3 py-2">
+                  <span className="text-xs font-semibold text-error block mb-1">Mensaje de error completo</span>
+                  <pre className="text-xs text-error/80 whitespace-pre-wrap break-all max-h-48 overflow-y-auto font-mono">{colaItem.mensaje_error}</pre>
+                </div>
+              )}
             </div>
           </div>
         )}
