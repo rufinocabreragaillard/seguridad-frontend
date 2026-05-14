@@ -19,7 +19,7 @@ import { useAuth } from '@/context/AuthContext'
 import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM, Rol } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
-import { TIPOS_ELEMENTO, normalizarTipo, type TipoElemento } from '@/lib/tipo-elemento'
+import { TIPOS_ELEMENTO, normalizarTipo, etiquetaTipo, type TipoElemento } from '@/lib/tipo-elemento'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 type AppDeFuncion = { codigo_aplicacion: string; aplicaciones?: { nombre_aplicacion: string } }
@@ -101,7 +101,7 @@ export default function PaginaFunciones() {
   const [cargandoApisFuncion, setCargandoApisFuncion] = useState(false)
 
   // Roles de la funcion
-  type RolDeFuncion = { id_rol: number; orden: number; roles: { codigo_rol: string; nombre_rol: string; codigo_grupo: string | null } | null }
+  type RolDeFuncion = { id_rol: number; orden: number; roles: { codigo_rol: string; nombre_rol: string; codigo_grupo: string | null; tipo_acceso: string | null } | null }
   const [rolesDeFuncion, setRolesDeFuncion] = useState<RolDeFuncion[]>([])
   const [cargandoRolesFuncion, setCargandoRolesFuncion] = useState(false)
   const [rolesDisponibles, setRolesDisponibles] = useState<Rol[]>([])
@@ -664,7 +664,7 @@ export default function PaginaFunciones() {
                       .filter((r) => !rolesDeFuncion.some((rf) => rf.id_rol === r.id_rol))
                       .map((r) => (
                         <option key={r.id_rol} value={r.id_rol}>
-                          {r.nombre}{r.codigo_grupo ? ` (${r.codigo_grupo})` : ` (${tc('sistema')})`}
+                          {r.nombre} ({etiquetaTipo(r.tipo_acceso)})
                         </option>
                       ))}
                   </select>
@@ -680,12 +680,10 @@ export default function PaginaFunciones() {
                   : <div className="flex flex-col gap-2">
                       {rolesDeFuncion.map((rf) => (
                         <div key={rf.id_rol} className="flex items-center justify-between px-3 py-2 rounded-lg border border-borde bg-surface">
-                          <div>
+                          <div className="flex items-center gap-2">
+                            <InsigniaTipo tipo={rf.roles?.tipo_acceso} />
                             <span className="text-sm font-medium text-texto">{rf.roles?.nombre_rol || `Rol #${rf.id_rol}`}</span>
-                            <span className="ml-2 text-xs text-texto-muted">{rf.roles?.codigo_rol}</span>
-                            {rf.roles?.codigo_grupo
-                              ? <span className="ml-2 text-xs text-texto-muted">· {rf.roles.codigo_grupo}</span>
-                              : <span className="ml-2 text-xs text-red-500">· {tc('sistema')}</span>}
+                            <span className="text-xs text-texto-muted">{rf.roles?.codigo_rol}</span>
                           </div>
                           <button onClick={() => quitarRolDeFuncion(rf.id_rol)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar">
                             <X size={14} />
