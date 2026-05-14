@@ -99,7 +99,8 @@ export default function PaginaAuditoriaConfiguracion() {
                 <TablaTd className="text-xs text-texto-muted whitespace-nowrap">
                   {new Date(r.fecha_hora).toLocaleString('es-CL', {
                     day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    timeZone: 'America/Santiago'
                   })}
                 </TablaTd>
                 <TablaTd className="text-xs">{r.codigo_usuario}</TablaTd>

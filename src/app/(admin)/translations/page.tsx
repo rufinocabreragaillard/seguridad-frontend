@@ -22,6 +22,7 @@ function formatFecha(iso: string | null) {
     return new Date(iso).toLocaleString('es-CL', {
       day: '2-digit', month: '2-digit', year: 'numeric',
       hour: '2-digit', minute: '2-digit',
+      timeZone: 'America/Santiago',
     })
   } catch { return iso }
 }
