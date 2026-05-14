@@ -562,7 +562,7 @@ export default function PaginaUsuarios() {
             { titulo: 'Grupo por defecto', campo: 'grupo_por_defecto' },
             { titulo: 'Entidad por defecto', campo: 'entidad_por_defecto' },
             { titulo: 'Área por defecto', campo: 'codigo_area' },
-            { titulo: 'Último acceso', campo: 'ultimo_acceso', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL') : '' },
+            { titulo: 'Último acceso', campo: 'ultimo_acceso', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '' },
           ], `usuarios_${grupoActivo || 'todos'}`)}
           disabled={usuariosFiltrados.length === 0}
         >
@@ -621,10 +621,10 @@ export default function PaginaUsuarios() {
                     <InsigniaTipo tipo={u.tipo_acceso} />
                   </TablaTd>
                   <TablaTd className="text-texto-muted text-xs">
-                    {u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL') : '—'}
+                    {u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '—'}
                   </TablaTd>
                   <TablaTd className="text-texto-muted text-xs">
-                    {u.fecha_final ? new Date(u.fecha_final).toLocaleDateString('es-CL') : '—'}
+                    {u.fecha_final ? new Date(u.fecha_final).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '—'}
                   </TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">

@@ -53,7 +53,7 @@ export default function PaginaCostosLLM() {
 
   const exportarUso = () => {
     exportarExcel(filas.map(f => ({
-      Fecha: new Date(f.created_at).toLocaleString('es-CL'),
+      Fecha: new Date(f.created_at).toLocaleString('es-CL', { timeZone: 'America/Santiago' }),
       Proveedor: f.proveedor,
       Modelo: f.modelo,
       Usuario: f.codigo_usuario ?? '',
@@ -207,7 +207,7 @@ export default function PaginaCostosLLM() {
             <TablaCuerpo>
               {filas.map((f) => (
                 <TablaFila key={f.id}>
-                  <TablaTd className="text-xs">{new Date(f.created_at).toLocaleString('es-CL')}</TablaTd>
+                  <TablaTd className="text-xs">{new Date(f.created_at).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}</TablaTd>
                   <TablaTd className="capitalize">{f.proveedor}</TablaTd>
                   <TablaTd className="font-mono text-xs">{f.modelo}</TablaTd>
                   <TablaTd>{f.uso_key_casa ? <Insignia variante="advertencia">Casa</Insignia> : <Insignia variante="exito">{f.alias_credencial}</Insignia>}</TablaTd>

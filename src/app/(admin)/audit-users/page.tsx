@@ -43,7 +43,7 @@ export default function PaginaAuditoriaUsuarios() {
             variante="contorno"
             tamano="sm"
             onClick={() => exportarExcel(filtrados as unknown as Record<string, unknown>[], [
-              { titulo: 'Fecha y hora', campo: 'fecha_hora', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL') : '' },
+              { titulo: 'Fecha y hora', campo: 'fecha_hora', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '' },
               { titulo: 'Usuario que realizó el cambio', campo: 'codigo_usuario' },
               { titulo: 'Operación', campo: 'operacion' },
               { titulo: 'Usuario afectado', campo: 'codigo_registro' },
@@ -97,7 +97,8 @@ export default function PaginaAuditoriaUsuarios() {
                 <TablaTd className="text-xs text-texto-muted whitespace-nowrap">
                   {new Date(r.fecha_hora).toLocaleString('es-CL', {
                     day: '2-digit', month: '2-digit', year: 'numeric',
-                    hour: '2-digit', minute: '2-digit', second: '2-digit'
+                    hour: '2-digit', minute: '2-digit', second: '2-digit',
+                    timeZone: 'America/Santiago'
                   })}
                 </TablaTd>
                 <TablaTd className="text-xs">{r.codigo_usuario}</TablaTd>

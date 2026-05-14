@@ -43,7 +43,7 @@ export default function PaginaAuditoriaConfiguracion() {
             variante="contorno"
             tamano="sm"
             onClick={() => exportarExcel(filtrados as unknown as Record<string, unknown>[], [
-              { titulo: 'Fecha y hora', campo: 'fecha_hora', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL') : '' },
+              { titulo: 'Fecha y hora', campo: 'fecha_hora', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '' },
               { titulo: 'Usuario', campo: 'codigo_usuario' },
               { titulo: 'Tabla', campo: 'tabla_afectada' },
               { titulo: 'Operación', campo: 'operacion' },

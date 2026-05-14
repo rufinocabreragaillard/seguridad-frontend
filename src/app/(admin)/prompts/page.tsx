@@ -733,7 +733,7 @@ export default function PaginaPrompts() {
           <p className="text-sm text-texto-muted">
             {estadoTrad ? (
               <>
-                {t('ultimaGeneracion')}: <strong>{estadoTrad.ultima_generacion ? new Date(estadoTrad.ultima_generacion).toLocaleString('es-CL') : '—'}</strong>.{' '}
+                {t('ultimaGeneracion')}: <strong>{estadoTrad.ultima_generacion ? new Date(estadoTrad.ultima_generacion).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '—'}</strong>.{' '}
                 {t('pendiente')}: <strong>{estadoTrad.pendiente ? tc('si') : tc('no')}</strong>.
               </>
             ) : (

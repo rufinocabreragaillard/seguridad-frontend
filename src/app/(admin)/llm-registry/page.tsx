@@ -793,7 +793,7 @@ export default function PaginaRegistroLLM() {
                 <TablaCuerpo>
                   {filas.map((f) => (
                     <TablaFila key={f.id}>
-                      <TablaTd className="text-xs">{new Date(f.created_at).toLocaleString('es-CL')}</TablaTd>
+                      <TablaTd className="text-xs">{new Date(f.created_at).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}</TablaTd>
                       <TablaTd className="text-xs">{f.codigo_grupo}</TablaTd>
                       <TablaTd className="capitalize">{f.proveedor}</TablaTd>
                       <TablaTd className="font-mono text-xs">{f.modelo}</TablaTd>

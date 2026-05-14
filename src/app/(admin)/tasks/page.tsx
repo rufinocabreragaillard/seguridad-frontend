@@ -160,7 +160,7 @@ export default function PaginaTareasMantenedor() {
             render: (tarea: Tarea) =>
               tarea.fecha_esperada ? (
                 <span className="text-sm text-texto-muted">
-                  {new Date(tarea.fecha_esperada).toLocaleDateString('es-CL')}
+                  {new Date(tarea.fecha_esperada).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}
                 </span>
               ) : (
                 <span className="text-texto-light">—</span>

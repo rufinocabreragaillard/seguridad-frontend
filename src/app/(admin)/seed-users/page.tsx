@@ -620,8 +620,8 @@ export default function PaginaUsuariosSemilla() {
                 <TablaTd onDoubleClick={() => abrirEditar(u)}>
                   <InsigniaTipo tipo={u.tipo_acceso} />
                 </TablaTd>
-                <TablaTd className="text-texto-muted text-xs">{u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL') : '—'}</TablaTd>
-                <TablaTd className="text-texto-muted text-xs">{u.fecha_final ? new Date(u.fecha_final).toLocaleDateString('es-CL') : '—'}</TablaTd>
+                <TablaTd className="text-texto-muted text-xs">{u.fecha_inicial ? new Date(u.fecha_inicial).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '—'}</TablaTd>
+                <TablaTd className="text-texto-muted text-xs">{u.fecha_final ? new Date(u.fecha_final).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' }) : '—'}</TablaTd>
                 <TablaTd>
                   <div className="flex items-center justify-end gap-1">
                     <button

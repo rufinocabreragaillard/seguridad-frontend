@@ -302,7 +302,7 @@ export default function PaginaEntidades() {
                   { titulo: 'Nombre', campo: 'nombre' },
                   { titulo: 'Descripción', campo: 'descripcion' },
                   { titulo: 'Nombre', campo: 'nombre', formato: (v) => v ? 'Activo' : 'Inactivo' },
-                  { titulo: 'Fecha creación', campo: 'fecha_creacion', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL') : '' },
+                  { titulo: 'Fecha creación', campo: 'fecha_creacion', formato: (v) => v ? new Date(v as string).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '' },
                 ], `entidades_${grupoActivo || 'todos'}`)}
                 disabled={entidadesFiltradas.length === 0}
               >

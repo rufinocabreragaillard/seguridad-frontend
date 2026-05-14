@@ -648,7 +648,7 @@ export default function PaginaChatUsuario() {
       d.ubicacion_documento || '',
       d.estado_area || '',
       d.estado_cola || '',
-      d.fecha_fin ? new Date(d.fecha_fin).toLocaleString('es-CL') : '',
+      d.fecha_fin ? new Date(d.fecha_fin).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '',
     ])
     const csv = [headers, ...filas]
       .map((r) => r.map((v) => `"${String(v).replace(/"/g, '""')}"`).join(','))
@@ -1303,12 +1303,12 @@ export default function PaginaChatUsuario() {
                     <span>
                       Creado:{' '}
                       {espacioActivoObj.fecha_creacion
-                        ? new Date(espacioActivoObj.fecha_creacion).toLocaleDateString('es-CL')
+                        ? new Date(espacioActivoObj.fecha_creacion).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })
                         : '—'}
                     </span>
                     {espacioActivoObj.tipo_espacio === 'AREA' ? (
                       espacioActivoObj.fecha_termino
-                        ? <span>Vence: {new Date(espacioActivoObj.fecha_termino).toLocaleDateString('es-CL')}</span>
+                        ? <span>Vence: {new Date(espacioActivoObj.fecha_termino).toLocaleDateString('es-CL', { timeZone: 'America/Santiago' })}</span>
                         : <span className="text-texto-muted italic">Sin fecha de vencimiento definida</span>
                     ) : (
                       <span className="text-exito font-medium">Permanente (sin vencimiento)</span>
@@ -1316,7 +1316,7 @@ export default function PaginaChatUsuario() {
                     {espacioActivoObj.fecha_ultimo_refresco && (
                       <span>
                         Último refresco:{' '}
-                        {new Date(espacioActivoObj.fecha_ultimo_refresco).toLocaleString('es-CL')}
+                        {new Date(espacioActivoObj.fecha_ultimo_refresco).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}
                       </span>
                     )}
                     {espacioActivoObj.alcance === 'AREA' && espacioActivoObj.codigo_ubicacion_area && (
@@ -1409,7 +1409,7 @@ export default function PaginaChatUsuario() {
                               </Insignia>
                             </TablaTd>
                             <TablaTd className="text-xs text-texto-muted">
-                              {d.fecha_fin ? new Date(d.fecha_fin).toLocaleString('es-CL') : '—'}
+                              {d.fecha_fin ? new Date(d.fecha_fin).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '—'}
                             </TablaTd>
                             <TablaTd>
                               <div className="flex items-center justify-end gap-1">

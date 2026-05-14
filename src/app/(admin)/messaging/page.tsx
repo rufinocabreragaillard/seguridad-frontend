@@ -792,7 +792,7 @@ function TabHistorial() {
           ) : items.map((m) => (
             <TablaFila key={m.id_mensaje}>
               <TablaTd className="text-xs text-texto-muted whitespace-nowrap">
-                {new Date(m.fecha_hora).toLocaleString('es-CL')}
+                {new Date(m.fecha_hora).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}
               </TablaTd>
               <TablaTd>
                 <span className="inline-flex items-center gap-1">{iconoCanal(m.codigo_canal)} {m.codigo_canal}</span>
@@ -842,7 +842,7 @@ function TabHistorial() {
             <div><strong>Plantilla:</strong> {seleccionado.codigo_plantilla || '—'}</div>
             <div><strong>Usuario:</strong> {seleccionado.codigo_usuario || '—'}</div>
             <div><strong>Destino:</strong> {seleccionado.origen_destino || '—'}</div>
-            <div><strong>Fecha:</strong> {new Date(seleccionado.fecha_hora).toLocaleString('es-CL')}</div>
+            <div><strong>Fecha:</strong> {new Date(seleccionado.fecha_hora).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}</div>
             {seleccionado.asunto && <div><strong>Asunto:</strong> {seleccionado.asunto}</div>}
             {seleccionado.mensaje_error && (
               <div className="bg-red-50 text-red-700 rounded-lg p-3">

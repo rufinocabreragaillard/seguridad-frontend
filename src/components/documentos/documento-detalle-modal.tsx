@@ -239,7 +239,7 @@ export function DocumentoDetalleModal({
               <div className="col-span-4 md:col-span-6 flex flex-col">
                 <p className="text-xs text-texto-muted mb-1">Modificado</p>
                 <div className="flex items-end flex-1">
-                  <p className="text-sm text-texto">{documento.fecha_modificacion ? new Date(documento.fecha_modificacion).toLocaleString('es-CL') : '—'}</p>
+                  <p className="text-sm text-texto">{documento.fecha_modificacion ? new Date(documento.fecha_modificacion).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '—'}</p>
                 </div>
               </div>
               {documento.detalle_estado && (
@@ -270,11 +270,11 @@ export function DocumentoDetalleModal({
                 </div>
                 <div>
                   <span className="text-xs text-texto-muted block">Inicio</span>
-                  <span>{colaItem?.fecha_inicio ? new Date(colaItem.fecha_inicio).toLocaleString('es-CL') : '—'}</span>
+                  <span>{colaItem?.fecha_inicio ? new Date(colaItem.fecha_inicio).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '—'}</span>
                 </div>
                 <div>
                   <span className="text-xs text-texto-muted block">Término</span>
-                  <span>{colaItem?.fecha_fin ? new Date(colaItem.fecha_fin).toLocaleString('es-CL') : '—'}</span>
+                  <span>{colaItem?.fecha_fin ? new Date(colaItem.fecha_fin).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '—'}</span>
                 </div>
                 <div>
                   <span className="text-xs text-texto-muted block">Duración</span>
@@ -289,16 +289,16 @@ export function DocumentoDetalleModal({
                   <span className="font-mono text-xs">{colaItem?.modelo_usado || '—'}</span>
                 </div>
               </div>
-              {colaItem?.resultado && (
+              {colaItem?.resultado && colaItem?.estado_cola !== 'ERROR' && (
                 <div>
                   <span className="text-xs text-texto-muted block mb-1">Detalle resultado</span>
                   <p className="text-xs text-texto-muted">{colaItem.resultado}</p>
                 </div>
               )}
-              {colaItem?.estado_cola === 'ERROR' && colaItem?.mensaje_error && (
+              {colaItem?.estado_cola === 'ERROR' && (colaItem?.mensaje_error || colaItem?.resultado) && (
                 <div className="mt-1 rounded border border-error/30 bg-red-50 px-3 py-2">
-                  <span className="text-xs font-semibold text-error block mb-1">Mensaje de error completo</span>
-                  <pre className="text-xs text-error/80 whitespace-pre-wrap break-all max-h-48 overflow-y-auto font-mono">{colaItem.mensaje_error}</pre>
+                  <span className="text-xs font-semibold text-error block mb-1">Mensaje de error</span>
+                  <pre className="text-xs text-error/80 whitespace-pre-wrap break-all max-h-48 overflow-y-auto font-mono">{colaItem.mensaje_error || colaItem.resultado}</pre>
                 </div>
               )}
             </div>
@@ -351,7 +351,7 @@ export function DocumentoDetalleModal({
                   <span><b className="text-texto">{(textoData.caracteres || 0).toLocaleString()}</b> {t('caracteres')}</span>
                   {textoData.paginas ? <span><b className="text-texto">{textoData.paginas}</b> {t('paginas')}</span> : null}
                   {textoData.fecha_extraccion ? (
-                    <span>{t('extraido')} <b className="text-texto">{new Date(textoData.fecha_extraccion).toLocaleString('es-CL')}</b></span>
+                    <span>{t('extraido')} <b className="text-texto">{new Date(textoData.fecha_extraccion).toLocaleString('es-CL', { timeZone: 'America/Santiago' })}</b></span>
                   ) : null}
                 </div>
                 <TextoCifrado payload={textoData.texto_fuente} />

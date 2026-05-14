@@ -6,10 +6,11 @@
  */
 
 const LOCALE_ES = 'es-CL'
+const TZ_CHILE = 'America/Santiago'
 
 export type FormatoFecha = 'corto' | 'mediano' | 'completo' | 'fecha' | 'hora'
 
-/** Formatea un Date|string|null a fecha legible en es-CL. */
+/** Formatea un Date|string|null a fecha legible en es-CL, siempre en hora de Chile. */
 export function formatFecha(
   valor: string | Date | null | undefined,
   formato: FormatoFecha = 'corto',
@@ -20,16 +21,16 @@ export function formatFecha(
 
   switch (formato) {
     case 'fecha':
-      return d.toLocaleDateString(LOCALE_ES, { dateStyle: 'short' })
+      return d.toLocaleDateString(LOCALE_ES, { dateStyle: 'short', timeZone: TZ_CHILE })
     case 'hora':
-      return d.toLocaleTimeString(LOCALE_ES, { timeStyle: 'short' })
+      return d.toLocaleTimeString(LOCALE_ES, { timeStyle: 'short', timeZone: TZ_CHILE })
     case 'mediano':
-      return d.toLocaleString(LOCALE_ES, { dateStyle: 'medium', timeStyle: 'short' })
+      return d.toLocaleString(LOCALE_ES, { dateStyle: 'medium', timeStyle: 'short', timeZone: TZ_CHILE })
     case 'completo':
-      return d.toLocaleString(LOCALE_ES, { dateStyle: 'long', timeStyle: 'medium' })
+      return d.toLocaleString(LOCALE_ES, { dateStyle: 'long', timeStyle: 'medium', timeZone: TZ_CHILE })
     case 'corto':
     default:
-      return d.toLocaleString(LOCALE_ES, { dateStyle: 'short', timeStyle: 'short' })
+      return d.toLocaleString(LOCALE_ES, { dateStyle: 'short', timeStyle: 'short', timeZone: TZ_CHILE })
   }
 }
 

@@ -192,7 +192,8 @@ export default function PaginaDashboard() {
                     </div>
                     <span className="text-xs text-texto-muted shrink-0">
                       {new Date(reg.fecha_hora).toLocaleString('es-CL', {
-                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit'
+                        day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit',
+                        timeZone: 'America/Santiago'
                       })}
                     </span>
                   </div>
