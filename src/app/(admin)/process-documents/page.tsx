@@ -202,6 +202,8 @@ function PaginaProcesarDocumentosInterna() {
   const resolveColaRef = useRef<(() => void) | null>(null)
   const scanAbortRef = useRef<AbortController | null>(null)
   const estadoUrlAplicadoRef = useRef(false)
+  // true una vez que la selección inicial de proceso quedó aplicada (evita carga prematura de docs)
+  const [seleccionInicialLista, setSeleccionInicialLista] = useState(false)
 
   // Modal confirmación carga: guarda el resultado del escaneo hasta que el usuario confirme
   type ScanResult = NonNullable<Awaited<ReturnType<typeof escanearArchivosDirectorio>>>
@@ -355,16 +357,20 @@ function PaginaProcesarDocumentosInterna() {
     cargarDatosIniciales()
   }, [cargarDatosIniciales])
 
-  // Seleccionar proceso según ?estado=XXX del dashboard, una vez cargados los catálogos
+  // Seleccionar proceso al cargar: si hay ?estado=XXX lo usa, si no autoselecciona el primero
   useEffect(() => {
-    if (!estadoDesdeUrl || estadoUrlAplicadoRef.current) return
     if (cargandoInicial || (procesos.length === 0 && procesosCorregir.length === 0)) return
+    if (estadoUrlAplicadoRef.current) return
     estadoUrlAplicadoRef.current = true
-    const matchProcesar = procesos.find((p) => p.estado_origen === estadoDesdeUrl)
-    const matchCorregir = procesosCorregir.find((p) => p.estado_origen === estadoDesdeUrl)
-    if (matchProcesar) { setProcesoSel(matchProcesar.codigo_proceso); setCategoriaSel('PROCESAR') }
-    else if (matchCorregir) { setProcesoSel(matchCorregir.codigo_proceso); setCategoriaSel('CORREGIR') }
-    else if (procesos.length > 0) setProcesoSel(procesos[0].codigo_proceso)
+    if (estadoDesdeUrl) {
+      const matchProcesar = procesos.find((p) => p.estado_origen === estadoDesdeUrl)
+      const matchCorregir = procesosCorregir.find((p) => p.estado_origen === estadoDesdeUrl)
+      if (matchProcesar) { setProcesoSel(matchProcesar.codigo_proceso); setCategoriaSel('PROCESAR'); setSeleccionInicialLista(true); return }
+      if (matchCorregir) { setProcesoSel(matchCorregir.codigo_proceso); setCategoriaSel('CORREGIR'); setSeleccionInicialLista(true); return }
+    }
+    // Sin ?estado= (o sin coincidencia): autoseleccionar el primer proceso PROCESAR
+    if (procesos.length > 0) { setProcesoSel(procesos[0].codigo_proceso); setCategoriaSel('PROCESAR') }
+    setSeleccionInicialLista(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estadoDesdeUrl, cargandoInicial, procesos, procesosCorregir])
 
@@ -489,17 +495,19 @@ function PaginaProcesarDocumentosInterna() {
   }, [procesoSel, esCargar, esExtraer, esRestablecer, esResetearCargado, pasoActual, ubicacionSel, ubicaciones, busqueda, estadoFiltro, filtroLibre])
 
   // Resetear lista cuando cambian filtros de proceso/alcance/ubicación.
-  // No cargar mientras los datos iniciales (catálogo de procesos) aún están cargando.
-  // Sin proceso seleccionado se muestran todos los documentos (sin filtro de estado).
+  // No cargar mientras los datos iniciales (catálogo de procesos) aún están cargando,
+  // ni antes de que la selección inicial de proceso haya sido aplicada (evita mostrar todos
+  // los docs por un render mientras el autoselect del primer proceso aún no ocurrió).
   // Nota: a proposito NO incluimos `busqueda` en las deps; eso lo maneja el
   // boton/Enter del filtro para no re-cargar con cada tecla.
   useEffect(() => {
     if (cargandoInicial) return
+    if (!seleccionInicialLista) return
     setDocumentos([])
     setYaCargado(false)
     cargarDocumentos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [procesoSel, ubicacionSel, estadoFiltro, filtroLibre, cargandoInicial])
+  }, [procesoSel, ubicacionSel, estadoFiltro, filtroLibre, cargandoInicial, seleccionInicialLista])
 
   // Separar en dos grupos: encontrados en disco y no encontrados.
   // Si no hay directorio escaneado, todos van al grupo "enDisco".
