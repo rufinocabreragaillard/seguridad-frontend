@@ -46,4 +46,29 @@ test.describe('Habilidades del Sistema (/skills)', () => {
     await expect(page.locator('option[value="DOCUMENTO"]').first()).toBeAttached({ timeout: 10000 })
     await expect(page.locator('option[value="LLM"]').first()).toBeAttached({ timeout: 10000 })
   })
+
+  test('modal de edición muestra los 3 botones estándar (Guardar / Guardar y Salir / Salir) y Salir cierra', async ({ page }) => {
+    await page.waitForSelector('tbody tr', { timeout: 15000 })
+    const filas = page.locator('tbody tr')
+    const count = await filas.count()
+    if (count === 0) { test.skip() }
+    await filas.first().locator('td').first().dblclick()
+    const dialog = page.locator('[role="dialog"]')
+    await expect(dialog).toBeVisible({ timeout: 5000 })
+    await expect(dialog).toContainText('Editar Habilidad')
+
+    // Los 3 botones del pie deben existir y ser visibles
+    await expect(dialog.getByRole('button', { name: /^Guardar$/ })).toBeVisible()
+    await expect(dialog.getByRole('button', { name: /^Guardar y Salir$/ })).toBeVisible()
+    const btnSalir = dialog.getByRole('button', { name: /^Salir$/ })
+    await expect(btnSalir).toBeVisible()
+
+    // NO debe aparecer "Crear" cuando se está editando
+    await expect(dialog.getByRole('button', { name: /^Crear$/ })).toHaveCount(0)
+    await expect(dialog.getByRole('button', { name: /^Crear y Salir$/ })).toHaveCount(0)
+
+    // Salir debe cerrar el modal
+    await btnSalir.click()
+    await expect(dialog).toBeHidden({ timeout: 3000 })
+  })
 })
