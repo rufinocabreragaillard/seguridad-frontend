@@ -2409,5 +2409,23 @@
     "USUARIO_desc": "Usuário — disponível para qualquer papel de usuário final",
     "ADMINISTRADOR_desc": "Administração — apenas administradores de grupo",
     "SISTEMA_desc": "Sistema — apenas super-admin pode atribuir"
+  },
+  "classifyPrompt": {
+    "titulo": "Prompt de classificação",
+    "descripcion": "Visualize o prompt completo que o LLM recebe ao classificar um documento do grupo ativo.",
+    "grupoActivo": "Grupo",
+    "codigoDocumento": "Documento (opcional)",
+    "placeholderDocumento": "código",
+    "verConMarcas": "Mostrar fontes",
+    "systemPrompt": "System Prompt",
+    "userPrompt": "User Prompt",
+    "fuentes": "Fontes",
+    "longitudTotal": "Comprimento total",
+    "copiarSinMarcas": "Copiar sem marcadores",
+    "copiado": "Copiado para a área de transferência",
+    "errorCopiar": "Não foi possível copiar",
+    "errorCargar": "Erro ao carregar o prompt",
+    "editar": "Editar",
+    "vacio": "vazio"
   }
 }

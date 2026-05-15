@@ -1978,6 +1978,33 @@ export const tiposAccesoApi = {
 // ─── Limpieza de logs ────────────────────────────────────────────────────────
 import type { PoliticaLimpieza, ResultadoLimpieza } from './tipos'
 
+export interface FuentePromptClasificar {
+  campo: string
+  tabla: string
+  codigo: string
+  longitud: number
+}
+
+export interface PromptVivoClasificar {
+  codigo_grupo: string
+  codigo_documento: number | null
+  system_prompt_limpio: string
+  system_prompt_marcado: string
+  user_prompt_limpio: string
+  user_prompt_marcado: string
+  longitud_total_limpio: number
+  fuentes: FuentePromptClasificar[]
+}
+
+export const clasificarApi = {
+  promptVivo: (codigoDocumento?: number) =>
+    api
+      .get<PromptVivoClasificar>('/clasificar/prompt-vivo', {
+        params: codigoDocumento ? { codigo_documento: codigoDocumento } : {},
+      })
+      .then((r) => r.data),
+}
+
 export const limpiezaApi = {
   listar: () => api.get<PoliticaLimpieza[]>('/limpieza').then((r) => r.data),
   actualizar: (codigoTabla: string, datos: Partial<Pick<PoliticaLimpieza, 'modo' | 'valor' | 'activa'>>) =>

@@ -2430,5 +2430,23 @@
     "USUARIO_desc": "User — available for any end-user role",
     "ADMINISTRADOR_desc": "Administration — group administrators only",
     "SISTEMA_desc": "System — super-admin only can assign"
+  },
+  "classifyPrompt": {
+    "titulo": "Classification Prompt",
+    "descripcion": "View the full prompt the LLM receives when classifying a document in the active group.",
+    "grupoActivo": "Group",
+    "codigoDocumento": "Document (optional)",
+    "placeholderDocumento": "code",
+    "verConMarcas": "Show sources",
+    "systemPrompt": "System Prompt",
+    "userPrompt": "User Prompt",
+    "fuentes": "Sources",
+    "longitudTotal": "Total length",
+    "copiarSinMarcas": "Copy without markers",
+    "copiado": "Copied to clipboard",
+    "errorCopiar": "Could not copy",
+    "errorCargar": "Error loading prompt",
+    "editar": "Edit",
+    "vacio": "empty"
   }
 }
