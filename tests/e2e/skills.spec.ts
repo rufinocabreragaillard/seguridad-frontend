@@ -32,8 +32,8 @@ test.describe('Habilidades del Sistema (/skills)', () => {
     const filas = page.locator('tbody tr')
     const count = await filas.count()
     if (count === 0) { test.skip() }
-    // Doble clic en la celda de código (1ª celda)
-    await filas.first().locator('td').first().dblclick()
+    // Clic en botón Editar (más robusto que dblclick que puede generar selección de texto)
+    await filas.first().getByRole('button', { name: 'Editar' }).click()
     await expect(page.locator('[role="dialog"]')).toBeVisible({ timeout: 5000 })
     await expect(page.locator('[role="dialog"]')).toContainText('Editar Habilidad')
   })
@@ -52,7 +52,7 @@ test.describe('Habilidades del Sistema (/skills)', () => {
     const filas = page.locator('tbody tr')
     const count = await filas.count()
     if (count === 0) { test.skip() }
-    await filas.first().locator('td').first().dblclick()
+    await filas.first().getByRole('button', { name: 'Editar' }).click()
     const dialog = page.locator('[role="dialog"]')
     await expect(dialog).toBeVisible({ timeout: 5000 })
     await expect(dialog).toContainText('Editar Habilidad')
