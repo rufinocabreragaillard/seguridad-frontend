@@ -156,7 +156,7 @@ export default function PaginaHabilidades() {
     setModalAbierto(true)
   }
 
-  const guardar = async () => {
+  const guardar = async (cerrar: boolean) => {
     if (!form.nombre_habilidad.trim()) { setError('El nombre es obligatorio.'); return }
     if (!form.prompt.trim()) { setError('El prompt es obligatorio.'); return }
     if (form.salida_destino === 'DOC_COLUMNA' && !form.salida_columna.trim()) {
@@ -178,16 +178,27 @@ export default function PaginaHabilidades() {
         salida_columna:   form.salida_destino === 'DOC_COLUMNA' ? form.salida_columna.trim() : undefined,
         formato_salida:   form.formato_salida,
       }
+      let codigoGuardado = editando?.codigo_habilidad
       if (editando) {
         await habilidadesApi.actualizar(editando.codigo_habilidad, payload)
       } else {
         if (form.codigo_habilidad.trim()) {
           payload.codigo_habilidad = form.codigo_habilidad.trim().toUpperCase().replace(/\s+/g, '_') as unknown as string
+          codigoGuardado = payload.codigo_habilidad as string
         }
-        await habilidadesApi.crear(payload)
+        const creada = await habilidadesApi.crear(payload)
+        codigoGuardado = (creada as Habilidad)?.codigo_habilidad ?? codigoGuardado
       }
-      setModalAbierto(false)
       await cargar()
+      if (cerrar) {
+        setModalAbierto(false)
+      } else if (!editando && codigoGuardado) {
+        const recargada = await habilidadesApi.listar()
+        const nueva = recargada.find((x) => x.codigo_habilidad === codigoGuardado)
+        if (nueva) {
+          setEditando(nueva)
+        }
+      }
     } catch (e: unknown) {
       const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setError(msg || 'Error al guardar la habilidad.')
@@ -497,8 +508,10 @@ export default function PaginaHabilidades() {
         )}
 
         <PieBotonesModal
-          onCancelar={() => setModalAbierto(false)}
-          onGuardar={guardar}
+          editando={!!editando}
+          onGuardar={() => guardar(false)}
+          onGuardarYSalir={() => guardar(true)}
+          onCerrar={() => setModalAbierto(false)}
           cargando={guardando}
         />
       </Modal>
