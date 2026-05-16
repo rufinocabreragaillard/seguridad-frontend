@@ -62,7 +62,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [tabModalTipo, setTabModalTipo] = useState<'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update'>('datos')
   const [tipoEditando, setTipoEditando] = useState<TipoCaractDocs | null>(null)
   const [formTipo, setFormTipo] = useState({
-    codigo_tipo_docs: '', nombre_tipo_docs: '',
+    codigo_tipo_docs: '', nombre_tipo_docs: '', max_por_tipo: 1,
     prompt_insert: '', prompt_update: '', system_prompt: '',
     python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
   })
@@ -216,7 +216,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   // ── CRUD Tipos ────────────────────────────────────────────────────────────
   const abrirNuevoTipo = () => {
     setTipoEditando(null)
-    setFormTipo({ codigo_tipo_docs: '', nombre_tipo_docs: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setFormTipo({ codigo_tipo_docs: '', nombre_tipo_docs: '', max_por_tipo: 1, prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setTabModalTipo('datos')
     setErrorTipo('')
     setModalTipo(true)
@@ -228,6 +228,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     setFormTipo({
       codigo_tipo_docs: tipo.codigo_tipo_docs,
       nombre_tipo_docs: tipo.nombre_tipo_docs,
+      max_por_tipo: tipo.max_por_tipo ?? 1,
       prompt_insert: t2.prompt_insert as string || '',
       prompt_update: t2.prompt_update as string || '',
       system_prompt: tipo.system_prompt || '',
@@ -253,6 +254,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
       if (tipoEditando) {
         await categoriasCaractDocsApi.actualizarTipo(catSeleccionada.codigo_cat_docs, tipoEditando.codigo_tipo_docs, {
           nombre_tipo_docs: formTipo.nombre_tipo_docs,
+          max_por_tipo: formTipo.max_por_tipo,
           prompt_insert: formTipo.prompt_insert || null,
           prompt_update: formTipo.prompt_update || null,
           system_prompt: formTipo.system_prompt || null,
@@ -267,6 +269,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           codigo_cat_docs: catSeleccionada.codigo_cat_docs,
           ...(formTipo.codigo_tipo_docs.trim() ? { codigo_tipo_docs: formTipo.codigo_tipo_docs.toUpperCase() } : { codigo_tipo_docs: '' }),
           nombre_tipo_docs: formTipo.nombre_tipo_docs,
+          max_por_tipo: formTipo.max_por_tipo,
           ...(formTipo.prompt_insert ? { prompt_insert: formTipo.prompt_insert } : {}),
           ...(formTipo.prompt_update ? { prompt_update: formTipo.prompt_update } : {}),
           ...(formTipo.system_prompt ? { system_prompt: formTipo.system_prompt } : {}),
@@ -300,6 +303,20 @@ export default function PaginaCategoriasCaracteristicaDocs() {
       await categoriasCaractDocsApi.reordenar(nuevaLista.map((c, i) => ({ codigo: c.codigo_cat_docs, orden: c.orden ?? i })))
     } catch {
       cargarCategorias()
+    }
+  }
+
+  // ── Reordenar tipos (drag-and-drop) ──────────────────────────────────────
+  const reordenarTipos = async (nuevaLista: TipoCaractDocs[]) => {
+    if (!catSeleccionada) return
+    setTipos(nuevaLista)
+    try {
+      await categoriasCaractDocsApi.reordenarTipos(
+        catSeleccionada.codigo_cat_docs,
+        nuevaLista.map((tp, i) => ({ codigo: tp.codigo_tipo_docs, orden: (i + 1) * 10 }))
+      )
+    } catch {
+      cargarTipos()
     }
   }
 
@@ -433,35 +450,46 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                 <span className="text-sm text-texto-muted">{t('tiposDe', { nombre: catSeleccionada.nombre_cat_docs })}</span>
                 <Boton variante="primario" tamano="sm" onClick={abrirNuevoTipo} className="ml-auto"><Plus size={14} />{t('nuevoTipo')}</Boton>
               </div>
-              <Tabla>
-                <TablaCabecera>
-                  <tr>
-                    <TablaTh>{t('colNombre')}</TablaTh>
-                    
-                    <TablaTh>{t('colCodigo')}</TablaTh>
-                    <TablaTh className="text-right">{tc('acciones')}</TablaTh>
-                  </tr>
-                </TablaCabecera>
-                <TablaCuerpo>
-                  {cargandoTipos ? (
-                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={4 as never}>{tc('cargando')}</TablaTd></TablaFila>
-                  ) : tipos.length === 0 ? (
-                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={4 as never}>{t('sinTipos')}</TablaTd></TablaFila>
-                  ) : tipos.map((tipo) => (
-                    <TablaFila key={tipo.codigo_tipo_docs}>
-                      <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipo(tipo)}>{tipo.nombre_tipo_docs}</TablaTd>
-                      <TablaTd></TablaTd>
-                      <TablaTd onDoubleClick={() => abrirEditarTipo(tipo)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tipo.codigo_tipo_docs}</code></TablaTd>
-                      <TablaTd>
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => abrirEditarTipo(tipo)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"><Pencil size={14} /></button>
-                          <button onClick={() => setConfirmTipo(tipo)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"><Trash2 size={14} /></button>
-                        </div>
-                      </TablaTd>
-                    </TablaFila>
-                  ))}
-                </TablaCuerpo>
-              </Tabla>
+              <SortableDndContext
+                items={tipos as unknown as Record<string, unknown>[]}
+                getId={(item) => (item as unknown as TipoCaractDocs).codigo_tipo_docs}
+                onReorder={(items) => reordenarTipos(items as unknown as TipoCaractDocs[])}
+              >
+                <Tabla>
+                  <TablaCabecera>
+                    <tr>
+                      <TablaTh className="w-8" />
+                      <TablaTh>{t('colNombre')}</TablaTh>
+                      <TablaTh>{t('colMaxPorTipo')}</TablaTh>
+                      <TablaTh>{t('colCodigo')}</TablaTh>
+                      <TablaTh className="text-right">{tc('acciones')}</TablaTh>
+                    </tr>
+                  </TablaCabecera>
+                  <TablaCuerpo>
+                    {cargandoTipos ? (
+                      <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={5 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                    ) : tipos.length === 0 ? (
+                      <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={5 as never}>{t('sinTipos')}</TablaTd></TablaFila>
+                    ) : tipos.map((tipo) => (
+                      <SortableRow key={tipo.codigo_tipo_docs} id={tipo.codigo_tipo_docs} onDoubleClick={() => abrirEditarTipo(tipo)}>
+                        <TablaTd className="font-medium">{tipo.nombre_tipo_docs}</TablaTd>
+                        <TablaTd>
+                          <span className="inline-flex min-w-[2.25rem] justify-center rounded-md bg-fondo px-2 py-0.5 text-xs font-mono">
+                            {tipo.max_por_tipo ?? 1}
+                          </span>
+                        </TablaTd>
+                        <TablaTd><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tipo.codigo_tipo_docs}</code></TablaTd>
+                        <TablaTd>
+                          <div className="flex items-center justify-end gap-1">
+                            <button onClick={() => abrirEditarTipo(tipo)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors"><Pencil size={14} /></button>
+                            <button onClick={() => setConfirmTipo(tipo)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors"><Trash2 size={14} /></button>
+                          </div>
+                        </TablaTd>
+                      </SortableRow>
+                    ))}
+                  </TablaCuerpo>
+                </Tabla>
+              </SortableDndContext>
             </>
           ) : (
             <p className="text-sm text-texto-muted">{t('seleccioneCategoria')}</p>
@@ -723,6 +751,23 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               <Input etiqueta={t('etiquetaNombreTipo')} value={formTipo.nombre_tipo_docs}
                 onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_docs: e.target.value })}
                 placeholder={t('placeholderNombreTipo')} />
+              <div>
+                <label className="block text-sm font-medium text-texto mb-1.5">
+                  {t('etiquetaMaxPorTipo')}
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={50}
+                  value={formTipo.max_por_tipo}
+                  onChange={(e) => {
+                    const v = parseInt(e.target.value, 10)
+                    setFormTipo({ ...formTipo, max_por_tipo: Number.isFinite(v) && v >= 1 ? Math.min(v, 50) : 1 })
+                  }}
+                  className="w-32 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none"
+                />
+                <p className="text-xs text-texto-muted mt-1">{t('hintMaxPorTipo')}</p>
+              </div>
               {tipoEditando && (
                 <Input etiqueta={t('colCodigo')} value={formTipo.codigo_tipo_docs} disabled readOnly />
               )}

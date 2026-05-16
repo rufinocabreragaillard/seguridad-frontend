@@ -715,6 +715,7 @@ export interface TipoCaractDocs {
   nombre_tipo_docs: string
   descripcion?: string | null
   orden?: number
+  max_por_tipo?: number
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null

@@ -1034,6 +1034,8 @@ export const categoriasCaractDocsApi = {
     api.put<TipoCaractDocs>(`/categorias-caracteristica-docs/${codigo}/tipos/${codigoTipo}`, datos).then((r) => r.data),
   desactivarTipo: (codigo: string, codigoTipo: string) =>
     api.delete(`/categorias-caracteristica-docs/${codigo}/tipos/${codigoTipo}`),
+  reordenarTipos: (codigo: string, orden: { codigo: string; orden: number }[]) =>
+    api.put(`/categorias-caracteristica-docs/${codigo}/tipos/orden`, orden),
 }
 
 // ─── Registro LLM ───────────────────────────────────────────────────────────
