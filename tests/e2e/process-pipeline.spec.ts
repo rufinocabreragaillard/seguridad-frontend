@@ -32,22 +32,23 @@ test.describe('process-pipeline (estilo C · conversacional)', () => {
     await expect(page.getByText(/^Etapa\s+\d+\/\d+$/i).first()).toBeVisible();
   });
 
-  test('muestra el footer "Por qué"', async ({ page }) => {
-    await expect(page.getByText(/^Por qué$/i).first()).toBeVisible({ timeout: 10000 });
-  });
-
   test('tab Documentos también muestra el pipeline conversacional', async ({ page }) => {
     await page.getByRole('button', { name: /^documentos$/i }).first().click();
     await expect(page.getByRole('img', { name: /progreso/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('avatar del asistente usa color primario (no gradiente violeta hardcoded)', async ({ page }) => {
-    // Avatar = primera 'S' visible en el bloque "Antes de empezar"
-    const avatar = page.locator('[aria-hidden="true"]').filter({ hasText: /^S$/ }).first();
-    await expect(avatar).toBeVisible({ timeout: 10000 });
-    // El avatar debe NO usar background-image (gradiente). Si lo hace, el style inline contiene 'gradient'.
-    const styleAttr = await avatar.getAttribute('style');
-    expect(styleAttr ?? '').not.toContain('gradient');
+  test('NO se muestra el avatar cuadrado "S" del asistente', async ({ page }) => {
+    const avatar = page.locator('[aria-hidden="true"]').filter({ hasText: /^S$/ });
+    await expect(avatar).toHaveCount(0, { timeout: 10000 });
+  });
+
+  test('NO se muestra el <select> filtro por estado en tab Documentos', async ({ page }) => {
+    await page.getByRole('button', { name: /^documentos$/i }).first().click();
+    // Esperar a que renderee el panel de documentos
+    await expect(page.getByText(/seleccionar ubicación/i).first()).toBeVisible({ timeout: 10000 });
+    // No debe existir ningún <select> con la opción "todos los estados"
+    const selectFiltro = page.locator('select').filter({ hasText: /todos los estados/i });
+    await expect(selectFiltro).toHaveCount(0);
   });
 
   test('endpoint limpiar-completados responde sin error', async ({ page, request }) => {
