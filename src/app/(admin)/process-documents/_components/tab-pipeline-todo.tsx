@@ -231,12 +231,24 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
   }
 
   // ── Pasos 3-6: usa las mismas funciones que page.tsx ──────────────────────
-  const seleccionarDirectorio = async () => {
+  const seleccionarDirectorio = async (): Promise<FileSystemDirectoryHandle | null> => {
     try {
       const handle = await (window as unknown as { showDirectoryPicker: (opts?: Record<string, unknown>) => Promise<FileSystemDirectoryHandle> }).showDirectoryPicker({ mode: 'read', id: 'serverlm-docs' })
       setDirHandleState(handle)
       await setDirectoryHandle(handle, userId, grupoActivo)
-    } catch { /* usuario canceló */ }
+      return handle
+    } catch {
+      return null
+    }
+  }
+
+  const elegirUbicacion = async (codigo: string) => {
+    setUbicacionSel(codigo)
+    setUbicBusqueda('')
+    setUbicDropdownOpen(false)
+    if (codigo && !dirHandle) {
+      await seleccionarDirectorio()
+    }
   }
 
   const setPaso = (key: string, patch: Partial<ProgresoPaso>) =>
@@ -366,7 +378,7 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
     const hijos = tieneHijos ? ubicacionesProp.filter(h => h.codigo_ubicacion_superior === u.codigo_ubicacion).sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion)) : []
     return (
       <div key={u.codigo_ubicacion}>
-        <div className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer select-none ${selec ? 'bg-primario-muy-claro' : ''}`} style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }} onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}>
+        <div className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer select-none ${selec ? 'bg-primario-muy-claro' : ''}`} style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }} onClick={() => { void elegirUbicacion(u.codigo_ubicacion) }}>
           {tieneHijos ? <button onClick={(e) => toggleExpandirUbic(e, u.codigo_ubicacion)} className="shrink-0 hover:text-primario text-texto-muted p-0.5 -ml-0.5 rounded">{expandido ? <ChevronDown size={12} /> : <ChevronRight size={12} />}</button> : <span className="w-3 shrink-0" />}
           <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
           <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
@@ -414,17 +426,19 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
     <div className="flex flex-col gap-6">
 
       {/* ── Filtros ──────────────────────────────────────────────────────── */}
-      <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-4">
-        <p className="text-xs font-semibold text-texto-muted uppercase">{t('filtrosPipeline')}</p>
-
+      <div className="flex flex-col gap-4">
         <div className="flex items-end gap-2" ref={ubicDropdownRef}>
           <div className="flex flex-col gap-1.5 flex-1">
             <label className="text-sm font-medium text-texto">{t('etiquetaUbicacion')}</label>
             <div className="relative">
               <button type="button" onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)} disabled={ejecutando} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50">
-                <FolderOpen size={15} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
-                <span className="flex-1 text-left truncate">{ubicacionSel ? (ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? t('seleccionarUbicacion')) : t('seleccionarUbicacion')}</span>
-                {ubicacionSel ? <X size={13} className="text-texto-muted hover:text-error shrink-0" onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }} /> : <ChevronDown size={13} className="text-texto-muted shrink-0" />}
+                <FolderOpen size={15} className={(ubicacionSel || dirHandle) ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
+                <span className="flex-1 text-left truncate">
+                  {ubicacionSel
+                    ? (ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? t('seleccionarUbicacion'))
+                    : (dirHandle ? dirHandle.name : t('seleccionarUbicacion'))}
+                </span>
+                {(ubicacionSel || dirHandle) ? <X size={13} className="text-texto-muted hover:text-error shrink-0" onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }} /> : <ChevronDown size={13} className="text-texto-muted shrink-0" />}
               </button>
               {ubicDropdownOpen && (
                 <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '16rem' }}>
@@ -432,14 +446,14 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
                     <input type="text" placeholder={t('buscarUbicacion')} value={ubicBusqueda} onChange={(e) => setUbicBusqueda(e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted" autoFocus />
                   </div>
                   <div className="overflow-y-auto flex-1">
-                    <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}>{t('todasUbicaciones')}</div>
+                    <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { void elegirUbicacion('') }}>{t('todasUbicaciones')}</div>
                     {ubicBusqueda ? (() => {
                       const filtradas = ubicacionesProp.filter(u => u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) || (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase()))
                       if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
                       return filtradas.map(u => {
                         const esArea = u.tipo_ubicacion === 'AREA'; const selec = ubicacionSel === u.codigo_ubicacion
                         return (
-                          <div key={u.codigo_ubicacion} className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`} style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }} onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}>
+                          <div key={u.codigo_ubicacion} className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`} style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }} onClick={() => { void elegirUbicacion(u.codigo_ubicacion) }}>
                             <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
                             <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
                             <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('tipoArea') : t('tipoContenido')}</span>
@@ -451,14 +465,8 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
                 </div>
               )}
             </div>
-          </div>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            <button onClick={seleccionarDirectorio} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-2 text-sm text-texto hover:border-primario transition-colors">
-              <FolderOpen size={16} className={dirHandle ? 'text-primario' : 'text-texto-muted'} />
-              {dirHandle ? dirHandle.name : t('seleccionarDirectorio')}
-            </button>
             {!dirHandle && carpetaRaiz && (
-              <span className="text-xs text-texto-muted text-right">{t('selecciona')} <strong className="text-texto">{carpetaRaiz}</strong></span>
+              <span className="text-xs text-texto-muted">{t('selecciona')} <strong className="text-texto">{carpetaRaiz}</strong></span>
             )}
           </div>
         </div>

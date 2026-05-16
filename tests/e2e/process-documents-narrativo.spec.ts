@@ -37,8 +37,9 @@ test.describe('process-documents (estilo B · narrativo)', () => {
 
   test('tab Vectorizar todo muestra el pipeline narrativo con sus filtros', async ({ page }) => {
     await page.getByRole('button', { name: /vectorizar todo/i }).click();
-    // Verifica filtros propios del tab
-    await expect(page.getByText(/filtros del pipeline/i).first()).toBeVisible({ timeout: 10000 });
+    // Filtros: dropdown único de Ubicación (sin segundo botón de directorio)
+    await expect(page.getByText(/^Ubicación$/).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/Seleccionar ubicación/i).first()).toBeVisible();
     // Verifica estilo narrativo
     await expect(page.getByText(/CARGANDO/).first()).toBeVisible();
     await expect(page.getByText(/LEYENDO TEXTO/).first()).toBeVisible();
