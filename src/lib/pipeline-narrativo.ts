@@ -101,5 +101,5 @@ export function mensajeEnProceso(
   const cola = etaMinutos != null
     ? `. Quedan unos ${formatearMinutos(etaMinutos).replace('~', '')}.`
     : '.'
-  return `Voy bien. Llevo ${completadosTxt} de ${totalTxt} documentos${cola}`
+  return `Llevo ${completadosTxt} de ${totalTxt} documentos${cola}`
 }

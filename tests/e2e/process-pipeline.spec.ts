@@ -19,8 +19,8 @@ test.describe('process-pipeline (estilo C · conversacional)', () => {
     await expect(page.getByText(/encontré .*documentos/i).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('muestra botón "Sí, empezar" del estilo conversacional', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /sí, empezar/i }).first()).toBeVisible({ timeout: 10000 });
+  test('muestra botón "Semanticar" del estilo conversacional', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /semanticar/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('muestra el dial triple SVG (role=img con aria-label Progreso)', async ({ page }) => {

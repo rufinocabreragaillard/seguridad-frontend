@@ -1048,8 +1048,8 @@ export default function PaginaCargaDocsUsuario() {
               : ''
             const minEta = etaInfo?.minutosEta ?? null
             const mensajeEnProc = minEta != null
-              ? `Voy bien. Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
-              : `Voy bien. Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
+              ? `Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
+              : `Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
 
             return (
               <PipelineConversacional
@@ -1057,7 +1057,7 @@ export default function PaginaCargaDocsUsuario() {
                   mensajePrincipal: mensajeAntes,
                   mensajeTiempo: null,
                   onEmpezar: ejecutarPipelineUbicaciones,
-                  textoBotonEmpezar: 'Sí, empezar',
+                  textoBotonEmpezar: 'Semanticar',
                   deshabilitado: cargandoUbs,
                 }}
                 enProceso={{
@@ -1251,8 +1251,8 @@ export default function PaginaCargaDocsUsuario() {
               const mensajeAntes = `Encontré ${totalDocs.toLocaleString()} documentos en ${carpetaSel}. Si te parece, los preparo para que puedas hacerles preguntas.`
               const minEta = etaInfo?.minutosEta ?? null
               const mensajeEnProc = minEta != null
-                ? `Voy bien. Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
-                : `Voy bien. Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
+                ? `Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
+                : `Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
 
               return (
                 <PipelineConversacional
@@ -1260,7 +1260,7 @@ export default function PaginaCargaDocsUsuario() {
                     mensajePrincipal: mensajeAntes,
                     mensajeTiempo: null,
                     onEmpezar: ejecutarPipeline,
-                    textoBotonEmpezar: 'Sí, empezar',
+                    textoBotonEmpezar: 'Semanticar',
                     deshabilitado: false,
                   }}
                   enProceso={{

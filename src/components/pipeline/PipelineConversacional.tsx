@@ -12,10 +12,10 @@
  *   [S] Encontré 2,847 documentos en rufinocabrera. Si te parece,
  *       los preparo para que puedas hacerles preguntas.
  *       Tardará unos 12 minutos la primera vez.
- *       [ Sí, empezar ]  [ Elegir otra carpeta ]
+ *       [ Semanticar ]  [ Elegir otra carpeta ]
  *
  *   ── EN PROCESO ──
- *   [icono] Voy bien. Llevo 234 de 2,847 documentos. Quedan unos 10 minutos.
+ *   [icono] Llevo 234 de 2,847 documentos. Quedan unos 10 minutos.
  *
  *            ╭──────────╮
  *           ╱   8%       ╲     ← DIAL TRIPLE (lotes / etapas / actual)
@@ -48,7 +48,7 @@ interface PipelineConversacionalProps {
 
   /** "En proceso" — mensaje + dial triple. */
   enProceso: {
-    mensaje: string  // "Voy bien. Llevo 234 de 2,847…"
+    mensaje: string  // "Llevo 234 de 2,847…"
     lote: { actual: number; total: number }
     etapa: { indiceActivo: number; total: number; nombre: string }
     actual: { completados: number; total: number; archivoActual?: string }
@@ -102,7 +102,7 @@ export function PipelineConversacional({
                     disabled={antesDeEmpezar.deshabilitado}
                     className="min-w-[180px] justify-center"
                   >
-                    {antesDeEmpezar.textoBotonEmpezar ?? 'Sí, empezar'}
+                    {antesDeEmpezar.textoBotonEmpezar ?? 'Semanticar'}
                   </Boton>
                   {antesDeEmpezar.onElegirOtra && (
                     <Boton variante="contorno" onClick={antesDeEmpezar.onElegirOtra}>
