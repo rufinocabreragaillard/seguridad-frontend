@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Download, Loader2, RefreshCw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
-import { Input } from '@/components/ui/input'
 import { Paginador } from '@/components/ui/paginador'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { TablaUsoLLM } from '@/components/llm/TablaUsoLLM'
@@ -191,41 +190,39 @@ export default function PaginaCostosGrupo() {
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Detalle de llamadas</h3>
         <div className="flex flex-wrap items-center gap-2 mb-3">
-          <Input
+          <input
             type="date"
             value={filtros.desde}
             onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })}
-            placeholder="Desde"
-            className="w-auto min-w-[140px]"
+            className="h-9 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
-          <Input
+          <input
             type="date"
             value={filtros.hasta}
             onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })}
-            placeholder="Hasta"
-            className="w-auto min-w-[140px]"
+            className="h-9 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
           <select
             value={filtros.proveedor}
             onChange={(e) => setFiltros({ ...filtros, proveedor: e.target.value })}
-            className="border border-gray-300 rounded px-2 py-1 text-sm h-9"
+            className="h-9 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           >
             <option value="">Todos los proveedores</option>
             <option value="anthropic">Anthropic</option>
             <option value="google">Google</option>
             <option value="openai">OpenAI</option>
           </select>
-          <Input
+          <input
             placeholder="Modelo"
             value={filtros.modelo}
             onChange={(e) => setFiltros({ ...filtros, modelo: e.target.value })}
-            className="w-auto min-w-[140px]"
+            className="h-9 w-32 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
-          <Input
+          <input
             placeholder="Función"
             value={filtros.codigo_funcion}
             onChange={(e) => setFiltros({ ...filtros, codigo_funcion: e.target.value })}
-            className="w-auto min-w-[140px]"
+            className="h-9 w-32 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
           <label className="flex items-center gap-1.5 text-sm cursor-pointer whitespace-nowrap">
             <input
