@@ -79,7 +79,7 @@ export function PipelineConversacional({
       )}
 
       {/* Dos columnas: ANTES DE EMPEZAR (izq) · MENSAJE + DIAL (der) */}
-      <div className={`grid gap-6 items-start ${!ejecutando ? 'grid-cols-1 lg:grid-cols-2' : 'grid-cols-1'}`}>
+      <div className={`grid gap-6 items-start ${!ejecutando ? 'grid-cols-1 md:grid-cols-2' : 'grid-cols-1'}`}>
 
         {/* ── Columna izquierda: ANTES DE EMPEZAR ── */}
         {!ejecutando && (

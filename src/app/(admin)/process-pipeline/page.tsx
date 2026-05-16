@@ -1098,9 +1098,7 @@ export default function PaginaCargaDocsUsuario() {
           TAB: Documentos
       ══════════════════════════════════════════════════════════════════════ */}
       {tabActiva === 'documentos' && (
-        <div>
-
-          <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-5">
+        <div className="flex flex-col gap-4">
             {/* Selector: árbol de ubicaciones (izquierda) + directorio físico (derecha, mismo borde) */}
             <div className="flex items-center gap-3 flex-wrap">
               {/* Dropdown árbol de ubicaciones */}
@@ -1382,7 +1380,6 @@ export default function PaginaCargaDocsUsuario() {
                 {ejecutando ? t('procesando', { tiempo: formatTiempo(tiempoTranscurrido) }) : t('completadoEn', { tiempo: formatTiempo(tiempoTranscurrido) })}
               </p>
             )}
-          </div>
         </div>
       )}
 
