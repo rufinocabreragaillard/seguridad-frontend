@@ -87,6 +87,8 @@ interface PipelineNarrativoProps {
   mostrarAntesDeEmpezar?: boolean
   /** Si false, oculta el bloque de estadísticas (fases + progreso + pill). Default: true. */
   mostrarEstadisticas?: boolean
+  /** Si false, oculta la barra de progreso y la pill de listos/errores; deja sólo las tarjetas de fase. Default: true. */
+  mostrarProgresoYResumen?: boolean
 }
 
 function TarjetaFase({ etiqueta, count, color, estado }: FaseNarrativa) {
@@ -153,6 +155,7 @@ export function PipelineNarrativo({
   mensajeError,
   mostrarAntesDeEmpezar = true,
   mostrarEstadisticas = true,
+  mostrarProgresoYResumen = true,
 }: PipelineNarrativoProps) {
   const pct = resumen.total > 0 ? Math.min(100, Math.round((resumen.completados / resumen.total) * 100)) : 0
   const pctListos = resumen.total > 0 ? Math.min(100, Math.round((resumen.listosCount / resumen.total) * 100)) : 0
@@ -217,57 +220,61 @@ export function PipelineNarrativo({
             ))}
           </div>
 
-          {/* Barra de progreso global + ETA */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-baseline justify-between flex-wrap gap-2">
-              <span className="text-sm text-texto tabular-nums">
-                <span className="font-semibold">{resumen.completados.toLocaleString()}</span>
-                {' de '}
-                <span className="font-semibold">{resumen.total.toLocaleString()}</span>
-                {' listos · '}
-                <span className="font-semibold">{pct}%</span>
-                {' completado'}
-              </span>
-              {resumen.etaTexto && (
-                <span className="text-xs text-texto-muted tabular-nums">{resumen.etaTexto}</span>
-              )}
-            </div>
-            <div className="h-2 rounded-full bg-fondo-tarjeta overflow-hidden">
-              <div
-                className="h-full bg-green-500 transition-all duration-500"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Lista de archivos en curso */}
-          {archivos.length > 0 && (
-            <div className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 flex flex-col gap-0.5 font-mono text-xs">
-              {archivos.map((a, i) => (
-                <div key={`${a.nombre}-${i}`} className="flex items-center gap-2 truncate">
-                  <IconoArchivoEstado estado={a.estado} />
-                  <span className="truncate text-texto">{a.nombre}</span>
+          {mostrarProgresoYResumen && (
+            <>
+              {/* Barra de progreso global + ETA */}
+              <div className="flex flex-col gap-1.5">
+                <div className="flex items-baseline justify-between flex-wrap gap-2">
+                  <span className="text-sm text-texto tabular-nums">
+                    <span className="font-semibold">{resumen.completados.toLocaleString()}</span>
+                    {' de '}
+                    <span className="font-semibold">{resumen.total.toLocaleString()}</span>
+                    {' listos · '}
+                    <span className="font-semibold">{pct}%</span>
+                    {' completado'}
+                  </span>
+                  {resumen.etaTexto && (
+                    <span className="text-xs text-texto-muted tabular-nums">{resumen.etaTexto}</span>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="h-2 rounded-full bg-fondo-tarjeta overflow-hidden">
+                  <div
+                    className="h-full bg-green-500 transition-all duration-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
+              </div>
 
-          {/* Pill de listos + errores + botón Detener */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
-              {resumen.listosCount.toLocaleString()} listos · {pctListos}%
-            </span>
-            {resumen.erroresCount > 0 && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
-                {resumen.erroresCount.toLocaleString()} con error
-              </span>
-            )}
-            {ejecutando && onDetener && (
-              <Boton variante="contorno" onClick={onDetener} className="ml-auto">
-                Detener
-              </Boton>
-            )}
-          </div>
+              {/* Lista de archivos en curso */}
+              {archivos.length > 0 && (
+                <div className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 flex flex-col gap-0.5 font-mono text-xs">
+                  {archivos.map((a, i) => (
+                    <div key={`${a.nombre}-${i}`} className="flex items-center gap-2 truncate">
+                      <IconoArchivoEstado estado={a.estado} />
+                      <span className="truncate text-texto">{a.nombre}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Pill de listos + errores + botón Detener */}
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
+                  {resumen.listosCount.toLocaleString()} listos · {pctListos}%
+                </span>
+                {resumen.erroresCount > 0 && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
+                    {resumen.erroresCount.toLocaleString()} con error
+                  </span>
+                )}
+                {ejecutando && onDetener && (
+                  <Boton variante="contorno" onClick={onDetener} className="ml-auto">
+                    Detener
+                  </Boton>
+                )}
+              </div>
+            </>
+          )}
         </div>
       )}
 
