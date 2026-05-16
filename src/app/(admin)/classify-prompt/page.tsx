@@ -1,44 +1,63 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import { RefreshCw, Copy, ExternalLink } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
-import { Input } from '@/components/ui/input'
-import { useAuth } from '@/context/AuthContext'
+import { SelectorBuscable, type OpcionBuscable } from '@/components/ui/selector-buscable'
+import { BotonChat } from '@/components/ui/boton-chat'
 import { useToast } from '@/context/ToastContext'
-import { clasificarApi } from '@/lib/api'
+import { clasificarApi, documentosApi } from '@/lib/api'
 import type { PromptVivoClasificar, FuentePromptClasificar } from '@/lib/api'
+import type { Documento } from '@/lib/tipos'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 export default function PaginaClassifyPrompt() {
   const t = useTranslations('classifyPrompt')
   const tc = useTranslations('common')
-  const { grupoActivo } = useAuth()
   const toast = useToast()
 
   const [data, setData] = useState<PromptVivoClasificar | null>(null)
   const [cargando, setCargando] = useState(true)
-  const [codigoDocumentoInput, setCodigoDocumentoInput] = useState<string>('')
+  const [documentos, setDocumentos] = useState<Documento[]>([])
+  const [codigoDocumento, setCodigoDocumento] = useState<string>('')
   const [verConMarcas, setVerConMarcas] = useState(true)
 
-  const cargar = useCallback(async () => {
+  const cargar = useCallback(async (codDoc?: number) => {
     setCargando(true)
     try {
-      const codDoc = codigoDocumentoInput.trim() ? parseInt(codigoDocumentoInput, 10) : undefined
-      const res = await clasificarApi.promptVivo(codDoc && !isNaN(codDoc) ? codDoc : undefined)
+      const res = await clasificarApi.promptVivo(codDoc)
       setData(res)
     } catch (e) {
       toast.error(t('errorCargar'), e instanceof Error ? e.message : undefined)
     } finally {
       setCargando(false)
     }
-  }, [codigoDocumentoInput, toast, t])
+  }, [toast, t])
 
   useEffect(() => {
     cargar()
+    documentosApi.listar({ limit: 500 })
+      .then((docs) => setDocumentos(docs))
+      .catch(() => setDocumentos([]))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  const opcionesDocumento: OpcionBuscable[] = useMemo(
+    () =>
+      documentos.map((d) => ({
+        valor: String(d.codigo_documento),
+        etiqueta: d.nombre_documento,
+        hint: `#${d.codigo_documento}${d.codigo_estado_doc ? ` · ${d.codigo_estado_doc}` : ''}`,
+      })),
+    [documentos],
+  )
+
+  const onSeleccionarDoc = (valor: string) => {
+    setCodigoDocumento(valor)
+    const cod = valor ? parseInt(valor, 10) : undefined
+    cargar(cod && !isNaN(cod) ? cod : undefined)
+  }
 
   const copiar = async (texto: string) => {
     try {
@@ -60,28 +79,24 @@ export default function PaginaClassifyPrompt() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6">
-      <PageHeader titulo={t('titulo')} descripcion={t('descripcion')} />
+    <div className="relative flex flex-col gap-6">
+      <BotonChat />
 
-      <div className="flex items-end gap-3 flex-wrap">
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-texto-muted">{t('grupoActivo')}</label>
-          <div className="text-sm font-medium text-texto">{grupoActivo || '—'}</div>
-        </div>
-        <div className="flex flex-col gap-1">
-          <label className="text-xs text-texto-muted">{t('codigoDocumento')}</label>
-          <Input
-            value={codigoDocumentoInput}
-            onChange={(e) => setCodigoDocumentoInput(e.target.value)}
+      <PageHeader />
+
+      {/* Barra de filtros y acciones */}
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="w-72">
+          <SelectorBuscable
+            etiqueta={t('codigoDocumento')}
+            valor={codigoDocumento}
+            opciones={opcionesDocumento}
+            onSeleccionar={onSeleccionarDoc}
             placeholder={t('placeholderDocumento')}
-            className="w-40"
           />
         </div>
-        <Boton variante="primaria" onClick={cargar} disabled={cargando}>
-          <RefreshCw size={14} className={cargando ? 'animate-spin' : ''} />
-          {tc('reintentar')}
-        </Boton>
-        <label className="flex items-center gap-2 text-sm ml-auto">
+
+        <label className="flex items-center gap-2 text-sm text-texto">
           <input
             type="checkbox"
             checked={verConMarcas}
@@ -89,23 +104,39 @@ export default function PaginaClassifyPrompt() {
           />
           {t('verConMarcas')}
         </label>
+
+        <div className="flex gap-2 ml-auto">
+          <Boton
+            variante="accion-sincronizar"
+            tamano="sm"
+            onClick={() => {
+              const cod = codigoDocumento ? parseInt(codigoDocumento, 10) : undefined
+              cargar(cod && !isNaN(cod) ? cod : undefined)
+            }}
+            disabled={cargando}
+          >
+            <RefreshCw size={15} className={cargando ? 'animate-spin' : ''} />
+            {tc('reintentar')}
+          </Boton>
+        </div>
       </div>
 
+      {/* Resumen */}
       {data && (
-        <div className="flex gap-4 text-xs text-texto-muted bg-fondo px-3 py-2 rounded-lg">
+        <div className="flex flex-wrap gap-x-6 gap-y-1 text-xs text-texto-muted bg-fondo px-3 py-2 rounded-lg border border-borde">
           <span>{t('longitudTotal')}: <b className="text-texto">{data.longitud_total_limpio.toLocaleString()}</b> chars</span>
-          <span>{t('fuentes')}: <b className="text-texto">{data.fuentes.filter(f => f.longitud > 0).length}</b> activas / {data.fuentes.length} totales</span>
+          <span>{t('fuentes')}: <b className="text-texto">{data.fuentes.filter(f => f.longitud > 0).length}</b> {t('activas')} / {data.fuentes.length} {t('totales')}</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
         {/* Sidebar — lista de fuentes */}
-        <aside className="border border-borde rounded-lg p-3 max-h-[80vh] overflow-y-auto">
-          <div className="text-sm font-semibold text-texto mb-2">{t('fuentes')}</div>
+        <aside className="border border-borde rounded-lg bg-surface p-3 max-h-[80vh] overflow-y-auto">
+          <div className="section-heading mb-2">{t('fuentes')}</div>
           {data?.fuentes.filter((f) => f.longitud > 0).map((f, i) => {
             const href = linkFuente(f)
             return (
-              <div key={i} className="text-xs py-1 border-b border-borde/40 last:border-0 flex items-center gap-1">
+              <div key={i} className="text-xs py-1.5 border-b border-borde/40 last:border-0 flex items-center gap-1">
                 <div className="flex-1 min-w-0">
                   <div className="font-mono text-texto truncate" title={`${f.tabla}.${f.codigo}.${f.campo}`}>
                     {f.tabla}
@@ -116,9 +147,14 @@ export default function PaginaClassifyPrompt() {
                   <div className="text-texto-muted">{f.longitud} chars</div>
                 </div>
                 {href && (
-                  <a href={href} target="_blank" rel="noopener noreferrer"
-                     className="text-primario hover:underline shrink-0" title={t('editar')}>
-                    <ExternalLink size={12} />
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0"
+                    title={t('editar')}
+                  >
+                    <ExternalLink size={14} />
                   </a>
                 )}
               </div>
@@ -128,11 +164,11 @@ export default function PaginaClassifyPrompt() {
 
         {/* Cuerpo — system + user */}
         <main className="flex flex-col gap-4">
-          <section className="border border-borde rounded-lg">
-            <header className="flex items-center justify-between px-3 py-2 border-b border-borde bg-fondo">
-              <h3 className="text-sm font-semibold text-texto">{t('systemPrompt')}</h3>
-              <Boton variante="contorno" onClick={() => data && copiar(data.system_prompt_limpio)}>
-                <Copy size={12} /> {t('copiarSinMarcas')}
+          <section className="border border-borde rounded-lg bg-surface">
+            <header className="flex items-center justify-between px-3 py-2 border-b border-borde bg-fondo rounded-t-lg">
+              <h3 className="section-heading">{t('systemPrompt')}</h3>
+              <Boton variante="contorno" tamano="sm" onClick={() => data && copiar(data.system_prompt_limpio)}>
+                <Copy size={14} /> {t('copiarSinMarcas')}
               </Boton>
             </header>
             <pre className="text-xs text-texto whitespace-pre-wrap p-3 max-h-[40vh] overflow-y-auto font-mono">
@@ -140,11 +176,11 @@ export default function PaginaClassifyPrompt() {
             </pre>
           </section>
 
-          <section className="border border-borde rounded-lg">
-            <header className="flex items-center justify-between px-3 py-2 border-b border-borde bg-fondo">
-              <h3 className="text-sm font-semibold text-texto">{t('userPrompt')}</h3>
-              <Boton variante="contorno" onClick={() => data && copiar(data.user_prompt_limpio)}>
-                <Copy size={12} /> {t('copiarSinMarcas')}
+          <section className="border border-borde rounded-lg bg-surface">
+            <header className="flex items-center justify-between px-3 py-2 border-b border-borde bg-fondo rounded-t-lg">
+              <h3 className="section-heading">{t('userPrompt')}</h3>
+              <Boton variante="contorno" tamano="sm" onClick={() => data && copiar(data.user_prompt_limpio)}>
+                <Copy size={14} /> {t('copiarSinMarcas')}
               </Boton>
             </header>
             <pre className="text-xs text-texto whitespace-pre-wrap p-3 max-h-[60vh] overflow-y-auto font-mono">
