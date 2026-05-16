@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
-import { RefreshCw, Copy, ExternalLink } from 'lucide-react'
+import { RefreshCw, Copy, ExternalLink, PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { SelectorBuscable, type OpcionBuscable } from '@/components/ui/selector-buscable'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -21,7 +21,8 @@ export default function PaginaClassifyPrompt() {
   const [cargando, setCargando] = useState(true)
   const [documentos, setDocumentos] = useState<Documento[]>([])
   const [codigoDocumento, setCodigoDocumento] = useState<string>('')
-  const [verConMarcas, setVerConMarcas] = useState(true)
+  const [fuentesColapsado, setFuentesColapsado] = useState(false)
+  const verConMarcas = !fuentesColapsado
 
   const cargar = useCallback(async (codDoc?: number) => {
     setCargando(true)
@@ -96,15 +97,6 @@ export default function PaginaClassifyPrompt() {
           />
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-texto">
-          <input
-            type="checkbox"
-            checked={verConMarcas}
-            onChange={(e) => setVerConMarcas(e.target.checked)}
-          />
-          {t('verConMarcas')}
-        </label>
-
         <div className="flex gap-2 ml-auto">
           <Boton
             variante="accion-sincronizar"
@@ -129,37 +121,52 @@ export default function PaginaClassifyPrompt() {
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-4">
-        {/* Sidebar — lista de fuentes */}
-        <aside className="border border-borde rounded-lg bg-surface p-3 max-h-[80vh] overflow-y-auto">
-          <div className="section-heading mb-2">{t('fuentes')}</div>
-          {data?.fuentes.filter((f) => f.longitud > 0).map((f, i) => {
-            const href = linkFuente(f)
-            return (
-              <div key={i} className="text-xs py-1.5 border-b border-borde/40 last:border-0 flex items-center gap-1">
-                <div className="flex-1 min-w-0">
-                  <div className="font-mono text-texto truncate" title={`${f.tabla}.${f.codigo}.${f.campo}`}>
-                    {f.tabla}
+      <div className={`grid grid-cols-1 ${fuentesColapsado ? 'lg:grid-cols-[44px_1fr]' : 'lg:grid-cols-[280px_1fr]'} gap-4 transition-all`}>
+        {/* Sidebar — lista de fuentes (colapsable como el sidebar global) */}
+        <aside className="border border-borde rounded-lg bg-surface max-h-[80vh] overflow-hidden flex flex-col">
+          <div className="flex items-center justify-between px-2 py-2 border-b border-borde">
+            {!fuentesColapsado && <div className="section-heading">{t('fuentes')}</div>}
+            <button
+              type="button"
+              onClick={() => setFuentesColapsado((v) => !v)}
+              className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors ml-auto"
+              title={fuentesColapsado ? t('mostrarFuentes') : t('ocultarFuentes')}
+              aria-label={fuentesColapsado ? t('mostrarFuentes') : t('ocultarFuentes')}
+            >
+              {fuentesColapsado ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            </button>
+          </div>
+          {!fuentesColapsado && (
+            <div className="p-3 overflow-y-auto">
+              {data?.fuentes.filter((f) => f.longitud > 0).map((f, i) => {
+                const href = linkFuente(f)
+                return (
+                  <div key={i} className="text-xs py-1.5 border-b border-borde/40 last:border-0 flex items-center gap-1">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono text-texto truncate" title={`${f.tabla}.${f.codigo}.${f.campo}`}>
+                        {f.tabla}
+                      </div>
+                      <div className="font-mono text-texto-muted truncate" title={f.codigo}>
+                        {f.codigo}.{f.campo}
+                      </div>
+                      <div className="text-texto-muted">{f.longitud} chars</div>
+                    </div>
+                    {href && (
+                      <a
+                        href={href}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0"
+                        title={t('editar')}
+                      >
+                        <ExternalLink size={14} />
+                      </a>
+                    )}
                   </div>
-                  <div className="font-mono text-texto-muted truncate" title={f.codigo}>
-                    {f.codigo}.{f.campo}
-                  </div>
-                  <div className="text-texto-muted">{f.longitud} chars</div>
-                </div>
-                {href && (
-                  <a
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0"
-                    title={t('editar')}
-                  >
-                    <ExternalLink size={14} />
-                  </a>
-                )}
-              </div>
-            )
-          })}
+                )
+              })}
+            </div>
+          )}
         </aside>
 
         {/* Cuerpo — system + user */}
