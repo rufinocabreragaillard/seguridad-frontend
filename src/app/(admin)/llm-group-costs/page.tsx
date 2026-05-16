@@ -194,20 +194,20 @@ export default function PaginaCostosGrupo() {
             type="date"
             value={filtros.desde}
             onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })}
-            className="h-9 border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            className="h-9 w-[130px] border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
           <input
             type="date"
             value={filtros.hasta}
             onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })}
-            className="h-9 border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            className="h-9 w-[130px] border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
           <select
             value={filtros.proveedor}
             onChange={(e) => setFiltros({ ...filtros, proveedor: e.target.value })}
-            className="h-9 border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            className="h-9 w-36 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           >
-            <option value="">Todos los proveedores</option>
+            <option value="">Proveedor</option>
             <option value="anthropic">Anthropic</option>
             <option value="google">Google</option>
             <option value="openai">OpenAI</option>
@@ -216,13 +216,13 @@ export default function PaginaCostosGrupo() {
             placeholder="Modelo"
             value={filtros.modelo}
             onChange={(e) => setFiltros({ ...filtros, modelo: e.target.value })}
-            className="h-9 w-32 border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            className="h-9 w-28 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
           <input
             placeholder="Función"
             value={filtros.codigo_funcion}
             onChange={(e) => setFiltros({ ...filtros, codigo_funcion: e.target.value })}
-            className="h-9 w-32 border border-gray-300 rounded-lg px-2 py-1 text-sm"
+            className="h-9 w-28 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
           <label className="flex items-center gap-1.5 text-sm cursor-pointer whitespace-nowrap">
             <input
