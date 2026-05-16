@@ -35,6 +35,30 @@ test.describe('process-pipeline (sin lenguetas — solo Documentos)', () => {
     await expect(selectFiltro).toHaveCount(0);
   });
 
+  test('boton "Capturar Semantica" siempre visible y habilitado cuando no se ejecuta', async ({ page }) => {
+    // Seleccionar primero una carpeta para que aparezca el panel "Antes de empezar"
+    await page.getByRole('button', { name: /seleccionar ubicación/i }).first().click({ timeout: 10000 });
+    // Elegir la primera opcion del dropdown si la hay (best-effort, no falla el test si no aplica).
+    const primeraOp = page.getByRole('option').first();
+    if (await primeraOp.count() > 0) {
+      await primeraOp.click({ timeout: 5000 }).catch(() => undefined);
+    }
+    const capturar = page.getByRole('button', { name: /capturar sem[áa]ntica/i }).first();
+    await expect(capturar).toBeVisible({ timeout: 10000 });
+    await expect(capturar).toBeEnabled();
+  });
+
+  test('boton "Detener proceso" siempre visible y DESHABILITADO cuando no se ejecuta', async ({ page }) => {
+    await page.getByRole('button', { name: /seleccionar ubicación/i }).first().click({ timeout: 10000 });
+    const primeraOp = page.getByRole('option').first();
+    if (await primeraOp.count() > 0) {
+      await primeraOp.click({ timeout: 5000 }).catch(() => undefined);
+    }
+    const detener = page.getByRole('button', { name: /detener proceso/i }).first();
+    await expect(detener).toBeVisible({ timeout: 10000 });
+    await expect(detener).toBeDisabled();
+  });
+
   test('endpoint limpiar-completados responde sin error', async ({ page, request }) => {
     const token = await page.evaluate(() => {
       const claves = ['serverlm-jwt', 'jwt', 'supabase.auth.token']
