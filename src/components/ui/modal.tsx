@@ -48,7 +48,9 @@ export function Modal({ abierto, alCerrar, titulo, descripcion, children, classN
             </button>
           </div>
           {/* Cuerpo con overflow visible para que los dropdowns absolutos no se recorten */}
-          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-visible px-6 py-4">{children}</div>
+          {/* clase 'modal-body' es contexto CSS: los componentes de campo (Input, SelectorBuscable, etc.)
+              detectan este ancestro y rendean su label a la izquierda en vez de arriba. */}
+          <div className="modal-body flex-1 min-h-0 overflow-y-auto overflow-x-visible px-6 py-4">{children}</div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
