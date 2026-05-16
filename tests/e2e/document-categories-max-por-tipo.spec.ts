@@ -21,7 +21,7 @@ test('document-categories: pestaña Tipos muestra columna Máx con valor numéri
   await page.getByRole('button', { name: /tipos/i }).first().click()
 
   const selectorCategoria = page.locator('select').first()
-  await selectorCategoria.selectOption({ label: /Tipo de Documento/i })
+  await selectorCategoria.selectOption({ label: 'Tipo de Documento' })
 
   await page.waitForLoadState('networkidle', { timeout: 10000 })
 
@@ -38,7 +38,7 @@ test('document-categories: modal de Tipo permite editar Máximo por documento', 
   await page.getByRole('button', { name: /tipos/i }).first().click()
 
   const selectorCategoria = page.locator('select').first()
-  await selectorCategoria.selectOption({ label: /Tipo de Documento/i })
+  await selectorCategoria.selectOption({ label: 'Tipo de Documento' })
   await page.waitForLoadState('networkidle', { timeout: 10000 })
 
   const filaCartola = page.getByRole('row').filter({ hasText: /cartola/i }).first()
