@@ -19,8 +19,7 @@ import {
   type PendingCarga,
   type UbicacionOpt,
 } from '../_lib/ejecutar-paso'
-import { PipelineNarrativo, type FaseNarrativa as FaseNarrativaUI, type ArchivoEnCurso } from '@/components/pipeline/PipelineNarrativo'
-import { FASES_NARRATIVAS } from '@/lib/pipeline-narrativo'
+import { PipelineNarrativo } from '@/components/pipeline/PipelineNarrativo'
 
 // Pasos 3-6: procesamiento de documentos
 const PASOS_PIPELINE = [
@@ -486,28 +485,8 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
         </div>
       </div>
 
-      {/* ── Pipeline Narrativo (estilo B) ──────────────────────────────────── */}
+      {/* ── Pipeline Narrativo (estilo B) — sólo "Antes de empezar" + acciones ── */}
       {!revertir ? (() => {
-        const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => {
-          const prog = progresos[f.clave]
-          const count = prog?.completados ?? 0
-          return {
-            clave: f.clave,
-            etiqueta: f.etiquetaCorta,
-            count,
-            color: f.color,
-            estado: prog?.estado ?? 'esperando',
-          }
-        })
-        const totalVectorizados = conteosPorEstado['VECTORIZADO'] ?? 0
-        const noVectorizables = (conteosPorEstado['NO_ANALIZABLE'] ?? 0) + (conteosPorEstado['NO_ESCANEABLE'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0)
-        fasesUI.push({
-          clave: 'LISTOS',
-          etiqueta: 'LISTOS',
-          count: totalVectorizados,
-          color: '#16A34A',
-          estado: totalVectorizados > 0 ? 'listo' : 'esperando',
-        })
         const totalDocsTodos = Object.values(conteosPorEstado).reduce((a, b) => a + b, 0)
         const carpetaSel = ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
         return (
@@ -519,21 +498,13 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
               textoBotonEmpezar: t('botonVectorizar') ?? 'Empezar',
               deshabilitado: ejecutando || !!pendingCarga,
             }}
-            fases={fasesUI}
-            resumen={{
-              completados: totalVectorizados,
-              total: totalDocsTodos,
-              etaTexto: ejecutando && pasoActualIdx !== null
-                ? t('etapaXdeY', { n: pasoActualIdx + 3, total: 6, nombre: PASOS_PIPELINE[pasoActualIdx].nombre })
-                : null,
-              listosCount: totalVectorizados,
-              erroresCount: noVectorizables,
-            }}
+            fases={[]}
+            resumen={{ completados: 0, total: 0, etaTexto: null, listosCount: 0, erroresCount: 0 }}
             archivos={[]}
             ejecutando={ejecutando}
             onDetener={detener}
-            porQueTexto={'Las cuatro etapas dan una historia: "tus documentos están entrando por aquí y saliendo por allá". El ticker en vivo es lo que más calma en procesos largos: ves que algo pasa.'}
             mensajeError={mensajeError || null}
+            mostrarEstadisticas={false}
           />
         )
       })() : (
@@ -592,27 +563,68 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
         )}
       </div>
 
-      {/* ── Estado del pipeline ───────────────────────────────────────────── */}
-      <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-semibold text-texto-muted uppercase flex items-center gap-2">
-            {t('estadoPipeline')}
-            {ejecutando && <Loader2 size={11} className="animate-spin text-primario" />}
-          </p>
-          {!ejecutando && <button type="button" onClick={cargarConteos} className="text-xs text-texto-muted hover:text-primario transition-colors">{t('actualizar')}</button>}
-        </div>
-        <div className="grid grid-cols-4 sm:grid-cols-7 gap-3">
-          {ESTADOS_PIPELINE.map((estado) => {
-            const count = conteosPorEstado[estado.codigo] ?? 0
-            return (
-              <div key={estado.codigo} className="flex flex-col items-center gap-1 py-2">
-                <span className="stat-number tabular-nums" style={{ color: count > 0 ? estado.color : '#9CA3AF' }}>{count}</span>
-                <span className="text-[10px] text-texto-muted text-center leading-tight font-medium uppercase tracking-wide">{estado.nombre}</span>
+      {/* ── Estado del pipeline (zona unificada: barra arriba + stats abajo) ── */}
+      {(() => {
+        const totalDocs = Object.values(conteosPorEstado).reduce((a, b) => a + b, 0)
+        const listos = conteosPorEstado['VECTORIZADO'] ?? 0
+        const errores = (conteosPorEstado['NO_ANALIZABLE'] ?? 0) + (conteosPorEstado['NO_ESCANEABLE'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0)
+        const pct = totalDocs > 0 ? Math.min(100, Math.round((listos / totalDocs) * 100)) : 0
+        const etaTexto = ejecutando && pasoActualIdx !== null
+          ? t('etapaXdeY', { n: pasoActualIdx + 3, total: 6, nombre: PASOS_PIPELINE[pasoActualIdx].nombre })
+          : null
+        return (
+          <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-texto-muted uppercase flex items-center gap-2">
+                {t('estadoPipeline')}
+                {ejecutando && <Loader2 size={11} className="animate-spin text-primario" />}
+              </p>
+              {!ejecutando && <button type="button" onClick={cargarConteos} className="text-xs text-texto-muted hover:text-primario transition-colors">{t('actualizar')}</button>}
+            </div>
+
+            {/* Barra de progreso global */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-baseline justify-between flex-wrap gap-2">
+                <span className="text-sm text-texto tabular-nums">
+                  <span className="font-semibold">{listos.toLocaleString()}</span>
+                  {' de '}
+                  <span className="font-semibold">{totalDocs.toLocaleString()}</span>
+                  {' listos · '}
+                  <span className="font-semibold">{pct}%</span>
+                  {' completado'}
+                </span>
+                {etaTexto && <span className="text-xs text-texto-muted tabular-nums">{etaTexto}</span>}
               </div>
-            )
-          })}
-        </div>
-      </div>
+              <div className="h-2.5 rounded-full bg-fondo overflow-hidden">
+                <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap pt-1">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
+                  {listos.toLocaleString()} listos
+                </span>
+                {errores > 0 && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
+                    {errores.toLocaleString()} con error
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Estadísticas por estado (abajo de la barra) */}
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 pt-2 border-t border-borde">
+              {ESTADOS_PIPELINE.map((estado) => {
+                const count = conteosPorEstado[estado.codigo] ?? 0
+                return (
+                  <div key={estado.codigo} className="flex flex-col items-center gap-1 py-2">
+                    <span className="stat-number tabular-nums" style={{ color: count > 0 ? estado.color : '#9CA3AF' }}>{count}</span>
+                    <span className="text-[10px] text-texto-muted text-center leading-tight font-medium uppercase tracking-wide">{estado.nombre}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
     </div>
   )
 }
