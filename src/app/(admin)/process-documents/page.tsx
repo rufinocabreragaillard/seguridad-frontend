@@ -1298,6 +1298,126 @@ function PaginaProcesarDocumentosInterna() {
                 : 'esperando',
         }))
 
+        // Selector de ubicación que va en el slot del bloque "Antes de empezar"
+        const slotUbicacion = (
+          <div className="flex items-center gap-2 min-w-0" ref={ubicDropdownRef}>
+            <label className="text-sm font-medium text-texto shrink-0">{t('etiquetaUbicacion')}:</label>
+            <div className="relative flex-1 min-w-0">
+              <button
+                type="button"
+                onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)}
+                disabled={ejecutando}
+                className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50"
+              >
+                <FolderOpen size={16} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
+                <span className="flex-1 text-left truncate">
+                  {ubicacionSel
+                    ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion || t('seleccionarUbicacion'))
+                    : t('todasUbicaciones')}
+                </span>
+                {ubicacionSel ? (
+                  <X
+                    size={13}
+                    className="text-texto-muted hover:text-error shrink-0"
+                    onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                  />
+                ) : (
+                  <ChevronDown size={13} className="text-texto-muted shrink-0" />
+                )}
+              </button>
+              {ubicDropdownOpen && (
+                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '18rem' }}>
+                  <div className="p-2 border-b border-borde shrink-0">
+                    <input
+                      type="text"
+                      placeholder={t('buscarUbicacion')}
+                      value={ubicBusqueda}
+                      onChange={(e) => setUbicBusqueda(e.target.value)}
+                      onClick={(e) => e.stopPropagation()}
+                      className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted"
+                      autoFocus
+                    />
+                  </div>
+                  <div className="overflow-y-auto flex-1">
+                    <div
+                      className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde"
+                      onClick={() => { setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                    >
+                      {t('todasUbicaciones')}
+                    </div>
+                    {(() => {
+                      const tieneHijosUbic = (cod: string) => ubicaciones.some(u => u.codigo_ubicacion !== cod && u.codigo_ubicacion_superior === cod)
+                      if (ubicBusqueda) {
+                        const filtradas = ubicaciones.filter(u =>
+                          u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) ||
+                          (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
+                        )
+                        if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
+                        return filtradas.map(u => {
+                          const esArea = u.tipo_ubicacion === 'AREA'
+                          const selec = ubicacionSel === u.codigo_ubicacion
+                          return (
+                            <div
+                              key={u.codigo_ubicacion}
+                              className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`}
+                              style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
+                              onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                            >
+                              <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
+                              <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                            </div>
+                          )
+                        })
+                      }
+                      const toggleExpandirUbic = (e: React.MouseEvent, cod: string) => {
+                        e.stopPropagation()
+                        setUbicExpandidos(prev => { const next = new Set(prev); next.has(cod) ? next.delete(cod) : next.add(cod); return next })
+                      }
+                      const renderNodoUbic = (u: UbicacionOption): React.ReactNode => {
+                        const tieneHijos = tieneHijosUbic(u.codigo_ubicacion)
+                        const expandido = ubicExpandidos.has(u.codigo_ubicacion)
+                        const esArea = u.tipo_ubicacion === 'AREA'
+                        const selec = ubicacionSel === u.codigo_ubicacion
+                        const hijos = tieneHijos
+                          ? ubicaciones
+                              .filter(h => h.codigo_ubicacion_superior === u.codigo_ubicacion)
+                              .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
+                          : []
+                        return (
+                          <div key={u.codigo_ubicacion}>
+                            <div
+                              className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer select-none ${selec ? 'bg-primario-muy-claro' : ''}`}
+                              style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
+                              onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                            >
+                              {tieneHijos
+                                ? <button onClick={(e) => toggleExpandirUbic(e, u.codigo_ubicacion)} className="shrink-0 hover:text-primario text-texto-muted p-0.5 -ml-0.5 rounded">
+                                    {expandido ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                  </button>
+                                : <span className="w-3 shrink-0" />
+                              }
+                              <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
+                              <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
+                              <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                            </div>
+                            {expandido && hijos.map(h => renderNodoUbic(h))}
+                          </div>
+                        )
+                      }
+                      const raicesUbic = ubicaciones
+                        .filter(u => !u.codigo_ubicacion_superior)
+                        .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
+                      if (raicesUbic.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin ubicaciones</div>
+                      return raicesUbic.map(u => renderNodoUbic(u))
+                    })()}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+
         return (
           <PipelineNarrativo
             antesDeEmpezar={{
@@ -1306,6 +1426,7 @@ function PaginaProcesarDocumentosInterna() {
               onEmpezar: ejecutar,
               textoBotonEmpezar: t('narrativoEmpezar') ?? 'Empezar',
               deshabilitado: ejecutando || !procesoSel,
+              slot: slotUbicacion,
             }}
             fases={fasesUI}
             resumen={{
@@ -1319,6 +1440,7 @@ function PaginaProcesarDocumentosInterna() {
             ejecutando={ejecutando}
             onDetener={detener}
             porQueTexto={t('narrativoPorQue') ?? ''}
+            mostrarEstadisticas={false}
           />
         )
       })()}

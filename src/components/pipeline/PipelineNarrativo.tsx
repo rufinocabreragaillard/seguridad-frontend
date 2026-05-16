@@ -29,6 +29,7 @@
  *   es lo que más calma en procesos largos: ves que algo pasa.
  */
 
+import type { ReactNode } from 'react'
 import { FolderOpen } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 
@@ -56,6 +57,8 @@ interface PipelineNarrativoProps {
     onEmpezar: () => void
     textoBotonEmpezar?: string
     deshabilitado?: boolean
+    /** Si se entrega, reemplaza el bloque `[icono] carpetaNombre + documentos` por un slot personalizado (ej. un selector de ubicación). */
+    slot?: ReactNode
   }
 
   /** Fases del pipeline (4 tarjetas). */
@@ -79,6 +82,11 @@ interface PipelineNarrativoProps {
 
   /** Mensaje de error/aviso opcional. */
   mensajeError?: string | null
+
+  /** Si false, oculta el bloque "Antes de empezar" (carpeta + Empezar). Default: true. */
+  mostrarAntesDeEmpezar?: boolean
+  /** Si false, oculta el bloque de estadísticas (fases + progreso + pill). Default: true. */
+  mostrarEstadisticas?: boolean
 }
 
 function TarjetaFase({ etiqueta, count, color, estado }: FaseNarrativa) {
@@ -143,8 +151,11 @@ export function PipelineNarrativo({
   ejecutando,
   onDetener,
   mensajeError,
+  mostrarAntesDeEmpezar = true,
+  mostrarEstadisticas = true,
 }: PipelineNarrativoProps) {
   const pct = resumen.total > 0 ? Math.min(100, Math.round((resumen.completados / resumen.total) * 100)) : 0
+  const pctListos = resumen.total > 0 ? Math.min(100, Math.round((resumen.listosCount / resumen.total) * 100)) : 0
 
   return (
     <div className="flex flex-col gap-3">
@@ -155,22 +166,32 @@ export function PipelineNarrativo({
       )}
 
       {/* ANTES DE EMPEZAR (solo si no estamos ejecutando) */}
-      {!ejecutando && (
+      {mostrarAntesDeEmpezar && !ejecutando && (
         <div className="flex flex-col gap-2">
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-muted">
             Antes de empezar
           </span>
-          <div className="rounded-xl border border-borde bg-fondo-tarjeta p-3 flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2.5 min-w-0 flex-1">
-              <FolderOpen size={18} className="text-texto-muted shrink-0" />
-              <div className="flex flex-col leading-tight min-w-0">
-                <span className="font-semibold text-texto truncate">{antesDeEmpezar.carpetaNombre}</span>
-                <span className="text-xs text-texto-muted tabular-nums">
+          <div className="rounded-xl border border-borde bg-surface p-3 flex items-center gap-3 flex-wrap">
+            {antesDeEmpezar.slot ? (
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <div className="flex-1 min-w-0">{antesDeEmpezar.slot}</div>
+                <span className="text-xs text-texto-muted tabular-nums shrink-0">
                   {antesDeEmpezar.documentos.toLocaleString()} documentos
                   {antesDeEmpezar.pesoTexto ? ` · ${antesDeEmpezar.pesoTexto}` : ''}
                 </span>
               </div>
-            </div>
+            ) : (
+              <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                <FolderOpen size={18} className="text-texto-muted shrink-0" />
+                <div className="flex flex-col leading-tight min-w-0">
+                  <span className="font-semibold text-texto truncate">{antesDeEmpezar.carpetaNombre}</span>
+                  <span className="text-xs text-texto-muted tabular-nums">
+                    {antesDeEmpezar.documentos.toLocaleString()} documentos
+                    {antesDeEmpezar.pesoTexto ? ` · ${antesDeEmpezar.pesoTexto}` : ''}
+                  </span>
+                </div>
+              </div>
+            )}
             <Boton
               variante="primario"
               onClick={antesDeEmpezar.onEmpezar}
@@ -184,69 +205,71 @@ export function PipelineNarrativo({
       )}
 
       {/* Pipeline (sin tarjeta exterior — más compacto) */}
-      <div className="flex flex-col gap-3">
-        {/* Tarjetas de fases */}
-        <div className="flex items-stretch gap-2">
-          {fases.map((f, i) => (
-            <div key={f.clave} className="flex items-stretch gap-2 flex-1 min-w-0">
-              <TarjetaFase {...f} />
-              {i < fases.length - 1 && <Flecha />}
-            </div>
-          ))}
-        </div>
-
-        {/* Barra de progreso global + ETA */}
-        <div className="flex flex-col gap-1.5">
-          <div className="flex items-baseline justify-between flex-wrap gap-2">
-            <span className="text-sm text-texto tabular-nums">
-              <span className="font-semibold">{resumen.completados.toLocaleString()}</span>
-              {' de '}
-              <span className="font-semibold">{resumen.total.toLocaleString()}</span>
-              {' listos · '}
-              <span className="font-semibold">{pct}%</span>
-              {' completado'}
-            </span>
-            {resumen.etaTexto && (
-              <span className="text-xs text-texto-muted tabular-nums">{resumen.etaTexto}</span>
-            )}
-          </div>
-          <div className="h-2 rounded-full bg-fondo-tarjeta overflow-hidden">
-            <div
-              className="h-full bg-green-500 transition-all duration-500"
-              style={{ width: `${pct}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Lista de archivos en curso */}
-        {archivos.length > 0 && (
-          <div className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 flex flex-col gap-0.5 font-mono text-xs">
-            {archivos.map((a, i) => (
-              <div key={`${a.nombre}-${i}`} className="flex items-center gap-2 truncate">
-                <IconoArchivoEstado estado={a.estado} />
-                <span className="truncate text-texto">{a.nombre}</span>
+      {mostrarEstadisticas && (
+        <div className="flex flex-col gap-3">
+          {/* Tarjetas de fases */}
+          <div className="flex items-stretch gap-2">
+            {fases.map((f, i) => (
+              <div key={f.clave} className="flex items-stretch gap-2 flex-1 min-w-0">
+                <TarjetaFase {...f} />
+                {i < fases.length - 1 && <Flecha />}
               </div>
             ))}
           </div>
-        )}
 
-        {/* Pill de listos + errores + botón Detener */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
-            {resumen.listosCount.toLocaleString()} listos
-          </span>
-          {resumen.erroresCount > 0 && (
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
-              {resumen.erroresCount.toLocaleString()} con error
+          {/* Barra de progreso global + ETA */}
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-baseline justify-between flex-wrap gap-2">
+              <span className="text-sm text-texto tabular-nums">
+                <span className="font-semibold">{resumen.completados.toLocaleString()}</span>
+                {' de '}
+                <span className="font-semibold">{resumen.total.toLocaleString()}</span>
+                {' listos · '}
+                <span className="font-semibold">{pct}%</span>
+                {' completado'}
+              </span>
+              {resumen.etaTexto && (
+                <span className="text-xs text-texto-muted tabular-nums">{resumen.etaTexto}</span>
+              )}
+            </div>
+            <div className="h-2 rounded-full bg-fondo-tarjeta overflow-hidden">
+              <div
+                className="h-full bg-green-500 transition-all duration-500"
+                style={{ width: `${pct}%` }}
+              />
+            </div>
+          </div>
+
+          {/* Lista de archivos en curso */}
+          {archivos.length > 0 && (
+            <div className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 flex flex-col gap-0.5 font-mono text-xs">
+              {archivos.map((a, i) => (
+                <div key={`${a.nombre}-${i}`} className="flex items-center gap-2 truncate">
+                  <IconoArchivoEstado estado={a.estado} />
+                  <span className="truncate text-texto">{a.nombre}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Pill de listos + errores + botón Detener */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
+              {resumen.listosCount.toLocaleString()} listos · {pctListos}%
             </span>
-          )}
-          {ejecutando && onDetener && (
-            <Boton variante="contorno" onClick={onDetener} className="ml-auto">
-              Detener
-            </Boton>
-          )}
+            {resumen.erroresCount > 0 && (
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
+                {resumen.erroresCount.toLocaleString()} con error
+              </span>
+            )}
+            {ejecutando && onDetener && (
+              <Boton variante="contorno" onClick={onDetener} className="ml-auto">
+                Detener
+              </Boton>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
     </div>
   )
