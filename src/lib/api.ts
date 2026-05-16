@@ -1533,32 +1533,50 @@ export const ubicacionesDocsApi = {
 
 // ── Carga masiva de documentos ────────────────────────────────────────────
 
+type CargaArchivo = {
+  nombre: string
+  ruta_completa: string
+  ruta_directorio: string
+  tamano_kb?: number
+  fecha_modificacion?: string
+}
+type CargaResp = { insertados: number; actualizados: number; revertidos: number; eliminados: number; total: number }
+
 export const cargaDocumentosApi = {
-  cargar: (datos: {
+  /**
+   * El POST puede fallar de forma transitoria (ERR_NETWORK, ECONNABORTED) cuando
+   * el navegador está saturado o un proxy intermedio corta la conexión.
+   * Reintentamos hasta 3 veces con backoff (1s, 3s, 7s) antes de propagar.
+   * Idempotente: la función SQL hace UPSERT por (grupo, ubicación, nombre).
+   */
+  cargar: async (datos: {
     codigo_entidad?: string
-    archivos: {
-      nombre: string
-      ruta_completa: string
-      ruta_directorio: string
-      tamano_kb?: number
-      fecha_modificacion?: string
-    }[]
-    /**
-     * Lista de codigo_ubicacion que el cliente acaba de escanear. Si se envía,
-     * los documentos de esas ubicaciones que NO aparezcan en `archivos` se
-     * eliminan (hard delete cascada). Si se omite, no se borra nada.
-     */
+    archivos: CargaArchivo[]
     codigos_ubicacion_escaneadas?: string[]
-  }) =>
-    api.post<{
-      insertados: number
-      actualizados: number
-      revertidos: number
-      eliminados: number
-      total: number
-    }>(
-      '/documentos/cargar-desde-ubicaciones', datos, { timeout: 120000 }
-    ).then((r) => r.data),
+  }): Promise<CargaResp> => {
+    const MAX_INTENTOS = 3
+    const ESPERAS_MS = [1000, 3000, 7000]
+    let ultimoError: unknown = null
+    for (let intento = 0; intento < MAX_INTENTOS; intento++) {
+      try {
+        const r = await api.post<CargaResp>(
+          '/documentos/cargar-desde-ubicaciones', datos, { timeout: 180000 },
+        )
+        return r.data
+      } catch (e) {
+        ultimoError = e
+        const err = e as { code?: string; response?: { status?: number } }
+        // Solo reintentar errores transitorios de red, no 4xx/5xx con respuesta
+        const esTransitorio = !err.response
+          && (err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED' || err.code === 'ECONNRESET')
+        if (!esTransitorio) throw e
+        if (intento < MAX_INTENTOS - 1) {
+          await new Promise((r) => setTimeout(r, ESPERAS_MS[intento]))
+        }
+      }
+    }
+    throw ultimoError
+  },
 }
 
 // ─── Chat con LLM ────────────────────────────────────────────────────────────
