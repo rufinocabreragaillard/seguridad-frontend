@@ -25,7 +25,7 @@ import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
 import { escanearArchivosDirectorio, escanearDirectorio as escanearDirectorioUbicaciones } from '@/lib/escanear-directorio'
-import { PipelineConversacional } from '@/components/pipeline/PipelineConversacional'
+import { PipelineNarrativo, type FaseNarrativa as FaseNarrativaUI, type ArchivoEnCurso } from '@/components/pipeline/PipelineNarrativo'
 import { FASES_NARRATIVAS, formatearMinutos } from '@/lib/pipeline-narrativo'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -1265,48 +1265,60 @@ function PaginaProcesarDocumentosInterna() {
         </div>
       )}
 
-      {/* ───────── Pipeline Conversacional (estilo C) ───────── */}
+      {/* ───────── Pipeline Narrativo (estilo B) ───────── */}
       {(() => {
         const carpetaSel = ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
-        // Fase activa = pasoActual?.estado_destino → mapeamos a FASES_NARRATIVAS
-        const idxFase = FASES_NARRATIVAS.findIndex(f => f.estadoDestino === pasoActual?.estado_destino)
-        const indiceActivo = idxFase >= 0 ? idxFase : 0
-        const nombreEtapa = idxFase >= 0 ? FASES_NARRATIVAS[idxFase].etiquetaCorta : 'CARGANDO'
-        const archivoActual = cola.find(c => c.estado_cola === 'EN_PROCESO')?.nombre_documento
-          ?? cola[cola.length - 1]?.nombre_documento
-
-        // Lote: el resumen del backend trae paquete.actual / paquete.total
-        // En process-documents no tenemos polling de resumen, así que aproximamos con 1/1.
-        const lote = { actual: 1, total: 1 }
         const erroresActuales = cola.filter(c => c.estado_cola === 'ERROR').length
 
-        const mensajeAntes = t('convAntesMensaje', { n: totalDocs.toLocaleString(), carpeta: carpetaSel })
-        const minutosEta: number | null = null
-        const mensajeEnProc = minutosEta != null
-          ? t('convEnProcesoMensaje', { hechos: procesados.toLocaleString(), total: totalDocs.toLocaleString(), min: formatearMinutos(minutosEta) })
-          : t('convEnProcesoMensajeSinEta', { hechos: procesados.toLocaleString(), total: totalDocs.toLocaleString() })
+        const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => {
+          const enCurso = pasoActual?.estado_destino === f.estadoDestino && ejecutando ? procesados : 0
+          // Si está activo, mostramos los procesados; si no, 0 (porque no tenemos resumen polling aquí)
+          return {
+            clave: f.clave,
+            etiqueta: f.etiquetaCorta,
+            count: enCurso,
+            color: f.color,
+            estado: pasoActual?.estado_destino === f.estadoDestino && ejecutando ? 'activo' : 'esperando',
+          }
+        })
+        fasesUI.push({
+          clave: 'LISTOS',
+          etiqueta: 'LISTOS',
+          count: procesados,
+          color: '#16A34A',
+          estado: procesados > 0 ? 'listo' : 'esperando',
+        })
+
+        // Archivos en curso desde la cola
+        const archivos: ArchivoEnCurso[] = cola.slice(-4).map(c => ({
+          nombre: c.nombre_documento.split('/').pop() ?? c.nombre_documento,
+          estado: c.estado_cola === 'COMPLETADO' ? 'listo'
+                : c.estado_cola === 'ERROR' ? 'error'
+                : c.estado_cola === 'EN_PROCESO' ? 'activo'
+                : 'esperando',
+        }))
 
         return (
-          <PipelineConversacional
+          <PipelineNarrativo
             antesDeEmpezar={{
-              mensajePrincipal: mensajeAntes,
-              mensajeTiempo: null,
+              carpetaNombre: carpetaSel,
+              documentos: totalDocs,
               onEmpezar: ejecutar,
-              textoBotonEmpezar: t('convBotonEmpezar'),
+              textoBotonEmpezar: t('narrativoEmpezar') ?? 'Empezar',
               deshabilitado: ejecutando || !procesoSel,
             }}
-            enProceso={{
-              mensaje: mensajeEnProc,
-              lote,
-              etapa: { indiceActivo, total: FASES_NARRATIVAS.length, nombre: nombreEtapa },
-              actual: { completados: procesados, total: totalDocs, archivoActual },
-              submensaje: erroresActuales > 0
-                ? `documento ${procesados} · ${erroresActuales} con error hasta ahora`
-                : `documento ${procesados}`,
-              onDetener: detener,
+            fases={fasesUI}
+            resumen={{
+              completados: procesados,
+              total: totalDocs,
+              etaTexto: null,
+              listosCount: procesados,
+              erroresCount: erroresActuales,
             }}
+            archivos={archivos}
             ejecutando={ejecutando}
-            porQueTexto={t('convPorQue')}
+            onDetener={detener}
+            porQueTexto={t('narrativoPorQue') ?? ''}
           />
         )
       })()}

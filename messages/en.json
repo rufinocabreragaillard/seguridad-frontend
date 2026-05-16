@@ -1262,7 +1262,9 @@
     "convEtapaLeyendoTexto": "READING TEXT",
     "convEtapaDividiendo": "SPLITTING",
     "convEtapaIndexando": "INDEXING",
-    "convEtapaListos": "READY"
+    "convEtapaListos": "READY",
+    "narrativoEmpezar": "Start",
+    "narrativoPorQue": "The four stages tell a story: \"your documents are coming in here and coming out there\". The live ticker is what calms users most in long processes: you see something is happening."
   },
   "processPipeline": {
     "titulo": "Index Documents",

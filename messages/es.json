@@ -1265,7 +1265,9 @@
     "convEtapaLeyendoTexto": "LEYENDO TEXTO",
     "convEtapaDividiendo": "DIVIDIENDO",
     "convEtapaIndexando": "INDEXANDO",
-    "convEtapaListos": "LISTOS"
+    "convEtapaListos": "LISTOS",
+    "narrativoEmpezar": "Empezar",
+    "narrativoPorQue": "Las cuatro etapas dan una historia: \"tus documentos están entrando por aquí y saliendo por allá\". El ticker en vivo es lo que más calma en procesos largos: ves que algo pasa."
   },
   "processPipeline": {
     "titulo": "Indexar Documentos",

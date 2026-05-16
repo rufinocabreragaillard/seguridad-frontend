@@ -86,8 +86,7 @@ export function PipelineConversacional({
           </span>
           <div className="rounded-2xl border border-borde bg-fondo-tarjeta p-5 flex gap-4 items-start">
             <div
-              className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center text-white font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}
+              className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center bg-primario text-primario-texto font-bold text-sm"
               aria-hidden
             >
               S
@@ -104,7 +103,7 @@ export function PipelineConversacional({
                   variante="primario"
                   onClick={antesDeEmpezar.onEmpezar}
                   disabled={antesDeEmpezar.deshabilitado}
-                  className="!bg-texto !text-white hover:!bg-texto/90 min-w-[180px] justify-center"
+                  className="min-w-[180px] justify-center"
                 >
                   {antesDeEmpezar.textoBotonEmpezar ?? 'Sí, empezar'}
                 </Boton>
@@ -128,11 +127,10 @@ export function PipelineConversacional({
           {/* Burbuja del bot */}
           <div className="flex gap-4 items-start">
             <div
-              className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center"
-              style={{ background: 'linear-gradient(135deg, #4F46E5 0%, #7C3AED 100%)' }}
+              className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center bg-primario"
               aria-hidden
             >
-              <span className="inline-block w-2 h-2 rounded-full bg-white" />
+              <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse" />
             </div>
             <p className="text-sm lg:text-base text-texto leading-relaxed flex-1">
               {enProceso.mensaje}

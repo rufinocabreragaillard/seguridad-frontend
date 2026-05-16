@@ -19,6 +19,8 @@ import {
   type PendingCarga,
   type UbicacionOpt,
 } from '../_lib/ejecutar-paso'
+import { PipelineNarrativo, type FaseNarrativa as FaseNarrativaUI, type ArchivoEnCurso } from '@/components/pipeline/PipelineNarrativo'
+import { FASES_NARRATIVAS } from '@/lib/pipeline-narrativo'
 
 // Pasos 3-6: procesamiento de documentos
 const PASOS_PIPELINE = [
@@ -476,36 +478,57 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
         </div>
       </div>
 
-      {mensajeError && <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{mensajeError}</div>}
-
-      {/* ── 6 barras horizontales ─────────────────────────────────────────── */}
-      {!revertir ? (
-        <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-3">
-          <div className="grid grid-cols-6 gap-3">
-            <BarraHorizontal num={1} nombre={t('p1Nombre')} label={t('p1Label')} estado={p1Estado} completados={p1Completados} total={p1Total} color="#6B7280" mensaje={p1Mensaje || undefined} />
-            <BarraHorizontal num={2} nombre={t('p2Nombre')} label={t('p2Label')} estado={p2Estado} completados={p2Completados} total={p2Total} color="#3B82F6" mensaje={p2Mensaje || undefined} />
-            {PASOS_PIPELINE.map((paso, i) => {
-              const prog = progresos[paso.key]
-              return (
-                <BarraHorizontal key={paso.key} num={i + 3} nombre={paso.nombre} label={paso.label} estado={prog.estado} completados={prog.completados} total={prog.total} color={paso.color} />
-              )
-            })}
-          </div>
-
-          {/* Confirmación inline carga (Paso 2) */}
-          {pendingCarga && (
-            <div className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-center gap-4">
-              <p className="text-sm text-blue-800 flex-1">
-                {t('archivosEncontradosConfirmar', { n: pendingCarga.archivosParaCargar.length, raiz: pendingCarga.scan.nombreRaiz })}
-              </p>
-              <div className="flex gap-2 shrink-0">
-                <Boton variante="primario" tamano="sm" onClick={() => confirmarCarga()}>{t('confirmar')}</Boton>
-                <Boton variante="contorno" tamano="sm" onClick={() => { setPendingCarga(null); setP2Estado('esperando'); setP2Mensaje('') }}>{t('cancelar')}</Boton>
-              </div>
-            </div>
-          )}
-        </div>
-      ) : (
+      {/* ── Pipeline Narrativo (estilo B) ──────────────────────────────────── */}
+      {!revertir ? (() => {
+        const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => {
+          const prog = progresos[f.clave]
+          const count = prog?.completados ?? 0
+          return {
+            clave: f.clave,
+            etiqueta: f.etiquetaCorta,
+            count,
+            color: f.color,
+            estado: prog?.estado ?? 'esperando',
+          }
+        })
+        const totalVectorizados = conteosPorEstado['VECTORIZADO'] ?? 0
+        const noVectorizables = (conteosPorEstado['NO_ANALIZABLE'] ?? 0) + (conteosPorEstado['NO_ESCANEABLE'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0)
+        fasesUI.push({
+          clave: 'LISTOS',
+          etiqueta: 'LISTOS',
+          count: totalVectorizados,
+          color: '#16A34A',
+          estado: totalVectorizados > 0 ? 'listo' : 'esperando',
+        })
+        const totalDocsTodos = Object.values(conteosPorEstado).reduce((a, b) => a + b, 0)
+        const carpetaSel = ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
+        return (
+          <PipelineNarrativo
+            antesDeEmpezar={{
+              carpetaNombre: carpetaSel,
+              documentos: totalDocsTodos,
+              onEmpezar: ejecutarPipeline,
+              textoBotonEmpezar: t('botonVectorizar') ?? 'Empezar',
+              deshabilitado: ejecutando || !!pendingCarga,
+            }}
+            fases={fasesUI}
+            resumen={{
+              completados: totalVectorizados,
+              total: totalDocsTodos,
+              etaTexto: ejecutando && pasoActualIdx !== null
+                ? t('etapaXdeY', { n: pasoActualIdx + 3, total: 6, nombre: PASOS_PIPELINE[pasoActualIdx].nombre })
+                : null,
+              listosCount: totalVectorizados,
+              erroresCount: noVectorizables,
+            }}
+            archivos={[]}
+            ejecutando={ejecutando}
+            onDetener={detener}
+            porQueTexto={'Las cuatro etapas dan una historia: "tus documentos están entrando por aquí y saliendo por allá". El ticker en vivo es lo que más calma en procesos largos: ves que algo pasa.'}
+            mensajeError={mensajeError || null}
+          />
+        )
+      })() : (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 flex flex-col gap-3">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-amber-800">{t('revertirEncabezado')}</span>
@@ -520,33 +543,34 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
         </div>
       )}
 
-      {(ejecutando || todosListos || (revertir && progresoRevertir.estado === 'listo')) && (
-        <p className="text-center text-sm text-texto-muted">
-          {ejecutando ? t('tiempoTranscurridoFmt', { t: formatTiempo(tiempoTranscurrido) }) : t('completadoEnFmt', { t: formatTiempo(tiempoTranscurrido) })}
-        </p>
+      {/* Confirmación inline carga (Paso 2) */}
+      {pendingCarga && (
+        <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 flex items-center gap-4">
+          <p className="text-sm text-blue-800 flex-1">
+            {t('archivosEncontradosConfirmar', { n: pendingCarga.archivosParaCargar.length, raiz: pendingCarga.scan.nombreRaiz })}
+          </p>
+          <div className="flex gap-2 shrink-0">
+            <Boton variante="primario" tamano="sm" onClick={() => confirmarCarga()}>{t('confirmar')}</Boton>
+            <Boton variante="contorno" tamano="sm" onClick={() => { setPendingCarga(null); setP2Estado('esperando'); setP2Mensaje('') }}>{t('cancelar')}</Boton>
+          </div>
+        </div>
       )}
 
-      {/* ── Botones de acción ──────────────────────────────────────────────── */}
+      {/* Acciones secundarias: sincronizar y revertir */}
       <div className="flex gap-3 justify-center flex-wrap">
         {!revertir ? (
           <>
             <Boton variante="contorno" onClick={async () => { const ok = await ejecutarPaso1(); if (ok) await ejecutarPaso2Escaneo() }} disabled={ejecutando || p1Estado === 'activo' || p2Estado === 'activo' || !!pendingCarga}>
               {t('botonSincronizarYCargar')}
             </Boton>
-            <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando}>
-              {ejecutando && pasoActualIdx !== null ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 size={14} className="animate-spin" />
-                  {t('etapaXdeY', { n: pasoActualIdx + 3, total: 6, nombre: PASOS_PIPELINE[pasoActualIdx].nombre })}
-                </span>
-              ) : t('botonVectorizar')}
-            </Boton>
-            <Boton variante="contorno" onClick={detener} disabled={!ejecutando}>
-              {t('cancelar')}
-            </Boton>
             <Boton variante="contorno" onClick={() => { setRevertir(true); setMensajeError('') }} disabled={ejecutando} className="text-amber-600 border-amber-300 hover:border-amber-500">
               {t('modoRevertir')}
             </Boton>
+            {(p1Estado === 'activo' || p2Estado === 'activo') && (
+              <span className="text-xs text-texto-muted self-center">
+                {p1Mensaje || p2Mensaje || ''}
+              </span>
+            )}
           </>
         ) : (
           <>

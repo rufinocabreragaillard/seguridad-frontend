@@ -176,7 +176,7 @@ export function PipelineNarrativo({
               variante="primario"
               onClick={antesDeEmpezar.onEmpezar}
               disabled={antesDeEmpezar.deshabilitado}
-              className="!bg-texto !text-white hover:!bg-texto/90 min-w-[140px] justify-center"
+              className="min-w-[140px] justify-center"
             >
               {antesDeEmpezar.textoBotonEmpezar ?? 'Empezar'}
             </Boton>

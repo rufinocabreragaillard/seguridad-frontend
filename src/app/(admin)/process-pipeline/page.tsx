@@ -42,7 +42,7 @@ import type { ResumenPipeline } from '@/lib/api'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { PipelineNarrativo, type FaseNarrativa as FaseNarrativaUI, type ArchivoEnCurso } from '@/components/pipeline/PipelineNarrativo'
+import { PipelineConversacional } from '@/components/pipeline/PipelineConversacional'
 import { FASES_NARRATIVAS, formatearMinutos } from '@/lib/pipeline-narrativo'
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
@@ -1032,59 +1032,57 @@ export default function PaginaCargaDocsUsuario() {
       ══════════════════════════════════════════════════════════════════════ */}
       {tabActiva === 'ubicaciones' && (
         <div className="flex flex-col gap-4">
-          {/* Pipeline Narrativo — estilo B (carpetas → tarjetas humanas + Empezar) */}
+          {/* Pipeline Conversacional — estilo C (dial triple + mensaje del asistente) */}
           {(() => {
-            const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => {
-              const prog = progresos[f.clave]
-              const fase = resumenPipeline?.por_destino?.[f.estadoDestino]
-              const enCurso = (fase?.en_proceso ?? 0) + (fase?.pendiente ?? 0)
-              const completados = fase?.completado ?? prog?.completados ?? 0
-              const count = prog?.estado === 'activo' ? enCurso || completados : completados
-              return {
-                clave: f.clave,
-                etiqueta: f.etiquetaCorta,
-                count,
-                color: f.color,
-                estado: prog?.estado ?? 'esperando',
-              }
-            })
-            // 5ª tarjeta: LISTOS = vectorizados acumulados
-            fasesUI.push({
-              clave: 'LISTOS',
-              etiqueta: 'LISTOS',
-              count: docsVectorizados,
-              color: '#16A34A',
-              estado: docsVectorizados > 0 ? 'listo' : 'esperando',
-            })
-
-            // Archivos en curso (los más recientes de la cola activa)
-            const archivos: ArchivoEnCurso[] = []  // se llena cuando haya cola real; placeholder por ahora
-
             const raizCarpeta = raices[0]?.nombre_ubicacion ?? 'Sin carpeta'
+            // Fase activa según el primer paso PASOS con estado 'activo'
+            const idxActivo = PASOS.findIndex(p => progresos[p.key]?.estado === 'activo')
+            const idxFase = idxActivo >= 0
+              ? FASES_NARRATIVAS.findIndex(f => f.estadoDestino === PASOS[idxActivo].estadoDestino)
+              : -1
+            const indiceActivo = idxFase >= 0 ? idxFase : 0
+            const nombreEtapa = idxFase >= 0 ? FASES_NARRATIVAS[idxFase].etiquetaCorta : 'CARGANDO'
+
+            const paq = resumenPipeline?.paquete
+            const lote = paq && paq.paquetes_totales > 0
+              ? { actual: paq.paquete_actual, total: paq.paquetes_totales }
+              : { actual: 1, total: 1 }
+
+            const progActiva = idxActivo >= 0 ? progresos[PASOS[idxActivo].key] : null
+            const actual = {
+              completados: progActiva?.completados ?? docsVectorizados,
+              total: progActiva?.total || totalDocs || 1,
+              archivoActual: undefined,
+            }
+
+            const mensajeAntes = t('narrativoTitulo')
+              ? `Encontré ${totalDocs.toLocaleString()} documentos en ${raizCarpeta}. Si te parece, los preparo para que puedas hacerles preguntas.`
+              : ''
+            const minEta = etaInfo?.minutosEta ?? null
+            const mensajeEnProc = minEta != null
+              ? `Voy bien. Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
+              : `Voy bien. Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
 
             return (
-              <PipelineNarrativo
+              <PipelineConversacional
                 antesDeEmpezar={{
-                  carpetaNombre: raizCarpeta,
-                  documentos: totalDocs,
-                  pesoTexto: undefined,
+                  mensajePrincipal: mensajeAntes,
+                  mensajeTiempo: null,
                   onEmpezar: ejecutarPipelineUbicaciones,
-                  textoBotonEmpezar: t('narrativoEmpezar'),
+                  textoBotonEmpezar: 'Sí, empezar',
                   deshabilitado: cargandoUbs,
                 }}
-                fases={fasesUI}
-                resumen={{
-                  completados: docsVectorizados,
-                  total: totalDocs,
-                  etaTexto: etaInfo?.minutosEta != null
-                    ? t('narrativoEta', { min: formatearMinutos(etaInfo.minutosEta).replace('~', '') })
-                    : null,
-                  listosCount: docsVectorizados,
-                  erroresCount: docsNoVectorizables,
+                enProceso={{
+                  mensaje: mensajeEnProc,
+                  lote,
+                  etapa: { indiceActivo, total: FASES_NARRATIVAS.length, nombre: nombreEtapa },
+                  actual,
+                  submensaje: docsNoVectorizables > 0
+                    ? `documento ${docsVectorizados.toLocaleString()} · ${docsNoVectorizables.toLocaleString()} con error hasta ahora`
+                    : `documento ${docsVectorizados.toLocaleString()}`,
+                  onDetener: detener,
                 }}
-                archivos={archivos}
                 ejecutando={ejecutando}
-                onDetener={detener}
                 porQueTexto={t('narrativoPorQue')}
                 mensajeError={mensajeError || null}
               />
@@ -1256,51 +1254,54 @@ export default function PaginaCargaDocsUsuario() {
               </select>
             </div>
 
-            {/* Pipeline narrativo embebido — sin titulares, solo tarjetas + Empezar */}
+            {/* Pipeline Conversacional — estilo C (dial triple + mensaje del asistente) */}
             {(() => {
-              const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => {
-                const prog = progresos[f.clave]
-                const fase = resumenPipeline?.por_destino?.[f.estadoDestino]
-                const enCurso = (fase?.en_proceso ?? 0) + (fase?.pendiente ?? 0)
-                const completados = fase?.completado ?? prog?.completados ?? 0
-                const count = prog?.estado === 'activo' ? enCurso || completados : completados
-                return {
-                  clave: f.clave,
-                  etiqueta: f.etiquetaCorta,
-                  count,
-                  color: f.color,
-                  estado: prog?.estado ?? 'esperando',
-                }
-              })
-              fasesUI.push({
-                clave: 'LISTOS',
-                etiqueta: 'LISTOS',
-                count: docsVectorizados,
-                color: '#16A34A',
-                estado: docsVectorizados > 0 ? 'listo' : 'esperando',
-              })
               const carpetaSel = ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
+              const idxActivo = PASOS.findIndex(p => progresos[p.key]?.estado === 'activo')
+              const idxFase = idxActivo >= 0
+                ? FASES_NARRATIVAS.findIndex(f => f.estadoDestino === PASOS[idxActivo].estadoDestino)
+                : -1
+              const indiceActivo = idxFase >= 0 ? idxFase : 0
+              const nombreEtapa = idxFase >= 0 ? FASES_NARRATIVAS[idxFase].etiquetaCorta : 'CARGANDO'
+
+              const paq = resumenPipeline?.paquete
+              const lote = paq && paq.paquetes_totales > 0
+                ? { actual: paq.paquete_actual, total: paq.paquetes_totales }
+                : { actual: 1, total: 1 }
+
+              const progActiva = idxActivo >= 0 ? progresos[PASOS[idxActivo].key] : null
+              const actual = {
+                completados: progActiva?.completados ?? docsVectorizados,
+                total: progActiva?.total || totalDocs || 1,
+                archivoActual: undefined,
+              }
+
+              const mensajeAntes = `Encontré ${totalDocs.toLocaleString()} documentos en ${carpetaSel}. Si te parece, los preparo para que puedas hacerles preguntas.`
+              const minEta = etaInfo?.minutosEta ?? null
+              const mensajeEnProc = minEta != null
+                ? `Voy bien. Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
+                : `Voy bien. Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
+
               return (
-                <PipelineNarrativo
+                <PipelineConversacional
                   antesDeEmpezar={{
-                    carpetaNombre: carpetaSel,
-                    documentos: totalDocs,
+                    mensajePrincipal: mensajeAntes,
+                    mensajeTiempo: null,
                     onEmpezar: ejecutarPipeline,
-                    textoBotonEmpezar: t('narrativoEmpezar'),
+                    textoBotonEmpezar: 'Sí, empezar',
                     deshabilitado: false,
                   }}
-                  fases={fasesUI}
-                  resumen={{
-                    completados: docsVectorizados,
-                    total: totalDocs,
-                    etaTexto: etaInfo?.minutosEta != null
-                      ? t('narrativoEta', { min: formatearMinutos(etaInfo.minutosEta).replace('~', '') })
-                      : null,
-                    listosCount: docsVectorizados,
-                    erroresCount: docsNoVectorizables,
+                  enProceso={{
+                    mensaje: mensajeEnProc,
+                    lote,
+                    etapa: { indiceActivo, total: FASES_NARRATIVAS.length, nombre: nombreEtapa },
+                    actual,
+                    submensaje: docsNoVectorizables > 0
+                      ? `documento ${docsVectorizados.toLocaleString()} · ${docsNoVectorizables.toLocaleString()} con error hasta ahora`
+                      : `documento ${docsVectorizados.toLocaleString()}`,
+                    onDetener: detener,
                   }}
                   ejecutando={ejecutando}
-                  onDetener={detener}
                   porQueTexto={t('narrativoPorQue')}
                   mensajeError={mensajeError || null}
                 />
