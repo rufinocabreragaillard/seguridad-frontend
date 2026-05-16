@@ -103,6 +103,12 @@ body {
   text-align: right;
 }
 
+/* Dentro de una grilla (típicamente 2 columnas), las celdas son angostas:
+   reducir ancho de label para que el campo no quede ahogado. */
+.modal-body .grid .flex.flex-col:has(> label:first-child):not(:has(textarea)) > label:first-child {
+  width: 7rem;
+}
+
 .modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) > label:first-child::after {
   content: ':';
 }
