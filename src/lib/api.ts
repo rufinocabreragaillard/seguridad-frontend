@@ -1145,11 +1145,17 @@ export interface LLMUsoFiltros {
   codigo_usuario?: string
   solo_errores?: boolean
   limit?: number
+  offset?: number
+}
+
+export interface LLMUsoPagina {
+  filas: LLMUsoFila[]
+  total: number
 }
 
 export const llmUsoApi = {
   listar: (params: LLMUsoFiltros = {}) =>
-    api.get<LLMUsoFila[]>('/llm-uso', { params }).then((r) => r.data),
+    api.get<LLMUsoPagina>('/llm-uso', { params }).then((r) => r.data),
   listarGlobal: (params: LLMUsoFiltros = {}) =>
     api.get<LLMUsoFila[]>('/llm-uso/global', { params }).then((r) => r.data),
   resumen: () => api.get<LLMUsoResumen>('/llm-uso/resumen').then((r) => r.data),

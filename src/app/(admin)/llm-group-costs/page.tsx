@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Download, Loader2, RefreshCw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
+import { Paginador } from '@/components/ui/paginador'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { TablaUsoLLM } from '@/components/llm/TablaUsoLLM'
 import { llmUsoApi } from '@/lib/api'
@@ -23,14 +24,18 @@ export default function PaginaCostosGrupo() {
 
   const [resumen, setResumen] = useState<LLMUsoResumen | null>(null)
   const [filas, setFilas] = useState<LLMUsoFila[]>([])
+  const [total, setTotal] = useState(0)
   const [cargando, setCargando] = useState(true)
   const [filtros, setFiltros] = useState({
     desde: '', hasta: '', proveedor: '', modelo: '', codigo_funcion: '', solo_errores: false,
   })
+  const [page, setPage] = useState(1)
+  const [limit, setLimit] = useState(20)
 
   const cargar = useCallback(async () => {
     setCargando(true)
     try {
+      const offset = (page - 1) * limit
       const [r, f] = await Promise.all([
         llmUsoApi.resumen(),
         llmUsoApi.listar({
@@ -39,17 +44,25 @@ export default function PaginaCostosGrupo() {
           proveedor: filtros.proveedor || undefined,
           modelo: filtros.modelo || undefined,
           codigo_funcion: filtros.codigo_funcion || undefined,
-          limit: 500,
+          solo_errores: filtros.solo_errores || undefined,
+          limit,
+          offset,
         }),
       ])
       setResumen(r)
-      setFilas(filtros.solo_errores ? f.filter((x) => !x.exito) : f)
+      setFilas(f.filas)
+      setTotal(f.total)
     } finally {
       setCargando(false)
     }
-  }, [filtros])
+  }, [filtros, page, limit])
 
   useEffect(() => { cargar() }, [cargar])
+
+  const aplicarFiltros = () => {
+    if (page !== 1) setPage(1)
+    else cargar()
+  }
 
   const exportar = () => {
     exportarExcel(
@@ -177,40 +190,69 @@ export default function PaginaCostosGrupo() {
       {/* Detalle con filtros */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
         <h3 className="text-sm font-semibold text-gray-900 mb-3">Detalle de llamadas</h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 mb-3">
-          <Input type="date" value={filtros.desde} onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })} placeholder="Desde" />
-          <Input type="date" value={filtros.hasta} onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })} placeholder="Hasta" />
+        <div className="flex flex-wrap items-center gap-2 mb-3">
+          <Input
+            type="date"
+            value={filtros.desde}
+            onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })}
+            placeholder="Desde"
+            className="w-auto min-w-[140px]"
+          />
+          <Input
+            type="date"
+            value={filtros.hasta}
+            onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })}
+            placeholder="Hasta"
+            className="w-auto min-w-[140px]"
+          />
           <select
             value={filtros.proveedor}
             onChange={(e) => setFiltros({ ...filtros, proveedor: e.target.value })}
-            className="border border-gray-300 rounded px-2 py-1 text-sm"
+            className="border border-gray-300 rounded px-2 py-1 text-sm h-9"
           >
             <option value="">Todos los proveedores</option>
             <option value="anthropic">Anthropic</option>
             <option value="google">Google</option>
             <option value="openai">OpenAI</option>
           </select>
-          <Input placeholder="Modelo" value={filtros.modelo} onChange={(e) => setFiltros({ ...filtros, modelo: e.target.value })} />
-          <Input placeholder="Función" value={filtros.codigo_funcion} onChange={(e) => setFiltros({ ...filtros, codigo_funcion: e.target.value })} />
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-1.5 text-sm cursor-pointer">
-              <input
-                type="checkbox"
-                checked={filtros.solo_errores}
-                onChange={(e) => setFiltros({ ...filtros, solo_errores: e.target.checked })}
-                className="rounded border-gray-300"
-              />
-              Solo errores
-            </label>
-          </div>
-        </div>
-        <div className="flex justify-end mb-3">
-          <Boton onClick={cargar}>Aplicar filtros</Boton>
+          <Input
+            placeholder="Modelo"
+            value={filtros.modelo}
+            onChange={(e) => setFiltros({ ...filtros, modelo: e.target.value })}
+            className="w-auto min-w-[140px]"
+          />
+          <Input
+            placeholder="Función"
+            value={filtros.codigo_funcion}
+            onChange={(e) => setFiltros({ ...filtros, codigo_funcion: e.target.value })}
+            className="w-auto min-w-[140px]"
+          />
+          <label className="flex items-center gap-1.5 text-sm cursor-pointer whitespace-nowrap">
+            <input
+              type="checkbox"
+              checked={filtros.solo_errores}
+              onChange={(e) => setFiltros({ ...filtros, solo_errores: e.target.checked })}
+              className="rounded border-gray-300"
+            />
+            Solo errores
+          </label>
+          <Boton onClick={aplicarFiltros}>Aplicar filtros</Boton>
         </div>
         {cargando ? (
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
         ) : (
-          <TablaUsoLLM filas={filas} mostrarGrupo={false} />
+          <>
+            <TablaUsoLLM filas={filas} mostrarGrupo={false} />
+            <Paginador
+              page={page}
+              limit={limit}
+              total={total}
+              onChangePage={setPage}
+              onChangeLimit={(n) => { setLimit(n); setPage(1) }}
+              cargando={cargando}
+              opcionesLimit={[20, 50, 100, 200]}
+            />
+          </>
         )}
       </div>
     </div>

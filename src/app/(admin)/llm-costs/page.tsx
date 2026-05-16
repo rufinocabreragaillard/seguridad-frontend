@@ -39,13 +39,14 @@ export default function PaginaCostosLLM() {
   const cargarFilas = useCallback(async () => {
     setCargandoFilas(true)
     try {
-      setFilas(await llmUsoApi.listar({
+      const r = await llmUsoApi.listar({
         desde: filtros.desde || undefined,
         hasta: filtros.hasta || undefined,
         proveedor: filtros.proveedor || undefined,
         modelo: filtros.modelo || undefined,
         codigo_usuario: filtros.codigo_usuario || undefined,
-      }))
+      })
+      setFilas(r.filas)
     } finally { setCargandoFilas(false) }
   }, [filtros])
 
