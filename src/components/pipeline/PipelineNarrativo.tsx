@@ -48,13 +48,6 @@ export interface ArchivoEnCurso {
 }
 
 interface PipelineNarrativoProps {
-  /** Texto del eyebrow superior. Default "PIPELINE NARRATIVO". */
-  eyebrow?: string
-  /** Titular grande de la sección. */
-  titulo: string
-  /** Subtítulo en gris. */
-  subtitulo: string
-
   /** Bloque "Antes de empezar". */
   antesDeEmpezar: {
     carpetaNombre: string
@@ -143,9 +136,6 @@ function IconoArchivoEstado({ estado }: { estado: ArchivoEnCurso['estado'] }) {
 }
 
 export function PipelineNarrativo({
-  eyebrow = 'PIPELINE NARRATIVO',
-  titulo,
-  subtitulo,
   antesDeEmpezar,
   fases,
   resumen,
@@ -159,15 +149,6 @@ export function PipelineNarrativo({
 
   return (
     <div className="rounded-2xl border border-borde bg-fondo p-6 lg:p-8 flex flex-col gap-7">
-      {/* Encabezado */}
-      <div className="flex flex-col gap-1">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-muted">
-          {eyebrow}
-        </span>
-        <h2 className="text-2xl lg:text-3xl font-bold text-texto leading-tight">{titulo}</h2>
-        <p className="text-sm text-texto-muted">{subtitulo}</p>
-      </div>
-
       {mensajeError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {mensajeError}

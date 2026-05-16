@@ -35,10 +35,6 @@ import { DialTriple } from './DialTriple'
 import { Boton } from '@/components/ui/boton'
 
 interface PipelineConversacionalProps {
-  eyebrow?: string
-  titulo: string
-  subtitulo: string
-
   /** "Antes de empezar" — burbuja del asistente. */
   antesDeEmpezar: {
     mensajePrincipal: string
@@ -68,9 +64,6 @@ interface PipelineConversacionalProps {
 }
 
 export function PipelineConversacional({
-  eyebrow = 'CONVERSACIONAL',
-  titulo,
-  subtitulo,
   antesDeEmpezar,
   enProceso,
   ejecutando,
@@ -79,15 +72,6 @@ export function PipelineConversacional({
 }: PipelineConversacionalProps) {
   return (
     <div className="rounded-2xl border border-borde bg-fondo p-6 lg:p-8 flex flex-col gap-7">
-      {/* Encabezado */}
-      <div className="flex flex-col gap-1">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-muted">
-          {eyebrow}
-        </span>
-        <h2 className="text-2xl lg:text-3xl font-bold text-texto leading-tight">{titulo}</h2>
-        <p className="text-sm text-texto-muted">{subtitulo}</p>
-      </div>
-
       {mensajeError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {mensajeError}

@@ -11,12 +11,8 @@ test.describe('process-documents (estilo C · conversacional)', () => {
     await expect(page).toHaveURL(/process-documents/, { timeout: 10000 });
   });
 
-  test('tab Paso a Paso muestra el eyebrow CONVERSACIONAL', async ({ page }) => {
-    await expect(page.getByText(/^CONVERSACIONAL$/i).first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('muestra el titular "El sistema explica lo que hace"', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /el sistema explica lo que hace/i })).toBeVisible({ timeout: 10000 });
+  test('muestra el bloque "Antes de empezar"', async ({ page }) => {
+    await expect(page.getByText(/^Antes de empezar$/i).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('muestra el mensaje del asistente con "Encontré N documentos"', async ({ page }) => {

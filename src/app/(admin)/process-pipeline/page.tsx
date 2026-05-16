@@ -1064,9 +1064,6 @@ export default function PaginaCargaDocsUsuario() {
 
             return (
               <PipelineNarrativo
-                eyebrow={t('narrativoEyebrow')}
-                titulo={t('narrativoTitulo')}
-                subtitulo={t('narrativoSubtitulo')}
                 antesDeEmpezar={{
                   carpetaNombre: raizCarpeta,
                   documentos: totalDocs,
@@ -1285,9 +1282,6 @@ export default function PaginaCargaDocsUsuario() {
               const carpetaSel = ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
               return (
                 <PipelineNarrativo
-                  eyebrow={t('narrativoEyebrow')}
-                  titulo={t('narrativoTitulo')}
-                  subtitulo={t('narrativoSubtitulo')}
                   antesDeEmpezar={{
                     carpetaNombre: carpetaSel,
                     documentos: totalDocs,

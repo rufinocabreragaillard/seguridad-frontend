@@ -1288,9 +1288,6 @@ function PaginaProcesarDocumentosInterna() {
 
         return (
           <PipelineConversacional
-            eyebrow={t('convEyebrow')}
-            titulo={t('convTitulo')}
-            subtitulo={t('convSubtitulo')}
             antesDeEmpezar={{
               mensajePrincipal: mensajeAntes,
               mensajeTiempo: null,

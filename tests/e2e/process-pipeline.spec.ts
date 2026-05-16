@@ -11,12 +11,8 @@ test.describe('process-pipeline (estilo B · narrativo)', () => {
     await expect(page).toHaveURL(/process-pipeline/, { timeout: 10000 });
   });
 
-  test('muestra el eyebrow PIPELINE NARRATIVO', async ({ page }) => {
-    await expect(page.getByText(/PIPELINE NARRATIVO/i).first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('muestra el titular "Muestra a dónde van los documentos"', async ({ page }) => {
-    await expect(page.getByRole('heading', { name: /muestra a dónde van los documentos/i })).toBeVisible({ timeout: 10000 });
+  test('muestra el bloque "Antes de empezar"', async ({ page }) => {
+    await expect(page.getByText(/^Antes de empezar$/i).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('tab Ubicaciones tiene botón Empezar (reemplazo del antiguo Vectorizar)', async ({ page }) => {
@@ -41,8 +37,7 @@ test.describe('process-pipeline (estilo B · narrativo)', () => {
 
   test('tab Documentos también muestra el pipeline narrativo', async ({ page }) => {
     await page.getByRole('button', { name: /^documentos$/i }).first().click();
-    await expect(page.getByText(/PIPELINE NARRATIVO/i).first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/CARGANDO/).first()).toBeVisible();
+    await expect(page.getByText(/CARGANDO/).first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(/LEYENDO TEXTO/).first()).toBeVisible();
   });
 
