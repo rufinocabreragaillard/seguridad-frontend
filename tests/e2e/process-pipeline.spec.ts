@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('process-pipeline (estilo B · narrativo)', () => {
+test.describe('process-pipeline (estilo C · conversacional)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.getByLabel(/email|correo/i).fill('rufino@rufinocabrera.cl');
@@ -15,36 +15,39 @@ test.describe('process-pipeline (estilo B · narrativo)', () => {
     await expect(page.getByText(/^Antes de empezar$/i).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('tab Ubicaciones tiene botón Empezar (reemplazo del antiguo Vectorizar)', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /^empezar$/i }).first()).toBeVisible({ timeout: 10000 });
+  test('muestra el mensaje conversacional "Encontré N documentos"', async ({ page }) => {
+    await expect(page.getByText(/encontré .*documentos/i).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('muestra las 4+1 fases humanas (CARGANDO/LEYENDO TEXTO/DIVIDIENDO/INDEXANDO/LISTOS)', async ({ page }) => {
-    await expect(page.getByText(/CARGANDO/).first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/LEYENDO TEXTO/).first()).toBeVisible();
-    await expect(page.getByText(/DIVIDIENDO/).first()).toBeVisible();
-    await expect(page.getByText(/INDEXANDO/).first()).toBeVisible();
-    await expect(page.getByText(/^LISTOS$/).first()).toBeVisible();
+  test('muestra botón "Sí, empezar" del estilo conversacional', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /sí, empezar/i }).first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('muestra el dial triple SVG (role=img con aria-label Progreso)', async ({ page }) => {
+    await expect(page.getByRole('img', { name: /progreso/i }).first()).toBeVisible({ timeout: 10000 });
+  });
+
+  test('muestra la leyenda Lote/Etapa del dial', async ({ page }) => {
+    await expect(page.getByText(/^Lote\s+\d+\/\d+$/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/^Etapa\s+\d+\/\d+$/i).first()).toBeVisible();
   });
 
   test('muestra el footer "Por qué"', async ({ page }) => {
     await expect(page.getByText(/^Por qué$/i).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('muestra pill "N listos"', async ({ page }) => {
-    await expect(page.getByText(/\d+\s+listos/i).first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('tab Documentos también muestra el pipeline narrativo', async ({ page }) => {
+  test('tab Documentos también muestra el pipeline conversacional', async ({ page }) => {
     await page.getByRole('button', { name: /^documentos$/i }).first().click();
-    await expect(page.getByText(/CARGANDO/).first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/LEYENDO TEXTO/).first()).toBeVisible();
+    await expect(page.getByRole('img', { name: /progreso/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('no muestra nombres técnicos como botones de fase (CHUNKEAR, EXTRAER…)', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /^EXTRAER$/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /^CHUNKEAR$/i })).toHaveCount(0);
-    await expect(page.getByRole('button', { name: /^VECTORIZAR$/i })).toHaveCount(0);
+  test('avatar del asistente usa color primario (no gradiente violeta hardcoded)', async ({ page }) => {
+    // Avatar = primera 'S' visible en el bloque "Antes de empezar"
+    const avatar = page.locator('[aria-hidden="true"]').filter({ hasText: /^S$/ }).first();
+    await expect(avatar).toBeVisible({ timeout: 10000 });
+    // El avatar debe NO usar background-image (gradiente). Si lo hace, el style inline contiene 'gradient'.
+    const styleAttr = await avatar.getAttribute('style');
+    expect(styleAttr ?? '').not.toContain('gradient');
   });
 
   test('endpoint limpiar-completados responde sin error', async ({ page, request }) => {
