@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   FolderOpen, Folder, FolderInput, FolderPlus, FolderTree, FolderSync,
-  CheckCircle, AlertTriangle, RefreshCw, Upload, Download, DatabaseZap, ScanSearch,
+  CheckCircle, AlertTriangle, RefreshCw, Upload, Download, DatabaseZap,
   ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
   Eye, FileText, XCircle, ExternalLink, Search,
 } from 'lucide-react'
@@ -42,6 +42,8 @@ import type { ResumenPipeline } from '@/lib/api'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
+import { PipelineNarrativo, type FaseNarrativa as FaseNarrativaUI, type ArchivoEnCurso } from '@/components/pipeline/PipelineNarrativo'
+import { FASES_NARRATIVAS, formatearMinutos } from '@/lib/pipeline-narrativo'
 
 // ── Pipeline ──────────────────────────────────────────────────────────────────
 // Numeración global de pasos:
@@ -1030,43 +1032,69 @@ export default function PaginaCargaDocsUsuario() {
       ══════════════════════════════════════════════════════════════════════ */}
       {tabActiva === 'ubicaciones' && (
         <div className="flex flex-col gap-4">
-          {/* Pipeline completo: Paso 1 (indexar ubicaciones) + Paso 2..6 (Documentos) */}
-          <div className="rounded-lg border border-borde bg-fondo-tarjeta p-5 flex flex-col gap-4">
-            <BarraPaqueteOperativo />
-            <div className="flex items-stretch gap-3">
-              <BarraPasoNumerada pasoKey={PASO_INDEXAR} numero={1} color="#7C3AED" />
-              {PASOS.map((paso, i) => (
-                <BarraPasoNumerada key={paso.key} pasoKey={paso.key} numero={i + 2} color={paso.colorBarra} />
-              ))}
-            </div>
-            {mensajeError && (
-              <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                <AlertTriangle size={15} className="mt-0.5 shrink-0" />{mensajeError}
-              </div>
-            )}
-            {(ejecutando || progresos[PASO_INDEXAR]?.estado === 'listo') && (
-              <p className="text-center text-xs text-texto-muted">
-                {ejecutando ? `Procesando · ${formatTiempo(tiempoTranscurrido)}` : `Tiempo: ${formatTiempo(tiempoTranscurrido)}`}
-              </p>
-            )}
-            {etaInfo && (
-              <p className="text-center text-xs text-texto-muted tabular-nums">
-                {etaInfo.totalEnCurso.toLocaleString()} docs en pipeline · {etaInfo.velocidadMin}/min · ETA {formatEta(etaInfo.minutosEta)}
-              </p>
-            )}
-            <div className="flex gap-3">
-              {!ejecutando ? (
-                <Boton variante="primario" className="flex-1" onClick={ejecutarPipelineUbicaciones}>
-                  <FolderOpen size={15} />
-                  Vectorizar
-                </Boton>
-              ) : (
-                <Boton variante="peligro" className="flex-1" onClick={detener}>{t('detener')}</Boton>
-              )}
-            </div>
-          </div>
+          {/* Pipeline Narrativo — estilo B (carpetas → tarjetas humanas + Empezar) */}
+          {(() => {
+            const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => {
+              const prog = progresos[f.clave]
+              const fase = resumenPipeline?.por_destino?.[f.estadoDestino]
+              const enCurso = (fase?.en_proceso ?? 0) + (fase?.pendiente ?? 0)
+              const completados = fase?.completado ?? prog?.completados ?? 0
+              const count = prog?.estado === 'activo' ? enCurso || completados : completados
+              return {
+                clave: f.clave,
+                etiqueta: f.etiquetaCorta,
+                count,
+                color: f.color,
+                estado: prog?.estado ?? 'esperando',
+              }
+            })
+            // 5ª tarjeta: LISTOS = vectorizados acumulados
+            fasesUI.push({
+              clave: 'LISTOS',
+              etiqueta: 'LISTOS',
+              count: docsVectorizados,
+              color: '#16A34A',
+              estado: docsVectorizados > 0 ? 'listo' : 'esperando',
+            })
 
-          {/* Árbol jerárquico */}
+            // Archivos en curso (los más recientes de la cola activa)
+            const archivos: ArchivoEnCurso[] = []  // se llena cuando haya cola real; placeholder por ahora
+
+            const raizCarpeta = raices[0]?.nombre_ubicacion ?? 'Sin carpeta'
+
+            return (
+              <PipelineNarrativo
+                eyebrow={t('narrativoEyebrow')}
+                titulo={t('narrativoTitulo')}
+                subtitulo={t('narrativoSubtitulo')}
+                antesDeEmpezar={{
+                  carpetaNombre: raizCarpeta,
+                  documentos: totalDocs,
+                  pesoTexto: undefined,
+                  onEmpezar: ejecutarPipelineUbicaciones,
+                  textoBotonEmpezar: t('narrativoEmpezar'),
+                  deshabilitado: cargandoUbs,
+                }}
+                fases={fasesUI}
+                resumen={{
+                  completados: docsVectorizados,
+                  total: totalDocs,
+                  etaTexto: etaInfo?.minutosEta != null
+                    ? t('narrativoEta', { min: formatearMinutos(etaInfo.minutosEta).replace('~', '') })
+                    : null,
+                  listosCount: docsVectorizados,
+                  erroresCount: docsNoVectorizables,
+                }}
+                archivos={archivos}
+                ejecutando={ejecutando}
+                onDetener={detener}
+                porQueTexto={t('narrativoPorQue')}
+                mensajeError={mensajeError || null}
+              />
+            )
+          })()}
+
+          {/* Árbol jerárquico de ubicaciones — se mantiene intacto */}
           <div className="border border-borde rounded-lg bg-fondo-tarjeta">
             {cargandoUbs ? (
               <div className="py-8 text-center text-texto-muted">{tc('cargando')}</div>
@@ -1079,26 +1107,6 @@ export default function PaginaCargaDocsUsuario() {
             ) : (
               <div className="py-2">{raices.map((u) => renderNodo(u))}</div>
             )}
-          </div>
-
-          {/* Contadores de documentos — al final */}
-          <div className="grid grid-cols-4 gap-4 rounded-lg border border-borde bg-fondo-tarjeta p-4">
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="page-heading">{totalDocs}</span>
-              <span className="text-xs text-texto-muted">{t('documentosTotales')}</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="stat-number text-green-600">{docsVectorizados}</span>
-              <span className="text-xs text-texto-muted">{t('vectorizados')}</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="stat-number text-sky-600">{docsPendientes}</span>
-              <span className="text-xs text-texto-muted">{t('pendientes')}</span>
-            </div>
-            <div className="flex flex-col items-center gap-0.5">
-              <span className="stat-number text-amber-500">{docsNoVectorizables}</span>
-              <span className="text-xs text-texto-muted">{t('noVectorizables')}</span>
-            </div>
           </div>
         </div>
       )}
@@ -1251,39 +1259,59 @@ export default function PaginaCargaDocsUsuario() {
               </select>
             </div>
 
-            {mensajeError && (
-              <div className="flex items-start gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                <AlertTriangle size={15} className="mt-0.5 shrink-0" />{mensajeError}
-              </div>
-            )}
-
-            {/* Barra de paquete operativo (visión global) + barras de progreso del pipeline (Paso 2..6) */}
-            <BarraPaqueteOperativo />
-            <div className="flex items-stretch gap-3">
-              {PASOS.map((paso, i) => (
-                <BarraPasoNumerada key={paso.key} pasoKey={paso.key} numero={i + 2} color={paso.colorBarra} />
-              ))}
-            </div>
-
-            {/* Contadores */}
-            <div className="grid grid-cols-4 gap-4 pt-1">
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="page-heading">{totalDocs}</span>
-                <span className="text-xs text-texto-muted">{t('documentosTotales')}</span>
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="stat-number text-green-600">{docsVectorizados}</span>
-                <span className="text-xs text-texto-muted">{t('vectorizados')}</span>
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="stat-number text-sky-600">{docsPendientes}</span>
-                <span className="text-xs text-texto-muted">{t('pendientes')}</span>
-              </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <span className="stat-number text-amber-500">{docsNoVectorizables}</span>
-                <span className="text-xs text-texto-muted">{t('noVectorizables')}</span>
-              </div>
-            </div>
+            {/* Pipeline narrativo embebido — sin titulares, solo tarjetas + Empezar */}
+            {(() => {
+              const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => {
+                const prog = progresos[f.clave]
+                const fase = resumenPipeline?.por_destino?.[f.estadoDestino]
+                const enCurso = (fase?.en_proceso ?? 0) + (fase?.pendiente ?? 0)
+                const completados = fase?.completado ?? prog?.completados ?? 0
+                const count = prog?.estado === 'activo' ? enCurso || completados : completados
+                return {
+                  clave: f.clave,
+                  etiqueta: f.etiquetaCorta,
+                  count,
+                  color: f.color,
+                  estado: prog?.estado ?? 'esperando',
+                }
+              })
+              fasesUI.push({
+                clave: 'LISTOS',
+                etiqueta: 'LISTOS',
+                count: docsVectorizados,
+                color: '#16A34A',
+                estado: docsVectorizados > 0 ? 'listo' : 'esperando',
+              })
+              const carpetaSel = ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
+              return (
+                <PipelineNarrativo
+                  eyebrow={t('narrativoEyebrow')}
+                  titulo={t('narrativoTitulo')}
+                  subtitulo={t('narrativoSubtitulo')}
+                  antesDeEmpezar={{
+                    carpetaNombre: carpetaSel,
+                    documentos: totalDocs,
+                    onEmpezar: ejecutarPipeline,
+                    textoBotonEmpezar: t('narrativoEmpezar'),
+                    deshabilitado: false,
+                  }}
+                  fases={fasesUI}
+                  resumen={{
+                    completados: docsVectorizados,
+                    total: totalDocs,
+                    etaTexto: etaInfo?.minutosEta != null
+                      ? t('narrativoEta', { min: formatearMinutos(etaInfo.minutosEta).replace('~', '') })
+                      : null,
+                    listosCount: docsVectorizados,
+                    erroresCount: docsNoVectorizables,
+                  }}
+                  ejecutando={ejecutando}
+                  onDetener={detener}
+                  porQueTexto={t('narrativoPorQue')}
+                  mensajeError={mensajeError || null}
+                />
+              )
+            })()}
 
             {/* Lista paginada de documentos */}
             <div className="flex flex-col gap-2">
@@ -1379,24 +1407,12 @@ export default function PaginaCargaDocsUsuario() {
               )}
             </div>
 
-            {/* Timer */}
+            {/* Timer informativo (los botones ya viven en PipelineNarrativo arriba) */}
             {(ejecutando || todosListos) && (
-              <p className="text-center text-sm text-texto-muted">
+              <p className="text-center text-xs text-texto-muted">
                 {ejecutando ? t('procesando', { tiempo: formatTiempo(tiempoTranscurrido) }) : t('completadoEn', { tiempo: formatTiempo(tiempoTranscurrido) })}
               </p>
             )}
-
-            {/* Botones acción */}
-            <div className="flex gap-3">
-              {!ejecutando ? (
-                <Boton variante="primario" className="flex-1" onClick={ejecutarPipeline}>
-                  <ScanSearch size={15} />
-                  {todosListos ? t('cargarDeNuevo') : t('cargarDocumentos')}
-                </Boton>
-              ) : (
-                <Boton variante="peligro" className="flex-1" onClick={detener}>{t('detener')}</Boton>
-              )}
-            </div>
           </div>
         </div>
       )}

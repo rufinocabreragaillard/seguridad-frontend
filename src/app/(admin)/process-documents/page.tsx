@@ -25,6 +25,8 @@ import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
 import { escanearArchivosDirectorio, escanearDirectorio as escanearDirectorioUbicaciones } from '@/lib/escanear-directorio'
+import { PipelineConversacional } from '@/components/pipeline/PipelineConversacional'
+import { FASES_NARRATIVAS, formatearMinutos } from '@/lib/pipeline-narrativo'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { DocumentoDetalleModal } from '@/components/documentos/documento-detalle-modal'
@@ -1262,6 +1264,56 @@ function PaginaProcesarDocumentosInterna() {
           </Boton>
         </div>
       )}
+
+      {/* ───────── Pipeline Conversacional (estilo C) ───────── */}
+      {(() => {
+        const carpetaSel = ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
+        // Fase activa = pasoActual?.estado_destino → mapeamos a FASES_NARRATIVAS
+        const idxFase = FASES_NARRATIVAS.findIndex(f => f.estadoDestino === pasoActual?.estado_destino)
+        const indiceActivo = idxFase >= 0 ? idxFase : 0
+        const nombreEtapa = idxFase >= 0 ? FASES_NARRATIVAS[idxFase].etiquetaCorta : 'CARGANDO'
+        const archivoActual = cola.find(c => c.estado_cola === 'EN_PROCESO')?.nombre_documento
+          ?? cola[cola.length - 1]?.nombre_documento
+
+        // Lote: el resumen del backend trae paquete.actual / paquete.total
+        // En process-documents no tenemos polling de resumen, así que aproximamos con 1/1.
+        const lote = { actual: 1, total: 1 }
+        const erroresActuales = cola.filter(c => c.estado_cola === 'ERROR').length
+
+        const mensajeAntes = t('convAntesMensaje', { n: totalDocs.toLocaleString(), carpeta: carpetaSel })
+        const minutosEta: number | null = null
+        const mensajeEnProc = minutosEta != null
+          ? t('convEnProcesoMensaje', { hechos: procesados.toLocaleString(), total: totalDocs.toLocaleString(), min: formatearMinutos(minutosEta) })
+          : t('convEnProcesoMensajeSinEta', { hechos: procesados.toLocaleString(), total: totalDocs.toLocaleString() })
+
+        return (
+          <PipelineConversacional
+            eyebrow={t('convEyebrow')}
+            titulo={t('convTitulo')}
+            subtitulo={t('convSubtitulo')}
+            antesDeEmpezar={{
+              mensajePrincipal: mensajeAntes,
+              mensajeTiempo: null,
+              onEmpezar: ejecutar,
+              textoBotonEmpezar: t('convBotonEmpezar'),
+              deshabilitado: ejecutando || !procesoSel,
+            }}
+            enProceso={{
+              mensaje: mensajeEnProc,
+              lote,
+              etapa: { indiceActivo, total: FASES_NARRATIVAS.length, nombre: nombreEtapa },
+              actual: { completados: procesados, total: totalDocs, archivoActual },
+              submensaje: erroresActuales > 0
+                ? `documento ${procesados} · ${erroresActuales} con error hasta ahora`
+                : `documento ${procesados}`,
+              onDetener: detener,
+            }}
+            ejecutando={ejecutando}
+            porQueTexto={t('convPorQue')}
+          />
+        )
+      })()}
+
       {/* Configuración */}
       <Tarjeta>
         <TarjetaContenido>
