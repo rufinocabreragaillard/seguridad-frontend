@@ -158,7 +158,6 @@ export default function PaginaHabilidades() {
 
   const guardar = async (cerrar: boolean) => {
     if (!form.nombre_habilidad.trim()) { setError('El nombre es obligatorio.'); return }
-    if (!form.prompt.trim()) { setError('El prompt es obligatorio.'); return }
     if (form.salida_destino === 'DOC_COLUMNA' && !form.salida_columna.trim()) {
       setError('salida_columna es obligatorio cuando salida_destino=DOC_COLUMNA.'); return
     }
@@ -171,7 +170,7 @@ export default function PaginaHabilidades() {
         descripcion:      form.descripcion.trim() || undefined,
         aplica_a:         form.aplica_a,
         tipo_habilidad:   form.tipo_habilidad,
-        prompt:           form.prompt.trim(),
+        prompt:           form.prompt.trim() || undefined,
         system_prompt:    form.system_prompt.trim() || undefined,
         id_modelo:        form.id_modelo !== '' ? Number(form.id_modelo) : undefined,
         salida_destino:   form.salida_destino,
@@ -488,7 +487,7 @@ export default function PaginaHabilidades() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Prompt <span className="text-error">*</span></label>
+                <label className="block text-sm font-medium text-texto mb-1">Prompt</label>
                 <p className="text-xs text-texto-muted mb-1">
                   Instrucción principal. Usa <code className="bg-fondo px-1 rounded">{'{{texto}}'}</code> para el texto del documento.
                 </p>
