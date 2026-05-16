@@ -70,4 +70,45 @@ test.describe('process-documents', () => {
       expect(box.y + box.height).toBeLessThan(viewport.height);
     }
   });
+
+  test('tab Revertir: tope reduce el conteo del botón Ejecutar', async ({ page }) => {
+    const tabs = page.locator('div.border-b button').filter({ hasText: /.+/ });
+    await tabs.nth(2).click();
+
+    // Esperar a que termine la carga inicial (catálogo de procesos cargado en page.tsx)
+    await page.waitForTimeout(2500);
+
+    // Abrir dropdown de Proceso
+    const procesoBtn = page.locator('button:has-text("— Sin valor —")').first();
+    await procesoBtn.click();
+    const menuPortal = page.locator('body > div.fixed.z-\\[9999\\]').first();
+    await expect(menuPortal).toBeVisible({ timeout: 5000 });
+
+    // Esperar a que aparezcan ítems con flecha "→" (procesos cargados desde backend)
+    const opciones = menuPortal.locator('button').filter({ hasText: /→/ });
+    await expect(opciones.first()).toBeVisible({ timeout: 10000 });
+    await opciones.first().click();
+
+    // Esperar a que aparezca el conteo en el botón Ejecutar/Eliminar
+    const ejecutarBtn = page.locator('button').filter({ hasText: /^(Ejecutar|Eliminar)( \(\d+\))?$/ }).first();
+    await expect(ejecutarBtn).toBeVisible({ timeout: 15000 });
+
+    // Esperar a que el conteo aparezca (puede tomar un par de segundos por la llamada solo_contar)
+    await expect(ejecutarBtn).toHaveText(/\(\d+\)/, { timeout: 15000 });
+    const textoSin = await ejecutarBtn.textContent();
+    const matchSin = textoSin?.match(/\((\d+)\)/);
+    expect(matchSin).not.toBeNull();
+    const totalSin = parseInt(matchSin![1]);
+    expect(totalSin).toBeGreaterThan(0);
+
+    // Aplicar tope = max(1, floor(totalSin/2))
+    const topeVal = Math.max(1, Math.floor(totalSin / 2));
+    const topeInput = page.locator('input[type="number"]').first();
+    await topeInput.fill(String(topeVal));
+
+    // El conteo del botón debe actualizarse al tope
+    if (totalSin > 1) {
+      await expect(ejecutarBtn).toHaveText(new RegExp(`\\(${topeVal}\\)`), { timeout: 15000 });
+    }
+  });
 });
