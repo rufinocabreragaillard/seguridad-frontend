@@ -593,21 +593,25 @@ function PaginaProcesarDocumentosInterna() {
   }
 
   // Resuelve un Documento completo a partir de un ItemCola — busca en la lista
-  // cargada; si no está, construye el mínimo viable para abrir el modal de
-  // detalle (la carga de características/cola se hace vía API por código).
-  const docDesdeCola = useCallback((c: ItemCola): Documento => {
+  // cargada; si no está, hace fetch del documento completo al backend para que
+  // el modal tenga estado/ubicación/tamaño/fecha y muestre todas las pestañas.
+  const docDesdeCola = useCallback(async (c: ItemCola): Promise<Documento> => {
     const existente = documentos.find((x) => x.codigo_documento === c.codigo_documento)
     if (existente) return existente
-    return {
-      codigo_documento: c.codigo_documento,
-      codigo_grupo: grupoActivo || '',
-      nombre_documento: c.nombre_documento,
-      ubicacion_documento: c.ubicacion_documento ?? null,
-    } as Documento
+    try {
+      return await documentosApi.obtener(c.codigo_documento)
+    } catch {
+      return {
+        codigo_documento: c.codigo_documento,
+        codigo_grupo: grupoActivo || '',
+        nombre_documento: c.nombre_documento,
+        ubicacion_documento: c.ubicacion_documento ?? null,
+      } as Documento
+    }
   }, [documentos, grupoActivo])
 
-  const abrirDetalleDesdeCola = useCallback((c: ItemCola) => {
-    abrirDetalle(docDesdeCola(c))
+  const abrirDetalleDesdeCola = useCallback(async (c: ItemCola) => {
+    abrirDetalle(await docDesdeCola(c))
   }, [abrirDetalle, docDesdeCola])
 
   const abrirArchivoDesdeCola = async (c: ItemCola) => {
@@ -1055,7 +1059,7 @@ function PaginaProcesarDocumentosInterna() {
         id_cola: p.id_cola,
         codigo_documento: p.codigo_documento,
         nombre_documento: doc?.nombre_documento || p.documentos?.nombre_documento || `Doc #${p.codigo_documento}`,
-        ubicacion_documento: doc?.ubicacion_documento || undefined,
+        ubicacion_documento: doc?.ubicacion_documento || p.documentos?.ubicacion_documento || undefined,
         estado_cola: p.estado_cola,
       }
     })

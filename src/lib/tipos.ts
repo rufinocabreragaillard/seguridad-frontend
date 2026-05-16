@@ -816,7 +816,7 @@ export interface ColaEstadoDoc {
   // No viene en la respuesta de /cola-estados-docs; se mantiene optional sólo
   // por compatibilidad con respuestas legacy hasta que se dropee la columna.
   max_intentos?: number
-  documentos?: { codigo_documento: number; nombre_documento: string; codigo_estado_doc: string | null } | null
+  documentos?: { codigo_documento: number; nombre_documento: string; codigo_estado_doc: string | null; ubicacion_documento?: string | null } | null
 }
 
 // ─── SQL Ejecutados ────────────────────────────────────────────────────────
