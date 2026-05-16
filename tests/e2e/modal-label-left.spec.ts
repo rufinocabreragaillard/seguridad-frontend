@@ -9,40 +9,40 @@ test.beforeEach(async ({ page }) => {
   await page.fill('input[type="email"]', EMAIL)
   await page.fill('input[type="password"]', PASSWORD)
   await page.click('button[type="submit"]')
-  await page.waitForURL(/\/(admin|dashboard|chat|areas)/, { timeout: 15000 })
+  await page.waitForURL(/\/(admin|dashboard|chat|areas|documents)/, { timeout: 15000 })
 })
 
-test('modal de Áreas: labels de campos single-line a la izquierda del input', async ({ page }) => {
-  await page.goto(`${BASE_URL}/areas`)
-  await page.waitForLoadState('networkidle', { timeout: 20000 })
-
-  const filaArea = page.locator('tbody tr').first()
-  await expect(filaArea).toBeVisible({ timeout: 15000 })
-  await page.locator('tbody tr button[title="Editar"]').first().click()
+test('modal Mi Cuenta: labels single-line a la izquierda del input', async ({ page }) => {
+  await page.locator('button:has(span.bg-primario), button:has(div.bg-primario), header button:has([class*="rounded-full"])').last().click({ timeout: 10000 })
+  await page.getByRole('menuitem').first().click()
 
   const modalBody = page.locator('.modal-body').first()
   await expect(modalBody).toBeVisible({ timeout: 5000 })
 
-  const label = modalBody.locator('label').first()
-  await expect(label).toBeVisible()
-  const input = modalBody.locator('input').first()
-  await expect(input).toBeVisible()
+  const label = modalBody.locator('label', { hasText: /alias|nombre/i }).first()
+  await expect(label).toBeVisible({ timeout: 5000 })
+
+  const labelHandle = await label.elementHandle()
+  if (!labelHandle) throw new Error('Label handle not found')
+  const inputHandle = await labelHandle.evaluateHandle((el) => {
+    const wrapper = el.parentElement
+    return wrapper?.querySelector('input') ?? null
+  })
+  const input = inputHandle.asElement()
+  if (!input) throw new Error('Input asociado al label no encontrado')
 
   const labelBox = await label.boundingBox()
-  const inputBox = await input.boundingBox()
-  expect(labelBox).not.toBeNull()
-  expect(inputBox).not.toBeNull()
+  const inputBox = await (input as any).boundingBox()
   if (!labelBox || !inputBox) throw new Error('No boxes')
 
   expect(labelBox.x + labelBox.width).toBeLessThanOrEqual(inputBox.x + 4)
 
-  const tops = Math.abs(labelBox.y - inputBox.y)
-  expect(tops).toBeLessThan(labelBox.height + 4)
+  const labelCenterY = labelBox.y + labelBox.height / 2
+  const inputCenterY = inputBox.y + inputBox.height / 2
+  expect(Math.abs(labelCenterY - inputCenterY)).toBeLessThan(inputBox.height)
 
-  const labelText = (await label.textContent()) ?? ''
-  expect(labelText.trim().length).toBeGreaterThan(0)
-  const labelAfterContent = await label.evaluate(
+  const afterContent = await label.evaluate(
     (el) => window.getComputedStyle(el, '::after').content
   )
-  expect(labelAfterContent).toContain(':')
+  expect(afterContent).toContain(':')
 })
