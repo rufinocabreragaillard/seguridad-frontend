@@ -1057,7 +1057,7 @@ export default function PaginaCargaDocsUsuario() {
                   mensajePrincipal: mensajeAntes,
                   mensajeTiempo: null,
                   onEmpezar: ejecutarPipelineUbicaciones,
-                  textoBotonEmpezar: 'Semanticar',
+                  textoBotonEmpezar: 'Capturar Semántica',
                   deshabilitado: cargandoUbs,
                 }}
                 enProceso={{
@@ -1107,7 +1107,7 @@ export default function PaginaCargaDocsUsuario() {
                   type="button"
                   onClick={() => !ejecutando && setUbicDocDropdownOpen(!ubicDocDropdownOpen)}
                   disabled={ejecutando}
-                  className="flex items-center gap-2 rounded-lg border border-primario bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50"
+                  className="flex items-center gap-2 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50"
                 >
                   <FolderOpen size={15} className={ubicacionDocSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
                   <span className="flex-1 text-left truncate">
@@ -1260,7 +1260,7 @@ export default function PaginaCargaDocsUsuario() {
                     mensajePrincipal: mensajeAntes,
                     mensajeTiempo: null,
                     onEmpezar: ejecutarPipeline,
-                    textoBotonEmpezar: 'Semanticar',
+                    textoBotonEmpezar: 'Capturar Semántica',
                     deshabilitado: false,
                   }}
                   enProceso={{

@@ -102,7 +102,7 @@ export function PipelineConversacional({
                     disabled={antesDeEmpezar.deshabilitado}
                     className="min-w-[180px] justify-center"
                   >
-                    {antesDeEmpezar.textoBotonEmpezar ?? 'Semanticar'}
+                    {antesDeEmpezar.textoBotonEmpezar ?? 'Capturar Semántica'}
                   </Boton>
                   {antesDeEmpezar.onElegirOtra && (
                     <Boton variante="contorno" onClick={antesDeEmpezar.onElegirOtra}>
