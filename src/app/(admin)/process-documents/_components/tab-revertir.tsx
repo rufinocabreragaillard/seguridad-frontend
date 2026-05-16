@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useTranslations } from 'next-intl'
 import { Play, AlertTriangle, Loader2, ChevronDown, ChevronRight, X, CheckCircle, FolderOpen, Search, Square } from 'lucide-react'
 import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
@@ -50,8 +51,14 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
   const [ubicExpandidos, setUbicExpandidos] = useState<Set<string>>(new Set())
   const [tope, setTope] = useState('')
   const ubicDropdownRef = useRef<HTMLDivElement>(null)
+  const ubicBtnRef = useRef<HTMLButtonElement>(null)
+  const ubicMenuRef = useRef<HTMLDivElement>(null)
+  const [ubicMenuRect, setUbicMenuRect] = useState<{ top: number; left: number; width: number } | null>(null)
   const [dropdownProcesoAbierto, setDropdownProcesoAbierto] = useState(false)
   const dropdownProcesoRef = useRef<HTMLDivElement>(null)
+  const procesoBtnRef = useRef<HTMLButtonElement>(null)
+  const procesoMenuRef = useRef<HTMLDivElement>(null)
+  const [procesoMenuRect, setProcesoMenuRect] = useState<{ top: number; left: number; width: number } | null>(null)
 
   // Documentos candidatos
   const [documentos, setDocumentos] = useState<Documento[]>([])
@@ -88,10 +95,13 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
   // Estados en orden inverso del pipeline
   useEffect(() => { if (estadosDocsProp.length > 0) setEstadosDocs([...estadosDocsProp]) }, [estadosDocsProp])
 
-  // Click-outside dropdown ubicación
+  // Click-outside dropdown ubicación (considera botón y menú en Portal)
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (ubicDropdownRef.current && !ubicDropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const dentroBoton = ubicBtnRef.current?.contains(target)
+      const dentroMenu = ubicMenuRef.current?.contains(target)
+      if (!dentroBoton && !dentroMenu) {
         setUbicDropdownOpen(false)
       }
     }
@@ -99,16 +109,55 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
-  // Click-outside dropdown proceso
+  // Calcular posición del menú Ubicación (renderizado en Portal)
+  useEffect(() => {
+    if (!ubicDropdownOpen) { setUbicMenuRect(null); return }
+    const calcular = () => {
+      const btn = ubicBtnRef.current
+      if (!btn) return
+      const r = btn.getBoundingClientRect()
+      setUbicMenuRect({ top: r.bottom + 4, left: r.left, width: r.width })
+    }
+    calcular()
+    window.addEventListener('resize', calcular)
+    window.addEventListener('scroll', calcular, true)
+    return () => {
+      window.removeEventListener('resize', calcular)
+      window.removeEventListener('scroll', calcular, true)
+    }
+  }, [ubicDropdownOpen])
+
+  // Click-outside dropdown proceso (considera botón y menú en Portal)
   useEffect(() => {
     if (!dropdownProcesoAbierto) return
     const handler = (e: MouseEvent) => {
-      if (dropdownProcesoRef.current && !dropdownProcesoRef.current.contains(e.target as Node)) {
+      const target = e.target as Node
+      const dentroBoton = procesoBtnRef.current?.contains(target)
+      const dentroMenu = procesoMenuRef.current?.contains(target)
+      if (!dentroBoton && !dentroMenu) {
         setDropdownProcesoAbierto(false)
       }
     }
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
+  }, [dropdownProcesoAbierto])
+
+  // Calcular posición del menú Proceso (renderizado en Portal)
+  useEffect(() => {
+    if (!dropdownProcesoAbierto) { setProcesoMenuRect(null); return }
+    const calcular = () => {
+      const btn = procesoBtnRef.current
+      if (!btn) return
+      const r = btn.getBoundingClientRect()
+      setProcesoMenuRect({ top: r.bottom + 4, left: r.left, width: r.width })
+    }
+    calcular()
+    window.addEventListener('resize', calcular)
+    window.addEventListener('scroll', calcular, true)
+    return () => {
+      window.removeEventListener('resize', calcular)
+      window.removeEventListener('scroll', calcular, true)
+    }
   }, [dropdownProcesoAbierto])
 
   // Al abrir el dropdown de ubicaciones, expandir automáticamente las raíces
@@ -203,6 +252,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
               <label className="text-sm font-medium text-texto">Proceso</label>
               <div className="relative">
                 <button
+                  ref={procesoBtnRef}
                   type="button"
                   disabled={ejecutando}
                   onClick={() => setDropdownProcesoAbierto((v) => !v)}
@@ -223,8 +273,12 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                   </span>
                   <ChevronDown size={14} className="shrink-0 text-texto-muted" />
                 </button>
-                {dropdownProcesoAbierto && (
-                  <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-fondo border border-borde rounded-md shadow-lg py-1 max-h-64 overflow-y-auto">
+                {dropdownProcesoAbierto && procesoMenuRect && typeof window !== 'undefined' && createPortal(
+                  <div
+                    ref={procesoMenuRef}
+                    className="fixed z-[9999] bg-fondo border border-borde rounded-md shadow-lg py-1 max-h-64 overflow-y-auto"
+                    style={{ top: procesoMenuRect.top, left: procesoMenuRect.left, width: procesoMenuRect.width }}
+                  >
                     <button
                       type="button"
                       className="w-full text-left px-3 py-2 text-sm hover:bg-primario-muy-claro text-texto-muted"
@@ -282,7 +336,8 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                         })}
                       </>
                     )}
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
             </div>
@@ -319,6 +374,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
               </div>
               <div className="relative">
                 <button
+                  ref={ubicBtnRef}
                   type="button"
                   onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)}
                   disabled={ejecutando}
@@ -340,8 +396,12 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                     <ChevronDown size={13} className="text-texto-muted shrink-0" />
                   )}
                 </button>
-                {ubicDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '18rem' }}>
+                {ubicDropdownOpen && ubicMenuRect && typeof window !== 'undefined' && createPortal(
+                  <div
+                    ref={ubicMenuRef}
+                    className="fixed z-[9999] bg-surface border border-borde rounded-lg shadow-lg flex flex-col"
+                    style={{ top: ubicMenuRect.top, left: ubicMenuRect.left, width: ubicMenuRect.width, maxHeight: '18rem' }}
+                  >
                     <div className="p-2 border-b border-borde shrink-0">
                       <input
                         type="text"
@@ -427,7 +487,8 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
                         return raicesUbic.map(u => renderNodoUbic(u))
                       })()}
                     </div>
-                  </div>
+                  </div>,
+                  document.body
                 )}
               </div>
             </div>
