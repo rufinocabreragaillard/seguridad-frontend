@@ -85,12 +85,6 @@ export function PipelineConversacional({
             Antes de empezar
           </span>
           <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex gap-4 items-start">
-            <div
-              className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center bg-primario text-primario-texto font-bold text-sm"
-              aria-hidden
-            >
-              S
-            </div>
             <div className="flex-1 flex flex-col gap-3 min-w-0">
               <p className="text-sm lg:text-base text-texto leading-relaxed">
                 {antesDeEmpezar.mensajePrincipal}
@@ -123,12 +117,6 @@ export function PipelineConversacional({
         <div className="flex flex-col gap-5">
           {/* Burbuja del bot */}
           <div className="flex gap-4 items-start">
-            <div
-              className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center bg-primario"
-              aria-hidden
-            >
-              <span className="inline-block w-2 h-2 rounded-full bg-white animate-pulse" />
-            </div>
             <p className="text-sm lg:text-base text-texto leading-relaxed flex-1">
               {enProceso.mensaje}
             </p>

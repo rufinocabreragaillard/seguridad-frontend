@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react'
+import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   FolderOpen, Folder, FolderInput, FolderPlus, FolderTree, FolderSync,
@@ -397,23 +397,11 @@ export default function PaginaCargaDocsUsuario() {
 
   // Filtros de la lista de documentos (similar a /documents)
   const [estadosCat, setEstadosCat] = useState<EstadoDoc[]>([])
-  const [docsFiltroEstado, setDocsFiltroEstado] = useState('')
   const [docsBusqueda, setDocsBusqueda] = useState('')
 
   useEffect(() => {
     getEstadosDocs().then(setEstadosCat).catch(() => setEstadosCat([]))
   }, [])
-
-  // Estados ordenados: válidos (ruta feliz, múltiplo de 10) primero
-  const estadosOrdenadosCat = useMemo(() => {
-    const esValido = (e: EstadoDoc) => e.orden % 10 === 0
-    return [...estadosCat].sort((a, b) => {
-      const va = esValido(a) ? 0 : 1
-      const vb = esValido(b) ? 0 : 1
-      if (va !== vb) return va - vb
-      return a.orden - b.orden
-    })
-  }, [estadosCat])
 
   // Selector de ubicación para etapa 2 (árbol de ubicaciones, no directorio físico)
   const [ubicacionDocSel, setUbicacionDocSel] = useState('')
@@ -796,16 +784,16 @@ export default function PaginaCargaDocsUsuario() {
   useEffect(() => {
     setDocsListaPagina(1)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todosListos, ubicacionDocSel, docsFiltroEstado, docsBusqueda])
+  }, [todosListos, ubicacionDocSel, docsBusqueda])
 
   useEffect(() => {
-    // Filtro de estado explícito → usa ese; si no, fallback al estado del pipeline.
-    const estadoDoc = docsFiltroEstado || (todosListos ? 'CHUNKEADO' : 'CARGADO')
+    // Estado mostrado según fase del pipeline (sin filtro explícito del UI).
+    const estadoDoc = todosListos ? 'CHUNKEADO' : 'CARGADO'
     // Debounce simple para la búsqueda libre.
     const t = setTimeout(() => cargarDocsLista(docsListaPagina, estadoDoc), 250)
     return () => clearTimeout(t)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docsListaPagina, todosListos, ubicacionDocSel, docsFiltroEstado, docsBusqueda])
+  }, [docsListaPagina, todosListos, ubicacionDocSel, docsBusqueda])
 
   // Barra de paquete operativo — vista lógica sobre la corrida. Doble propósito:
   // (a) acotar SQLite/WAL en cliente para soportar 100k+ docs;
@@ -1238,20 +1226,6 @@ export default function PaginaCargaDocsUsuario() {
                 />
               </div>
 
-              {/* Filtro por estado */}
-              <select
-                value={docsFiltroEstado}
-                onChange={(e) => setDocsFiltroEstado(e.target.value)}
-                disabled={ejecutando}
-                className="text-sm border border-borde rounded-lg px-3 py-2 bg-fondo-tarjeta text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50"
-              >
-                <option value="">{t('todosLosEstados')}</option>
-                {estadosOrdenadosCat.map((e) => (
-                  <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
-                    {e.nombre_estado || e.codigo_estado_doc}
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Pipeline Conversacional — estilo C (dial triple + mensaje del asistente) */}
@@ -1313,7 +1287,7 @@ export default function PaginaCargaDocsUsuario() {
               <div className="flex items-center justify-between">
                 <p className="text-xs font-semibold text-texto-muted uppercase">
                   {(() => {
-                    const estadoActivo = docsFiltroEstado || (todosListos ? 'CHUNKEADO' : 'CARGADO')
+                    const estadoActivo = todosListos ? 'CHUNKEADO' : 'CARGADO'
                     const nombre = estadosCat.find(e => e.codigo_estado_doc === estadoActivo)?.nombre_estado || estadoActivo
                     return t('docsEnEstado', { estado: nombre })
                   })()}
