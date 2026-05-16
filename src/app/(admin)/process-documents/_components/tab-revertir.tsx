@@ -67,6 +67,9 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
   const [totalPaginas, setTotalPaginas] = useState(1)
   const [cargando, setCargando] = useState(false)
   const [yaCargado, setYaCargado] = useState(false)
+  // Conteo exacto que respeta TODOS los filtros + tope (calculado por backend con solo_contar=true)
+  const [conteoReversa, setConteoReversa] = useState<number | null>(null)
+  const [calculandoConteo, setCalculandoConteo] = useState(false)
 
   // Ejecución
   const [ejecutando, setEjecutando] = useState(false)
@@ -211,6 +214,33 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [procesoSel, estadoFiltro, ubicacionSel, filtroLibre])
 
+  // Conteo exacto del backend respetando todos los filtros + tope.
+  // Se recalcula al cambiar cualquier filtro (incluido tope).
+  useEffect(() => {
+    const estadoOrigen = estadoFiltro || pasoActual?.estado_origen
+    const estadoDestino = pasoActual?.estado_destino
+    if (!estadoOrigen || !estadoDestino) { setConteoReversa(null); return }
+    let cancelado = false
+    setCalculandoConteo(true)
+    const topeNum = tope ? parseInt(tope) : undefined
+    documentosApi.revertir({
+      estados_origen: [estadoOrigen],
+      estado_destino: estadoDestino,
+      q: filtroLibre || undefined,
+      codigo_ubicacion: ubicacionSel || undefined,
+      tope: topeNum && topeNum > 0 ? topeNum : undefined,
+      solo_contar: true,
+    }).then((r) => {
+      if (!cancelado) setConteoReversa(r.conteo ?? 0)
+    }).catch(() => {
+      if (!cancelado) setConteoReversa(null)
+    }).finally(() => {
+      if (!cancelado) setCalculandoConteo(false)
+    })
+    return () => { cancelado = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [procesoSel, estadoFiltro, ubicacionSel, filtroLibre, tope, pasoActual?.estado_origen, pasoActual?.estado_destino])
+
   const ejecutar = async () => {
     const estadoOrigen = estadoFiltro || pasoActual?.estado_origen
     const estadoDestino = pasoActual?.estado_destino
@@ -230,6 +260,7 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
       setResultado(r.revertidos)
       setDocumentos([])
       setTotalDocs(0)
+      setConteoReversa(null)
       setYaCargado(false)
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al ejecutar el proceso de reversa.')
@@ -540,24 +571,28 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
           {/* Barra inferior: conteo + Ejecutar */}
           <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
             <span className="text-sm text-texto-muted">
-              {cargando
+              {cargando || calculandoConteo
                 ? tc('cargando2')
-                : yaCargado
-                  ? `${totalDocs} documento${totalDocs !== 1 ? 's' : ''} en estado ${estadoFiltro || pasoActual?.estado_origen || '—'}`
-                  : ''}
+                : conteoReversa !== null
+                  ? `${conteoReversa} documento${conteoReversa !== 1 ? 's' : ''} a procesar`
+                    + (tope && parseInt(tope) > 0 && totalDocs > conteoReversa ? ` (tope: ${tope} de ${totalDocs})` : '')
+                  : yaCargado
+                    ? `${totalDocs} documento${totalDocs !== 1 ? 's' : ''} en estado ${estadoFiltro || pasoActual?.estado_origen || '—'}`
+                    : ''}
             </span>
             <div className="ml-auto flex items-center gap-3">
               <Boton
                 variante={esEliminacion ? 'peligro' : 'primario'}
                 onClick={() => setConfirmEjecutar(true)}
-                disabled={ejecutando || !pasoActual || totalDocs === 0 || cargando}
+                disabled={ejecutando || !pasoActual || (conteoReversa ?? totalDocs) === 0 || cargando || calculandoConteo}
               >
                 {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                {ejecutando
-                  ? (esEliminacion ? tc('eliminando') : tc('ejecutando'))
-                  : totalDocs > 0
-                    ? (esEliminacion ? `Eliminar (${totalDocs})` : `Ejecutar (${totalDocs})`)
-                    : (esEliminacion ? 'Eliminar' : 'Ejecutar')}
+                {(() => {
+                  const n = conteoReversa ?? totalDocs
+                  if (ejecutando) return esEliminacion ? tc('eliminando') : tc('ejecutando')
+                  if (n > 0) return esEliminacion ? `Eliminar (${n})` : `Ejecutar (${n})`
+                  return esEliminacion ? 'Eliminar' : 'Ejecutar'
+                })()}
               </Boton>
               <Boton variante="contorno" onClick={() => {}} disabled={!ejecutando}>
                 <Square size={14} />Detener
@@ -666,11 +701,12 @@ export function TabRevertir({ procesos: procesosProp = [], procesosCorregir: pro
       <ModalConfirmar
         abierto={confirmEjecutar}
         titulo={esEliminacion ? tc('confirmarEliminacion') : tc('confirmarReversa')}
-        mensaje={
-          esEliminacion
-            ? `¿ELIMINAR ${totalDocs} documento${totalDocs !== 1 ? 's' : ''} en estado "${estadoFiltro || pasoActual?.estado_origen}"? Se borrarán también su texto extraído, chunks, embeddings y características. Esta acción no se puede deshacer.`
-            : `¿Revertir ${totalDocs} documento${totalDocs !== 1 ? 's' : ''}${pasoActual ? ` de "${estadoFiltro || pasoActual.estado_origen}" a "${pasoActual.estado_destino}"` : ''}? Esta acción no se puede deshacer.`
-        }
+        mensaje={(() => {
+          const n = conteoReversa ?? totalDocs
+          return esEliminacion
+            ? `¿ELIMINAR ${n} documento${n !== 1 ? 's' : ''} en estado "${estadoFiltro || pasoActual?.estado_origen}"? Se borrarán también su texto extraído, chunks, embeddings y características. Esta acción no se puede deshacer.`
+            : `¿Revertir ${n} documento${n !== 1 ? 's' : ''}${pasoActual ? ` de "${estadoFiltro || pasoActual.estado_origen}" a "${pasoActual.estado_destino}"` : ''}? Esta acción no se puede deshacer.`
+        })()}
         alConfirmar={ejecutar}
         alCerrar={() => setConfirmEjecutar(false)}
         cargando={ejecutando}
