@@ -118,3 +118,15 @@ body {
   min-width: 0;
 }
 
+/* ============================================================
+   ANCHO DE MODALES — escala 5/4 sobre los anchos Tailwind nativos
+   ============================================================
+   Necesario porque los labels-izquierda consumen 7-9rem dentro del
+   modal y los anchos por defecto quedan estrechos.
+   El contenedor de Radix Dialog es el padre directo de .modal-body.
+   ============================================================ */
+:has(> .modal-body).max-w-2xl { max-width: 52.5rem !important; } /* 672px * 5/4 = 840px */
+:has(> .modal-body).max-w-3xl { max-width: 60rem !important; }   /* 768px * 5/4 = 960px */
+:has(> .modal-body).max-w-4xl { max-width: 70rem !important; }   /* 896px * 5/4 = 1120px */
+
+
