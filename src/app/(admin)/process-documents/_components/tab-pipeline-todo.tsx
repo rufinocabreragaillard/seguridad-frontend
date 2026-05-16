@@ -573,7 +573,7 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
           ? t('etapaXdeY', { n: pasoActualIdx + 3, total: 6, nombre: PASOS_PIPELINE[pasoActualIdx].nombre })
           : null
         return (
-          <div className="rounded-lg border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-4">
+          <div className="rounded-lg border border-borde bg-surface shadow-sm p-4 flex flex-col gap-4">
             <div className="flex items-center justify-between">
               <p className="text-xs font-semibold text-texto-muted uppercase flex items-center gap-2">
                 {t('estadoPipeline')}

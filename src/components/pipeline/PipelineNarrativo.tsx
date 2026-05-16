@@ -98,14 +98,14 @@ function TarjetaFase({ etiqueta, count, color, estado }: FaseNarrativa) {
 
   return (
     <div
-      className={`relative flex-1 min-w-0 rounded-xl border px-4 py-4 flex flex-col items-center justify-center gap-1 transition-all ${
+      className={`relative flex-1 min-w-0 rounded-xl border shadow-sm px-4 py-4 flex flex-col items-center justify-center gap-1 transition-all ${
         esListo
           ? 'border-green-200 bg-green-50'
           : esError
           ? 'border-red-200 bg-red-50'
           : esActivo
-          ? 'border-borde bg-fondo'
-          : 'border-borde bg-fondo-tarjeta'
+          ? 'border-borde bg-surface'
+          : 'border-borde bg-surface'
       }`}
     >
       <div className="flex items-center gap-1.5">
@@ -237,7 +237,7 @@ export function PipelineNarrativo({
                     <span className="text-xs text-texto-muted tabular-nums">{resumen.etaTexto}</span>
                   )}
                 </div>
-                <div className="h-2 rounded-full bg-fondo-tarjeta overflow-hidden">
+                <div className="h-2 rounded-full bg-fondo overflow-hidden">
                   <div
                     className="h-full bg-green-500 transition-all duration-500"
                     style={{ width: `${pct}%` }}
@@ -247,7 +247,7 @@ export function PipelineNarrativo({
 
               {/* Lista de archivos en curso */}
               {archivos.length > 0 && (
-                <div className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 flex flex-col gap-0.5 font-mono text-xs">
+                <div className="rounded-lg border border-borde bg-surface shadow-sm px-3 py-2 flex flex-col gap-0.5 font-mono text-xs">
                   {archivos.map((a, i) => (
                     <div key={`${a.nombre}-${i}`} className="flex items-center gap-2 truncate">
                       <IconoArchivoEstado estado={a.estado} />
