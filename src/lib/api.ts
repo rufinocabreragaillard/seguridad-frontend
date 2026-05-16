@@ -169,6 +169,20 @@ function _esErrorResponse(data: unknown): data is {
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
+    // 401: sesión expirada tras inactividad. Limpiar sesión local y redirigir
+    // al login para evitar que la UI se quede mostrando errores crípticos.
+    // Excepción: /auth/yo durante el bootstrap (AuthContext ya maneja su flujo).
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const url = error.config?.url || ''
+      const enLogin = window.location.pathname === '/login'
+      const esBootstrap = url.includes('/auth/yo')
+      if (!enLogin && !esBootstrap) {
+        const { supabase } = await import('./supabase')
+        await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+        window.location.href = '/login'
+        return Promise.reject(new Error('Sesión expirada'))
+      }
+    }
     // Sin respuesta del servidor (red caída, timeout, CORS, servidor dormido)
     if (!error.response) {
       let msg: string

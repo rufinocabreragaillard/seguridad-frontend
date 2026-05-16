@@ -39,30 +39,57 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 /**
  * Obtiene el token JWT de la sesión activa de Supabase.
- * Usa getUser() en lugar de getSession() para forzar validación con el servidor
- * y renovar el token si está expirado o próximo a expirar.
- * Se deduplica para evitar múltiples llamadas concurrentes (N_CONCURRENTE=6)
- * que causaban deadlocks en el lock de Supabase Auth.
+ * - Deduplicado para evitar refreshes concurrentes (N_CONCURRENTE=6 causaba deadlocks).
+ * - Con timeout en getSession() y refreshSession() para evitar requests colgados
+ *   tras inactividad prolongada (el preflight OPTIONS al endpoint /token
+ *   ocasionalmente no despacha el POST). Sin timeout, axios queda esperando
+ *   indefinidamente en el interceptor y la UI se ve "Cargando…" sin avanzar.
+ * - Si falla el refresh, se hace signOut local para forzar redirect a /login.
  */
+const TIMEOUT_TOKEN_MS = 4000
 let _tokenPromise: Promise<string | null> | null = null
+
+function conTimeout<T>(promesa: Promise<T>, ms: number, etiqueta: string): Promise<T> {
+  return Promise.race([
+    promesa,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`timeout_${etiqueta}`)), ms),
+    ),
+  ])
+}
 
 export async function obtenerToken(): Promise<string | null> {
   if (!_tokenPromise) {
     _tokenPromise = (async () => {
-      // getSession() puede devolver token expirado sin renovar.
-      // Primero intentar con la sesión local; si el token está por expirar
-      // (<5 min), forzar refresh.
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) return null
-      const expira = session.expires_at ?? 0
-      const ahora = Math.floor(Date.now() / 1000)
-      const minutosRestantes = (expira - ahora) / 60
-      if (minutosRestantes < 5) {
-        // Token expirado o próximo a expirar — renovar
-        const { data: { session: nueva } } = await supabase.auth.refreshSession()
-        return nueva?.access_token ?? null
+      try {
+        const { data: { session } } = await conTimeout(
+          supabase.auth.getSession(),
+          TIMEOUT_TOKEN_MS,
+          'getSession',
+        )
+        if (!session) return null
+        const expira = session.expires_at ?? 0
+        const ahora = Math.floor(Date.now() / 1000)
+        const minutosRestantes = (expira - ahora) / 60
+        if (minutosRestantes < 5) {
+          try {
+            const { data: { session: nueva } } = await conTimeout(
+              supabase.auth.refreshSession(),
+              TIMEOUT_TOKEN_MS,
+              'refreshSession',
+            )
+            return nueva?.access_token ?? null
+          } catch {
+            // refresh colgado/fallido tras inactividad larga: limpiar sesión local
+            // para que el próximo render del AuthContext redirija al login.
+            supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+            return null
+          }
+        }
+        return session.access_token
+      } catch {
+        return null
       }
-      return session.access_token
     })().finally(() => { _tokenPromise = null })
   }
   return _tokenPromise
