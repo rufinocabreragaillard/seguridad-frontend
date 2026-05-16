@@ -51,6 +51,28 @@ test.describe('process-pipeline (estilo C · conversacional)', () => {
     await expect(selectFiltro).toHaveCount(0);
   });
 
+  test('"Antes de empezar" y el dial circular están en dos columnas (lg)', async ({ page }) => {
+    // Forzar viewport grande para que aplique el breakpoint lg
+    await page.setViewportSize({ width: 1440, height: 900 })
+
+    // Tomar el rect del label "Antes de empezar" y del dial (role=img Progreso)
+    const labelAntes = page.getByText(/^Antes de empezar$/i).first()
+    const dial = page.getByRole('img', { name: /progreso/i }).first()
+    await expect(labelAntes).toBeVisible({ timeout: 10000 })
+    await expect(dial).toBeVisible({ timeout: 10000 })
+
+    const boxLabel = await labelAntes.boundingBox()
+    const boxDial = await dial.boundingBox()
+    expect(boxLabel).not.toBeNull()
+    expect(boxDial).not.toBeNull()
+    if (!boxLabel || !boxDial) return
+
+    // Dos columnas: el dial está a la derecha del label "Antes de empezar"
+    expect(boxDial.x).toBeGreaterThan(boxLabel.x + boxLabel.width)
+    // Y aproximadamente a la misma altura (no debajo)
+    expect(Math.abs(boxDial.y - boxLabel.y)).toBeLessThan(400)
+  });
+
   test('endpoint limpiar-completados responde sin error', async ({ page, request }) => {
     const token = await page.evaluate(() => {
       const claves = ['serverlm-jwt', 'jwt', 'supabase.auth.token']
