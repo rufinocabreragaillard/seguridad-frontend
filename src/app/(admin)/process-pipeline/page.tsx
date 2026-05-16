@@ -3,8 +3,8 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import {
-  FolderOpen, Folder, FolderInput, FolderPlus, FolderTree, FolderSync,
-  CheckCircle, AlertTriangle, RefreshCw, Upload, Download, DatabaseZap,
+  FolderOpen, Folder, FolderInput, FolderPlus, FolderSync,
+  CheckCircle, AlertTriangle, RefreshCw, Upload, Download,
   ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
   Eye, FileText, XCircle, ExternalLink, Search,
 } from 'lucide-react'
@@ -982,123 +982,16 @@ export default function PaginaCargaDocsUsuario() {
     }
   }
 
-  // ── State para tabs ────────────────────────────────────────────────────
-  const [tabActiva, setTabActiva] = useState<'ubicaciones' | 'documentos'>('ubicaciones')
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
       <PageHeader className="pr-28" i18nNamespace="processPipeline" />
 
-      {/* Tabs */}
-      <div className="flex border-b border-borde">
-        <button
-          onClick={() => setTabActiva('ubicaciones')}
-          className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-            tabActiva === 'ubicaciones'
-              ? 'border-b-2 border-primario text-primario'
-              : 'text-texto/70 hover:text-texto'
-          }`}
-        >
-          <span className="flex items-center gap-2"><FolderTree size={15} />{t('tabUbicaciones')}</span>
-        </button>
-        <button
-          onClick={() => setTabActiva('documentos')}
-          className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-            tabActiva === 'documentos'
-              ? 'border-b-2 border-primario text-primario'
-              : 'text-texto/70 hover:text-texto'
-          }`}
-        >
-          <span className="flex items-center gap-2"><DatabaseZap size={15} />{t('tabDocumentos')}</span>
-        </button>
-      </div>
-
       {/* ══════════════════════════════════════════════════════════════════════
-          TAB: Ubicaciones
+          Contenido: Documentos
       ══════════════════════════════════════════════════════════════════════ */}
-      {tabActiva === 'ubicaciones' && (
-        <div className="flex flex-col gap-4">
-          {/* Pipeline Conversacional — estilo C (dial triple + mensaje del asistente) */}
-          {(() => {
-            const raizCarpeta = raices[0]?.nombre_ubicacion ?? 'Sin carpeta'
-            // Fase activa según el primer paso PASOS con estado 'activo'
-            const idxActivo = PASOS.findIndex(p => progresos[p.key]?.estado === 'activo')
-            const idxFase = idxActivo >= 0
-              ? FASES_NARRATIVAS.findIndex(f => f.estadoDestino === PASOS[idxActivo].estadoDestino)
-              : -1
-            const indiceActivo = idxFase >= 0 ? idxFase : 0
-            const nombreEtapa = idxFase >= 0 ? FASES_NARRATIVAS[idxFase].etiquetaCorta : 'CARGANDO'
-
-            const paq = resumenPipeline?.paquete
-            const lote = paq && paq.paquetes_totales > 0
-              ? { actual: paq.paquete_actual, total: paq.paquetes_totales }
-              : { actual: 1, total: 1 }
-
-            const progActiva = idxActivo >= 0 ? progresos[PASOS[idxActivo].key] : null
-            const actual = {
-              completados: progActiva?.completados ?? docsVectorizados,
-              total: progActiva?.total || totalDocs || 1,
-              archivoActual: undefined,
-            }
-
-            const mensajeAntes = t('narrativoTitulo')
-              ? `Encontré ${totalDocs.toLocaleString()} documentos en ${raizCarpeta}. Si te parece, los preparo para que puedas hacerles preguntas.`
-              : ''
-            const minEta = etaInfo?.minutosEta ?? null
-            const mensajeEnProc = minEta != null
-              ? `Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
-              : `Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
-
-            return (
-              <PipelineConversacional
-                antesDeEmpezar={{
-                  mensajePrincipal: mensajeAntes,
-                  mensajeTiempo: null,
-                  onEmpezar: ejecutarPipelineUbicaciones,
-                  textoBotonEmpezar: 'Capturar Semántica',
-                  deshabilitado: cargandoUbs,
-                }}
-                enProceso={{
-                  mensaje: mensajeEnProc,
-                  lote,
-                  etapa: { indiceActivo, total: FASES_NARRATIVAS.length, nombre: nombreEtapa },
-                  actual,
-                  submensaje: docsNoVectorizables > 0
-                    ? `documento ${docsVectorizados.toLocaleString()} · ${docsNoVectorizables.toLocaleString()} con error hasta ahora`
-                    : `documento ${docsVectorizados.toLocaleString()}`,
-                  onDetener: detener,
-                }}
-                ejecutando={ejecutando}
-                porQueTexto={t('narrativoPorQue')}
-                mensajeError={mensajeError || null}
-              />
-            )
-          })()}
-
-          {/* Árbol jerárquico de ubicaciones — se mantiene intacto */}
-          <div className="border border-borde rounded-lg bg-fondo-tarjeta">
-            {cargandoUbs ? (
-              <div className="py-8 text-center text-texto-muted">{tc('cargando')}</div>
-            ) : raices.length === 0 ? (
-              <div className="py-8 text-center text-texto-muted flex flex-col items-center gap-2">
-                <FolderTree size={32} className="text-texto-muted/50" />
-                <p>{t('sinUbicacionesConfiguradas')}</p>
-                <p className="text-xs text-texto-muted/70">{t('ayudaCargarDesdeDirectorio')}</p>
-              </div>
-            ) : (
-              <div className="py-2">{raices.map((u) => renderNodo(u))}</div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════════════════
-          TAB: Documentos
-      ══════════════════════════════════════════════════════════════════════ */}
-      {tabActiva === 'documentos' && (
-        <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-4">
             {/* Selector: árbol de ubicaciones (izquierda) + directorio físico (derecha, mismo borde) */}
             <div className="flex items-center gap-3 flex-wrap">
               {/* Dropdown árbol de ubicaciones */}
@@ -1381,7 +1274,6 @@ export default function PaginaCargaDocsUsuario() {
               </p>
             )}
         </div>
-      )}
 
       {/* ══════════════════════════════════════════════════════════════════════
           MODALES
