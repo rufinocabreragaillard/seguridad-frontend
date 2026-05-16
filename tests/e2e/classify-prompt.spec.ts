@@ -46,4 +46,36 @@ test.describe.serial('Prompt de Clasificación (/classify-prompt)', () => {
     const botones = page.getByRole('button', { name: /Copiar sin marcas/ })
     await expect(botones).toHaveCount(2)
   })
+
+  test('no existe el checkbox "Mostrar fuentes" (reemplazado por sidebar colapsable)', async ({ page }) => {
+    const checkbox = page.locator('input[type="checkbox"]').filter({ has: page.locator(':scope') })
+    // No debe haber un label con texto "Mostrar fuentes" envolviendo un checkbox
+    const labelToggle = page.locator('label', { hasText: /^Mostrar fuentes$/ })
+    await expect(labelToggle).toHaveCount(0)
+    // Tampoco un checkbox al lado del selector de documento
+    await expect(checkbox).toHaveCount(0)
+  })
+
+  test('panel de Fuentes se colapsa y expande con el botón Sidebar', async ({ page }) => {
+    // Esperar a que cargue el contenido
+    await expect(page.getByRole('heading', { name: 'System Prompt' })).toBeVisible({ timeout: 20000 })
+
+    // Estado inicial: panel expandido, título "Fuentes" visible
+    const headingFuentes = page.locator('div.section-heading', { hasText: /^Fuentes$/ }).first()
+    await expect(headingFuentes).toBeVisible()
+
+    // Botón colapsar (aria-label "Ocultar fuentes")
+    const botonOcultar = page.getByRole('button', { name: /Ocultar fuentes/i })
+    await expect(botonOcultar).toBeVisible()
+    await botonOcultar.click()
+
+    // Tras colapsar: el título "Fuentes" desaparece y aparece "Mostrar fuentes"
+    await expect(headingFuentes).toBeHidden()
+    const botonMostrar = page.getByRole('button', { name: /Mostrar fuentes/i })
+    await expect(botonMostrar).toBeVisible()
+
+    // Re-expandir
+    await botonMostrar.click()
+    await expect(headingFuentes).toBeVisible()
+  })
 })
