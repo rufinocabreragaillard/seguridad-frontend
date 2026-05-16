@@ -345,7 +345,7 @@ export default function PaginaHabilidades() {
         titulo={editando
           ? `Editar Habilidad: ${editando.nombre_habilidad} - ${editando.codigo_habilidad}`
           : 'Nueva habilidad'}
-        ancho="lg"
+        className="max-w-3xl"
       >
         {/* Tabs */}
         <div className="flex gap-0 border-b border-borde -mt-2 mb-4">
@@ -353,7 +353,7 @@ export default function PaginaHabilidades() {
           <button type="button" className={tabStyle(tabModal === 'prompts')} onClick={() => setTabModal('prompts')}>Prompts</button>
         </div>
 
-        <div className="min-h-[525px] flex flex-col">
+        <div className="flex flex-col">
           {tabModal === 'datos' && (
             <div className="space-y-3">
               {!editando && (
@@ -366,21 +366,23 @@ export default function PaginaHabilidades() {
                   />
                 </div>
               )}
-              <div>
-                <label className="block text-sm font-medium text-texto mb-1">Nombre <span className="text-error">*</span></label>
-                <Input
-                  value={form.nombre_habilidad}
-                  onChange={(e) => setForm({ ...form, nombre_habilidad: e.target.value })}
-                  placeholder="Resumir documento"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-texto mb-1">Alias</label>
-                <Input
-                  value={form.alias_habilidad}
-                  onChange={(e) => setForm({ ...form, alias_habilidad: e.target.value })}
-                  placeholder="Resumir"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-texto mb-1">Nombre <span className="text-error">*</span></label>
+                  <Input
+                    value={form.nombre_habilidad}
+                    onChange={(e) => setForm({ ...form, nombre_habilidad: e.target.value })}
+                    placeholder="Resumir documento"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-texto mb-1">Alias</label>
+                  <Input
+                    value={form.alias_habilidad}
+                    onChange={(e) => setForm({ ...form, alias_habilidad: e.target.value })}
+                    placeholder="Resumir"
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-texto mb-1">{tc('descripcion')}</label>
@@ -474,18 +476,6 @@ export default function PaginaHabilidades() {
           {tabModal === 'prompts' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-texto mb-1">Prompt <span className="text-error">*</span></label>
-                <p className="text-xs text-texto-muted mb-1">
-                  Instrucción principal. Usa <code className="bg-fondo px-1 rounded">{'{{texto}}'}</code> para el texto del documento.
-                </p>
-                <Textarea
-                  value={form.prompt}
-                  onChange={(e) => setForm({ ...form, prompt: e.target.value })}
-                  placeholder={t('placeholderPromptResumen')}
-                  rows={8}
-                />
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-texto mb-1">System Prompt (opcional)</label>
                 <p className="text-xs text-texto-muted mb-1">
                   Contexto/identidad del asistente para esta habilidad.
@@ -494,6 +484,18 @@ export default function PaginaHabilidades() {
                   value={form.system_prompt}
                   onChange={(e) => setForm({ ...form, system_prompt: e.target.value })}
                   placeholder={t('placeholderSystemPromptSintesis')}
+                  rows={5}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-texto mb-1">Prompt <span className="text-error">*</span></label>
+                <p className="text-xs text-texto-muted mb-1">
+                  Instrucción principal. Usa <code className="bg-fondo px-1 rounded">{'{{texto}}'}</code> para el texto del documento.
+                </p>
+                <Textarea
+                  value={form.prompt}
+                  onChange={(e) => setForm({ ...form, prompt: e.target.value })}
+                  placeholder={t('placeholderPromptResumen')}
                   rows={5}
                 />
               </div>
