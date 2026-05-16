@@ -11,52 +11,31 @@ test.describe('process-documents (estilo B · narrativo)', () => {
     await expect(page).toHaveURL(/process-documents/, { timeout: 10000 });
   });
 
-  test('tab Paso a Paso muestra "Antes de empezar"', async ({ page }) => {
-    await expect(page.getByText(/^Antes de empezar$/i).first()).toBeVisible({ timeout: 10000 });
+  test('tab Paso a Paso NO muestra el bloque "Antes de empezar"', async ({ page }) => {
+    // El header "Antes de empezar" debe haber desaparecido por completo en esta vista.
+    await expect(page.getByText(/^Antes de empezar$/i)).toHaveCount(0, { timeout: 10000 });
   });
 
-  test('tab Paso a Paso muestra las 4+1 fases humanas (CARGANDO/LEYENDO TEXTO/DIVIDIENDO/INDEXANDO/LISTOS)', async ({ page }) => {
+  test('tab Paso a Paso muestra sólo la primera tarjeta de fase (CARGANDO)', async ({ page }) => {
+    // La primera tarjeta sigue visible
     await expect(page.getByText(/CARGANDO/).first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/LEYENDO TEXTO/).first()).toBeVisible();
-    await expect(page.getByText(/DIVIDIENDO/).first()).toBeVisible();
-    await expect(page.getByText(/INDEXANDO/).first()).toBeVisible();
-    await expect(page.getByText(/^LISTOS$/).first()).toBeVisible();
+    // El resto de fases narrativas y "LISTOS" no deben aparecer aquí (sólo se conserva la primera).
+    await expect(page.getByText(/^LISTOS$/)).toHaveCount(0);
   });
 
-  test('tab Paso a Paso tiene botón Empezar (estilo B)', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /^empezar$/i }).first()).toBeVisible({ timeout: 10000 });
+  test('Ubicación queda dentro de la tarjeta Configuración (debajo de Proceso)', async ({ page }) => {
+    // Etiqueta de Ubicación visible junto a la de Proceso
+    await expect(page.getByText(/^Ubicación:?$/i).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(/^Proceso:?$/i).first()).toBeVisible();
   });
 
-  test('tab Paso a Paso muestra pill "N listos"', async ({ page }) => {
-    await expect(page.getByText(/\d+\s+listos/i).first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('muestra el footer "Por qué"', async ({ page }) => {
-    await expect(page.getByText(/^Por qué$/i).first()).toBeVisible({ timeout: 10000 });
-  });
-
-  test('tab Vectorizar todo muestra el pipeline narrativo con sus filtros', async ({ page }) => {
-    await page.getByRole('button', { name: /vectorizar todo/i }).click();
-    // Filtros: dropdown único de Ubicación (sin segundo botón de directorio)
-    await expect(page.getByText(/^Ubicación$/).first()).toBeVisible({ timeout: 10000 });
-    await expect(page.getByText(/Seleccionar ubicación/i).first()).toBeVisible();
-    // Verifica estilo narrativo
-    await expect(page.getByText(/CARGANDO/).first()).toBeVisible();
-    await expect(page.getByText(/LEYENDO TEXTO/).first()).toBeVisible();
-    await expect(page.getByText(/^LISTOS$/).first()).toBeVisible();
+  test('tab Paso a Paso NO muestra barra de progreso ni pill "N listos"', async ({ page }) => {
+    // Ya no debe existir el resumen "X de Y listos · N% completado"
+    await expect(page.getByText(/\d+\s+de\s+\d+\s+listos/i)).toHaveCount(0, { timeout: 10000 });
   });
 
   test('mantiene tab Vectorizar todo y tab Revertir disponibles', async ({ page }) => {
     await expect(page.getByRole('button', { name: /vectorizar todo/i })).toBeVisible({ timeout: 10000 });
     await expect(page.getByRole('button', { name: /^revertir$/i })).toBeVisible();
-  });
-
-  test('botón Empezar usa color primario (no negro hardcoded)', async ({ page }) => {
-    const boton = page.getByRole('button', { name: /^empezar$/i }).first();
-    await expect(boton).toBeVisible({ timeout: 10000 });
-    const bgColor = await boton.evaluate(el => getComputedStyle(el).backgroundColor);
-    // No debe ser negro puro ni "casi negro" (var --color-texto = #1A1E2E → rgb(26,30,46)).
-    expect(bgColor).not.toMatch(/^rgb\(0, ?0, ?0\)/);
-    expect(bgColor).not.toMatch(/^rgb\(26, ?30, ?46\)/);
   });
 });
