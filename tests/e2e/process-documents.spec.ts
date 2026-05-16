@@ -41,4 +41,33 @@ test.describe('process-documents', () => {
     await tabs.nth(2).click();
     await expect(page.locator('body')).not.toContainText('Error', { timeout: 8000 });
   });
+
+  test('tab Revertir: dropdown Proceso usa Portal (no recortado por la tarjeta)', async ({ page }) => {
+    const tabs = page.locator('div.border-b button').filter({ hasText: /.+/ });
+    await tabs.nth(2).click();
+
+    // Abrir el dropdown de Proceso
+    const procesoBtn = page.locator('button:has-text("— Sin valor —")').first();
+    await procesoBtn.click();
+
+    // El menú abierto está en document.body con position: fixed y z-[9999]
+    const menuPortal = page.locator('body > div.fixed.z-\\[9999\\]').first();
+    await expect(menuPortal).toBeVisible({ timeout: 5000 });
+
+    // Y NO está anidado dentro del <Tarjeta> del filtro (eso era el bug — quedaba clipeado)
+    const menuDentroDeTarjeta = page.locator('div.bg-surface.rounded-xl div.fixed.z-\\[9999\\]');
+    await expect(menuDentroDeTarjeta).toHaveCount(0);
+
+    // El primer ítem "— Sin valor —" del menú está visible y dentro del viewport
+    const itemSinValor = menuPortal.getByRole('button', { name: /— Sin valor —/i }).first();
+    await expect(itemSinValor).toBeVisible();
+    const box = await itemSinValor.boundingBox();
+    const viewport = page.viewportSize();
+    expect(box).not.toBeNull();
+    expect(viewport).not.toBeNull();
+    if (box && viewport) {
+      expect(box.y).toBeGreaterThan(0);
+      expect(box.y + box.height).toBeLessThan(viewport.height);
+    }
+  });
 });
