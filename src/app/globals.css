@@ -78,3 +78,37 @@ body {
     color: var(--color-text-primary);
   }
 }
+
+/* ============================================================
+   LABELS EN MODALES — label a la izquierda del campo
+   ============================================================
+   Cualquier wrapper `flex flex-col` dentro de .modal-body cuyo
+   primer hijo sea un <label> se convierte en flex-row: label
+   ancho fijo a la izquierda (con ':') y el campo ocupa el resto.
+
+   Excepciones:
+   - Wrappers que contienen <textarea> → mantienen layout vertical.
+   - El propio <label className="flex items-center..."> de checkboxes
+     no aplica porque ya es flex-row (no flex-col).
+   ============================================================ */
+.modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) {
+  flex-direction: row;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) > label:first-child {
+  width: 9rem;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) > label:first-child::after {
+  content: ':';
+}
+
+.modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) > *:not(label) {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+

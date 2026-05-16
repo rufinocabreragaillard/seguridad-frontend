@@ -9,21 +9,16 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   icono?: React.ReactNode
 }
 
-// Dentro de .modal-body los labels se rendean a la izquierda del campo (single-line).
-// Fuera de .modal-body se mantiene el layout vertical clásico.
 const Input = forwardRef<HTMLInputElement, InputProps>(
   ({ className, etiqueta, error, icono, id, ...props }, ref) => {
     return (
-      <div className="flex flex-col gap-1.5 w-full [.modal-body_&]:flex-row [.modal-body_&]:items-center [.modal-body_&]:gap-3">
+      <div className="flex flex-col gap-1.5 w-full">
         {etiqueta && (
-          <label
-            htmlFor={id}
-            className="text-sm font-medium text-texto [.modal-body_&]:w-40 [.modal-body_&]:flex-shrink-0 [.modal-body_&]:text-right [.modal-body_&]:after:content-[':']"
-          >
+          <label htmlFor={id} className="text-sm font-medium text-texto">
             {etiqueta}
           </label>
         )}
-        <div className="relative [.modal-body_&]:flex-1">
+        <div className="relative">
           {icono && (
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-texto-muted">
               {icono}
@@ -44,7 +39,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
         </div>
-        {error && <p className="text-xs text-error [.modal-body_&]:ml-[10.75rem]">{error}</p>}
+        {error && <p className="text-xs text-error">{error}</p>}
       </div>
     )
   }

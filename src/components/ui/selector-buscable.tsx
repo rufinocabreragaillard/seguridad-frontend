@@ -49,9 +49,9 @@ export function SelectorBuscable({
   })
 
   return (
-    <div className="flex flex-col gap-1 [.modal-body_&]:flex-row [.modal-body_&]:items-center [.modal-body_&]:gap-3">
-      <label className="text-sm font-medium text-texto [.modal-body_&]:w-40 [.modal-body_&]:flex-shrink-0 [.modal-body_&]:text-right [.modal-body_&]:after:content-[':']">{etiqueta}</label>
-      <div className="relative [.modal-body_&]:flex-1" ref={ref}>
+    <div className="flex flex-col gap-1">
+      <label className="text-sm font-medium text-texto">{etiqueta}</label>
+      <div className="relative" ref={ref}>
         <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
         <input
           type="text"
