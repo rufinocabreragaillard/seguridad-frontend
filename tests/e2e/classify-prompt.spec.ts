@@ -8,7 +8,14 @@ test.describe.serial('Prompt de Clasificación (/classify-prompt)', () => {
     await page.getByRole('button', { name: /iniciar sesión|ingresar|login/i }).click()
     await expect(page).not.toHaveURL(/login/i, { timeout: 15000 })
     await page.goto('/classify-prompt')
-    await expect(page.getByRole('heading', { name: 'Prompt de Clasificación' })).toBeVisible({ timeout: 20000 })
+    await expect(page.getByRole('heading', { name: 'Prompt de Clasificación de Documentos' })).toBeVisible({ timeout: 20000 })
+  })
+
+  test('título y ayuda del PageHeader provienen de funciones (BD)', async ({ page }) => {
+    // Título exacto desde funciones.nombre_funcion
+    await expect(page.getByRole('heading', { name: 'Prompt de Clasificación de Documentos' })).toBeVisible()
+    // Subtítulo: el primer párrafo de funciones.ayuda_de_funcion
+    await expect(page.getByText(/Pantalla de diagnóstico que reconstruye, en vivo, el prompt exacto/i)).toBeVisible()
   })
 
   test('no muestra el campo "Grupo" en la barra de filtros', async ({ page }) => {
