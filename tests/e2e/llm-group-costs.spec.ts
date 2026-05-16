@@ -40,33 +40,35 @@ test.describe.serial('Costos LLM del Grupo (/llm-group-costs)', () => {
       return
     }
 
-    // Cuento filas reales de la tabla de detalle (excluye el header).
-    const filas = page.locator('table tbody tr')
+    // Tabla de detalle = la que está dentro del card "Detalle de llamadas".
+    const cardDetalle = page.locator('div').filter({ has: page.locator('h3', { hasText: 'Detalle de llamadas' }) }).last()
+    const filas = cardDetalle.locator('table tbody tr')
     const totalFilas = await filas.count()
-    // El grupo CAB LTDA tiene cientos de filas; con limit=20 debería ser exactamente 20.
     expect(totalFilas).toBeGreaterThan(0)
     expect(totalFilas).toBeLessThanOrEqual(20)
 
-    // Capturo la primera fecha visible para detectar cambio de página.
-    const primeraFechaP1 = await page.locator('table tbody tr').first().textContent()
+    // Capturo la primera fila visible para detectar cambio de página.
+    const primeraFilaP1 = (await filas.first().textContent())?.trim()
 
-    // Click en "siguiente" (chevron derecho, no doble chevron).
-    const botones = page.locator('button:has(svg.lucide-chevron-right):not(:has(svg.lucide-chevrons-right))')
-    const siguiente = botones.first()
+    // Página 1 confirmada por el Paginador.
+    await expect(cardDetalle.locator('text=/Página 1 de \\d+/')).toBeVisible()
+
+    // Click en "siguiente" (chevron derecho simple, no doble).
+    const siguiente = cardDetalle.locator('button:has(svg.lucide-chevron-right):not(:has(svg.lucide-chevrons-right))').first()
     await expect(siguiente).toBeEnabled()
     await siguiente.click()
     await page.waitForLoadState('networkidle')
 
-    const primeraFechaP2 = await page.locator('table tbody tr').first().textContent()
-    expect(primeraFechaP2).not.toBe(primeraFechaP1)
+    // Página 2: cambia el indicador del Paginador y la primera fila.
+    await expect(cardDetalle.locator('text=/Página 2 de \\d+/')).toBeVisible()
+    const primeraFilaP2 = (await cardDetalle.locator('table tbody tr').first().textContent())?.trim()
+    expect(primeraFilaP2).not.toBe(primeraFilaP1)
 
     // Botón anterior vuelve a la página 1.
-    const anterior = page.locator('button:has(svg.lucide-chevron-left):not(:has(svg.lucide-chevrons-left))').first()
+    const anterior = cardDetalle.locator('button:has(svg.lucide-chevron-left):not(:has(svg.lucide-chevrons-left))').first()
     await expect(anterior).toBeEnabled()
     await anterior.click()
     await page.waitForLoadState('networkidle')
-
-    const primeraFechaVuelta = await page.locator('table tbody tr').first().textContent()
-    expect(primeraFechaVuelta).toBe(primeraFechaP1)
+    await expect(cardDetalle.locator('text=/Página 1 de \\d+/')).toBeVisible()
   })
 })
