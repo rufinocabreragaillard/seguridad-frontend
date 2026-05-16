@@ -492,7 +492,7 @@
     },
     "buscarHabilidad": "Buscar habilidad…",
     "codigoOpcional": "Código (dejar vacío para autogenerar)",
-    "modeloLlmOpcional": "Modelo LLM (opcional — hereda del chat si vacío)",
+    "modeloLlmOpcional": "Modelo LLM (toma LLM por defecto si vacío)",
     "codigoLabel": "Código: {codigo}",
     "placeholderPromptResumen": "Resume el siguiente documento en 3 párrafos:\n\n'{{'texto'}}'",
     "placeholderSystemPromptSintesis": "Eres un asistente experto en síntesis de documentos legales."

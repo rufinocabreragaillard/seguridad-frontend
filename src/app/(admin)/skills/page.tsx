@@ -208,7 +208,7 @@ export default function PaginaHabilidades() {
   }
 
   const modeloNombre = (id?: number | null) =>
-    modelos.find((m) => m.id_modelo === id)?.nombre_modelo || '—'
+    modelos.find((m) => m.id_modelo === id)?.nombre_visible || '—'
 
   const tabStyle = (activo: boolean) =>
     `flex-1 text-center px-4 py-2 text-sm border-b-2 transition-colors ${
@@ -353,7 +353,7 @@ export default function PaginaHabilidades() {
           <button type="button" className={tabStyle(tabModal === 'prompts')} onClick={() => setTabModal('prompts')}>Prompts</button>
         </div>
 
-        <div className="min-h-[420px] flex flex-col">
+        <div className="min-h-[525px] flex flex-col">
           {tabModal === 'datos' && (
             <div className="space-y-3">
               {!editando && (
@@ -459,9 +459,9 @@ export default function PaginaHabilidades() {
                   onChange={(e) => setForm({ ...form, id_modelo: e.target.value })}
                   className={selectCls}
                 >
-                  <option value="">— Heredar del chat —</option>
-                  {modelos.filter((m) => m.activo).map((m) => (
-                    <option key={m.id_modelo} value={m.id_modelo}>{m.nombre_modelo} ({m.proveedor})</option>
+                  <option value="">— Por defecto —</option>
+                  {modelos.filter((m) => m.estado_valido).map((m) => (
+                    <option key={m.id_modelo} value={m.id_modelo}>{m.nombre_visible} ({m.proveedor})</option>
                   ))}
                 </select>
               </div>
