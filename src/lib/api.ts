@@ -1533,32 +1533,65 @@ export const ubicacionesDocsApi = {
 
 // ── Carga masiva de documentos ────────────────────────────────────────────
 
+type ArchivoCarga = {
+  nombre: string
+  ruta_completa: string
+  ruta_directorio: string
+  tamano_kb?: number
+  fecha_modificacion?: string
+}
+
+type CargaResp = {
+  insertados: number
+  actualizados: number
+  revertidos: number
+  eliminados: number
+  total: number
+}
+
+const TAMANO_LOTE_CARGA = 500
+
 export const cargaDocumentosApi = {
-  cargar: (datos: {
+  /**
+   * Carga masiva tolerante a payloads grandes y proxies con timeout corto.
+   * Si recibe ≤ TAMANO_LOTE_CARGA archivos, hace un único POST.
+   * Si recibe más, fragmenta en lotes secuenciales y agrega los contadores.
+   * El primer lote envía `codigos_ubicacion_escaneadas` (para el borrado de
+   * huérfanos); los siguientes lotes NO, para no re-ejecutar el barrido.
+   */
+  cargar: async (datos: {
     codigo_entidad?: string
-    archivos: {
-      nombre: string
-      ruta_completa: string
-      ruta_directorio: string
-      tamano_kb?: number
-      fecha_modificacion?: string
-    }[]
-    /**
-     * Lista de codigo_ubicacion que el cliente acaba de escanear. Si se envía,
-     * los documentos de esas ubicaciones que NO aparezcan en `archivos` se
-     * eliminan (hard delete cascada). Si se omite, no se borra nada.
-     */
+    archivos: ArchivoCarga[]
     codigos_ubicacion_escaneadas?: string[]
-  }) =>
-    api.post<{
-      insertados: number
-      actualizados: number
-      revertidos: number
-      eliminados: number
-      total: number
-    }>(
-      '/documentos/cargar-desde-ubicaciones', datos, { timeout: 120000 }
-    ).then((r) => r.data),
+  }): Promise<CargaResp> => {
+    const lotes: ArchivoCarga[][] = []
+    for (let i = 0; i < datos.archivos.length; i += TAMANO_LOTE_CARGA) {
+      lotes.push(datos.archivos.slice(i, i + TAMANO_LOTE_CARGA))
+    }
+    // Caso vacío: igual mandar 1 request (puede traer solo codigos_ubicacion_escaneadas para barrer huérfanos)
+    if (lotes.length === 0) lotes.push([])
+
+    const agregado: CargaResp = { insertados: 0, actualizados: 0, revertidos: 0, eliminados: 0, total: 0 }
+    for (let i = 0; i < lotes.length; i++) {
+      const body: { codigo_entidad?: string; archivos: ArchivoCarga[]; codigos_ubicacion_escaneadas?: string[] } = {
+        archivos: lotes[i],
+      }
+      if (datos.codigo_entidad) body.codigo_entidad = datos.codigo_entidad
+      // Solo el primer lote barre huerfanos; el resto solo upserta.
+      if (i === 0 && datos.codigos_ubicacion_escaneadas) {
+        body.codigos_ubicacion_escaneadas = datos.codigos_ubicacion_escaneadas
+      }
+      const r = await api.post<CargaResp>(
+        '/documentos/cargar-desde-ubicaciones', body, { timeout: 120000 },
+      )
+      agregado.insertados   += r.data.insertados   || 0
+      agregado.actualizados += r.data.actualizados || 0
+      agregado.revertidos   += r.data.revertidos   || 0
+      agregado.eliminados   += r.data.eliminados   || 0
+      agregado.total        += r.data.total        || 0
+    }
+    return agregado
+  },
 }
 
 // ─── Chat con LLM ────────────────────────────────────────────────────────────
