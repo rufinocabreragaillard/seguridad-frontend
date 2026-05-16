@@ -19,8 +19,8 @@ test.describe('process-pipeline (estilo C · conversacional)', () => {
     await expect(page.getByText(/encontré .*documentos/i).first()).toBeVisible({ timeout: 10000 });
   });
 
-  test('muestra botón "Semanticar" del estilo conversacional', async ({ page }) => {
-    await expect(page.getByRole('button', { name: /semanticar/i }).first()).toBeVisible({ timeout: 10000 });
+  test('muestra botón "Capturar Semántica" del estilo conversacional', async ({ page }) => {
+    await expect(page.getByRole('button', { name: /capturar sem[aá]ntica/i }).first()).toBeVisible({ timeout: 10000 });
   });
 
   test('muestra el dial triple SVG (role=img con aria-label Progreso)', async ({ page }) => {
@@ -49,6 +49,16 @@ test.describe('process-pipeline (estilo C · conversacional)', () => {
     // No debe existir ningún <select> con la opción "todos los estados"
     const selectFiltro = page.locator('select').filter({ hasText: /todos los estados/i });
     await expect(selectFiltro).toHaveCount(0);
+  });
+
+  test('dropdown "Seleccionar ubicación" usa borde gris y fondo blanco', async ({ page }) => {
+    await page.getByRole('button', { name: /^documentos$/i }).first().click();
+    const btn = page.getByRole('button', { name: /seleccionar ubicación/i }).first();
+    await expect(btn).toBeVisible({ timeout: 10000 });
+    const cls = await btn.getAttribute('class');
+    expect(cls).toContain('border-borde');
+    expect(cls).toContain('bg-surface');
+    expect(cls).not.toContain('border-primario bg-fondo-tarjeta');
   });
 
   test('"Antes de empezar" y el dial circular están en dos columnas (lg)', async ({ page }) => {
