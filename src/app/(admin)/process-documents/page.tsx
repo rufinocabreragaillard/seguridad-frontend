@@ -1203,6 +1203,39 @@ function PaginaProcesarDocumentosInterna() {
     }
   }
 
+  // Datos del pipeline narrativo (se usan en dos lugares: bloque superior "Antes de empezar"
+  // y bloque de estadísticas arriba de la grilla de documentos).
+  const carpetaSel = ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
+  const erroresActuales = cola.filter(c => c.estado_cola === 'ERROR').length
+  const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => ({
+    clave: f.clave,
+    etiqueta: f.etiquetaCorta,
+    count: pasoActual?.estado_destino === f.estadoDestino && ejecutando ? procesados : 0,
+    color: f.color,
+    estado: (pasoActual?.estado_destino === f.estadoDestino && ejecutando ? 'activo' : 'esperando') as FaseNarrativaUI['estado'],
+  }))
+  fasesUI.push({
+    clave: 'LISTOS',
+    etiqueta: 'LISTOS',
+    count: procesados,
+    color: '#16A34A',
+    estado: procesados > 0 ? 'listo' : 'esperando',
+  })
+  const archivosPipeline: ArchivoEnCurso[] = cola.slice(-4).map(c => ({
+    nombre: c.nombre_documento.split('/').pop() ?? c.nombre_documento,
+    estado: c.estado_cola === 'COMPLETADO' ? 'listo'
+          : c.estado_cola === 'ERROR' ? 'error'
+          : c.estado_cola === 'EN_PROCESO' ? 'activo'
+          : 'esperando',
+  }))
+  const resumenPipeline = {
+    completados: procesados,
+    total: totalDocs,
+    etaTexto: null as string | null,
+    listosCount: procesados,
+    erroresCount: erroresActuales,
+  }
+
   return (
     <div className="relative flex flex-col gap-6 w-full overflow-x-hidden">
       <PageHeader
@@ -1265,39 +1298,8 @@ function PaginaProcesarDocumentosInterna() {
         </div>
       )}
 
-      {/* ───────── Pipeline Narrativo (estilo B) ───────── */}
+      {/* ───────── Pipeline Narrativo (estilo B) — bloque superior con Ubicación + Empezar ───────── */}
       {(() => {
-        const carpetaSel = ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
-        const erroresActuales = cola.filter(c => c.estado_cola === 'ERROR').length
-
-        const fasesUI: FaseNarrativaUI[] = FASES_NARRATIVAS.map((f) => {
-          const enCurso = pasoActual?.estado_destino === f.estadoDestino && ejecutando ? procesados : 0
-          // Si está activo, mostramos los procesados; si no, 0 (porque no tenemos resumen polling aquí)
-          return {
-            clave: f.clave,
-            etiqueta: f.etiquetaCorta,
-            count: enCurso,
-            color: f.color,
-            estado: pasoActual?.estado_destino === f.estadoDestino && ejecutando ? 'activo' : 'esperando',
-          }
-        })
-        fasesUI.push({
-          clave: 'LISTOS',
-          etiqueta: 'LISTOS',
-          count: procesados,
-          color: '#16A34A',
-          estado: procesados > 0 ? 'listo' : 'esperando',
-        })
-
-        // Archivos en curso desde la cola
-        const archivos: ArchivoEnCurso[] = cola.slice(-4).map(c => ({
-          nombre: c.nombre_documento.split('/').pop() ?? c.nombre_documento,
-          estado: c.estado_cola === 'COMPLETADO' ? 'listo'
-                : c.estado_cola === 'ERROR' ? 'error'
-                : c.estado_cola === 'EN_PROCESO' ? 'activo'
-                : 'esperando',
-        }))
-
         // Selector de ubicación que va en el slot del bloque "Antes de empezar"
         const slotUbicacion = (
           <div className="flex items-center gap-2 min-w-0" ref={ubicDropdownRef}>
@@ -1429,14 +1431,8 @@ function PaginaProcesarDocumentosInterna() {
               slot: slotUbicacion,
             }}
             fases={fasesUI}
-            resumen={{
-              completados: procesados,
-              total: totalDocs,
-              etaTexto: null,
-              listosCount: procesados,
-              erroresCount: erroresActuales,
-            }}
-            archivos={archivos}
+            resumen={resumenPipeline}
+            archivos={archivosPipeline}
             ejecutando={ejecutando}
             onDetener={detener}
             porQueTexto={t('narrativoPorQue') ?? ''}
@@ -1445,13 +1441,14 @@ function PaginaProcesarDocumentosInterna() {
         )
       })()}
 
-      {/* Configuración */}
+      {/* Configuración — formato inline "Label: campo" */}
       <Tarjeta>
         <TarjetaContenido>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="flex flex-col gap-1.5 min-w-0" ref={dropdownProcesoRef}>
-              <label className="text-sm font-medium text-texto">{t('etiquetaProceso')}</label>
-              <div className="relative">
+          <div className="flex items-center gap-x-6 gap-y-3 flex-wrap">
+            {/* Proceso */}
+            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[280px]" ref={dropdownProcesoRef}>
+              <label className="text-sm font-medium text-texto shrink-0">{t('etiquetaProceso')}:</label>
+              <div className="relative flex-1 min-w-0">
                 <button
                   type="button"
                   disabled={ejecutando || cargandoInicial}
@@ -1523,15 +1520,16 @@ function PaginaProcesarDocumentosInterna() {
               </div>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-0">
-              <label className="text-sm font-medium text-texto">{t('etiquetaEstado')}</label>
+            {/* Estado */}
+            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[200px]">
+              <label className="text-sm font-medium text-texto shrink-0">{t('etiquetaEstado')}:</label>
               <select
                 value={estadoFiltro}
                 onChange={(e) => {
                   setEstadoFiltro(e.target.value)
                   setYaCargado(false)
                 }}
-                className={selectClass}
+                className={`${selectClass} flex-1 min-w-0`}
                 disabled={ejecutando}
               >
                 <option value="">{t('todosEstadoLabel')}</option>
@@ -1549,136 +1547,10 @@ function PaginaProcesarDocumentosInterna() {
               </select>
             </div>
 
-            <div className="flex flex-col gap-1.5 min-w-0" ref={ubicDropdownRef}>
-              <div className="flex items-center gap-2">
-                <label className="text-sm font-medium text-texto">{t('etiquetaUbicacion')}</label>
-                <span className="text-xs text-texto-muted">{t('hastaXNiveles', { n: 5 })}</span>
-              </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)}
-                  disabled={ejecutando}
-                  className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-4 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50"
-                >
-                  <FolderOpen size={16} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
-                  <span className="flex-1 text-left truncate">
-                    {ubicacionSel
-                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion || t('seleccionarUbicacion'))
-                      : t('seleccionarUbicacion')}
-                  </span>
-                  {ubicacionSel ? (
-                    <X
-                      size={13}
-                      className="text-texto-muted hover:text-error shrink-0"
-                      onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
-                    />
-                  ) : (
-                    <ChevronDown size={13} className="text-texto-muted shrink-0" />
-                  )}
-                </button>
-                {ubicDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '18rem' }}>
-                    {/* Input de búsqueda fijo arriba */}
-                    <div className="p-2 border-b border-borde shrink-0">
-                      <input
-                        type="text"
-                        placeholder={t('buscarUbicacion')}
-                        value={ubicBusqueda}
-                        onChange={(e) => setUbicBusqueda(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted"
-                        autoFocus
-                      />
-                    </div>
-                    {/* Lista scrolleable */}
-                    <div className="overflow-y-auto flex-1">
-                      <div
-                        className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde"
-                        onClick={() => { setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
-                      >
-                        {t('todasUbicaciones')}
-                      </div>
-                      {(() => {
-                        const tieneHijosUbic = (cod: string) => ubicaciones.some(u => u.codigo_ubicacion !== cod && u.codigo_ubicacion_superior === cod)
-                        // Con búsqueda: mostrar todos los que coincidan sin restricción de árbol
-                        if (ubicBusqueda) {
-                          const filtradas = ubicaciones.filter(u =>
-                            u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) ||
-                            (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase())
-                          )
-                          if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
-                          return filtradas.map(u => {
-                            const esArea = u.tipo_ubicacion === 'AREA'
-                            const selec = ubicacionSel === u.codigo_ubicacion
-                            return (
-                              <div
-                                key={u.codigo_ubicacion}
-                                className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`}
-                                style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
-                                onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
-                              >
-                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
-                                <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
-                              </div>
-                            )
-                          })
-                        }
-                        // Sin búsqueda: árbol colapsado — solo raíces y nodos expandidos
-                        const toggleExpandirUbic = (e: React.MouseEvent, cod: string) => {
-                          e.stopPropagation()
-                          setUbicExpandidos(prev => { const next = new Set(prev); next.has(cod) ? next.delete(cod) : next.add(cod); return next })
-                        }
-                        const renderNodoUbic = (u: UbicacionOption): React.ReactNode => {
-                          const tieneHijos = tieneHijosUbic(u.codigo_ubicacion)
-                          const expandido = ubicExpandidos.has(u.codigo_ubicacion)
-                          const esArea = u.tipo_ubicacion === 'AREA'
-                          const selec = ubicacionSel === u.codigo_ubicacion
-                          const hijos = tieneHijos
-                            ? ubicaciones
-                                .filter(h => h.codigo_ubicacion_superior === u.codigo_ubicacion)
-                                .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
-                            : []
-                          return (
-                            <div key={u.codigo_ubicacion}>
-                              <div
-                                className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer select-none ${selec ? 'bg-primario-muy-claro' : ''}`}
-                                style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
-                                onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
-                              >
-                                {tieneHijos
-                                  ? <button onClick={(e) => toggleExpandirUbic(e, u.codigo_ubicacion)} className="shrink-0 hover:text-primario text-texto-muted p-0.5 -ml-0.5 rounded">
-                                      {expandido ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                                    </button>
-                                  : <span className="w-3 shrink-0" />
-                                }
-                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
-                                <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
-                              </div>
-                              {expandido && hijos.map(h => renderNodoUbic(h))}
-                            </div>
-                          )
-                        }
-                        const raicesUbic = ubicaciones
-                          .filter(u => !u.codigo_ubicacion_superior)
-                          .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
-                        if (raicesUbic.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin ubicaciones</div>
-                        return raicesUbic.map(u => renderNodoUbic(u))
-                      })()}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* Filtro libre + Paralelo + Tope — misma línea */}
-          <div className="flex items-end gap-3 mt-3 flex-wrap">
-            <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-              <label className="text-sm font-medium text-texto">{t('filtroLibreLabel')}</label>
-              <div className="flex gap-2">
+            {/* Filtro libre */}
+            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[220px]">
+              <label className="text-sm font-medium text-texto shrink-0">{t('filtroLibreLabel')}:</label>
+              <div className="flex gap-2 flex-1 min-w-0">
                 <input
                   type="text"
                   placeholder={t('filtroLibrePlaceholder')}
@@ -1691,7 +1563,7 @@ function PaginaProcesarDocumentosInterna() {
                     }
                   }}
                   disabled={ejecutando}
-                  className="flex-1 text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
+                  className="flex-1 min-w-0 text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
                 />
                 {filtroLibreInput && (
                   <button
@@ -1706,8 +1578,10 @@ function PaginaProcesarDocumentosInterna() {
                 )}
               </div>
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-texto-muted">{t('paralelo')}</span>
+
+            {/* Paralelo */}
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="text-sm font-medium text-texto shrink-0">{t('paralelo')}:</label>
               <input
                 type="number"
                 min={1}
@@ -1717,12 +1591,14 @@ function PaginaProcesarDocumentosInterna() {
                 onBlur={guardarNParallel}
                 onKeyDown={(e) => e.key === 'Enter' && guardarNParallel()}
                 disabled={ejecutando || guardandoParalel}
-                className="w-14 text-xs border border-borde rounded px-1.5 py-2 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50"
+                className="w-16 text-sm border border-borde rounded-lg px-2 py-2 text-center bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50"
               />
               {guardandoParalel && <Loader2 className="w-3 h-3 animate-spin text-texto-muted" />}
             </div>
-            <div className="flex items-center gap-1.5">
-              <span className="text-xs text-texto-muted">{t('tope')}</span>
+
+            {/* Tope */}
+            <div className="flex items-center gap-2 shrink-0">
+              <label className="text-sm font-medium text-texto shrink-0">{t('tope')}:</label>
               <input
                 type="number"
                 min={1}
@@ -1730,11 +1606,12 @@ function PaginaProcesarDocumentosInterna() {
                 value={tope}
                 onChange={(e) => setTope(e.target.value)}
                 disabled={ejecutando}
-                className="w-20 text-xs border border-borde rounded px-1.5 py-2 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
+                className="w-20 text-sm border border-borde rounded-lg px-2 py-2 text-center bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
               />
             </div>
+
             {pasoActual?.estado_destino === 'ESCANEADO' && (
-              <label className="flex items-center gap-1.5 cursor-pointer select-none">
+              <label className="flex items-center gap-1.5 cursor-pointer select-none shrink-0">
                 <input
                   type="checkbox"
                   checked={generarResumen}
@@ -1889,6 +1766,24 @@ function PaginaProcesarDocumentosInterna() {
           </>
         )
       })()}
+
+      {/* Estadísticas del pipeline (fases + progreso + pill con %) — sobre la grilla de documentos */}
+      <PipelineNarrativo
+        antesDeEmpezar={{
+          carpetaNombre: carpetaSel,
+          documentos: totalDocs,
+          onEmpezar: ejecutar,
+          textoBotonEmpezar: t('narrativoEmpezar') ?? 'Empezar',
+          deshabilitado: ejecutando || !procesoSel,
+        }}
+        fases={fasesUI}
+        resumen={resumenPipeline}
+        archivos={archivosPipeline}
+        ejecutando={ejecutando}
+        onDetener={detener}
+        porQueTexto={t('narrativoPorQue') ?? ''}
+        mostrarAntesDeEmpezar={false}
+      />
 
       {/* Lista de documentos candidatos (visible cuando NO está ejecutando — antes y después).
           Durante la ejecución se oculta para no buscar más registros mientras corre el lote. */}
