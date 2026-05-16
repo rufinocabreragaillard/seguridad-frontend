@@ -185,17 +185,21 @@ api.interceptors.response.use(
     }
     // Sin respuesta del servidor (red caída, timeout, CORS, servidor dormido)
     if (!error.response) {
+      // Ruta exacta que falló (sin baseURL) para diagnóstico inmediato
+      const ruta = error.config?.url || '?'
+      const metodo = (error.config?.method || 'GET').toUpperCase()
+      const refEndpoint = ` [${metodo} ${ruta}]`
       let msg: string
       if (error.code === 'ECONNABORTED') {
-        msg = 'La solicitud tardó demasiado y fue cancelada. Intente nuevamente o reduzca la cantidad de documentos.'
+        msg = `La solicitud tardó demasiado y fue cancelada${refEndpoint}. Intente nuevamente o reduzca la cantidad de documentos.`
       } else if (error.code === 'ERR_NETWORK' || error.message?.includes('Network Error')) {
-        msg = 'Error de red: no se recibió respuesta del servidor. Verifique su conexión a internet.'
+        msg = `Error de red: no se recibió respuesta del servidor${refEndpoint}. Puede ser conexión a internet, servidor dormido (espere 10 s y reintente) o CORS.`
       } else if (error.code === 'ERR_CANCELED') {
-        msg = 'La solicitud fue cancelada.'
+        msg = `La solicitud fue cancelada${refEndpoint}.`
       } else {
         // Incluir código técnico para facilitar diagnóstico
         const codigo = error.code ? ` (${error.code})` : ''
-        msg = `No se recibió respuesta del servidor${codigo}. Verifique su conexión o intente más tarde.`
+        msg = `No se recibió respuesta del servidor${codigo}${refEndpoint}. Verifique su conexión o intente más tarde.`
       }
       return Promise.reject(new Error(msg))
     }
