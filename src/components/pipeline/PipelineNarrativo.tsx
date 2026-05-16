@@ -74,8 +74,8 @@ interface PipelineNarrativoProps {
   ejecutando: boolean
   onDetener?: () => void
 
-  /** Texto del bloque "Por qué" (footer explicativo). */
-  porQueTexto: string
+  /** Texto del bloque "Por qué" — ya no se renderiza, conservado por compatibilidad con callers. */
+  porQueTexto?: string
 
   /** Mensaje de error/aviso opcional. */
   mensajeError?: string | null
@@ -142,13 +142,12 @@ export function PipelineNarrativo({
   archivos = [],
   ejecutando,
   onDetener,
-  porQueTexto,
   mensajeError,
 }: PipelineNarrativoProps) {
   const pct = resumen.total > 0 ? Math.min(100, Math.round((resumen.completados / resumen.total) * 100)) : 0
 
   return (
-    <div className="rounded-2xl border border-borde bg-fondo p-6 lg:p-8 flex flex-col gap-7">
+    <div className="flex flex-col gap-3">
       {mensajeError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {mensajeError}
@@ -184,83 +183,71 @@ export function PipelineNarrativo({
         </div>
       )}
 
-      {/* EN PROCESO */}
+      {/* Pipeline (sin tarjeta exterior — más compacto) */}
       <div className="flex flex-col gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-muted">
-          {ejecutando ? 'En proceso' : 'Pipeline'}
-        </span>
+        {/* Tarjetas de fases */}
+        <div className="flex items-stretch gap-2">
+          {fases.map((f, i) => (
+            <div key={f.clave} className="flex items-stretch gap-2 flex-1 min-w-0">
+              <TarjetaFase {...f} />
+              {i < fases.length - 1 && <Flecha />}
+            </div>
+          ))}
+        </div>
 
-        <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 lg:p-5 flex flex-col gap-4">
-          {/* Tarjetas de fases */}
-          <div className="flex items-stretch gap-2">
-            {fases.map((f, i) => (
-              <div key={f.clave} className="flex items-stretch gap-2 flex-1 min-w-0">
-                <TarjetaFase {...f} />
-                {i < fases.length - 1 && <Flecha />}
+        {/* Barra de progreso global + ETA */}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-baseline justify-between flex-wrap gap-2">
+            <span className="text-sm text-texto tabular-nums">
+              <span className="font-semibold">{resumen.completados.toLocaleString()}</span>
+              {' de '}
+              <span className="font-semibold">{resumen.total.toLocaleString()}</span>
+              {' listos · '}
+              <span className="font-semibold">{pct}%</span>
+              {' completado'}
+            </span>
+            {resumen.etaTexto && (
+              <span className="text-xs text-texto-muted tabular-nums">{resumen.etaTexto}</span>
+            )}
+          </div>
+          <div className="h-2 rounded-full bg-fondo-tarjeta overflow-hidden">
+            <div
+              className="h-full bg-green-500 transition-all duration-500"
+              style={{ width: `${pct}%` }}
+            />
+          </div>
+        </div>
+
+        {/* Lista de archivos en curso */}
+        {archivos.length > 0 && (
+          <div className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 flex flex-col gap-0.5 font-mono text-xs">
+            {archivos.map((a, i) => (
+              <div key={`${a.nombre}-${i}`} className="flex items-center gap-2 truncate">
+                <IconoArchivoEstado estado={a.estado} />
+                <span className="truncate text-texto">{a.nombre}</span>
               </div>
             ))}
           </div>
+        )}
 
-          {/* Barra de progreso global + ETA */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex items-baseline justify-between flex-wrap gap-2">
-              <span className="text-sm text-texto tabular-nums">
-                <span className="font-semibold">{resumen.completados.toLocaleString()}</span>
-                {' de '}
-                <span className="font-semibold">{resumen.total.toLocaleString()}</span>
-                {' listos · '}
-                <span className="font-semibold">{pct}%</span>
-                {' completado'}
-              </span>
-              {resumen.etaTexto && (
-                <span className="text-xs text-texto-muted tabular-nums">{resumen.etaTexto}</span>
-              )}
-            </div>
-            <div className="h-2 rounded-full bg-fondo overflow-hidden">
-              <div
-                className="h-full bg-green-500 transition-all duration-500"
-                style={{ width: `${pct}%` }}
-              />
-            </div>
-          </div>
-
-          {/* Lista de archivos en curso */}
-          {archivos.length > 0 && (
-            <div className="rounded-lg border border-borde bg-fondo px-3 py-2 flex flex-col gap-0.5 font-mono text-xs">
-              {archivos.map((a, i) => (
-                <div key={`${a.nombre}-${i}`} className="flex items-center gap-2 truncate">
-                  <IconoArchivoEstado estado={a.estado} />
-                  <span className="truncate text-texto">{a.nombre}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Pill de listos + errores + botón Detener */}
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
-              {resumen.listosCount.toLocaleString()} listos
+        {/* Pill de listos + errores + botón Detener */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
+            {resumen.listosCount.toLocaleString()} listos
+          </span>
+          {resumen.erroresCount > 0 && (
+            <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
+              {resumen.erroresCount.toLocaleString()} con error
             </span>
-            {resumen.erroresCount > 0 && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
-                {resumen.erroresCount.toLocaleString()} con error
-              </span>
-            )}
-            {ejecutando && onDetener && (
-              <Boton variante="contorno" onClick={onDetener} className="ml-auto">
-                Detener
-              </Boton>
-            )}
-          </div>
+          )}
+          {ejecutando && onDetener && (
+            <Boton variante="contorno" onClick={onDetener} className="ml-auto">
+              Detener
+            </Boton>
+          )}
         </div>
       </div>
 
-      {/* POR QUÉ */}
-      <div className="border-t border-dashed border-borde pt-4">
-        <p className="text-xs text-texto-muted leading-relaxed">
-          <span className="font-semibold text-texto">Por qué</span> · {porQueTexto}
-        </p>
-      </div>
     </div>
   )
 }

@@ -59,7 +59,8 @@ interface PipelineConversacionalProps {
   }
 
   ejecutando: boolean
-  porQueTexto: string
+  /** Texto del bloque "Por qué" — ya no se renderiza, conservado por compatibilidad con callers. */
+  porQueTexto?: string
   mensajeError?: string | null
 }
 
@@ -67,11 +68,10 @@ export function PipelineConversacional({
   antesDeEmpezar,
   enProceso,
   ejecutando,
-  porQueTexto,
   mensajeError,
 }: PipelineConversacionalProps) {
   return (
-    <div className="rounded-2xl border border-borde bg-fondo p-6 lg:p-8 flex flex-col gap-7">
+    <div className="flex flex-col gap-3">
       {mensajeError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {mensajeError}
@@ -84,7 +84,7 @@ export function PipelineConversacional({
           <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-muted">
             Antes de empezar
           </span>
-          <div className="rounded-2xl border border-borde bg-fondo-tarjeta p-5 flex gap-4 items-start">
+          <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex gap-4 items-start">
             <div
               className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center bg-primario text-primario-texto font-bold text-sm"
               aria-hidden
@@ -118,12 +118,9 @@ export function PipelineConversacional({
         </div>
       )}
 
-      {/* EN PROCESO — mensaje + dial triple */}
-      <div className="flex flex-col gap-3">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-muted">
-          En proceso
-        </span>
-        <div className="rounded-2xl border border-borde bg-fondo-tarjeta p-5 lg:p-6 flex flex-col gap-5">
+      {/* Mensaje + dial triple (sin tarjeta exterior — más compacto) */}
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-5">
           {/* Burbuja del bot */}
           <div className="flex gap-4 items-start">
             <div
@@ -189,12 +186,6 @@ export function PipelineConversacional({
         </div>
       </div>
 
-      {/* POR QUÉ */}
-      <div className="border-t border-dashed border-borde pt-4">
-        <p className="text-xs text-texto-muted leading-relaxed">
-          <span className="font-semibold text-texto">Por qué</span> · {porQueTexto}
-        </p>
-      </div>
     </div>
   )
 }
