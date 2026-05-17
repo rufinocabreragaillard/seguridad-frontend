@@ -53,7 +53,7 @@ test('/document-categories tab Tipo de Documento: modal de edicion abre y muestr
   await expect(modal.getByRole('button', { name: /^datos$/i })).toBeVisible()
   await expect(modal.getByRole('button', { name: /system prompt/i })).toBeVisible()
   await expect(modal.getByRole('button', { name: /prompts.*insert.*update/i })).toBeVisible()
-  await expect(modal.getByRole('button', { name: /caracter.sticas/i })).toBeVisible()
+  await expect(modal.getByRole('button', { name: /tipos caracter.sticas/i })).toBeVisible()
 })
 
 test('/document-categories tab Tipo de Documento: pestana Caracteristicas muestra relaciones del tipo', async ({ page }) => {
@@ -65,12 +65,14 @@ test('/document-categories tab Tipo de Documento: pestana Caracteristicas muestr
 
   const filaFactura = page.locator('tr', { hasText: /factura/i }).first()
   await filaFactura.locator('button[title="Editar"], button:has(svg.lucide-pencil)').first().click({ timeout: 10000 })
-  await page.waitForTimeout(500)
 
-  // Ir a pestana Caracteristicas
-  await page.getByRole('button', { name: /caracter.sticas/i }).click()
-  await page.waitForTimeout(1500)
+  // Esperar al modal de Radix Dialog
+  const modal = page.getByRole('dialog')
+  await expect(modal).toBeVisible({ timeout: 10000 })
 
-  // FACTURA debe tener al menos MONTOS y FECHAS en su seed
-  await expect(page.getByText(/monto/i).first()).toBeVisible({ timeout: 10000 })
+  // Ir a sub-pestana "Tipos Caracteristicas" dentro del modal
+  await modal.getByRole('button', { name: /^tipos caracter.sticas$/i }).click()
+
+  // FACTURA debe tener al menos MONTOS en su seed; el listado se carga via API
+  await expect(modal.locator('table').getByText(/montos/i).first()).toBeVisible({ timeout: 15000 })
 })
