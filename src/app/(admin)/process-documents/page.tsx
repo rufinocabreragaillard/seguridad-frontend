@@ -523,6 +523,7 @@ function PaginaProcesarDocumentosInterna() {
     if (!seleccionInicialLista) return
     setDocumentos([])
     setYaCargado(false)
+    setMensajeCarga(null)
     cargarDocumentos()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [procesoSel, ubicacionSel, estadoFiltro, filtroLibre, cargandoInicial, seleccionInicialLista])
@@ -1286,7 +1287,7 @@ function PaginaProcesarDocumentosInterna() {
         <TarjetaContenido>
           <div className="flex items-center gap-x-6 gap-y-3 flex-wrap">
             {/* Proceso */}
-            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[280px]" ref={dropdownProcesoRef}>
+            <div className="flex items-center gap-2 min-w-0 flex-[2] min-w-[420px]" ref={dropdownProcesoRef}>
               <label className="text-sm font-medium text-texto shrink-0">{t('etiquetaProceso')}:</label>
               <div className="relative flex-1 min-w-0">
                 <button
@@ -1505,8 +1506,11 @@ function PaginaProcesarDocumentosInterna() {
               </select>
             </div>
 
-            {/* Filtro libre */}
-            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[220px]">
+            {/* Quiebre forzado de línea: Filtro libre, Paralelo y Tope van en la segunda fila */}
+            <div className="basis-full h-0" aria-hidden="true" />
+
+            {/* Filtro libre — primero en la segunda fila */}
+            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[260px]">
               <label className="text-sm font-medium text-texto shrink-0">{t('filtroLibreLabel')}:</label>
               <div className="flex gap-2 flex-1 min-w-0">
                 <input
@@ -1539,7 +1543,7 @@ function PaginaProcesarDocumentosInterna() {
 
             {/* Paralelo */}
             <div className="flex items-center gap-2 shrink-0">
-              <label className="text-sm font-medium text-texto shrink-0">{t('paralelo')}:</label>
+              <label className="text-sm font-medium text-texto shrink-0">{t('paralelo')}</label>
               <input
                 type="number"
                 min={1}
@@ -1556,7 +1560,7 @@ function PaginaProcesarDocumentosInterna() {
 
             {/* Tope */}
             <div className="flex items-center gap-2 shrink-0">
-              <label className="text-sm font-medium text-texto shrink-0">{t('tope')}:</label>
+              <label className="text-sm font-medium text-texto shrink-0">{t('tope')}</label>
               <input
                 type="number"
                 min={1}
