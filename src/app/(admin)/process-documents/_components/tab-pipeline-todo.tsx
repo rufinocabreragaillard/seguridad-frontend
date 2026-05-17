@@ -2,8 +2,9 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { FolderOpen, X, ChevronDown, ChevronRight, Loader2 } from 'lucide-react'
+import { FolderOpen, X, ChevronDown, ChevronRight, Loader2, Play, Square } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
+import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { documentosApi, ubicacionesDocsApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { getDirectoryHandle, setDirectoryHandle } from '@/lib/file-handle-store'
@@ -424,90 +425,127 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
   return (
     <div className="flex flex-col gap-6">
 
-      {/* ── Filtros ──────────────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-4">
-        <div className="flex items-end gap-2" ref={ubicDropdownRef}>
-          <div className="flex flex-col gap-1.5 flex-1">
-            <label className="text-sm font-medium text-texto">{t('etiquetaUbicacion')}</label>
-            <div className="relative">
-              <button type="button" onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)} disabled={ejecutando} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50">
-                <FolderOpen size={15} className={(ubicacionSel || dirHandle) ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
-                <span className="flex-1 text-left truncate">
-                  {ubicacionSel
-                    ? (ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? t('seleccionarUbicacion'))
-                    : (dirHandle ? dirHandle.name : t('seleccionarUbicacion'))}
-                </span>
-                {(ubicacionSel || dirHandle) ? <X size={13} className="text-texto-muted hover:text-error shrink-0" onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }} /> : <ChevronDown size={13} className="text-texto-muted shrink-0" />}
-              </button>
-              {ubicDropdownOpen && (
-                <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '16rem' }}>
-                  <div className="p-2 border-b border-borde shrink-0">
-                    <input type="text" placeholder={t('buscarUbicacion')} value={ubicBusqueda} onChange={(e) => setUbicBusqueda(e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted" autoFocus />
-                  </div>
-                  <div className="overflow-y-auto flex-1">
-                    <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { void elegirUbicacion('') }}>{t('todasUbicaciones')}</div>
-                    {ubicBusqueda ? (() => {
-                      const filtradas = ubicacionesProp.filter(u => u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) || (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase()))
-                      if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
-                      return filtradas.map(u => {
-                        const esArea = u.tipo_ubicacion === 'AREA'; const selec = ubicacionSel === u.codigo_ubicacion
-                        return (
-                          <div key={u.codigo_ubicacion} className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`} style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }} onClick={() => { void elegirUbicacion(u.codigo_ubicacion) }}>
-                            <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
-                            <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('tipoArea') : t('tipoContenido')}</span>
-                          </div>
-                        )
-                      })
-                    })() : (raicesUbic.length === 0 ? <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinUbicaciones')}</div> : raicesUbic.map(u => renderNodoDropdown(u)))}
-                  </div>
+      {/* ── Filtros + Ejecutar (mismo formato que pestaña "Paso a Paso") ───── */}
+      {!revertir && (
+        <Tarjeta>
+          <TarjetaContenido>
+            <div className="flex items-center gap-x-6 gap-y-3 flex-wrap" ref={ubicDropdownRef}>
+              {/* Filtro libre */}
+              <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[220px]">
+                <label className="text-sm font-medium text-texto shrink-0">{t('filtroLibreLabel')}:</label>
+                <div className="flex gap-2 flex-1 min-w-0">
+                  <input
+                    type="text"
+                    placeholder={t('filtroLibrePlaceholder')}
+                    value={filtroLibreInput}
+                    onChange={(e) => setFiltroLibreInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') setFiltroLibre(filtroLibreInput) }}
+                    disabled={ejecutando}
+                    className="flex-1 min-w-0 text-sm border border-borde rounded-lg px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted"
+                  />
+                  {filtroLibreInput && (
+                    <button type="button" onClick={() => { setFiltroLibreInput(''); setFiltroLibre('') }} disabled={ejecutando} className="px-2 rounded-lg border border-borde text-texto-muted hover:text-error hover:border-error transition-colors disabled:opacity-50" title={t('filtroLibreLabel')}>
+                      <X size={15} />
+                    </button>
+                  )}
                 </div>
-              )}
+              </div>
+
+              {/* Ubicación */}
+              <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[260px]">
+                <label className="text-sm font-medium text-texto shrink-0">{t('etiquetaUbicacion')}:</label>
+                <div className="relative flex-1 min-w-0">
+                  <button type="button" onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)} disabled={ejecutando} className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50">
+                    <FolderOpen size={15} className={(ubicacionSel || dirHandle) ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
+                    <span className="flex-1 text-left truncate">
+                      {ubicacionSel
+                        ? (ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? t('seleccionarUbicacion'))
+                        : (dirHandle ? dirHandle.name : t('todasUbicaciones'))}
+                    </span>
+                    {(ubicacionSel || dirHandle) ? <X size={13} className="text-texto-muted hover:text-error shrink-0" onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }} /> : <ChevronDown size={13} className="text-texto-muted shrink-0" />}
+                  </button>
+                  {ubicDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '16rem' }}>
+                      <div className="p-2 border-b border-borde shrink-0">
+                        <input type="text" placeholder={t('buscarUbicacion')} value={ubicBusqueda} onChange={(e) => setUbicBusqueda(e.target.value)} onClick={(e) => e.stopPropagation()} className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted" autoFocus />
+                      </div>
+                      <div className="overflow-y-auto flex-1">
+                        <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { void elegirUbicacion('') }}>{t('todasUbicaciones')}</div>
+                        {ubicBusqueda ? (() => {
+                          const filtradas = ubicacionesProp.filter(u => u.nombre_ubicacion.toLowerCase().includes(ubicBusqueda.toLowerCase()) || (u.url || '').toLowerCase().includes(ubicBusqueda.toLowerCase()))
+                          if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
+                          return filtradas.map(u => {
+                            const esArea = u.tipo_ubicacion === 'AREA'; const selec = ubicacionSel === u.codigo_ubicacion
+                            return (
+                              <div key={u.codigo_ubicacion} className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`} style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }} onClick={() => { void elegirUbicacion(u.codigo_ubicacion) }}>
+                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
+                                <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
+                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-600'}`}>{esArea ? t('tipoArea') : t('tipoContenido')}</span>
+                              </div>
+                            )
+                          })
+                        })() : (raicesUbic.length === 0 ? <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinUbicaciones')}</div> : raicesUbic.map(u => renderNodoDropdown(u)))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Tope */}
+              <div className="flex items-center gap-2 shrink-0">
+                <label className="text-sm font-medium text-texto shrink-0">{t('topeLabel')}:</label>
+                <input type="number" min={1} placeholder={t('todosPlaceholder')} value={tope} onChange={(e) => setTope(e.target.value)} disabled={ejecutando} className="w-20 text-sm border border-borde rounded-lg px-2 py-2 text-center bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
+              </div>
             </div>
+
             {!dirHandle && carpetaRaiz && (
-              <span className="text-xs text-texto-muted">{t('selecciona')} <strong className="text-texto">{carpetaRaiz}</strong></span>
+              <span className="block mt-2 text-xs text-texto-muted">{t('selecciona')} <strong className="text-texto">{carpetaRaiz}</strong></span>
             )}
-          </div>
-        </div>
 
-        <div className="flex items-end gap-4 flex-wrap">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-xs text-texto-muted font-medium">{t('topeLabel')}</label>
-            <input type="number" min={1} placeholder={t('todosPlaceholder')} value={tope} onChange={(e) => setTope(e.target.value)} disabled={ejecutando} className="w-20 text-sm border border-borde rounded-lg px-2 py-1.5 text-center bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
-          </div>
-          <div className="flex flex-col gap-1.5 flex-1 min-w-[200px]">
-            <label className="text-xs text-texto-muted font-medium">{t('filtroLibreLabel')}</label>
-            <div className="flex gap-2">
-              <input type="text" placeholder={t('filtroLibrePlaceholder')} value={filtroLibreInput} onChange={(e) => setFiltroLibreInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') setFiltroLibre(filtroLibreInput) }} disabled={ejecutando} className="flex-1 text-sm border border-borde rounded-lg px-3 py-1.5 bg-surface text-texto focus:outline-none focus:ring-1 focus:ring-primario disabled:opacity-50 placeholder:text-texto-muted" />
-              {filtroLibreInput && <button type="button" onClick={() => { setFiltroLibreInput(''); setFiltroLibre('') }} disabled={ejecutando} className="px-2 rounded-lg border border-borde text-texto-muted hover:text-error hover:border-error transition-colors disabled:opacity-50"><X size={14} /></button>}
+            {/* Conteo + Vectorizar/Detener — misma línea, mismo separador que "Paso a Paso" */}
+            <div className="flex items-center gap-3 mt-4 pt-4 border-t border-borde flex-wrap">
+              <span className="text-sm text-texto-muted flex items-center gap-2">
+                {(() => {
+                  const totalDocsTodos = Object.values(conteosPorEstado).reduce((a, b) => a + b, 0)
+                  const topeNum = tope ? parseInt(tope) : 0
+                  const efectivos = topeNum > 0 ? Math.min(totalDocsTodos, topeNum) : totalDocsTodos
+                  return <span>{efectivos} {efectivos !== totalDocsTodos ? `a procesar (de ${totalDocsTodos} totales)` : 'documentos'}</span>
+                })()}
+              </span>
+              <div className="ml-auto flex items-center gap-3">
+                <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando || !!pendingCarga}>
+                  {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
+                  {t('botonVectorizar')}
+                </Boton>
+                <Boton variante="contorno" onClick={detener} disabled={!ejecutando}>
+                  <Square size={14} />{t('detener')}
+                </Boton>
+              </div>
             </div>
-          </div>
-        </div>
-      </div>
+          </TarjetaContenido>
+        </Tarjeta>
+      )}
 
-      {/* ── Pipeline Narrativo (estilo B) — sólo "Antes de empezar" + acciones ── */}
-      {!revertir ? (() => {
-        const totalDocsTodos = Object.values(conteosPorEstado).reduce((a, b) => a + b, 0)
-        const carpetaSel = ubicacionesProp.find(u => u.codigo_ubicacion === ubicacionSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
-        return (
-          <PipelineNarrativo
-            antesDeEmpezar={{
-              carpetaNombre: carpetaSel,
-              documentos: totalDocsTodos,
-              onEmpezar: ejecutarPipeline,
-              textoBotonEmpezar: t('botonVectorizar') ?? 'Empezar',
-              deshabilitado: ejecutando || !!pendingCarga,
-            }}
-            fases={[]}
-            resumen={{ completados: 0, total: 0, etaTexto: null, listosCount: 0, erroresCount: 0 }}
-            archivos={[]}
-            ejecutando={ejecutando}
-            onDetener={detener}
-            mensajeError={mensajeError || null}
-            mostrarEstadisticas={false}
-          />
-        )
-      })() : (
+      {/* ── Pipeline Narrativo (sin "Antes de empezar": el botón vive arriba) ── */}
+      {!revertir ? (
+        <PipelineNarrativo
+          antesDeEmpezar={{
+            carpetaNombre: '',
+            documentos: 0,
+            onEmpezar: ejecutarPipeline,
+            textoBotonEmpezar: t('botonVectorizar') ?? 'Empezar',
+            deshabilitado: ejecutando || !!pendingCarga,
+          }}
+          fases={[]}
+          resumen={{ completados: 0, total: 0, etaTexto: null, listosCount: 0, erroresCount: 0 }}
+          archivos={[]}
+          ejecutando={ejecutando}
+          onDetener={detener}
+          mensajeError={mensajeError || null}
+          mostrarAntesDeEmpezar={false}
+          mostrarEstadisticas={false}
+        />
+      ) : (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-5 flex flex-col gap-3">
           <div className="flex items-center justify-between text-xs">
             <span className="font-semibold text-amber-800">{t('revertirEncabezado')}</span>
