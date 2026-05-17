@@ -114,11 +114,9 @@ export function PipelineConversacional({
               )}
             </div>
 
-            {/* En proceso: mensaje + AHORA MISMO + submensaje, todo bajo los botones */}
+            {/* En proceso: AHORA MISMO bajo los botones */}
             {ejecutando && (
               <div className="border-t border-borde pt-3 mt-1 flex flex-col gap-3 min-w-0">
-                <p className="text-sm text-texto leading-relaxed">{enProceso.mensaje}</p>
-
                 <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
                     Ahora mismo
@@ -127,17 +125,13 @@ export function PipelineConversacional({
                     {enProceso.actual.archivoActual ?? '—'}
                   </span>
                 </div>
-
-                {enProceso.submensaje && (
-                  <span className="text-xs text-texto-muted">{enProceso.submensaje}</span>
-                )}
               </div>
             )}
           </div>
         </div>
 
-        {/* ── Columna derecha: solo el dial triple ── */}
-        <div className="flex flex-col gap-5 items-center md:items-start">
+        {/* ── Columna derecha: dial + estadística a su derecha ── */}
+        <div className="flex flex-row gap-5 items-center md:items-start">
           <DialTriple
             lote={enProceso.lote}
             etapa={{
@@ -149,6 +143,15 @@ export function PipelineConversacional({
             pulsando={ejecutando ? 'interno' : null}
             tamano={220}
           />
+
+          {ejecutando && (
+            <div className="flex flex-col gap-1 min-w-0 self-center">
+              <p className="text-sm text-texto leading-relaxed">{enProceso.mensaje}</p>
+              {enProceso.submensaje && (
+                <p className="text-sm text-texto leading-relaxed">{enProceso.submensaje}</p>
+              )}
+            </div>
+          )}
 
           {/* Pie: Ver detalles (Detener proceso vive ahora en la columna izquierda, junto a Capturar) */}
           {enProceso.onVerDetalles && (
