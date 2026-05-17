@@ -59,6 +59,30 @@ test.describe('process-pipeline (sin lenguetas — solo Documentos)', () => {
     await expect(detener).toBeDisabled();
   });
 
+  test('NO se muestra la etiqueta "Antes de empezar" ni el mensaje "Encontré ... documentos"', async ({ page }) => {
+    await page.getByRole('button', { name: /seleccionar ubicación/i }).first().click({ timeout: 10000 });
+    const primeraOp = page.getByRole('option').first();
+    if (await primeraOp.count() > 0) {
+      await primeraOp.click({ timeout: 5000 }).catch(() => undefined);
+    }
+    await expect(page.getByText(/antes de empezar/i)).toHaveCount(0);
+    await expect(page.getByText(/encontré\s+[\d.,]+\s+documentos/i)).toHaveCount(0);
+  });
+
+  test('boton "Detener proceso" usa variante contorno (no peligro)', async ({ page }) => {
+    await page.getByRole('button', { name: /seleccionar ubicación/i }).first().click({ timeout: 10000 });
+    const primeraOp = page.getByRole('option').first();
+    if (await primeraOp.count() > 0) {
+      await primeraOp.click({ timeout: 5000 }).catch(() => undefined);
+    }
+    const detener = page.getByRole('button', { name: /detener proceso/i }).first();
+    await expect(detener).toBeVisible({ timeout: 10000 });
+    const cls = await detener.getAttribute('class');
+    // variante contorno => borde + fondo claro, no rojo
+    expect(cls).toContain('border-borde');
+    expect(cls).not.toContain('bg-error');
+  });
+
   test('endpoint limpiar-completados responde sin error', async ({ page, request }) => {
     const token = await page.evaluate(() => {
       const claves = ['serverlm-jwt', 'jwt', 'supabase.auth.token']
