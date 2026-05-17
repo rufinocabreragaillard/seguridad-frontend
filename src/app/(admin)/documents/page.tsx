@@ -12,6 +12,7 @@ import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
+import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { Paginador } from '@/components/ui/paginador'
 import { usePaginacion } from '@/hooks/usePaginacion'
 import { documentosApi } from '@/lib/api'
@@ -198,57 +199,61 @@ export default function PaginaDocumentos() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="max-w-sm flex-1">
-          <Input
-            placeholder={t('buscarPlaceholder')}
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            icono={<Search size={15} />}
-          />
-        </div>
-        <select
-          value={estadoFiltro}
-          onChange={(e) => setEstadoFiltro(e.target.value)}
-          className="text-sm border border-borde rounded-md px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario"
-        >
-          <option value="">Todos los estados</option>
-          {estadosOrdenados.map((e) => (
-            <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
-              {e.nombre_estado || e.codigo_estado_doc}
-            </option>
-          ))}
-        </select>
-        <div className="flex gap-2 ml-auto">
-          <Boton
-            variante="contorno"
-            tamano="sm"
-            onClick={() =>
-              exportarExcel(
-                filtrados as unknown as Record<string, unknown>[],
-                [
-                  { titulo: t('excelId'), campo: 'codigo_documento' },
-                  { titulo: t('excelNombre'), campo: 'nombre_documento' },
-                  { titulo: t('excelUbicacion'), campo: 'ubicacion_documento' },
-                  { titulo: t('excelResumen'), campo: 'resumen_documento' },
-                  { titulo: t('excelFechaModificacion'), campo: 'fecha_modificacion' },
-                  { titulo: t('excelTamano'), campo: 'tamano_kb' },
-                  { titulo: t('excelEstado'), campo: 'codigo_estado_doc' },
-                ],
-                'documentos'
-              )
-            }
-            disabled={filtrados.length === 0}
-          >
-            <Download size={15} />
-            {tc('exportarExcel')}
-          </Boton>
-          <Boton variante="primario" onClick={abrirNuevo}>
-            <Plus size={16} />
-            {t('nuevoDocumento')}
-          </Boton>
-        </div>
-      </div>
+      <Tarjeta>
+        <TarjetaContenido>
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="max-w-sm flex-1">
+              <Input
+                placeholder={t('buscarPlaceholder')}
+                value={busqueda}
+                onChange={(e) => setBusqueda(e.target.value)}
+                icono={<Search size={15} />}
+              />
+            </div>
+            <select
+              value={estadoFiltro}
+              onChange={(e) => setEstadoFiltro(e.target.value)}
+              className="text-sm border border-borde rounded-md px-3 py-2 bg-surface text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+            >
+              <option value="">Todos los estados</option>
+              {estadosOrdenados.map((e) => (
+                <option key={e.codigo_estado_doc} value={e.codigo_estado_doc}>
+                  {e.nombre_estado || e.codigo_estado_doc}
+                </option>
+              ))}
+            </select>
+            <div className="flex gap-2 ml-auto">
+              <Boton
+                variante="contorno"
+                tamano="sm"
+                onClick={() =>
+                  exportarExcel(
+                    filtrados as unknown as Record<string, unknown>[],
+                    [
+                      { titulo: t('excelId'), campo: 'codigo_documento' },
+                      { titulo: t('excelNombre'), campo: 'nombre_documento' },
+                      { titulo: t('excelUbicacion'), campo: 'ubicacion_documento' },
+                      { titulo: t('excelResumen'), campo: 'resumen_documento' },
+                      { titulo: t('excelFechaModificacion'), campo: 'fecha_modificacion' },
+                      { titulo: t('excelTamano'), campo: 'tamano_kb' },
+                      { titulo: t('excelEstado'), campo: 'codigo_estado_doc' },
+                    ],
+                    'documentos'
+                  )
+                }
+                disabled={filtrados.length === 0}
+              >
+                <Download size={15} />
+                {tc('exportarExcel')}
+              </Boton>
+              <Boton variante="primario" onClick={abrirNuevo}>
+                <Plus size={16} />
+                {t('nuevoDocumento')}
+              </Boton>
+            </div>
+          </div>
+        </TarjetaContenido>
+      </Tarjeta>
 
       {/* Tabla */}
       <Tabla>
