@@ -17,12 +17,12 @@ test.describe('process-documents · estadísticas sobre fondo blanco', () => {
     await expect(page).toHaveURL(/process-documents/, { timeout: 10000 });
   });
 
-  test('Paso a Paso: tarjeta CARGANDO tiene fondo blanco', async ({ page }) => {
-    const etiqueta = page.getByText(/^CARGANDO$/).first();
-    await expect(etiqueta).toBeVisible({ timeout: 15000 });
+  test('Paso a Paso: panel "Estado del pipeline" tiene fondo blanco', async ({ page }) => {
+    const label = page.getByText(/estado del pipeline/i).first();
+    await expect(label).toBeVisible({ timeout: 15000 });
 
-    // La tarjeta es el div padre con clase 'rounded-xl border ... bg-surface'
-    const tarjeta = etiqueta.locator('xpath=ancestor::div[contains(@class, "rounded-xl")][1]');
+    // El contenedor es el div con clase 'rounded-lg border bg-surface'
+    const tarjeta = label.locator('xpath=ancestor::div[contains(@class, "rounded-lg")][1]');
     await expect(tarjeta).toBeVisible();
 
     const bg = await tarjeta.evaluate((el) => getComputedStyle(el).backgroundColor);
