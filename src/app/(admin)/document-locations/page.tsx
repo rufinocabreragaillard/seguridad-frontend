@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState, useCallback, useMemo, useRef } from 'react'
-import { Pencil, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle, XCircle, AlertTriangle, Search, Loader2 } from 'lucide-react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { Pencil, Download, ChevronRight, ChevronDown, FolderTree, Folder, FolderOpen, FolderInput, FolderPlus, RefreshCw, ToggleLeft, ToggleRight, Shuffle, XCircle, AlertTriangle, Loader2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -10,6 +10,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
+import { Tarjeta, TarjetaContenido } from '@/components/ui/tarjeta'
 import { ubicacionesDocsApi, promptsApi } from '@/lib/api'
 import type { UbicacionDoc } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
@@ -66,7 +67,6 @@ export default function PaginaUbicacionesDocs() {
   const [ubicaciones, setUbicaciones] = useState<UbicacionDoc[]>([])
   const [cargando, setCargando] = useState(true)
   const [expandidos, setExpandidos] = useState<Set<string>>(new Set())
-  const [busqueda, setBusqueda] = useState('')
 
   // ── Modal CRUD ────────────────────────────────────────────────────────────
   const [modal, setModal] = useState(false)
@@ -135,7 +135,6 @@ export default function PaginaUbicacionesDocs() {
   // padresCargados: nodos cuyos hijos directos ya fueron traídos del server.
   const [padresCargados, setPadresCargados] = useState<Set<string>>(new Set())
   const [cargandoNodo, setCargandoNodo] = useState<Set<string>>(new Set())
-  const [modoBusqueda, setModoBusqueda] = useState(false)
 
   // Mezcla filas nuevas con el estado existente (deduplica por codigo).
   const mergeUbicaciones = (nuevas: UbicacionDoc[]) => {
@@ -153,7 +152,6 @@ export default function PaginaUbicacionesDocs() {
       setUbicaciones(raicesData)
       setPadresCargados(new Set())
       setExpandidos(new Set())
-      setModoBusqueda(false)
     } finally {
       setCargando(false)
     }
@@ -185,7 +183,7 @@ export default function PaginaUbicacionesDocs() {
         next.delete(codigo)
       } else {
         next.add(codigo)
-        if (tiene && !padresCargados.has(codigo) && !modoBusqueda) cargarHijos(codigo)
+        if (tiene && !padresCargados.has(codigo)) cargarHijos(codigo)
       }
       return next
     })
@@ -211,34 +209,6 @@ export default function PaginaUbicacionesDocs() {
   const colapsarTodos = () => {
     setExpandidos(new Set())
   }
-
-  // ── Búsqueda server-side con debounce ─────────────────────────────────────
-  const debounceBusqueda = useRef<number | null>(null)
-  useEffect(() => {
-    const q = busqueda.trim()
-    if (debounceBusqueda.current) window.clearTimeout(debounceBusqueda.current)
-    if (!q) {
-      // Vuelta al modo árbol: re-cargar raíces.
-      if (modoBusqueda) cargarRaices()
-      return
-    }
-    debounceBusqueda.current = window.setTimeout(async () => {
-      setCargando(true)
-      try {
-        const data = await ubicacionesDocsApi.listar({ q })
-        setUbicaciones(data)
-        // En búsqueda, todos los nodos retornados están "cargados" (no hay lazy).
-        setPadresCargados(new Set(data.map((u) => u.codigo_ubicacion)))
-        // Auto-expandir todo para que se vean los matches.
-        setExpandidos(new Set(data.map((u) => u.codigo_ubicacion)))
-        setModoBusqueda(true)
-      } finally {
-        setCargando(false)
-      }
-    }, 300)
-    return () => { if (debounceBusqueda.current) window.clearTimeout(debounceBusqueda.current) }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [busqueda])
 
   // ── Helpers jerarquía ─────────────────────────────────────────────────────
   // Map padre → hijos[] pre-computado: O(N) una sola vez por render.
@@ -647,16 +617,9 @@ export default function PaginaUbicacionesDocs() {
     const cargandoEste = cargandoNodo.has(u.codigo_ubicacion)
     const indent = u.nivel * 24
     const esArea = u.tipo_ubicacion === 'AREA'
-    const q = busqueda.trim().toLowerCase()
-    const coincide = q && (
-      u.nombre_ubicacion.toLowerCase().includes(q) ||
-      u.codigo_ubicacion.toLowerCase().includes(q) ||
-      (u.url || '').toLowerCase().includes(q)
-    )
     const inhabilitada = !u.ubicacion_habilitada
-    const rowBg = coincide
-      ? 'bg-yellow-100 hover:bg-yellow-200'
-      : inhabilitada ? 'bg-red-50 hover:bg-red-100'
+    const rowBg = inhabilitada
+      ? 'bg-red-50 hover:bg-red-100'
       : esArea ? 'bg-blue-50 hover:bg-blue-100' : 'bg-amber-50 hover:bg-amber-100'
     const folderColor = esArea ? 'text-blue-500' : 'text-amber-500'
 
@@ -748,79 +711,62 @@ export default function PaginaUbicacionesDocs() {
       <PageHeader className="pr-28" i18nNamespace="documentLocations" />
 
       {/* Toolbar */}
-      <div className="flex items-start gap-3 flex-wrap">
-        {/* Búsqueda */}
-        <div className="relative mt-0.5">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
-          <input
-            type="text"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder={tdlx('buscarUbicacion')}
-            className="pl-8 pr-3 py-2 text-sm rounded-lg border border-borde bg-fondo-tarjeta text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none w-56"
-          />
-          {busqueda && (
-            <button
-              onClick={() => setBusqueda('')}
-              className="absolute right-2 top-1/2 -translate-y-1/2 text-texto-muted hover:text-texto"
-            >
-              <XCircle size={14} />
-            </button>
-          )}
-        </div>
-        <div className="flex gap-2 flex-wrap items-start">
-          <div className="flex flex-col items-center">
-            <Boton variante="contorno" onClick={() => iniciarEscaneo(true)} cargando={escaneando}>
-              <FolderInput size={16} />
-              {t('cargarDesdeDirectorioTitulo')}
-            </Boton>
-            <span className="text-[11px] text-texto-muted mt-0.5">y todos los sub-directorios</span>
+      <Tarjeta>
+        <TarjetaContenido>
+          <div className="flex gap-2 flex-wrap items-start">
+            <div className="flex flex-col items-center">
+              <Boton variante="contorno" onClick={() => iniciarEscaneo(true)} cargando={escaneando}>
+                <FolderInput size={16} />
+                {t('cargarDesdeDirectorioTitulo')}
+              </Boton>
+              <span className="text-[11px] text-texto-muted mt-0.5">y todos los sub-directorios</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion}>
+                <FolderPlus size={16} />
+                {t('cargarUbicacion')}
+              </Boton>
+              <span className="text-[11px] text-texto-muted mt-0.5">solo un directorio</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Boton variante="contorno" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
+                {t('expandirTodo')}
+              </Boton>
+              <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Boton variante="contorno" onClick={colapsarTodos} disabled={ubicaciones.length === 0}>
+                {t('colapsarTodo')}
+              </Boton>
+              <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
+            </div>
+            <div className="flex flex-col items-center">
+              <Boton
+                variante="contorno"
+                onClick={() =>
+                  exportarExcel(
+                    filtrados as unknown as Record<string, unknown>[],
+                    [
+                      { titulo: 'Código', campo: 'codigo_ubicacion' },
+                      { titulo: 'Nombre', campo: 'nombre_ubicacion' },
+                      { titulo: 'Ruta', campo: 'url' },
+                      { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
+                      { titulo: 'Nivel', campo: 'nivel' },
+                      { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
+                    ],
+                    'ubicaciones-docs'
+                  )
+                }
+                disabled={filtrados.length === 0}
+              >
+                <Download size={15} />
+                Excel
+              </Boton>
+              <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
+            </div>
           </div>
-          <div className="flex flex-col items-center">
-            <Boton variante="contorno" onClick={cargarUbicacionIndividual} cargando={cargandoUbicacion}>
-              <FolderPlus size={16} />
-              {t('cargarUbicacion')}
-            </Boton>
-            <span className="text-[11px] text-texto-muted mt-0.5">solo un directorio</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Boton variante="contorno" onClick={expandirTodos} disabled={ubicaciones.length === 0}>
-              {t('expandirTodo')}
-            </Boton>
-            <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Boton variante="contorno" onClick={colapsarTodos} disabled={ubicaciones.length === 0}>
-              {t('colapsarTodo')}
-            </Boton>
-            <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
-          </div>
-          <div className="flex flex-col items-center">
-            <Boton
-              variante="contorno"
-              onClick={() =>
-                exportarExcel(
-                  filtrados as unknown as Record<string, unknown>[],
-                  [
-                    { titulo: 'Código', campo: 'codigo_ubicacion' },
-                    { titulo: 'Nombre', campo: 'nombre_ubicacion' },
-                    { titulo: 'Ruta', campo: 'url' },
-                    { titulo: 'Padre', campo: 'codigo_ubicacion_superior' },
-                    { titulo: 'Nivel', campo: 'nivel' },
-                    { titulo: 'Habilitada', campo: 'ubicacion_habilitada', formato: (v: unknown) => (v ? 'Sí' : 'No') },
-                  ],
-                  'ubicaciones-docs'
-                )
-              }
-              disabled={filtrados.length === 0}
-            >
-              <Download size={15} />
-              Excel
-            </Boton>
-            <span className="text-[11px] text-texto-muted mt-0.5 invisible">·</span>
-          </div>
-        </div>
-      </div>
+        </TarjetaContenido>
+      </Tarjeta>
 
       {/* Árbol jerárquico */}
       <div className="border border-borde rounded-lg bg-fondo-tarjeta">
