@@ -993,7 +993,7 @@
     "tabModalDatos": "Data",
     "tabModalSystemPrompt": "System Prompt",
     "tabModalPrompts": "Prompts (Insert / Update)",
-    "tabModalCaracteristicas": "Characteristics",
+    "tabModalCaracteristicas": "Characteristic Types",
     "sinCaracteristicasRelacionadas": "This document type has no related characteristics yet",
     "agregarCaracteristica": "Add characteristic",
     "colCategoria": "Category",

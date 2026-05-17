@@ -956,7 +956,7 @@
     "tabModalDatos": "Datos",
     "tabModalSystemPrompt": "System Prompt",
     "tabModalPrompts": "Prompts (Insert / Update)",
-    "tabModalCaracteristicas": "Características",
+    "tabModalCaracteristicas": "Tipos Características",
     "sinCaracteristicasRelacionadas": "Este tipo de documento aún no tiene características relacionadas",
     "agregarCaracteristica": "Agregar característica",
     "colCategoria": "Categoría",

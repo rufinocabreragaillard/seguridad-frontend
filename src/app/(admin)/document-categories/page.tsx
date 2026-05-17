@@ -615,12 +615,12 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               ) : tiposDocFiltrados.map((td) => (
                 <TablaFila key={td.codigo}>
                   <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipoDoc(td)}>{td.nombre}</TablaTd>
-                  <TablaTd className="text-texto-muted text-sm">{td.alias || <span className="text-texto-light">—</span>}</TablaTd>
-                  <TablaTd className="text-texto-muted text-sm">{td.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
+                  <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => abrirEditarTipoDoc(td)}>{td.alias || <span className="text-texto-light">—</span>}</TablaTd>
+                  <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => abrirEditarTipoDoc(td)}>{td.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                   <TablaTd onDoubleClick={() => abrirEditarTipoDoc(td)}>
                     <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{td.codigo}</code>
                     {td.codigo_grupo === null || td.codigo_grupo === undefined ? (
-                      <Insignia variante="primario" className="ml-2 text-xs">Global</Insignia>
+                      <Insignia variante="error" className="ml-2 text-xs">Sistema</Insignia>
                     ) : null}
                   </TablaTd>
                   <TablaTd>
