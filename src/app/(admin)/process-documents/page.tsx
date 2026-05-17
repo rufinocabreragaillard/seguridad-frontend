@@ -432,7 +432,10 @@ function PaginaProcesarDocumentosInterna() {
         const perm = await (h as unknown as { queryPermission: (opts: { mode: string }) => Promise<PermissionState> }).queryPermission({ mode: 'read' })
         if (perm !== 'granted') return
         setDirHandle(h)
-        if (!esExtraer) return
+        // EXTRAER y CARGAR consumen `archivosEnDir`. Si el usuario ya autorizó
+        // el directorio antes (handle persistido + permiso `granted`), podemos
+        // escanear silenciosamente sin pedirle que vuelva a abrir Finder.
+        if (!esExtraer && !esCargar) return
         setEscaneandoDir(true)
         try {
           const archivos = await escanearDirectorio(h)
@@ -443,7 +446,7 @@ function PaginaProcesarDocumentosInterna() {
       } catch { /* ignore */ }
     })()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [esExtraer])
+  }, [esExtraer, esCargar])
 
   // Cargar documentos candidatos (paginado server-side para procesos backend; all para EXTRAER)
   const cargarDocumentos = useCallback(async (pagina = 1) => {
@@ -455,16 +458,13 @@ function PaginaProcesarDocumentosInterna() {
         : undefined
 
       if (esCargar) {
-        // CARGAR (FILESYSTEM → CARGADO): los docs vienen del filesystem, no de BD.
-        // La tabla se llena al ejecutar; aquí solo mostramos CARGADO existentes como referencia.
-        const todos = await documentosApi.listar({ codigo_estado_doc: 'CARGADO', q: qBackend })
-        if (rutaPrefijo) {
-          setDocumentos(todos.filter((d) => d.ubicacion_documento?.startsWith(rutaPrefijo)))
-        } else {
-          setDocumentos(todos)
-        }
-        setTotalDocs(todos.length)
-        setTotalPaginasDoc(Math.max(1, Math.ceil(todos.length / DOCS_POR_PAGINA_DEFAULT)))
+        // CARGAR (FILESYSTEM → CARGADO): la fuente de verdad es el filesystem local,
+        // NO la BD. No precargamos nada — el usuario debe presionar Ejecutar para
+        // abrir el picker de carpeta y escanear el disco. La tabla queda vacía hasta
+        // entonces (placeholder dice "Presiona Ejecutar para escanear el directorio").
+        setDocumentos([])
+        setTotalDocs(0)
+        setTotalPaginasDoc(1)
         setPaginaDoc(1)
       } else if (esExtraer || esRestablecer || esResetearCargado) {
         // EXTRAER necesita todos los docs para el matching con el filesystem.
@@ -1606,7 +1606,13 @@ function PaginaProcesarDocumentosInterna() {
               <Boton variante="primario" onClick={ejecutar}
                 disabled={ejecutando || (!!procesoSel && escaneandoDir) || !procesoSel}>
                 {(ejecutando || (!!procesoSel && escaneandoDir)) ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
-                {(!!procesoSel && escaneandoDir) ? 'Escaneando…' : ejecutando ? t('ejecutando') : t('ejecutar')}
+                {(!!procesoSel && escaneandoDir)
+                  ? 'Escaneando…'
+                  : ejecutando
+                  ? t('ejecutando')
+                  : (esCargar && !dirHandle)
+                  ? 'Elegir carpeta y cargar'
+                  : t('ejecutar')}
               </Boton>
               <Boton variante="contorno" onClick={detener} disabled={!ejecutando && !(!!procesoSel && escaneandoDir)}>
                 <Square size={14} />{t('detener')}
