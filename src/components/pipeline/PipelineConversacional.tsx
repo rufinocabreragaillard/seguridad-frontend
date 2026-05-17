@@ -80,42 +80,46 @@ export function PipelineConversacional({
       {/* Dos columnas: ANTES DE EMPEZAR (izq) · MENSAJE + DIAL (der) — el layout no cambia al procesar */}
       <div className="grid gap-6 items-start grid-cols-1 md:grid-cols-2">
 
-        {/* ── Columna izquierda: acciones del pipeline ── siempre visible */}
+        {/* ── Columna izquierda: botones + (en proceso) mensaje + AHORA MISMO + submensaje ── */}
         <div className="flex flex-col gap-2">
-          <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex gap-4 items-start">
-            <div className="flex-1 flex flex-col gap-3 min-w-0">
-              {antesDeEmpezar.mensajeTiempo && (
-                <p className="text-sm text-texto leading-relaxed">{antesDeEmpezar.mensajeTiempo}</p>
-              )}
-              <div className="flex flex-col gap-2">
+          <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-3 min-w-0">
+            {antesDeEmpezar.mensajeTiempo && !ejecutando && (
+              <p className="text-sm text-texto leading-relaxed">{antesDeEmpezar.mensajeTiempo}</p>
+            )}
+
+            {/* Botones */}
+            <div className="flex flex-col gap-2">
+              <Boton
+                variante="primario"
+                onClick={antesDeEmpezar.onEmpezar}
+                disabled={antesDeEmpezar.deshabilitado || ejecutando}
+                className="min-w-[180px] justify-center"
+              >
+                {antesDeEmpezar.textoBotonEmpezar ?? 'Capturar Semántica'}
+              </Boton>
+              {enProceso.onDetener && (
                 <Boton
-                  variante="primario"
-                  onClick={antesDeEmpezar.onEmpezar}
-                  disabled={antesDeEmpezar.deshabilitado || ejecutando}
+                  variante="contorno"
+                  onClick={enProceso.onDetener}
+                  disabled={!ejecutando}
                   className="min-w-[180px] justify-center"
                 >
-                  {antesDeEmpezar.textoBotonEmpezar ?? 'Capturar Semántica'}
+                  Detener proceso
                 </Boton>
-                {enProceso.onDetener && (
-                  <Boton
-                    variante="contorno"
-                    onClick={enProceso.onDetener}
-                    disabled={!ejecutando}
-                    className="min-w-[180px] justify-center"
-                  >
-                    Detener proceso
-                  </Boton>
-                )}
-                {antesDeEmpezar.onElegirOtra && (
-                  <Boton variante="contorno" onClick={antesDeEmpezar.onElegirOtra} className="min-w-[180px] justify-center">
-                    {antesDeEmpezar.textoBotonOtra ?? 'Elegir otra carpeta'}
-                  </Boton>
-                )}
-              </div>
+              )}
+              {antesDeEmpezar.onElegirOtra && (
+                <Boton variante="contorno" onClick={antesDeEmpezar.onElegirOtra} className="min-w-[180px] justify-center">
+                  {antesDeEmpezar.textoBotonOtra ?? 'Elegir otra carpeta'}
+                </Boton>
+              )}
+            </div>
 
-              {/* Documento que se está trabajando AHORA MISMO — abajo de los botones */}
-              {ejecutando && (
-                <div className="border-t border-borde pt-3 mt-1 flex flex-col gap-1 min-w-0">
+            {/* En proceso: mensaje + AHORA MISMO + submensaje, todo bajo los botones */}
+            {ejecutando && (
+              <div className="border-t border-borde pt-3 mt-1 flex flex-col gap-3 min-w-0">
+                <p className="text-sm text-texto leading-relaxed">{enProceso.mensaje}</p>
+
+                <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
                     Ahora mismo
                   </span>
@@ -123,43 +127,32 @@ export function PipelineConversacional({
                     {enProceso.actual.archivoActual ?? '—'}
                   </span>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* ── Columna derecha: Mensaje + dial triple ── */}
-        <div className="flex flex-col gap-5">
-          {/* Burbuja del bot */}
-          <div className="flex gap-4 items-start">
-            <p className="text-sm lg:text-base text-texto leading-relaxed flex-1">
-              {enProceso.mensaje}
-            </p>
-          </div>
-
-          {/* Dial triple + texto al lado */}
-          <div className="flex flex-col sm:flex-row gap-6 items-center sm:items-start">
-            <DialTriple
-              lote={enProceso.lote}
-              etapa={{
-                indiceActivo: enProceso.etapa.indiceActivo,
-                total: enProceso.etapa.total,
-                nombre: enProceso.etapa.nombre,
-              }}
-              actual={enProceso.actual}
-              pulsando={ejecutando ? 'interno' : null}
-              tamano={220}
-            />
-            {enProceso.submensaje && (
-              <div className="flex-1 flex flex-col gap-1 sm:pt-6">
-                <span className="text-xs text-texto-muted">{enProceso.submensaje}</span>
+                {enProceso.submensaje && (
+                  <span className="text-xs text-texto-muted">{enProceso.submensaje}</span>
+                )}
               </div>
             )}
           </div>
+        </div>
+
+        {/* ── Columna derecha: solo el dial triple ── */}
+        <div className="flex flex-col gap-5 items-center md:items-start">
+          <DialTriple
+            lote={enProceso.lote}
+            etapa={{
+              indiceActivo: enProceso.etapa.indiceActivo,
+              total: enProceso.etapa.total,
+              nombre: enProceso.etapa.nombre,
+            }}
+            actual={enProceso.actual}
+            pulsando={ejecutando ? 'interno' : null}
+            tamano={220}
+          />
 
           {/* Pie: Ver detalles (Detener proceso vive ahora en la columna izquierda, junto a Capturar) */}
           {enProceso.onVerDetalles && (
-            <div className="border-t border-borde pt-3 flex items-center justify-between gap-3 flex-wrap">
+            <div className="border-t border-borde pt-3 flex items-center justify-between gap-3 flex-wrap w-full">
               <button
                 type="button"
                 onClick={enProceso.onVerDetalles}
