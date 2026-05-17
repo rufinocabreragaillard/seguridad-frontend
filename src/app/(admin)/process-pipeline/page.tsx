@@ -571,6 +571,11 @@ export default function PaginaCargaDocsUsuario() {
         }
       },
     })
+    // Limpiar override local: a partir de aquí "Ahora mismo" debe leer el
+    // doc EN_PROCESO del backend (ESCANEAR/CHUNKEAR/VECTORIZAR), no el último
+    // archivo de EXTRAER. Sin esto, archivoActualLocal queda congelado y
+    // sombrea a resumenPipeline.doc_en_proceso en las fases posteriores.
+    setArchivoActualLocal(null)
     setPaso('EXTRAER', { estado: result.ok ? 'listo' : (abortRef.current ? 'esperando' : 'error') })
     return result.ok
   }
