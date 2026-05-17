@@ -106,7 +106,7 @@ export default function PaginaDocumentosDashboard() {
       </div>
 
       {/* Tarjetas resumen */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-4 gap-4">
         {tarjetas.map((t) => {
           const Icono = t.icono
           return (
