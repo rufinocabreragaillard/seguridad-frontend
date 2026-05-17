@@ -1776,7 +1776,7 @@ function PaginaProcesarDocumentosInterna() {
                 </span>
                 {erroresGlobal > 0 && (
                   <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
-                    {erroresGlobal.toLocaleString()} con error
+                    {erroresGlobal.toLocaleString()} no vectorizables
                   </span>
                 )}
               </div>
