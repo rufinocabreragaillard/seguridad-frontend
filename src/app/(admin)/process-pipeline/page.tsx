@@ -1159,7 +1159,7 @@ export default function PaginaCargaDocsUsuario() {
                     etapa: { indiceActivo, total: FASES_NARRATIVAS.length, nombre: nombreEtapa },
                     actual,
                     submensaje: docsNoVectorizables > 0
-                      ? `documento ${docsVectorizados.toLocaleString()} · ${docsNoVectorizables.toLocaleString()} con error hasta ahora`
+                      ? `documento ${docsVectorizados.toLocaleString()} · ${docsNoVectorizables.toLocaleString()} no vectorizables`
                       : `documento ${docsVectorizados.toLocaleString()}`,
                     onDetener: detener,
                   }}
