@@ -1616,8 +1616,81 @@ function PaginaProcesarDocumentosInterna() {
         </TarjetaContenido>
       </Tarjeta>
 
+      {/* Estado del pipeline — barra de avance global arriba + estadísticas por estado abajo
+          (inválidos al final). Mismo formato que la pestaña "Vectorizar todo". */}
+      {(() => {
+        const ESTADOS_PIPELINE_PASOS = [
+          { codigo: 'CARGADO',       nombre: 'Cargado',       color: '#6B7280' },
+          { codigo: 'METADATA',      nombre: 'Metadata',      color: '#3B82F6' },
+          { codigo: 'ESCANEADO',     nombre: 'Escaneado',     color: '#F97316' },
+          { codigo: 'CHUNKEADO',     nombre: 'Chunkeado',     color: '#84CC16' },
+          { codigo: 'VECTORIZADO',   nombre: 'Vectorizado',   color: '#22C55E' },
+          { codigo: 'NO_ANALIZABLE', nombre: 'No analizable', color: '#EF4444' },
+          { codigo: 'NO_ESCANEABLE', nombre: 'No escaneable', color: '#DC2626' },
+        ] as const
+        const totalDocsGlobal = Object.values(conteosPorEstado).reduce((a, b) => a + b, 0)
+        const listosGlobal = conteosPorEstado['VECTORIZADO'] ?? 0
+        const erroresGlobal = (conteosPorEstado['NO_ANALIZABLE'] ?? 0) + (conteosPorEstado['NO_ESCANEABLE'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0)
+        const pctGlobal = totalDocsGlobal > 0 ? Math.min(100, Math.round((listosGlobal / totalDocsGlobal) * 100)) : 0
+        return (
+          <div className="rounded-lg border border-borde bg-surface shadow-sm p-4 flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-texto-muted uppercase flex items-center gap-2">
+                {t('estadoPipeline')}
+                {ejecutando && <Loader2 size={11} className="animate-spin text-primario" />}
+              </p>
+              {!ejecutando && (
+                <button type="button" onClick={cargarConteos} className="text-xs text-texto-muted hover:text-primario transition-colors">
+                  {t('actualizar')}
+                </button>
+              )}
+            </div>
+
+            {/* Barra de progreso global */}
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-baseline justify-between flex-wrap gap-2">
+                <span className="text-sm text-texto tabular-nums">
+                  <span className="font-semibold">{listosGlobal.toLocaleString()}</span>
+                  {' de '}
+                  <span className="font-semibold">{totalDocsGlobal.toLocaleString()}</span>
+                  {' listos · '}
+                  <span className="font-semibold">{pctGlobal}%</span>
+                  {' completado'}
+                </span>
+              </div>
+              <div className="h-2.5 rounded-full bg-fondo overflow-hidden">
+                <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${pctGlobal}%` }} />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap pt-1">
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
+                  {listosGlobal.toLocaleString()} listos
+                </span>
+                {erroresGlobal > 0 && (
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
+                    {erroresGlobal.toLocaleString()} no vectorizables
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Estadísticas por estado (con inválidos al final) */}
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 pt-2 border-t border-borde">
+              {ESTADOS_PIPELINE_PASOS.map((estado) => {
+                const count = conteosPorEstado[estado.codigo] ?? 0
+                return (
+                  <div key={estado.codigo} className="flex flex-col items-center gap-1 py-2">
+                    <span className="stat-number tabular-nums" style={{ color: count > 0 ? estado.color : '#9CA3AF' }}>{count}</span>
+                    <span className="text-[10px] text-texto-muted text-center leading-tight font-medium uppercase tracking-wide">{estado.nombre}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Progreso + cola — persistente durante TODA la ejecución (no aparece/desaparece entre fases).
-          Muestra título con la fase en curso, mini-barra de progreso y tabla de cola. */}
+          Va DEBAJO del bloque "Estado del pipeline" y separado por margen (mt-4) para no tocarlo. */}
       {(ejecutando || cola.length > 0) && (() => {
         const MAX_FILAS = 100
         const terminados = cola.filter((c) => c.estado_cola === 'COMPLETADO' || c.estado_cola === 'ERROR')
@@ -1631,7 +1704,7 @@ function PaginaProcesarDocumentosInterna() {
           ? `${pasoActual.estado_origen || '—'} → ${pasoActual.estado_destino}`
           : ''
         return (
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-3 mt-4">
             {/* Título de la fase en curso */}
             <div className="flex items-baseline gap-2">
               <span className="text-xs uppercase tracking-wide text-texto-muted">{t('faseEnCurso')}:</span>
@@ -1731,79 +1804,6 @@ function PaginaProcesarDocumentosInterna() {
                 })}
               </TablaCuerpo>
             </Tabla>
-          </div>
-        )
-      })()}
-
-      {/* Estado del pipeline — barra de avance global arriba + estadísticas por estado abajo
-          (inválidos al final). Mismo formato que la pestaña "Vectorizar todo". */}
-      {(() => {
-        const ESTADOS_PIPELINE_PASOS = [
-          { codigo: 'CARGADO',       nombre: 'Cargado',       color: '#6B7280' },
-          { codigo: 'METADATA',      nombre: 'Metadata',      color: '#3B82F6' },
-          { codigo: 'ESCANEADO',     nombre: 'Escaneado',     color: '#F97316' },
-          { codigo: 'CHUNKEADO',     nombre: 'Chunkeado',     color: '#84CC16' },
-          { codigo: 'VECTORIZADO',   nombre: 'Vectorizado',   color: '#22C55E' },
-          { codigo: 'NO_ANALIZABLE', nombre: 'No analizable', color: '#EF4444' },
-          { codigo: 'NO_ESCANEABLE', nombre: 'No escaneable', color: '#DC2626' },
-        ] as const
-        const totalDocsGlobal = Object.values(conteosPorEstado).reduce((a, b) => a + b, 0)
-        const listosGlobal = conteosPorEstado['VECTORIZADO'] ?? 0
-        const erroresGlobal = (conteosPorEstado['NO_ANALIZABLE'] ?? 0) + (conteosPorEstado['NO_ESCANEABLE'] ?? 0) + (conteosPorEstado['NO_VECTORIZADO'] ?? 0)
-        const pctGlobal = totalDocsGlobal > 0 ? Math.min(100, Math.round((listosGlobal / totalDocsGlobal) * 100)) : 0
-        return (
-          <div className="rounded-lg border border-borde bg-surface shadow-sm p-4 flex flex-col gap-4">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-semibold text-texto-muted uppercase flex items-center gap-2">
-                {t('estadoPipeline')}
-                {ejecutando && <Loader2 size={11} className="animate-spin text-primario" />}
-              </p>
-              {!ejecutando && (
-                <button type="button" onClick={cargarConteos} className="text-xs text-texto-muted hover:text-primario transition-colors">
-                  {t('actualizar')}
-                </button>
-              )}
-            </div>
-
-            {/* Barra de progreso global */}
-            <div className="flex flex-col gap-1.5">
-              <div className="flex items-baseline justify-between flex-wrap gap-2">
-                <span className="text-sm text-texto tabular-nums">
-                  <span className="font-semibold">{listosGlobal.toLocaleString()}</span>
-                  {' de '}
-                  <span className="font-semibold">{totalDocsGlobal.toLocaleString()}</span>
-                  {' listos · '}
-                  <span className="font-semibold">{pctGlobal}%</span>
-                  {' completado'}
-                </span>
-              </div>
-              <div className="h-2.5 rounded-full bg-fondo overflow-hidden">
-                <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${pctGlobal}%` }} />
-              </div>
-              <div className="flex items-center gap-2 flex-wrap pt-1">
-                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700 tabular-nums">
-                  {listosGlobal.toLocaleString()} listos
-                </span>
-                {erroresGlobal > 0 && (
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 tabular-nums">
-                    {erroresGlobal.toLocaleString()} no vectorizables
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {/* Estadísticas por estado (con inválidos al final) */}
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 pt-2 border-t border-borde">
-              {ESTADOS_PIPELINE_PASOS.map((estado) => {
-                const count = conteosPorEstado[estado.codigo] ?? 0
-                return (
-                  <div key={estado.codigo} className="flex flex-col items-center gap-1 py-2">
-                    <span className="stat-number tabular-nums" style={{ color: count > 0 ? estado.color : '#9CA3AF' }}>{count}</span>
-                    <span className="text-[10px] text-texto-muted text-center leading-tight font-medium uppercase tracking-wide">{estado.nombre}</span>
-                  </div>
-                )
-              })}
-            </div>
           </div>
         )
       })()}
