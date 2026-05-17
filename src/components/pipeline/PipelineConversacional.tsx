@@ -35,9 +35,8 @@ import { DialTriple } from './DialTriple'
 import { Boton } from '@/components/ui/boton'
 
 interface PipelineConversacionalProps {
-  /** "Antes de empezar" — burbuja del asistente. */
+  /** Acciones del pipeline (Capturar / Detener / Elegir otra). */
   antesDeEmpezar: {
-    mensajePrincipal: string
     mensajeTiempo?: string | null
     onEmpezar: () => void
     onElegirOtra?: () => void
@@ -81,20 +80,14 @@ export function PipelineConversacional({
       {/* Dos columnas: ANTES DE EMPEZAR (izq) · MENSAJE + DIAL (der) — el layout no cambia al procesar */}
       <div className="grid gap-6 items-start grid-cols-1 md:grid-cols-2">
 
-        {/* ── Columna izquierda: ANTES DE EMPEZAR ── siempre visible */}
+        {/* ── Columna izquierda: acciones del pipeline ── siempre visible */}
         <div className="flex flex-col gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-texto-muted">
-            Antes de empezar
-          </span>
           <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex gap-4 items-start">
             <div className="flex-1 flex flex-col gap-3 min-w-0">
-              <p className="text-sm lg:text-base text-texto leading-relaxed">
-                {antesDeEmpezar.mensajePrincipal}
-              </p>
               {antesDeEmpezar.mensajeTiempo && (
                 <p className="text-sm text-texto leading-relaxed">{antesDeEmpezar.mensajeTiempo}</p>
               )}
-              <div className="flex flex-col gap-2 pt-1">
+              <div className="flex flex-col gap-2">
                 <Boton
                   variante="primario"
                   onClick={antesDeEmpezar.onEmpezar}
@@ -105,7 +98,7 @@ export function PipelineConversacional({
                 </Boton>
                 {enProceso.onDetener && (
                   <Boton
-                    variante="peligro"
+                    variante="contorno"
                     onClick={enProceso.onDetener}
                     disabled={!ejecutando}
                     className="min-w-[180px] justify-center"

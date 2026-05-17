@@ -1121,7 +1121,6 @@ export default function PaginaCargaDocsUsuario() {
 
             {/* Pipeline Conversacional — estilo C (dial triple + mensaje del asistente) */}
             {(() => {
-              const carpetaSel = ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel)?.nombre_ubicacion ?? 'todas las ubicaciones'
               const idxActivo = PASOS.findIndex(p => progresos[p.key]?.estado === 'activo')
               const idxFase = idxActivo >= 0
                 ? FASES_NARRATIVAS.findIndex(f => f.estadoDestino === PASOS[idxActivo].estadoDestino)
@@ -1141,16 +1140,14 @@ export default function PaginaCargaDocsUsuario() {
                 archivoActual: undefined,
               }
 
-              const mensajeAntes = `Encontré ${totalDocs.toLocaleString()} documentos en ${carpetaSel}. Si te parece, los preparo para que puedas hacerles preguntas.`
               const minEta = etaInfo?.minutosEta ?? null
               const mensajeEnProc = minEta != null
-                ? `Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
-                : `Llevo ${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
+                ? `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
+                : `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
 
               return (
                 <PipelineConversacional
                   antesDeEmpezar={{
-                    mensajePrincipal: mensajeAntes,
                     mensajeTiempo: null,
                     onEmpezar: ejecutarPipeline,
                     textoBotonEmpezar: 'Capturar Semántica',
