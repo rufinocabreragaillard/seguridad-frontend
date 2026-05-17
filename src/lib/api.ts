@@ -28,6 +28,8 @@ import type {
   TipoCaractDocs,
   CaracteristicaDocumento,
   CategoriaConCaracteristicasDocs,
+  TipoDocumento,
+  RelTipoDocumentoCaracteristica,
   EstadoCanonicalProceso,
   EstadoCanonicoTarea,
   TipoConversacion,
@@ -1054,6 +1056,38 @@ export const categoriasCaractDocsApi = {
     api.delete(`/categorias-caracteristica-docs/${codigo}/tipos/${codigoTipo}`),
   reordenarTipos: (codigo: string, orden: { codigo: string; orden: number }[]) =>
     api.put(`/categorias-caracteristica-docs/${codigo}/tipos/orden`, orden),
+}
+
+// ─── Tipos de Documento (catalogo global o por grupo) ───────────────────────
+
+export const tiposDocumentoApi = {
+  listar: () => api.get<TipoDocumento[]>('/tipos-documento').then((r) => r.data),
+  crear: (datos: Partial<TipoDocumento>) =>
+    api.post<TipoDocumento>('/tipos-documento', datos).then((r) => r.data),
+  actualizar: (codigo: string, datos: Partial<TipoDocumento>) =>
+    api.put<TipoDocumento>(`/tipos-documento/${codigo}`, datos).then((r) => r.data),
+  eliminar: (codigo: string) => api.delete(`/tipos-documento/${codigo}`),
+  // Caracteristicas relacionadas
+  listarCaracteristicas: (codigo: string) =>
+    api
+      .get<RelTipoDocumentoCaracteristica[]>(`/tipos-documento/${codigo}/caracteristicas`)
+      .then((r) => r.data),
+  crearCaracteristica: (codigo: string, datos: Partial<RelTipoDocumentoCaracteristica>) =>
+    api
+      .post<RelTipoDocumentoCaracteristica>(`/tipos-documento/${codigo}/caracteristicas`, datos)
+      .then((r) => r.data),
+  actualizarCaracteristica: (
+    codigo: string, codigo_cat: string, codigo_tipo_c: string,
+    datos: { orden?: number; max_por_tipo?: number },
+  ) =>
+    api
+      .put<RelTipoDocumentoCaracteristica>(
+        `/tipos-documento/${codigo}/caracteristicas/${codigo_cat}/${codigo_tipo_c}`,
+        datos,
+      )
+      .then((r) => r.data),
+  eliminarCaracteristica: (codigo: string, codigo_cat: string, codigo_tipo_c: string) =>
+    api.delete(`/tipos-documento/${codigo}/caracteristicas/${codigo_cat}/${codigo_tipo_c}`),
 }
 
 // ─── Registro LLM ───────────────────────────────────────────────────────────

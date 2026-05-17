@@ -735,6 +735,28 @@ export interface CaracteristicaDocumento {
   tipos_caract_docs?: { nombre_tipo_docs: string } | null
 }
 
+export interface TipoDocumento {
+  codigo: string
+  nombre: string
+  descripcion?: string | null
+  alias?: string | null
+  system_prompt?: string | null
+  prompt_insert?: string | null
+  prompt_update?: string | null
+  codigo_grupo?: string | null
+}
+
+export interface RelTipoDocumentoCaracteristica {
+  codigo_tipo_documento: string
+  codigo_cat_docs: string
+  codigo_tipo_docs: string
+  orden: number
+  max_por_tipo: number
+  codigo_grupo?: string | null
+  nombre_categoria?: string | null
+  nombre_tipo_caract?: string | null
+}
+
 export interface CategoriaConCaracteristicasDocs {
   categoria: CategoriaCaractDocs
   caracteristicas: CaracteristicaDocumento[]

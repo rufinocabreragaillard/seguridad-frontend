@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useMemo } from 'react'
 import { Plus, Pencil, Trash2, Download, Search } from 'lucide-react'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
@@ -13,23 +13,209 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { categoriasCaractDocsApi, promptsApi, registroLLMApi } from '@/lib/api'
-import type { CategoriaCaractDocs, TipoCaractDocs, RegistroLLM } from '@/lib/tipos'
+import {
+  categoriasCaractDocsApi, promptsApi, registroLLMApi, tiposDocumentoApi,
+} from '@/lib/api'
+import type {
+  CategoriaCaractDocs, TipoCaractDocs, RegistroLLM,
+  TipoDocumento, RelTipoDocumentoCaracteristica,
+} from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { PageHeader } from '@/components/layout/PageHeader'
 
-type TabActiva = 'categorias' | 'tipos'
+type TabActiva = 'tipos_documento' | 'categorias' | 'tipos'
+type TabModalTipoDoc = 'datos' | 'system_prompt' | 'prompts' | 'caracteristicas'
 
 export default function PaginaCategoriasCaracteristicaDocs() {
   const { grupoActivo } = useAuth()
   const t = useTranslations('documentCategories')
   const tc = useTranslations('common')
 
-  const [tabActiva, setTabActiva] = useState<TabActiva>('categorias')
+  const [tabActiva, setTabActiva] = useState<TabActiva>('tipos_documento')
 
-  // ── Categorias ────────────────────────────────────────────────────────────
+  // ═════════════════════════════════════════════════════════════════════════
+  // TIPO DE DOCUMENTO
+  // ═════════════════════════════════════════════════════════════════════════
+  const [tiposDoc, setTiposDoc] = useState<TipoDocumento[]>([])
+  const [cargandoTiposDoc, setCargandoTiposDoc] = useState(true)
+  const [busquedaTipoDoc, setBusquedaTipoDoc] = useState('')
+  const [modalTipoDoc, setModalTipoDoc] = useState(false)
+  const [tabModalTipoDoc, setTabModalTipoDoc] = useState<TabModalTipoDoc>('datos')
+  const [tipoDocEditando, setTipoDocEditando] = useState<TipoDocumento | null>(null)
+  const [formTipoDoc, setFormTipoDoc] = useState({
+    codigo: '', nombre: '', descripcion: '', alias: '',
+    system_prompt: '', prompt_insert: '', prompt_update: '',
+    python_insert: '', python_update: '', javascript: '',
+    python_editado_manual: false, javascript_editado_manual: false,
+  })
+  const [guardandoTipoDoc, setGuardandoTipoDoc] = useState(false)
+  const [errorTipoDoc, setErrorTipoDoc] = useState('')
+  const [confirmTipoDoc, setConfirmTipoDoc] = useState<TipoDocumento | null>(null)
+  const [eliminandoTipoDoc, setEliminandoTipoDoc] = useState(false)
+
+  // Caracteristicas relacionadas al tipo de documento que se edita
+  const [caractsRel, setCaractsRel] = useState<RelTipoDocumentoCaracteristica[]>([])
+  const [cargandoCaracts, setCargandoCaracts] = useState(false)
+  const [modalAgregarCaract, setModalAgregarCaract] = useState(false)
+  const [formAgregarCaract, setFormAgregarCaract] = useState({
+    codigo_cat_docs: '', codigo_tipo_docs: '', orden: 0, max_por_tipo: 1,
+  })
+  const [errorAgregarCaract, setErrorAgregarCaract] = useState('')
+  const [guardandoAgregarCaract, setGuardandoAgregarCaract] = useState(false)
+
+  const cargarTiposDoc = useCallback(async () => {
+    setCargandoTiposDoc(true)
+    try {
+      setTiposDoc(await tiposDocumentoApi.listar())
+    } finally {
+      setCargandoTiposDoc(false)
+    }
+  }, [])
+
+  useEffect(() => { cargarTiposDoc() }, [cargarTiposDoc])
+
+  const cargarCaractsRel = useCallback(async (codigo: string) => {
+    setCargandoCaracts(true)
+    try {
+      setCaractsRel(await tiposDocumentoApi.listarCaracteristicas(codigo))
+    } finally {
+      setCargandoCaracts(false)
+    }
+  }, [])
+
+  const abrirNuevoTipoDoc = () => {
+    setTipoDocEditando(null)
+    setFormTipoDoc({ codigo: '', nombre: '', descripcion: '', alias: '', system_prompt: '', prompt_insert: '', prompt_update: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
+    setCaractsRel([])
+    setTabModalTipoDoc('datos')
+    setErrorTipoDoc('')
+    setModalTipoDoc(true)
+  }
+
+  const abrirEditarTipoDoc = (td: TipoDocumento) => {
+    setTipoDocEditando(td)
+    setFormTipoDoc({
+      codigo: td.codigo,
+      nombre: td.nombre,
+      descripcion: td.descripcion || '',
+      alias: td.alias || '',
+      system_prompt: td.system_prompt || '',
+      prompt_insert: td.prompt_insert || '',
+      prompt_update: td.prompt_update || '',
+      python_insert: '', python_update: '', javascript: '',
+      python_editado_manual: false, javascript_editado_manual: false,
+    })
+    setTabModalTipoDoc('datos')
+    setErrorTipoDoc('')
+    setModalTipoDoc(true)
+    cargarCaractsRel(td.codigo)
+  }
+
+  const guardarTipoDoc = async (cerrar: boolean) => {
+    if (!formTipoDoc.nombre.trim()) {
+      setErrorTipoDoc(t('errorNombreObligatorio'))
+      return
+    }
+    setGuardandoTipoDoc(true)
+    try {
+      if (tipoDocEditando) {
+        const actualizado = await tiposDocumentoApi.actualizar(tipoDocEditando.codigo, {
+          nombre: formTipoDoc.nombre,
+          descripcion: formTipoDoc.descripcion || undefined,
+          alias: formTipoDoc.alias || undefined,
+          system_prompt: formTipoDoc.system_prompt || undefined,
+          prompt_insert: formTipoDoc.prompt_insert || undefined,
+          prompt_update: formTipoDoc.prompt_update || undefined,
+        })
+        setTipoDocEditando(actualizado)
+        if (cerrar) setModalTipoDoc(false)
+      } else {
+        const nuevo = await tiposDocumentoApi.crear({
+          ...(formTipoDoc.codigo.trim() ? { codigo: formTipoDoc.codigo.trim().toUpperCase() } : {}),
+          nombre: formTipoDoc.nombre,
+          descripcion: formTipoDoc.descripcion || undefined,
+          alias: formTipoDoc.alias || undefined,
+          system_prompt: formTipoDoc.system_prompt || undefined,
+          prompt_insert: formTipoDoc.prompt_insert || undefined,
+          prompt_update: formTipoDoc.prompt_update || undefined,
+        })
+        if (cerrar) {
+          setModalTipoDoc(false)
+        } else {
+          setTipoDocEditando(nuevo)
+          setFormTipoDoc({
+            codigo: nuevo.codigo, nombre: nuevo.nombre,
+            descripcion: nuevo.descripcion || '', alias: nuevo.alias || '',
+            system_prompt: nuevo.system_prompt || '',
+            prompt_insert: nuevo.prompt_insert || '',
+            prompt_update: nuevo.prompt_update || '',
+            python_insert: '', python_update: '', javascript: '',
+            python_editado_manual: false, javascript_editado_manual: false,
+          })
+          cargarCaractsRel(nuevo.codigo)
+        }
+      }
+      cargarTiposDoc()
+    } catch (e) {
+      setErrorTipoDoc(e instanceof Error ? e.message : tc('errorAlGuardar'))
+    } finally {
+      setGuardandoTipoDoc(false)
+    }
+  }
+
+  const eliminarTipoDoc = async () => {
+    if (!confirmTipoDoc) return
+    setEliminandoTipoDoc(true)
+    try {
+      await tiposDocumentoApi.eliminar(confirmTipoDoc.codigo)
+      setConfirmTipoDoc(null)
+      cargarTiposDoc()
+    } finally {
+      setEliminandoTipoDoc(false)
+    }
+  }
+
+  const abrirAgregarCaract = () => {
+    setFormAgregarCaract({ codigo_cat_docs: '', codigo_tipo_docs: '', orden: 0, max_por_tipo: 1 })
+    setErrorAgregarCaract('')
+    setModalAgregarCaract(true)
+  }
+
+  const agregarCaract = async () => {
+    if (!tipoDocEditando) return
+    if (!formAgregarCaract.codigo_cat_docs || !formAgregarCaract.codigo_tipo_docs) {
+      setErrorAgregarCaract(t('errorNombreObligatorio'))
+      return
+    }
+    setGuardandoAgregarCaract(true)
+    try {
+      await tiposDocumentoApi.crearCaracteristica(tipoDocEditando.codigo, {
+        codigo_tipo_documento: tipoDocEditando.codigo,
+        codigo_cat_docs: formAgregarCaract.codigo_cat_docs,
+        codigo_tipo_docs: formAgregarCaract.codigo_tipo_docs,
+        orden: formAgregarCaract.orden,
+        max_por_tipo: formAgregarCaract.max_por_tipo,
+      })
+      setModalAgregarCaract(false)
+      cargarCaractsRel(tipoDocEditando.codigo)
+    } catch (e) {
+      setErrorAgregarCaract(e instanceof Error ? e.message : tc('errorAlGuardar'))
+    } finally {
+      setGuardandoAgregarCaract(false)
+    }
+  }
+
+  const eliminarCaract = async (r: RelTipoDocumentoCaracteristica) => {
+    if (!tipoDocEditando) return
+    await tiposDocumentoApi.eliminarCaracteristica(tipoDocEditando.codigo, r.codigo_cat_docs, r.codigo_tipo_docs)
+    cargarCaractsRel(tipoDocEditando.codigo)
+  }
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // CATEGORIAS (de caracteristicas) — sin cambios funcionales
+  // ═════════════════════════════════════════════════════════════════════════
   const [categorias, setCategorias] = useState<CategoriaCaractDocs[]>([])
   const [cargandoCat, setCargandoCat] = useState(true)
   const [busquedaCat, setBusquedaCat] = useState('')
@@ -52,7 +238,6 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [sincronizandoMdCat, setSincronizandoMdCat] = useState(false)
   const [mensajeMdCat, setMensajeMdCat] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
 
-  // ── Categoria seleccionada (para Tipos) ─────────────────────────────────
   const [catSeleccionada, setCatSeleccionada] = useState<CategoriaCaractDocs | null>(null)
 
   // ── Tipos ─────────────────────────────────────────────────────────────────
@@ -71,7 +256,6 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [confirmTipo, setConfirmTipo] = useState<TipoCaractDocs | null>(null)
   const [eliminandoTipo, setEliminandoTipo] = useState(false)
 
-  // ── Carga categorias ──────────────────────────────────────────────────────
   const cargarCategorias = useCallback(async () => {
     setCargandoCat(true)
     try {
@@ -87,7 +271,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     registroLLMApi.listar().then((m) => setModelosLLM(m)).catch(() => {})
   }, [])
 
-  // ── Carga tipos ───────────────────────────────────────────────────────────
+  // ── Tipos (carga) ─────────────────────────────────────────────────────────
   const cargarTipos = useCallback(async () => {
     if (!catSeleccionada) { setTipos([]); return }
     setCargandoTipos(true)
@@ -99,6 +283,14 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   }, [catSeleccionada])
 
   useEffect(() => { if (tabActiva === 'tipos') cargarTipos() }, [tabActiva, cargarTipos])
+
+  // Tipos disponibles segun categoria seleccionada en modal "agregar caracteristica"
+  const [tiposDisponibles, setTiposDisponibles] = useState<TipoCaractDocs[]>([])
+  useEffect(() => {
+    if (!formAgregarCaract.codigo_cat_docs) { setTiposDisponibles([]); return }
+    categoriasCaractDocsApi.listarTipos(formAgregarCaract.codigo_cat_docs)
+      .then(setTiposDisponibles).catch(() => setTiposDisponibles([]))
+  }, [formAgregarCaract.codigo_cat_docs])
 
   // ── CRUD Categorias ───────────────────────────────────────────────────────
   const abrirNuevaCat = () => {
@@ -320,14 +512,18 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     }
   }
 
-  // ── Filtro categorias ─────────────────────────────────────────────────────
-  const catsFiltradas = categorias
-    .filter((c) =>
-      c.codigo_cat_docs.toLowerCase().includes(busquedaCat.toLowerCase()) ||
-      c.nombre_cat_docs.toLowerCase().includes(busquedaCat.toLowerCase())
-    )
+  // ── Filtros ───────────────────────────────────────────────────────────────
+  const tiposDocFiltrados = useMemo(() => tiposDoc.filter((td) =>
+    td.codigo.toLowerCase().includes(busquedaTipoDoc.toLowerCase()) ||
+    td.nombre.toLowerCase().includes(busquedaTipoDoc.toLowerCase()) ||
+    (td.alias || '').toLowerCase().includes(busquedaTipoDoc.toLowerCase())
+  ), [tiposDoc, busquedaTipoDoc])
 
-  // ── Selector de categoria (para Tipos) ────────────────────────────────────
+  const catsFiltradas = categorias.filter((c) =>
+    c.codigo_cat_docs.toLowerCase().includes(busquedaCat.toLowerCase()) ||
+    c.nombre_cat_docs.toLowerCase().includes(busquedaCat.toLowerCase())
+  )
+
   const selectorCategoria = (
     <div className="mb-4">
       <label className="block text-sm font-medium text-texto mb-1.5">{t('selectorCategoria')}</label>
@@ -357,6 +553,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
       {/* Tabs */}
       <div className="flex gap-1 border-b border-borde">
         {([
+          { key: 'tipos_documento' as const, label: t('tabTiposDocumento') },
           { key: 'categorias' as const, label: t('tabCategorias') },
           { key: 'tipos' as const, label: t('tabTipos') },
         ]).map((tab) => (
@@ -374,7 +571,74 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         ))}
       </div>
 
-      {/* TAB CATEGORIAS */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* TAB TIPO DE DOCUMENTO                                               */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {tabActiva === 'tipos_documento' && (
+        <>
+          <div className="flex items-center gap-3">
+            <div className="max-w-sm flex-1">
+              <Input placeholder={t('buscarTipoDocPlaceholder')} value={busquedaTipoDoc}
+                onChange={(e) => setBusquedaTipoDoc(e.target.value)} icono={<Search size={15} />} />
+            </div>
+            <div className="flex gap-2 ml-auto">
+              <Boton variante="contorno" tamano="sm" disabled={tiposDocFiltrados.length === 0}
+                onClick={() => exportarExcel(tiposDocFiltrados as unknown as Record<string, unknown>[], [
+                  { titulo: t('colCodigo'), campo: 'codigo' },
+                  { titulo: t('colNombre'), campo: 'nombre' },
+                  { titulo: t('etiquetaAlias'), campo: 'alias' },
+                  { titulo: t('colDescripcion'), campo: 'descripcion' },
+                ], 'tipos-documento')}>
+                <Download size={15} />Excel
+              </Boton>
+              <Boton variante="primario" onClick={abrirNuevoTipoDoc}>
+                <Plus size={16} />{t('nuevoTipoDocumento')}
+              </Boton>
+            </div>
+          </div>
+
+          <Tabla>
+            <TablaCabecera>
+              <tr>
+                <TablaTh>{t('colNombre')}</TablaTh>
+                <TablaTh>{t('etiquetaAlias')}</TablaTh>
+                <TablaTh>{t('colDescripcion')}</TablaTh>
+                <TablaTh>{t('colCodigo')}</TablaTh>
+                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
+              </tr>
+            </TablaCabecera>
+            <TablaCuerpo>
+              {cargandoTiposDoc ? (
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={5 as never}>{tc('cargando')}</TablaTd></TablaFila>
+              ) : tiposDocFiltrados.length === 0 ? (
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={5 as never}>{t('sinTiposDocumento')}</TablaTd></TablaFila>
+              ) : tiposDocFiltrados.map((td) => (
+                <TablaFila key={td.codigo}>
+                  <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTipoDoc(td)}>{td.nombre}</TablaTd>
+                  <TablaTd className="text-texto-muted text-sm">{td.alias || <span className="text-texto-light">—</span>}</TablaTd>
+                  <TablaTd className="text-texto-muted text-sm">{td.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditarTipoDoc(td)}>
+                    <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{td.codigo}</code>
+                    {td.codigo_grupo === null || td.codigo_grupo === undefined ? (
+                      <Insignia variante="primario" className="ml-2 text-xs">Global</Insignia>
+                    ) : null}
+                  </TablaTd>
+                  <TablaTd>
+                    <div className="flex items-center justify-end gap-1">
+                      <button onClick={() => abrirEditarTipoDoc(td)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                      <button onClick={() => setConfirmTipoDoc(td)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={t('desactivar')}><Trash2 size={14} /></button>
+                    </div>
+                  </TablaTd>
+                </TablaFila>
+              ))}
+            </TablaCuerpo>
+          </Tabla>
+        </>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* TAB CATEGORIAS                                                      */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
       {tabActiva === 'categorias' && (
         <>
           <div className="flex items-center gap-3">
@@ -440,7 +704,9 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         </>
       )}
 
-      {/* TAB TIPOS */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* TAB TIPOS                                                           */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
       {tabActiva === 'tipos' && (
         <>
           {selectorCategoria}
@@ -497,42 +763,251 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         </>
       )}
 
-      {/* MODALES */}
-
-      {/* Modal Categoria */}
-      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar Categoría: ${catEditando.nombre_cat_docs} - ${catEditando.codigo_cat_docs}` : t('nuevaCategoriaTitulo')} className="max-w-3xl">
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      {/* MODAL TIPO DE DOCUMENTO                                             */}
+      {/* ══════════════════════════════════════════════════════════════════ */}
+      <Modal abierto={modalTipoDoc} alCerrar={() => setModalTipoDoc(false)}
+        titulo={tipoDocEditando ? t('editarTipoDocTitulo', { nombre: tipoDocEditando.nombre, codigo: tipoDocEditando.codigo }) : t('nuevoTipoDocTitulo')}
+        className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
-          {/* Tabs */}
+          {/* Tabs internas — solo mostramos "caracteristicas" si está editando */}
           <div className="flex border-b border-borde">
             {([
               'datos',
               'system_prompt',
-              'programacion_insert',
-              'programacion_update',
-              ...(catEditando ? (['md'] as const) : ([] as const)),
-              'llm',
+              'prompts',
+              ...(tipoDocEditando ? (['caracteristicas'] as const) : ([] as const)),
             ] as const).map((tab) => (
               <button
                 key={tab}
-                onClick={() => setTabModalCat(tab)}
+                onClick={() => setTabModalTipoDoc(tab)}
                 className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  tabModalCat === tab
-                    ? 'border-b-2 border-primario text-primario'
-                    : 'text-texto-muted hover:text-texto'
+                  tabModalTipoDoc === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
                 }`}
               >
+                {tab === 'datos' ? t('tabModalDatos')
+                  : tab === 'system_prompt' ? t('tabModalSystemPrompt')
+                  : tab === 'prompts' ? t('tabModalPrompts')
+                  : t('tabModalCaracteristicas')}
+              </button>
+            ))}
+          </div>
+
+          {/* Datos */}
+          {tabModalTipoDoc === 'datos' && (
+            <div className="flex-1 flex flex-col gap-4">
+              <Input etiqueta={t('etiquetaNombre')} value={formTipoDoc.nombre}
+                onChange={(e) => setFormTipoDoc({ ...formTipoDoc, nombre: e.target.value })}
+                placeholder={t('placeholderNombre')} />
+              {!tipoDocEditando && grupoActivo === 'ADMIN' && (
+                <Input etiqueta={t('etiquetaCodigo')} value={formTipoDoc.codigo}
+                  onChange={(e) => setFormTipoDoc({ ...formTipoDoc, codigo: e.target.value.toUpperCase() })}
+                  placeholder={t('placeholderCodigo')} />
+              )}
+              <Input etiqueta={t('etiquetaAlias')} value={formTipoDoc.alias}
+                onChange={(e) => setFormTipoDoc({ ...formTipoDoc, alias: e.target.value })}
+                placeholder={t('placeholderAlias')} />
+              <div>
+                <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaDescripcion')}</label>
+                <textarea className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto placeholder:text-texto-muted focus:border-primario focus:ring-1 focus:ring-primario outline-none resize-y min-h-[80px]"
+                  value={formTipoDoc.descripcion}
+                  onChange={(e) => setFormTipoDoc({ ...formTipoDoc, descripcion: e.target.value })} />
+              </div>
+              {tipoDocEditando && (
+                <Input etiqueta={t('colCodigo')} value={formTipoDoc.codigo} disabled readOnly />
+              )}
+            </div>
+          )}
+
+          {/* System Prompt (solo) */}
+          {tabModalTipoDoc === 'system_prompt' && (
+            <div className="flex-1 flex flex-col">
+              <TabPrompts
+                tabla="tipos_documento"
+                pkColumna="codigo"
+                pkValor={tipoDocEditando?.codigo ?? null}
+                campos={formTipoDoc}
+                onCampoCambiado={(campo, valor) => setFormTipoDoc({ ...formTipoDoc, [campo]: valor })}
+                mostrarPromptInsert={false}
+                mostrarPromptUpdate={false}
+                mostrarSystemPrompt={true}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
+                mostrarJavaScript={false}
+              />
+            </div>
+          )}
+
+          {/* Prompts (Insert + Update juntos) */}
+          {tabModalTipoDoc === 'prompts' && (
+            <div className="flex-1 flex flex-col">
+              <TabPrompts
+                tabla="tipos_documento"
+                pkColumna="codigo"
+                pkValor={tipoDocEditando?.codigo ?? null}
+                campos={formTipoDoc}
+                onCampoCambiado={(campo, valor) => setFormTipoDoc({ ...formTipoDoc, [campo]: valor })}
+                mostrarSystemPrompt={false}
+                mostrarPromptInsert={true}
+                mostrarPromptUpdate={true}
+                mostrarPythonInsert={false}
+                mostrarPythonUpdate={false}
+                mostrarJavaScript={false}
+              />
+            </div>
+          )}
+
+          {/* Caracteristicas relacionadas */}
+          {tabModalTipoDoc === 'caracteristicas' && tipoDocEditando && (
+            <div className="flex-1 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-texto-muted">
+                  {caractsRel.length} {caractsRel.length === 1 ? 'característica' : 'características'}
+                </span>
+                <Boton variante="primario" tamano="sm" onClick={abrirAgregarCaract}>
+                  <Plus size={14} />{t('agregarCaracteristica')}
+                </Boton>
+              </div>
+              <Tabla>
+                <TablaCabecera>
+                  <tr>
+                    <TablaTh>{t('colCategoria')}</TablaTh>
+                    <TablaTh>{t('colTipoCaract')}</TablaTh>
+                    <TablaTh>{t('etiquetaOrden')}</TablaTh>
+                    <TablaTh>{t('colMaxPorTipo')}</TablaTh>
+                    <TablaTh className="text-right">{tc('acciones')}</TablaTh>
+                  </tr>
+                </TablaCabecera>
+                <TablaCuerpo>
+                  {cargandoCaracts ? (
+                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={5 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                  ) : caractsRel.length === 0 ? (
+                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={5 as never}>{t('sinCaracteristicasRelacionadas')}</TablaTd></TablaFila>
+                  ) : caractsRel.map((r) => (
+                    <TablaFila key={`${r.codigo_cat_docs}-${r.codigo_tipo_docs}`}>
+                      <TablaTd className="text-sm">
+                        {r.nombre_categoria || <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_cat_docs}</code>}
+                      </TablaTd>
+                      <TablaTd className="text-sm font-medium">
+                        {r.nombre_tipo_caract || <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_tipo_docs}</code>}
+                      </TablaTd>
+                      <TablaTd className="text-sm">{r.orden}</TablaTd>
+                      <TablaTd>
+                        <span className="inline-flex min-w-[2.25rem] justify-center rounded-md bg-fondo px-2 py-0.5 text-xs font-mono">{r.max_por_tipo}</span>
+                      </TablaTd>
+                      <TablaTd>
+                        <div className="flex items-center justify-end gap-1">
+                          <button onClick={() => eliminarCaract(r)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
+                        </div>
+                      </TablaTd>
+                    </TablaFila>
+                  ))}
+                </TablaCuerpo>
+              </Tabla>
+            </div>
+          )}
+
+          <div className="mt-auto flex flex-col gap-3">
+            {errorTipoDoc && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipoDoc}</p></div>}
+            <PieBotonesModal
+              editando={!!tipoDocEditando}
+              onGuardar={() => guardarTipoDoc(false)}
+              onGuardarYSalir={() => guardarTipoDoc(true)}
+              onCerrar={() => setModalTipoDoc(false)}
+              cargando={guardandoTipoDoc}
+              botonesIzquierda={(tabModalTipoDoc === 'system_prompt' || tabModalTipoDoc === 'prompts') && tipoDocEditando ? (
+                <PieBotonesPrompts
+                  tabla="tipos_documento"
+                  pkColumna="codigo"
+                  pkValor={tipoDocEditando.codigo}
+                  promptInsert={formTipoDoc.prompt_insert || undefined}
+                  promptUpdate={formTipoDoc.prompt_update || undefined}
+                  mostrarSincronizar={false}
+                />
+              ) : undefined}
+            />
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Agregar Caracteristica */}
+      <Modal abierto={modalAgregarCaract} alCerrar={() => setModalAgregarCaract(false)}
+        titulo={tipoDocEditando ? t('modalAgregarCaractTitulo', { tipo: tipoDocEditando.nombre }) : ''}
+        className="max-w-lg">
+        <div className="flex flex-col gap-4 min-w-[420px]">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">{t('selectCategoria')}</label>
+            <select
+              className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm"
+              value={formAgregarCaract.codigo_cat_docs}
+              onChange={(e) => setFormAgregarCaract({ ...formAgregarCaract, codigo_cat_docs: e.target.value, codigo_tipo_docs: '' })}
+            >
+              <option value="">{t('selectCategoriaPlaceholder')}</option>
+              {categorias.map((c) => (
+                <option key={c.codigo_cat_docs} value={c.codigo_cat_docs}>{c.nombre_cat_docs}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">{t('selectTipoCaract')}</label>
+            <select
+              className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm"
+              value={formAgregarCaract.codigo_tipo_docs}
+              disabled={!formAgregarCaract.codigo_cat_docs}
+              onChange={(e) => setFormAgregarCaract({ ...formAgregarCaract, codigo_tipo_docs: e.target.value })}
+            >
+              <option value="">{t('selectTipoCaractPlaceholder')}</option>
+              {tiposDisponibles.map((tp) => (
+                <option key={tp.codigo_tipo_docs} value={tp.codigo_tipo_docs}>{tp.nombre_tipo_docs}</option>
+              ))}
+            </select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">{t('etiquetaOrden')}</label>
+              <input type="number" value={formAgregarCaract.orden}
+                onChange={(e) => setFormAgregarCaract({ ...formAgregarCaract, orden: parseInt(e.target.value, 10) || 0 })}
+                className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm" />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-sm font-medium text-texto">{t('etiquetaMaxPorTipoRel')}</label>
+              <input type="number" min={1} max={50} value={formAgregarCaract.max_por_tipo}
+                onChange={(e) => setFormAgregarCaract({ ...formAgregarCaract, max_por_tipo: Math.max(1, Math.min(50, parseInt(e.target.value, 10) || 1)) })}
+                className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm" />
+            </div>
+          </div>
+          {errorAgregarCaract && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorAgregarCaract}</p></div>}
+          <div className="flex justify-end gap-2 pt-2">
+            <Boton variante="contorno" onClick={() => setModalAgregarCaract(false)}>{tc('cancelar')}</Boton>
+            <Boton variante="primario" onClick={agregarCaract} cargando={guardandoAgregarCaract}>
+              {tc('agregar')}
+            </Boton>
+          </div>
+        </div>
+      </Modal>
+
+      {/* MODALES Categoria/Tipo (sin cambios) */}
+      <Modal abierto={modalCat} alCerrar={() => setModalCat(false)} titulo={catEditando ? `Editar Categoría: ${catEditando.nombre_cat_docs} - ${catEditando.codigo_cat_docs}` : t('nuevaCategoriaTitulo')} className="max-w-3xl">
+        <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
+          <div className="flex border-b border-borde">
+            {([
+              'datos', 'system_prompt', 'programacion_insert', 'programacion_update',
+              ...(catEditando ? (['md'] as const) : ([] as const)), 'llm',
+            ] as const).map((tab) => (
+              <button key={tab} onClick={() => setTabModalCat(tab)}
+                className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                  tabModalCat === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
+                }`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : tab === 'md' ? '.md' : 'LLM'}
               </button>
             ))}
           </div>
 
-          {/* Tab Datos */}
           {tabModalCat === 'datos' && (
             <div className="flex-1 flex flex-col gap-4">
               <Input etiqueta={t('etiquetaNombre')} value={formCat.nombre_cat_docs}
                 onChange={(e) => setFormCat({ ...formCat, nombre_cat_docs: e.target.value })}
                 placeholder={t('placeholderNombre')} />
-              {/* Código solo visible si super-admin crea global, o al editar (readonly) */}
               {!catEditando && grupoActivo === 'ADMIN' && (
                 <Input etiqueta={t('etiquetaCodigo')} value={formCat.codigo_cat_docs}
                   onChange={(e) => setFormCat({ ...formCat, codigo_cat_docs: e.target.value.toUpperCase() })}
@@ -564,80 +1039,45 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             </div>
           )}
 
-          {/* Tab System Prompt */}
           {tabModalCat === 'system_prompt' && (
             <div className="flex-1 flex flex-col">
-              <TabPrompts
-                tabla="categorias_caract_docs"
-                pkColumna="codigo_cat_docs"
-                pkValor={catEditando?.codigo_cat_docs ?? null}
-                campos={formCat}
-                onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-                mostrarPromptInsert={false}
-                mostrarPromptUpdate={false}
-                mostrarSystemPrompt={true}
-                mostrarPythonInsert={false}
-                mostrarPythonUpdate={false}
-                mostrarJavaScript={false}
-              />
+              <TabPrompts tabla="categorias_caract_docs" pkColumna="codigo_cat_docs" pkValor={catEditando?.codigo_cat_docs ?? null}
+                campos={formCat} onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
+                mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true}
+                mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
             </div>
           )}
 
-          {/* Tab Programación Insert */}
           {tabModalCat === 'programacion_insert' && (
             <div className="flex-1 flex flex-col">
-              <TabPrompts
-                tabla="categorias_caract_docs"
-                pkColumna="codigo_cat_docs"
-                pkValor={catEditando?.codigo_cat_docs ?? null}
-                campos={formCat}
-                onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-                mostrarSystemPrompt={false}
-                mostrarJavaScript={false}
-                mostrarPromptUpdate={false}
-                mostrarPythonUpdate={false}
-              />
-            </div>
-          )}
-          {/* Tab Programación Update */}
-          {tabModalCat === 'programacion_update' && (
-            <div className="flex-1 flex flex-col">
-              <TabPrompts
-                tabla="categorias_caract_docs"
-                pkColumna="codigo_cat_docs"
-                pkValor={catEditando?.codigo_cat_docs ?? null}
-                campos={formCat}
-                onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
-                mostrarSystemPrompt={false}
-                mostrarJavaScript={false}
-                mostrarPromptInsert={false}
-                mostrarPythonInsert={false}
-              />
+              <TabPrompts tabla="categorias_caract_docs" pkColumna="codigo_cat_docs" pkValor={catEditando?.codigo_cat_docs ?? null}
+                campos={formCat} onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
+                mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptUpdate={false} mostrarPythonUpdate={false} />
             </div>
           )}
 
-          {/* Tab .md */}
+          {tabModalCat === 'programacion_update' && (
+            <div className="flex-1 flex flex-col">
+              <TabPrompts tabla="categorias_caract_docs" pkColumna="codigo_cat_docs" pkValor={catEditando?.codigo_cat_docs ?? null}
+                campos={formCat} onCampoCambiado={(campo, valor) => setFormCat({ ...formCat, [campo]: valor })}
+                mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
+            </div>
+          )}
+
           {tabModalCat === 'md' && catEditando && (
             <div className="flex-1 flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
-                <textarea
-                  value={formCat.md || ''}
-                  readOnly
-                  rows={13}
+                <textarea value={formCat.md || ''} readOnly rows={13}
                   placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
-                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
-                />
+                  className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default" />
               </div>
               {mensajeMdCat && (
-                <p className={`text-xs px-1 ${mensajeMdCat.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>
-                  {mensajeMdCat.texto}
-                </p>
+                <p className={`text-xs px-1 ${mensajeMdCat.tipo === 'ok' ? 'text-green-700' : 'text-red-600'}`}>{mensajeMdCat.texto}</p>
               )}
             </div>
           )}
 
-          {/* Tab LLM */}
           {tabModalCat === 'llm' && (
             <div className="flex-1 flex flex-col gap-3">
               <p className="text-sm text-texto-muted">
@@ -645,30 +1085,24 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               </p>
               <div className="flex flex-col gap-1.5">
                 <label className="text-sm font-medium text-texto">Modelo LLM <span className="text-texto-muted font-normal">(opcional)</span></label>
-                <select
-                  className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
+                <select className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario"
                   value={formCat.id_modelo ?? ''}
-                  onChange={(e) => setFormCat({ ...formCat, id_modelo: e.target.value ? Number(e.target.value) : null })}
-                >
+                  onChange={(e) => setFormCat({ ...formCat, id_modelo: e.target.value ? Number(e.target.value) : null })}>
                   <option value="">Sin modelo asignado</option>
                   {modelosLLM.map((m) => (
-                    <option key={m.id_modelo} value={m.id_modelo}>
-                      {m.nombre_visible} — {m.proveedor}
-                    </option>
+                    <option key={m.id_modelo} value={m.id_modelo}>{m.nombre_visible} — {m.proveedor}</option>
                   ))}
                 </select>
               </div>
             </div>
           )}
 
-          {/* Footer — siempre al fondo del modal */}
           <div className="mt-auto flex flex-col gap-3">
             {errorCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCat}</p></div>}
             {tabModalCat === 'md' && catEditando ? (
               <div className="flex justify-between items-center pt-2">
                 <div className="flex gap-2">
-                  <Boton
-                    className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
+                  <Boton className="bg-primario-hover hover:bg-primario text-white focus:ring-primario"
                     onClick={async () => {
                       setGenerandoMdCat(true); setMensajeMdCat(null)
                       try {
@@ -679,13 +1113,8 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                         setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
                       } finally { setGenerandoMdCat(false) }
                     }}
-                    cargando={generandoMdCat}
-                    disabled={generandoMdCat || sincronizandoMdCat}
-                  >
-                    Generar
-                  </Boton>
-                  <Boton
-                    className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
+                    cargando={generandoMdCat} disabled={generandoMdCat || sincronizandoMdCat}>Generar</Boton>
+                  <Boton className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
                     onClick={async () => {
                       setSincronizandoMdCat(true); setMensajeMdCat(null)
                       try {
@@ -695,32 +1124,17 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                         setMensajeMdCat({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
                       } finally { setSincronizandoMdCat(false) }
                     }}
-                    cargando={sincronizandoMdCat}
-                    disabled={generandoMdCat || sincronizandoMdCat || !formCat.md}
-                  >
-                    Sincronizar
-                  </Boton>
+                    cargando={sincronizandoMdCat} disabled={generandoMdCat || sincronizandoMdCat || !formCat.md}>Sincronizar</Boton>
                 </div>
                 <Boton variante="contorno" onClick={() => setModalCat(false)}>{tc('salir')}</Boton>
               </div>
             ) : (
-              <PieBotonesModal
-                editando={!!catEditando}
-                onGuardar={() => guardarCat(false)}
-                onGuardarYSalir={() => guardarCat(true)}
-                onCerrar={() => setModalCat(false)}
-                cargando={guardandoCat}
+              <PieBotonesModal editando={!!catEditando} onGuardar={() => guardarCat(false)} onGuardarYSalir={() => guardarCat(true)}
+                onCerrar={() => setModalCat(false)} cargando={guardandoCat}
                 botonesIzquierda={(tabModalCat === 'programacion_insert' || tabModalCat === 'programacion_update') && catEditando ? (
-                  <PieBotonesPrompts
-                    tabla="categorias_caract_docs"
-                    pkColumna="codigo_cat_docs"
-                    pkValor={catEditando.codigo_cat_docs}
-                    promptInsert={formCat.prompt_insert || undefined}
-                    promptUpdate={formCat.prompt_update || undefined}
-                    mostrarSincronizar={false}
-                  />
-                ) : undefined}
-              />
+                  <PieBotonesPrompts tabla="categorias_caract_docs" pkColumna="codigo_cat_docs" pkValor={catEditando.codigo_cat_docs}
+                    promptInsert={formCat.prompt_insert || undefined} promptUpdate={formCat.prompt_update || undefined} mostrarSincronizar={false} />
+                ) : undefined} />
             )}
           </div>
         </div>
@@ -729,18 +1143,12 @@ export default function PaginaCategoriasCaracteristicaDocs() {
       {/* Modal Tipo */}
       <Modal abierto={modalTipo} alCerrar={() => setModalTipo(false)} titulo={tipoEditando ? `Editar Tipo: ${tipoEditando.nombre_tipo_docs} - ${tipoEditando.codigo_tipo_docs}` : t('nuevoTipoTitulo')} className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
-          {/* Tabs */}
           <div className="flex border-b border-borde">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setTabModalTipo(tab)}
+              <button key={tab} onClick={() => setTabModalTipo(tab)}
                 className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  tabModalTipo === tab
-                    ? 'border-b-2 border-primario text-primario'
-                    : 'text-texto-muted hover:text-texto'
-                }`}
-              >
+                  tabModalTipo === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
+                }`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
               </button>
             ))}
@@ -752,20 +1160,13 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                 onChange={(e) => setFormTipo({ ...formTipo, nombre_tipo_docs: e.target.value })}
                 placeholder={t('placeholderNombreTipo')} />
               <div>
-                <label className="block text-sm font-medium text-texto mb-1.5">
-                  {t('etiquetaMaxPorTipo')}
-                </label>
-                <input
-                  type="number"
-                  min={1}
-                  max={50}
-                  value={formTipo.max_por_tipo}
+                <label className="block text-sm font-medium text-texto mb-1.5">{t('etiquetaMaxPorTipo')}</label>
+                <input type="number" min={1} max={50} value={formTipo.max_por_tipo}
                   onChange={(e) => {
                     const v = parseInt(e.target.value, 10)
                     setFormTipo({ ...formTipo, max_por_tipo: Number.isFinite(v) && v >= 1 ? Math.min(v, 50) : 1 })
                   }}
-                  className="w-32 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none"
-                />
+                  className="w-32 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto focus:border-primario focus:ring-1 focus:ring-primario outline-none" />
                 <p className="text-xs text-texto-muted mt-1">{t('hintMaxPorTipo')}</p>
               </div>
               {tipoEditando && (
@@ -775,69 +1176,38 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           )}
 
           {tabModalTipo === 'system_prompt' && (
-            <TabPrompts
-              tabla="tipos_caract_docs"
-              pkColumna="codigo_tipo_docs"
-              pkValor={tipoEditando?.codigo_tipo_docs ?? null}
-              campos={formTipo}
-              onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
-              mostrarPromptInsert={false}
-              mostrarPromptUpdate={false}
-              mostrarSystemPrompt={true}
-              mostrarPythonInsert={false}
-              mostrarPythonUpdate={false}
-              mostrarJavaScript={false}
-            />
+            <TabPrompts tabla="tipos_caract_docs" pkColumna="codigo_tipo_docs" pkValor={tipoEditando?.codigo_tipo_docs ?? null}
+              campos={formTipo} onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
+              mostrarPromptInsert={false} mostrarPromptUpdate={false} mostrarSystemPrompt={true}
+              mostrarPythonInsert={false} mostrarPythonUpdate={false} mostrarJavaScript={false} />
           )}
 
           {tabModalTipo === 'programacion_insert' && (
-            <TabPrompts
-              tabla="tipos_caract_docs"
-              pkColumna="codigo_tipo_docs"
-              pkValor={tipoEditando?.codigo_tipo_docs ?? null}
-              campos={formTipo}
-              onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
-              mostrarSystemPrompt={false}
-              mostrarJavaScript={false}
-              mostrarPromptUpdate={false}
-              mostrarPythonUpdate={false}
-            />
+            <TabPrompts tabla="tipos_caract_docs" pkColumna="codigo_tipo_docs" pkValor={tipoEditando?.codigo_tipo_docs ?? null}
+              campos={formTipo} onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
+              mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptUpdate={false} mostrarPythonUpdate={false} />
           )}
           {tabModalTipo === 'programacion_update' && (
-            <TabPrompts
-              tabla="tipos_caract_docs"
-              pkColumna="codigo_tipo_docs"
-              pkValor={tipoEditando?.codigo_tipo_docs ?? null}
-              campos={formTipo}
-              onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
-              mostrarSystemPrompt={false}
-              mostrarJavaScript={false}
-              mostrarPromptInsert={false}
-              mostrarPythonInsert={false}
-            />
+            <TabPrompts tabla="tipos_caract_docs" pkColumna="codigo_tipo_docs" pkValor={tipoEditando?.codigo_tipo_docs ?? null}
+              campos={formTipo} onCampoCambiado={(campo, valor) => setFormTipo({ ...formTipo, [campo]: valor })}
+              mostrarSystemPrompt={false} mostrarJavaScript={false} mostrarPromptInsert={false} mostrarPythonInsert={false} />
           )}
 
           {errorTipo && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTipo}</p></div>}
-          <PieBotonesModal
-            editando={!!tipoEditando}
-            onGuardar={() => guardarTipo(false)}
-            onGuardarYSalir={() => guardarTipo(true)}
-            onCerrar={() => setModalTipo(false)}
-            cargando={guardandoTipo}
+          <PieBotonesModal editando={!!tipoEditando} onGuardar={() => guardarTipo(false)} onGuardarYSalir={() => guardarTipo(true)}
+            onCerrar={() => setModalTipo(false)} cargando={guardandoTipo}
             botonesIzquierda={(tabModalTipo === 'system_prompt' || tabModalTipo === 'programacion_insert' || tabModalTipo === 'programacion_update') && tipoEditando ? (
-              <PieBotonesPrompts
-                tabla="tipos_caract_docs"
-                pkColumna="codigo_tipo_docs"
-                pkValor={tipoEditando.codigo_tipo_docs}
-                promptInsert={formTipo.prompt_insert || undefined}
-                promptUpdate={formTipo.prompt_update || undefined}
-              />
-            ) : undefined}
-          />
+              <PieBotonesPrompts tabla="tipos_caract_docs" pkColumna="codigo_tipo_docs" pkValor={tipoEditando.codigo_tipo_docs}
+                promptInsert={formTipo.prompt_insert || undefined} promptUpdate={formTipo.prompt_update || undefined} />
+            ) : undefined} />
         </div>
       </Modal>
 
       {/* Confirmaciones */}
+      <ModalConfirmar abierto={!!confirmTipoDoc} alCerrar={() => setConfirmTipoDoc(null)} alConfirmar={eliminarTipoDoc}
+        titulo={t('desactivarTipoDocTitulo')}
+        mensaje={confirmTipoDoc ? t('desactivarTipoDocConfirm', { nombre: confirmTipoDoc.nombre }) : ''}
+        textoConfirmar={tc('eliminar')} cargando={eliminandoTipoDoc} />
       <ModalConfirmar abierto={!!confirmCat} alCerrar={() => setConfirmCat(null)} alConfirmar={eliminarCat}
         titulo={t('desactivarCategoriaTitulo')} mensaje={confirmCat ? t('desactivarCategoriaConfirm', { nombre: confirmCat.nombre_cat_docs }) : ''} textoConfirmar={t('desactivar')} cargando={eliminandoCat} />
       <ModalConfirmar abierto={!!confirmTipo} alCerrar={() => setConfirmTipo(null)} alConfirmar={eliminarTipo}
