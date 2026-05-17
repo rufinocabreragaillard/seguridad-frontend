@@ -542,17 +542,12 @@ export default function PaginaFunciones() {
               {/* Columna izquierda */}
               <div className="flex flex-col gap-3">
                 <div>
-                  <label className="text-sm font-medium text-texto">{t('etiquetaAppOrigen')}</label>
-                  <select value={formFuncion.codigo_aplicacion_origen} onChange={(e) => setFormFuncion({ ...formFuncion, codigo_aplicacion_origen: e.target.value })} className={selectClass}>
-                    <option value="">{t('sinAsignar')}</option>
-                    {[...aplicaciones].sort((a, b) => a.nombre.localeCompare(b.nombre, 'es')).map((a) => (
-                      <option key={a.codigo_aplicacion} value={a.codigo_aplicacion}>{a.nombre}</option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaDescripcion')}</label>
+                  <textarea value={formFuncion.descripcion} onChange={(e) => setFormFuncion({ ...formFuncion, descripcion: e.target.value })} rows={3} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none" />
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-texto">{t('etiquetaDescripcion')}</label>
-                  <textarea value={formFuncion.descripcion} onChange={(e) => setFormFuncion({ ...formFuncion, descripcion: e.target.value })} rows={3} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none" />
+                  <label className="block text-sm font-medium text-texto mb-1">Ayuda para el usuario</label>
+                  <textarea value={formFuncion.ayuda_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, ayuda_de_funcion: e.target.value })} rows={3} placeholder={tfx('descripcionPlaceholder')} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none placeholder:text-texto-muted" />
                 </div>
                 <div>
                   <label className="flex items-center gap-2 cursor-pointer select-none">
@@ -585,7 +580,7 @@ export default function PaginaFunciones() {
                     {formFuncion.traducir_registros && (
                       <>
                         <div>
-                          <label className="text-xs font-medium text-texto block mb-1">Tabla a traducir</label>
+                          <label className="block text-xs font-medium text-texto mb-1">Tabla a traducir</label>
                           <Input
                             value={formFuncion.tabla_traducible}
                             onChange={(e) => setFormFuncion({ ...formFuncion, tabla_traducible: e.target.value })}
@@ -593,7 +588,7 @@ export default function PaginaFunciones() {
                           />
                         </div>
                         <div>
-                          <label className="text-xs font-medium text-texto block mb-1">
+                          <label className="block text-xs font-medium text-texto mb-1">
                             {tfx('camposATraducir')}
                           </label>
                           <Input
@@ -619,11 +614,7 @@ export default function PaginaFunciones() {
               {/* Columna derecha */}
               <div className="flex flex-col gap-3">
                 <div>
-                  <label className="text-sm font-medium text-texto">Ayuda para el usuario</label>
-                  <textarea value={formFuncion.ayuda_de_funcion} onChange={(e) => setFormFuncion({ ...formFuncion, ayuda_de_funcion: e.target.value })} rows={3} placeholder={tfx('descripcionPlaceholder')} className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario resize-none placeholder:text-texto-muted" />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-texto mb-2 block">{tfx('permisosOperacion')}</label>
+                  <label className="block text-sm font-medium text-texto mb-2">{tfx('permisosOperacion')}</label>
                   <div className="grid grid-cols-2 gap-2 p-3 bg-fondo rounded-lg border border-borde">
                     {([
                       { key: 'perm_select', label: tc('operacionSelect'), disabled: false },
