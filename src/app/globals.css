@@ -97,25 +97,25 @@ body {
      no aplica porque su padre no es el que tiene label como hijo
      (el label ES el wrapper del checkbox).
    ============================================================ */
-.modal-body div:has(> label:first-child + *):not(:has(textarea)):not(.modal-body):not(.grid) {
+.modal-body div:has(> label:first-child):has(> input, > select, > div):not(:has(textarea)):not(.modal-body):not(.grid) {
   display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0.75rem;
 }
 
-.modal-body div:has(> label:first-child + *):not(:has(textarea)):not(.modal-body):not(.grid) > label:first-child {
+.modal-body div:has(> label:first-child):has(> input, > select, > div):not(:has(textarea)):not(.modal-body):not(.grid) > label:first-child {
   width: 9rem;
   flex-shrink: 0;
   text-align: right;
   font-weight: 500;
 }
 
-.modal-body div:has(> label:first-child + *):not(:has(textarea)):not(.modal-body):not(.grid) > label:first-child::after {
+.modal-body div:has(> label:first-child):has(> input, > select, > div):not(:has(textarea)):not(.modal-body):not(.grid) > label:first-child::after {
   content: ':';
 }
 
-.modal-body div:has(> label:first-child + *):not(:has(textarea)):not(.modal-body):not(.grid) > *:not(label) {
+.modal-body div:has(> label:first-child):has(> input, > select, > div):not(:has(textarea)):not(.modal-body):not(.grid) > *:not(label) {
   flex: 1 1 0%;
   min-width: 0;
 }
