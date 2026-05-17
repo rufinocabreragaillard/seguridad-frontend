@@ -82,35 +82,40 @@ body {
 /* ============================================================
    LABELS EN MODALES — label a la izquierda del campo
    ============================================================
-   Cualquier wrapper `flex flex-col` dentro de .modal-body cuyo
-   primer hijo sea un <label> se convierte en flex-row: label
-   ancho fijo a la izquierda (con ':') y el campo ocupa el resto.
+   Cualquier wrapper <div> dentro de .modal-body cuyo PRIMER hijo
+   sea un <label> Y que contenga un input/select/relative/dropdown
+   se convierte en flex-row: label ancho fijo a la izquierda
+   (con ':') y el campo ocupa el resto.
+
+   Cubre wrappers `<div class="flex flex-col">`, `<div>` pelado
+   dentro de grids, y cualquier otra estructura mientras cumpla
+   "label como primer hijo + input/select/relative como segundo".
 
    Excepciones:
-   - Wrappers que contienen <textarea> → mantienen layout vertical.
+   - Wrappers con <textarea> → mantienen layout vertical.
    - El propio <label className="flex items-center..."> de checkboxes
-     no aplica porque ya es flex-row (no flex-col).
+     no aplica porque su padre no es el que tiene label como hijo
+     (el label ES el wrapper del checkbox).
    ============================================================ */
-.modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) {
+.modal-body div:has(> label:first-child + *):not(:has(textarea)):not(.modal-body):not(.grid) {
+  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 0.75rem;
 }
 
-.modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) > label:first-child {
+.modal-body div:has(> label:first-child + *):not(:has(textarea)):not(.modal-body):not(.grid) > label:first-child {
   width: 9rem;
   flex-shrink: 0;
   text-align: right;
+  font-weight: 500;
 }
 
-/* Dentro de una grilla 2-col, mantener 9rem (con modal ensanchado caben).
-   Si en algún caso el label es muy largo, hace wrap natural. */
-
-.modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) > label:first-child::after {
+.modal-body div:has(> label:first-child + *):not(:has(textarea)):not(.modal-body):not(.grid) > label:first-child::after {
   content: ':';
 }
 
-.modal-body .flex.flex-col:has(> label:first-child):not(:has(textarea)) > *:not(label) {
+.modal-body div:has(> label:first-child + *):not(:has(textarea)):not(.modal-body):not(.grid) > *:not(label) {
   flex: 1 1 0%;
   min-width: 0;
 }
