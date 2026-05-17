@@ -1148,6 +1148,8 @@
     "todos": "Todos",
     "ninguno": "Ninguno",
     "xDeYProcesados": "{x}/{y} procesados",
+    "faseEnCurso": "Fase en curso",
+    "sinFaseSeleccionada": "Procesando…",
     "colEstado": "Estado",
     "colDocumento": "Documento",
     "colResultado": "Resultado",

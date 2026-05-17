@@ -1616,34 +1616,44 @@ function PaginaProcesarDocumentosInterna() {
         </TarjetaContenido>
       </Tarjeta>
 
-      {/* Progreso */}
-      {cola.length > 0 && (
-        <div className="flex items-center gap-4">
-          <div className="flex-1">
-            <div className="h-2 bg-fondo rounded-full overflow-hidden">
-              <div className="h-full bg-primario transition-all duration-300"
-                style={{ width: `${cola.length > 0 ? (procesados / cola.length) * 100 : 0}%` }} />
-            </div>
-            <p className="text-xs text-texto-muted mt-1">{t('xDeYProcesados', { x: procesados, y: cola.length })}</p>
-          </div>
-          <div className="flex gap-3 text-sm">
-            {okCount > 0 && <span className="text-exito flex items-center gap-1"><CheckCircle size={14} />{okCount}</span>}
-            {errCount > 0 && <span className="text-error flex items-center gap-1"><XCircle size={14} />{errCount}</span>}
-          </div>
-        </div>
-      )}
-
-      {/* Cola de procesamiento (visible durante/después de ejecución) */}
-      {cola.length > 0 && (() => {
-        // Mostrar solo los últimos 100 ítems procesados/en proceso para no congelar el browser.
-        // Siempre incluir los que aún están EN_PROCESO o PENDIENTE activos (lote actual).
+      {/* Progreso + cola — persistente durante TODA la ejecución (no aparece/desaparece entre fases).
+          Muestra título con la fase en curso, mini-barra de progreso y tabla de cola. */}
+      {(ejecutando || cola.length > 0) && (() => {
         const MAX_FILAS = 100
         const terminados = cola.filter((c) => c.estado_cola === 'COMPLETADO' || c.estado_cola === 'ERROR')
         const activos    = cola.filter((c) => c.estado_cola === 'EN_PROCESO' || c.estado_cola === 'PENDIENTE')
         const visibles   = [...terminados.slice(-MAX_FILAS), ...activos.slice(0, MAX_FILAS)]
         const ocultos    = cola.length - visibles.length
+        // Título: nombre del proceso/fase en curso (RESTABLECER/RESETEAR/cualquier proceso del catálogo)
+        const tituloFase = pasoActual?.nombre_proceso
+          ?? (esRestablecer ? 'Restablecer' : esResetearCargado ? 'Resetear CARGADO' : t('sinFaseSeleccionada'))
+        const flecha = pasoActual?.estado_destino
+          ? `${pasoActual.estado_origen || '—'} → ${pasoActual.estado_destino}`
+          : ''
         return (
-          <>
+          <div className="flex flex-col gap-3">
+            {/* Título de la fase en curso */}
+            <div className="flex items-baseline gap-2">
+              <span className="text-xs uppercase tracking-wide text-texto-muted">{t('faseEnCurso')}:</span>
+              <h3 className="text-base font-semibold text-texto">{tituloFase}</h3>
+              {flecha && <span className="text-xs text-texto-muted">({flecha})</span>}
+            </div>
+
+            {/* Mini-barra de progreso */}
+            <div className="flex items-center gap-4">
+              <div className="flex-1">
+                <div className="h-2 bg-fondo rounded-full overflow-hidden">
+                  <div className="h-full bg-primario transition-all duration-300"
+                    style={{ width: `${cola.length > 0 ? (procesados / cola.length) * 100 : 0}%` }} />
+                </div>
+                <p className="text-xs text-texto-muted mt-1">{t('xDeYProcesados', { x: procesados, y: cola.length })}</p>
+              </div>
+              <div className="flex gap-3 text-sm">
+                {okCount > 0 && <span className="text-exito flex items-center gap-1"><CheckCircle size={14} />{okCount}</span>}
+                {errCount > 0 && <span className="text-error flex items-center gap-1"><XCircle size={14} />{errCount}</span>}
+              </div>
+            </div>
+
             {ocultos > 0 && (
               <p className="text-xs text-texto-muted text-center py-1">
                 … {ocultos} documentos procesados anteriores ocultos (mostrando últimos {MAX_FILAS})
@@ -1721,7 +1731,7 @@ function PaginaProcesarDocumentosInterna() {
                 })}
               </TablaCuerpo>
             </Tabla>
-          </>
+          </div>
         )
       })()}
 
