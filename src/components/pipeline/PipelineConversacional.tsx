@@ -15,7 +15,7 @@
  *       [ Semanticar ]  [ Elegir otra carpeta ]
  *
  *   ── EN PROCESO ──
- *   [icono] Llevo 234 de 2,847 documentos. Quedan unos 10 minutos.
+ *   [icono] 234 de 2,847 documentos. Quedan unos 10 minutos.
  *
  *            ╭──────────╮
  *           ╱   8%       ╲     ← DIAL TRIPLE (lotes / etapas / actual)
@@ -23,7 +23,7 @@
  *           ╲   TEXTO    ╱
  *            ╰──────────╯
  *           contrato_servicios_2024.pdf
- *           documento 234 · 1 con error hasta ahora
+ *           documento 234 · 1 no analizables hasta ahora
  *
  *   Ver detalles                          Detener proceso
  *
@@ -47,11 +47,11 @@ interface PipelineConversacionalProps {
 
   /** "En proceso" — mensaje + dial triple. */
   enProceso: {
-    mensaje: string  // "Llevo 234 de 2,847…"
+    mensaje: string  // "234 de 2,847…"
     lote: { actual: number; total: number }
     etapa: { indiceActivo: number; total: number; nombre: string }
     actual: { completados: number; total: number; archivoActual?: string }
-    /** Mensaje secundario abajo del dial (ej. "documento 234 · 1 con error hasta ahora"). */
+    /** Mensaje secundario abajo del dial (ej. "documento 234 · 1 no analizables hasta ahora"). */
     submensaje?: string
     onVerDetalles?: () => void
     onDetener?: () => void
@@ -112,6 +112,18 @@ export function PipelineConversacional({
                   </Boton>
                 )}
               </div>
+
+              {/* Documento que se está trabajando AHORA MISMO — abajo de los botones */}
+              {ejecutando && (
+                <div className="border-t border-borde pt-3 mt-1 flex flex-col gap-1 min-w-0">
+                  <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
+                    Ahora mismo
+                  </span>
+                  <span className="font-mono text-sm text-texto break-all">
+                    {enProceso.actual.archivoActual ?? '—'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -138,17 +150,11 @@ export function PipelineConversacional({
               pulsando={ejecutando ? 'interno' : null}
               tamano={220}
             />
-            <div className="flex-1 flex flex-col gap-1 sm:pt-6">
-              <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
-                Ahora mismo
-              </span>
-              <span className="font-mono text-sm text-texto break-all">
-                {enProceso.actual.archivoActual ?? '—'}
-              </span>
-              {enProceso.submensaje && (
-                <span className="text-xs text-texto-muted mt-1">{enProceso.submensaje}</span>
-              )}
-            </div>
+            {enProceso.submensaje && (
+              <div className="flex-1 flex flex-col gap-1 sm:pt-6">
+                <span className="text-xs text-texto-muted">{enProceso.submensaje}</span>
+              </div>
+            )}
           </div>
 
           {/* Pie: Ver detalles (Detener proceso vive ahora en la columna izquierda, junto a Capturar) */}

@@ -1466,10 +1466,17 @@ export interface ResumenPaquete {
   paquetes_totales: number
 }
 
+export interface DocEnProceso {
+  codigo_documento: number
+  nombre_documento: string
+  codigo_estado_doc_destino: string
+}
+
 export interface ResumenPipeline {
   por_destino: Record<string, ResumenFase>
   ventana_velocidad_seg: number
   paquete: ResumenPaquete
+  doc_en_proceso?: DocEnProceso | null
 }
 
 // ─── SQL Ejecutados ─────────────────────────────────────────────────────────

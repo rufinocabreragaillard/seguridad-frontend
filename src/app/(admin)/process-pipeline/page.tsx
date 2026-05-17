@@ -431,6 +431,11 @@ export default function PaginaCargaDocsUsuario() {
   const [resumenPipeline, setResumenPipeline] = useState<ResumenPipeline | null>(null)
   const resumenPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Nombre del documento que se está trabajando AHORA MISMO.
+  // - Para pasos client-side (EXTRAER) lo seteamos vía onItem (feedback inmediato).
+  // - Para pasos backend (ANALIZAR/CHUNKEAR/VECTORIZAR) lo lee `resumenPipeline.doc_en_proceso`.
+  const [archivoActualLocal, setArchivoActualLocal] = useState<string | null>(null)
+
   // Diálogo de reanudación: detecta items EN_PROCESO huérfanos de sesión previa
   // (típicamente tras reinicio de Railway). Se chequea una vez al montar/cambiar
   // de grupo. Si hay > 0, abre ModalConfirmar; el usuario elige Continuar (libera
@@ -560,6 +565,11 @@ export default function PaginaCargaDocsUsuario() {
       abortRef,
       onDirHandle: (h) => { dirHandleRef.current = h; setDirHandleState(h) },
       onProgreso: (completados, total) => setPaso('EXTRAER', { completados, total }),
+      onItem: (item) => {
+        if (item.estado_cola === 'EN_PROCESO' && item.nombre_documento) {
+          setArchivoActualLocal(item.nombre_documento)
+        }
+      },
     })
     setPaso('EXTRAER', { estado: result.ok ? 'listo' : (abortRef.current ? 'esperando' : 'error') })
     return result.ok
@@ -648,7 +658,7 @@ export default function PaginaCargaDocsUsuario() {
   // feedback amigable al usuario en pasos discretos. Ver:
   // docs/planes/PLAN_PROCESAMIENTO_PAQUETES.md § Paquete operativo
   const ejecutarPipeline = async () => {
-    setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); suscribirCola()
+    setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
     try {
       // Leer tamaño de paquete del resumen del pipeline
       let tamanoPaquete = 0
@@ -704,7 +714,7 @@ export default function PaginaCargaDocsUsuario() {
   // - Si ya hay ubicaciones en BD → salta el Paso 1 (no abre el finder) y va directo al pipeline.
   // - Si no hay ubicaciones → abre el finder para crearlas primero.
   const ejecutarPipelineUbicaciones = async () => {
-    setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); suscribirCola()
+    setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
     try {
       // Paso 1: indexar ubicaciones — solo si no hay ubicaciones en BD
       if (ubicaciones.length === 0) {
@@ -1134,10 +1144,16 @@ export default function PaginaCargaDocsUsuario() {
                 : { actual: 1, total: 1 }
 
               const progActiva = idxActivo >= 0 ? progresos[PASOS[idxActivo].key] : null
+              // Documento "AHORA MISMO":
+              // 1) prioriza local (EXTRAER client-side, feedback inmediato)
+              // 2) cae al doc EN_PROCESO del backend (ANALIZAR/CHUNKEAR/VECTORIZAR)
+              const archivoActual = archivoActualLocal
+                ?? resumenPipeline?.doc_en_proceso?.nombre_documento
+                ?? undefined
               const actual = {
                 completados: progActiva?.completados ?? docsVectorizados,
                 total: progActiva?.total || totalDocs || 1,
-                archivoActual: undefined,
+                archivoActual,
               }
 
               const minEta = etaInfo?.minutosEta ?? null
