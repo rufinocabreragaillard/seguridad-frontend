@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
 import {
-  FolderOpen, Folder, FolderInput, FolderPlus, FolderSync,
+  FolderOpen, Folder, FolderPlus, FolderSync,
   CheckCircle, AlertTriangle, RefreshCw, Upload, Download,
   ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
 } from 'lucide-react'
@@ -19,7 +19,7 @@ import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, proc
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { getDirectoryHandle, setDirectoryHandle } from '@/lib/file-handle-store'
 import {
-  escanearDirectorio, escanearDirectorioSinHijos,
+  escanearDirectorio,
   soportaDirectoryPicker, type DirectorioEscaneado,
 } from '@/lib/escanear-directorio'
 import {
@@ -142,7 +142,6 @@ export default function PaginaCargaDocsUsuario() {
   const [sincronizando, setSincronizando] = useState(false)
   const [datosEscaneo, setDatosEscaneo] = useState<{ nombreRaiz: string; directorios: DirectorioEscaneado[] } | null>(null)
   const [resultadoSync, setResultadoSync] = useState<{ insertadas: number; eliminadas: number; actualizadas: number; total: number; excluidas: number } | null>(null)
-  const [cargandoUbIndividual, setCargandoUbIndividual] = useState(false)
   // Barra de progreso inline para sincronización (sin modal)
   type SyncEstado = 'idle' | 'escaneando' | 'sincronizando' | 'listo' | 'error'
   const [syncEstado, setSyncEstado] = useState<SyncEstado>('idle')
@@ -307,21 +306,6 @@ export default function PaginaCargaDocsUsuario() {
       setSyncEstado('error')
       setSyncMensaje(e instanceof Error ? e.message : t('alertErrorSincronizar'))
     }
-  }
-
-  const cargarUbicacionIndividual = async () => {
-    if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoportaCorto')); return }
-    setCargandoUbIndividual(true)
-    try {
-      const r = await escanearDirectorioSinHijos()
-      if (!r) { setCargandoUbIndividual(false); return }
-      setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
-      await ubicacionesDocsApi.crear({ codigo_ubicacion: r.directorio.codigo_ubicacion, codigo_grupo: grupoActivo!, nombre_ubicacion: r.directorio.nombre_ubicacion })
-      cargarUbicaciones()
-    } catch (e) {
-      const msg = e && typeof e === 'object' && 'response' in e ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || t('alertError') : e instanceof Error ? e.message : t('alertError')
-      alert(msg)
-    } finally { setCargandoUbIndividual(false) }
   }
 
   // Preview diferencias
@@ -1048,15 +1032,6 @@ export default function PaginaCargaDocsUsuario() {
                 .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
               const columnaUbicaciones = (
                 <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-3 min-w-0">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
-                      Ubicaciones
-                    </span>
-                    {ubicaciones.length > 0 && (
-                      <span className="text-[10px] text-texto-muted">{raicesUbic.length}</span>
-                    )}
-                  </div>
-
                   <Boton
                     variante="contorno"
                     onClick={iniciarEscaneoDir}
@@ -1065,16 +1040,6 @@ export default function PaginaCargaDocsUsuario() {
                   >
                     <FolderPlus size={14} className="mr-1.5" />
                     {escaneandoDir ? 'Escaneando…' : 'Cargar desde directorio'}
-                  </Boton>
-
-                  <Boton
-                    variante="fantasma"
-                    onClick={cargarUbicacionIndividual}
-                    disabled={cargandoUbIndividual || ejecutando}
-                    className="justify-center text-xs"
-                  >
-                    <FolderInput size={12} className="mr-1.5" />
-                    {cargandoUbIndividual ? 'Cargando…' : 'Solo este directorio'}
                   </Boton>
 
                   <div className="border-t border-borde pt-1 flex-1 min-h-0">
@@ -1142,8 +1107,8 @@ export default function PaginaCargaDocsUsuario() {
                       </div>
                       <span className="text-[10px] text-texto-muted leading-snug">
                         {nivelCarga === 'ALTO'
-                          ? 'Pipeline completo (analizar · clasificar · chunkear · vectorizar).'
-                          : 'Solo lo esencial (cargar · extraer · vectorizar).'}
+                          ? 'ALTO, más preciso, primera carga más lenta.'
+                          : 'BAJO, más rápido, indexación esencial.'}
                       </span>
                     </div>
                   )}
