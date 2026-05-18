@@ -244,23 +244,23 @@ export function DocumentoDetalleModal({
         {/* Tabs */}
         <div className="flex gap-1 border-b border-borde -mt-2">
           <button onClick={() => setTab('datos')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'datos' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+            className={`px-4 py-2 tab-nav${tab === 'datos' ? ' tab-nav-activo' : ''}`}>
             Datos
           </button>
           {tieneResumen && (
             <button onClick={() => setTab('resumen')}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'resumen' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+              className={`px-4 py-2 tab-nav${tab === 'resumen' ? ' tab-nav-activo' : ''}`}>
               Resumen
             </button>
           )}
           {tieneMd && (
             <button onClick={() => setTab('md')}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'md' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+              className={`px-4 py-2 tab-nav${tab === 'md' ? ' tab-nav-activo' : ''}`}>
               MD
             </button>
           )}
           <button onClick={() => setTab('caracteristicas')}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'caracteristicas' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+            className={`px-4 py-2 tab-nav${tab === 'caracteristicas' ? ' tab-nav-activo' : ''}`}>
             Características
           </button>
           {ESTADOS_CON_TEXTO.has(documento.codigo_estado_doc || '') && (
@@ -271,7 +271,7 @@ export function DocumentoDetalleModal({
                   cargarTexto(documento.codigo_documento)
                 }
               }}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'texto' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+              className={`px-4 py-2 tab-nav${tab === 'texto' ? ' tab-nav-activo' : ''}`}>
               Texto {textoData && textoData.codigo_documento === documento.codigo_documento ? `(${(textoData.caracteres || 0).toLocaleString()})` : ''}
             </button>
           )}
@@ -281,7 +281,7 @@ export function DocumentoDetalleModal({
                 setTab('chunks')
                 if (!chunksData) cargarChunks(documento.codigo_documento)
               }}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'chunks' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
+              className={`px-4 py-2 tab-nav${tab === 'chunks' ? ' tab-nav-activo' : ''}`}>
               Chunks {chunksData ? `(${chunksData.stats.total_chunks})` : ''}
             </button>
           )}

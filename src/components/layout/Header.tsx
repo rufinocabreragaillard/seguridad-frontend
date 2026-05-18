@@ -391,11 +391,7 @@ export function Header({ titulo }: { titulo?: string }) {
               <button
                 key={tab}
                 onClick={() => setTabCuenta(tab)}
-                className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  tabCuenta === tab
-                    ? 'border-b-2 border-primario text-primario'
-                    : 'text-texto-muted hover:text-texto'
-                }`}
+                className={`px-4 py-2 whitespace-nowrap tab-nav${tabCuenta === tab ? ' tab-nav-activo' : ''}`}
               >
                 {tab === 'datos' ? t('tabDatos') : t('tabPreferencias')}
               </button>

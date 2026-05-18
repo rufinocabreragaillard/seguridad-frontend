@@ -396,11 +396,7 @@ export default function PaginaCargos() {
               <button
                 key={tab}
                 onClick={() => setTabActiva(tab)}
-                className={`flex-1 text-center px-4 py-2 text-sm font-medium capitalize transition-colors ${
-                  tabActiva === tab
-                    ? 'border-b-2 border-primario text-primario'
-                    : 'text-texto-muted hover:text-texto'
-                }`}
+                className={`flex-1 text-center px-4 py-2 capitalize tab-nav${tabActiva === tab ? ' tab-nav-activo' : ''}`}
               >
                 {tab === 'datos'
                   ? t('tabDatos')

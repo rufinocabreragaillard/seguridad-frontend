@@ -499,7 +499,7 @@ export default function PaginaTareasDatosBasicos() {
 
   const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-1.5 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
   const tabCls = (id: TabId) =>
-    `px-5 py-2.5 text-sm font-medium transition-colors ${tabActiva === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
+    `px-5 py-2.5 tab-nav${tabActiva === id ? ' tab-nav-activo' : ''}`
 
   return (
     <div className="relative flex flex-col gap-6 max-w-6xl">
@@ -800,7 +800,7 @@ export default function PaginaTareasDatosBasicos() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(catEditando ? ['md'] : [])] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab as TabModalCat)}
-                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 tab-nav${tabModalCat === tab ? ' tab-nav-activo' : ''}`}>
                 {tab === 'datos' ? t('tabModalDatos') : tab === 'system_prompt' ? t('tabModalSystemPrompt') : tab === 'programacion_insert' ? t('tabModalProgInsert') : tab === 'programacion_update' ? t('tabModalProgUpdate') : t('tabModalMd')}
               </button>
             ))}
@@ -882,7 +882,7 @@ export default function PaginaTareasDatosBasicos() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(tipoEditando ? ['md'] : [])] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab as TabModalTipo)}
-                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 tab-nav${tabModalTipo === tab ? ' tab-nav-activo' : ''}`}>
                 {tab === 'datos' ? t('tabModalDatos') : tab === 'system_prompt' ? t('tabModalSystemPrompt') : tab === 'programacion_insert' ? t('tabModalProgInsert') : tab === 'programacion_update' ? t('tabModalProgUpdate') : t('tabModalMd')}
               </button>
             ))}
@@ -984,7 +984,7 @@ export default function PaginaTareasDatosBasicos() {
           <div className="flex gap-1 border-b border-borde -mt-2">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', ...(estEditando ? ['md'] : [])] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalEst(tab as TabModalEst)}
-                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tabModalEst === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 tab-nav${tabModalEst === tab ? ' tab-nav-activo' : ''}`}>
                 {tab === 'datos' ? t('tabModalDatos') : tab === 'system_prompt' ? t('tabModalSystemPrompt') : tab === 'programacion_insert' ? t('tabModalProgInsert') : tab === 'programacion_update' ? t('tabModalProgUpdate') : t('tabModalMd')}
               </button>
             ))}

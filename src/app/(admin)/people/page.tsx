@@ -328,9 +328,7 @@ export default function PaginaPersonas() {
             <div className="flex gap-1 border-b border-borde -mt-2">
               {(['datos', 'caracteristicas'] as TabModal[]).map((tab) => (
                 <button key={tab} onClick={() => setTabModal(tab)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                    tabModal === tab ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'
-                  }`}>
+                  className={`px-4 py-2 tab-nav${tabModal === tab ? ' tab-nav-activo' : ''}`}>
                   {tab === 'datos' ? t('tabDatos') : t('tabCaracteristicas')}
                 </button>
               ))}

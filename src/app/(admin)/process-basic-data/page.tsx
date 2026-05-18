@@ -713,9 +713,9 @@ export default function PaginaProcesosDatosBasicos() {
 
   const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-1.5 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
   const tabCls = (id: TabId) =>
-    `px-5 py-2.5 text-sm font-medium transition-colors ${tabActiva === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
+    `px-5 py-2.5 tab-nav${tabActiva === id ? ' tab-nav-activo' : ''}`
   const tabModalCls = (activa: string, id: string) =>
-    `flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${activa === id ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`
+    `flex-1 text-center px-4 py-2 whitespace-nowrap tab-nav${activa === id ? ' tab-nav-activo' : ''}`
   const textareaCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario'
 
   return (

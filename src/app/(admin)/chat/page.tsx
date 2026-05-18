@@ -82,11 +82,7 @@ export default function PaginaChatUsuario() {
   const [tabPagina, setTabPagina] = useState<'chat' | 'documentos'>('chat')
 
   const tabStyle = (activo: boolean) =>
-    `pb-3 text-sm font-medium border-b-2 transition ${
-      activo
-        ? 'border-primario text-primario'
-        : 'border-transparent text-texto-muted hover:text-texto'
-    }`
+    `pb-3 tab-nav${activo ? ' tab-nav-activo' : ''}`
 
   // ══════════════════════════════════════════
   // TAB 1 — Chat (lógica original completa)

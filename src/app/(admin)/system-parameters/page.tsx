@@ -405,7 +405,7 @@ export default function PaginaParametrosGenerales() {
           <div className="flex gap-1 border-b border-borde -mt-2 overflow-x-auto">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
-                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 whitespace-nowrap ${tabModalCat === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 whitespace-nowrap tab-nav${tabModalCat === tab ? ' tab-nav-activo' : ''}`}>
                 {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? t('tabSystemPrompt') : tab === 'programacion_insert' ? t('tabPromptInsert') : tab === 'programacion_update' ? t('tabPromptUpdate') : t('tabMd')}
               </button>
             ))}
@@ -615,7 +615,7 @@ export default function PaginaParametrosGenerales() {
           <div className="flex gap-1 border-b border-borde -mt-2 overflow-x-auto">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update', 'md'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
-                className={`flex-1 text-center px-3 py-2 text-sm border-b-2 whitespace-nowrap ${tabModalTipo === tab ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}>
+                className={`flex-1 text-center px-3 py-2 whitespace-nowrap tab-nav${tabModalTipo === tab ? ' tab-nav-activo' : ''}`}>
                 {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? t('tabSystemPrompt') : tab === 'programacion_insert' ? t('tabPromptInsert') : tab === 'programacion_update' ? t('tabPromptUpdate') : t('tabMd')}
               </button>
             ))}

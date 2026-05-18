@@ -499,9 +499,7 @@ export default function PaginaGrupos() {
         {esSuperAdmin() && (
           <button
             onClick={() => setTabPrincipal('grupos')}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-              tabPrincipal === 'grupos' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-            }`}
+            className={`px-5 py-2.5 tab-nav${tabPrincipal === 'grupos' ? ' tab-nav-activo' : ''}`}
           >
             Grupos
           </button>
@@ -509,27 +507,21 @@ export default function PaginaGrupos() {
         {esSuperAdmin() && (
           <button
             onClick={() => setTabPrincipal('entidades')}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-              tabPrincipal === 'entidades' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-            }`}
+            className={`px-5 py-2.5 tab-nav${tabPrincipal === 'entidades' ? ' tab-nav-activo' : ''}`}
           >
             Entidades
           </button>
         )}
         <button
           onClick={() => setTabPrincipal('cambiar')}
-          className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-            tabPrincipal === 'cambiar' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-          }`}
+          className={`px-5 py-2.5 tab-nav${tabPrincipal === 'cambiar' ? ' tab-nav-activo' : ''}`}
         >
           Cambiar Grupo
         </button>
         {esSuperAdmin() && (
           <button
             onClick={() => setTabPrincipal('borrar')}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors ${
-              tabPrincipal === 'borrar' ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-            }`}
+            className={`px-5 py-2.5 tab-nav${tabPrincipal === 'borrar' ? ' tab-nav-activo' : ''}`}
           >
             Borrar Grupo
           </button>
@@ -906,9 +898,7 @@ export default function PaginaGrupos() {
               <button
                 key={tab}
                 onClick={() => setTabModalGrupo(tab as typeof tabModalGrupo)}
-                className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
-                  tabModalGrupo === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-                }`}
+                className={`flex-1 text-center px-4 py-2 tab-nav${tabModalGrupo === tab ? ' tab-nav-activo' : ''}`}
               >
                 {tab === 'datos' ? 'Datos' : tab === 'usuarios' ? `Usuarios${usuariosModalGrupo.length > 0 ? ` (${usuariosModalGrupo.length})` : ''}` : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>
@@ -1118,7 +1108,7 @@ export default function PaginaGrupos() {
                 <button
                   key={tab}
                   onClick={() => setTabModalEntidad(tab)}
-                  className={`flex-1 text-center px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalEntidad === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}
+                  className={`flex-1 text-center px-3 py-2 whitespace-nowrap tab-nav${tabModalEntidad === tab ? ' tab-nav-activo' : ''}`}
                 >
                   {tab === 'datos' ? t('tabDatos') : tab === 'usuarios' ? `Usuarios (${usuariosEntidad.length})` : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
                 </button>

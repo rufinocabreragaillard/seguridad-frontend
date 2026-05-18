@@ -60,11 +60,7 @@ export default function PaginaMensajeria() {
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-4 py-2 text-sm font-medium transition-colors ${
-              tab === t
-                ? 'border-b-2 border-primario text-primario'
-                : 'text-texto-muted hover:text-texto'
-            }`}
+            className={`px-4 py-2 tab-nav${tab === t ? ' tab-nav-activo' : ''}`}
           >
             {t === 'plantillas' ? 'Plantillas' : t === 'canales' ? 'Canales' : 'Historial'}
           </button>
@@ -313,11 +309,7 @@ function TabPlantillas() {
                 key={key}
                 type="button"
                 onClick={() => setTabModal(key)}
-                className={`flex-1 text-center px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-                  tabModal === key
-                    ? 'border-primario text-primario'
-                    : 'border-transparent text-texto-muted hover:text-texto'
-                }`}
+                className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === key ? ' tab-nav-activo' : ''}`}
               >
                 {label}
               </button>

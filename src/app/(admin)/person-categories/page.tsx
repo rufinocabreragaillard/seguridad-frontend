@@ -365,11 +365,7 @@ export default function PaginaCategoriasCaracteristica() {
           <button
             key={tab.key}
             onClick={() => setTabActiva(tab.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tabActiva === tab.key
-                ? 'border-primario text-primario'
-                : 'border-transparent text-texto-muted hover:text-texto'
-            }`}
+            className={`px-4 py-2 tab-nav${tabActiva === tab.key ? ' tab-nav-activo' : ''}`}
           >
             {tab.label}
           </button>
@@ -567,11 +563,7 @@ export default function PaginaCategoriasCaracteristica() {
               <button
                 key={tab}
                 onClick={() => setTabModalCat(tab as 'datos' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md')}
-                className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
-                  tabModalCat === tab
-                    ? 'border-b-2 border-primario text-primario'
-                    : 'text-texto-muted hover:text-texto'
-                }`}
+                className={`flex-1 text-center px-4 py-2 tab-nav${tabModalCat === tab ? ' tab-nav-activo' : ''}`}
               >
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>

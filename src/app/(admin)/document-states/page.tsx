@@ -206,11 +206,7 @@ export default function PaginaEstadosDocs() {
                 <button
                   key={tab.key}
                   onClick={() => setTabModal(tab.key)}
-                  className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                    tabModal === tab.key
-                      ? 'border-b-2 border-primario text-primario'
-                      : 'text-texto-muted hover:text-texto'
-                  }`}
+                  className={`flex-1 text-center px-4 py-2 whitespace-nowrap tab-nav${tabModal === tab.key ? ' tab-nav-activo' : ''}`}
                 >
                   {tab.label}
                 </button>

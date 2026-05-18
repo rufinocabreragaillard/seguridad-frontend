@@ -77,6 +77,27 @@ body {
     font-weight: 300;
     color: var(--color-text-primary);
   }
+
+  /* ============================================================
+     TABS DE NAVEGACIÓN (pestañas tipo "Conversaciones / Espacios de Trabajo")
+     Patrón único centralizado: lengüeta activa en color primario;
+     lengüeta inactiva en gris medio-oscuro (legible, no casi-invisible).
+     No incluye padding para que cada uso conserve su spacing original
+     (pb-3 en tabs de página, py-2 en tabs internos de modal, etc.).
+     Uso: <button className={tabActivo ? 'tab-nav tab-nav-activo' : 'tab-nav'}>
+     ============================================================ */
+  .tab-nav {
+    @apply text-sm font-medium border-b-2 transition;
+    border-color: transparent;
+    color: var(--color-tab-inactivo, #4B5563); /* gris 600 — más oscuro que muted */
+  }
+  .tab-nav:hover {
+    color: var(--color-texto, #1A1E2E);
+  }
+  .tab-nav-activo {
+    border-color: var(--color-primario, #074B91);
+    color: var(--color-primario, #074B91);
+  }
 }
 
 /* ============================================================

@@ -508,11 +508,7 @@ export default function PaginaEntidades() {
               <button
                 key={tab}
                 onClick={() => setTabModalEntidad(tab as typeof tabModalEntidad)}
-                className={`flex-1 text-center px-4 py-2 text-sm font-medium transition-colors ${
-                  tabModalEntidad === tab
-                    ? 'border-b-2 border-primario text-primario'
-                    : 'text-texto-muted hover:text-texto'
-                }`}
+                className={`flex-1 text-center px-4 py-2 tab-nav${tabModalEntidad === tab ? ' tab-nav-activo' : ''}`}
               >
                 {tab === 'datos' ? t('tabDatos') : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
               </button>

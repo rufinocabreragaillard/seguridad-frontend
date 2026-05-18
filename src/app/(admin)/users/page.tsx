@@ -677,11 +677,7 @@ export default function PaginaUsuarios() {
                 <button
                   key={tab}
                   onClick={() => setTabActiva(tab)}
-                  className={`px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors capitalize ${
-                    tabActiva === tab
-                      ? 'border-b-2 border-primario text-primario'
-                      : 'text-texto-muted hover:text-texto'
-                  }`}
+                  className={`px-4 py-2 whitespace-nowrap capitalize tab-nav${tabActiva === tab ? ' tab-nav-activo' : ''}`}
                 >
                   {tab === 'datos' ? t('tabDatos') : tab === 'inicializacion' ? 'Otros datos' : tab === 'entidades' ? t('tabEntidades') : t('tabRoles')}
                 </button>

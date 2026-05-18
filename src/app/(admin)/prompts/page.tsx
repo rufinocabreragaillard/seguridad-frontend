@@ -390,11 +390,7 @@ export default function PaginaPrompts() {
             <button
               key={t.id}
               onClick={() => { setTab(t.id); setMensaje(null) }}
-              className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap
-                ${tab === t.id
-                  ? 'border-primario text-primario'
-                  : 'border-transparent text-texto-muted hover:text-texto hover:border-borde'
-                }`}
+              className={`flex items-center gap-2 px-4 py-2.5 whitespace-nowrap tab-nav${tab === t.id ? ' tab-nav-activo' : ''}`}
             >
               {t.icon}
               {t.label}

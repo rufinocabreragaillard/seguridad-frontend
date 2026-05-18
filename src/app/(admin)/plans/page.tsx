@@ -231,7 +231,7 @@ export default function PaginaPlanes() {
                 <button
                   key={tt.key}
                   onClick={() => setTab(tt.key)}
-                  className={`flex-1 text-center px-3 py-2 text-sm border-b-2 ${tab === tt.key ? 'border-primario text-primario font-medium' : 'border-transparent text-texto-muted'}`}
+                  className={`flex-1 text-center px-3 py-2 tab-nav${tab === tt.key ? ' tab-nav-activo' : ''}`}
                 >
                   {tt.label}
                 </button>

@@ -673,11 +673,7 @@ export default function PaginaUsuariosSemilla() {
                   key={tab}
                   type="button"
                   onClick={() => setTabActiva(tab)}
-                  className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-                    tabActiva === tab
-                      ? 'border-primario text-primario'
-                      : 'border-transparent text-texto-muted hover:text-texto'
-                  }`}
+                  className={`px-4 py-2 -mb-px tab-nav${tabActiva === tab ? ' tab-nav-activo' : ''}`}
                 >
                   {tab === 'datos' ? t('tabDatos') : tab === 'inicializacion' ? tsux('inicializacion') : `${t('tabRoles')} (${rolesUsuario.filter((ra) => ra.codigo_grupo === form.grupo_por_defecto).length})`}
                 </button>

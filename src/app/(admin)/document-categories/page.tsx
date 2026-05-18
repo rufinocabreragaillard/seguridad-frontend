@@ -659,11 +659,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           <button
             key={tab.key}
             onClick={() => setTabActiva(tab.key)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-              tabActiva === tab.key
-                ? 'border-primario text-primario'
-                : 'border-transparent text-texto-muted hover:text-texto'
-            }`}
+            className={`px-4 py-2 tab-nav${tabActiva === tab.key ? ' tab-nav-activo' : ''}`}
           >
             {tab.label}
           </button>
@@ -880,9 +876,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               <button
                 key={tab}
                 onClick={() => setTabModalTipoDoc(tab)}
-                className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  tabModalTipoDoc === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-                }`}
+                className={`flex-1 text-center px-4 py-2 whitespace-nowrap tab-nav${tabModalTipoDoc === tab ? ' tab-nav-activo' : ''}`}
               >
                 {tab === 'datos' ? t('tabModalDatos')
                   : tab === 'system_prompt' ? t('tabModalSystemPrompt')
@@ -1198,9 +1192,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               ...(catEditando ? (['md'] as const) : ([] as const)), 'llm',
             ] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
-                className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  tabModalCat === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-                }`}>
+                className={`flex-1 text-center px-4 py-2 whitespace-nowrap tab-nav${tabModalCat === tab ? ' tab-nav-activo' : ''}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : tab === 'md' ? '.md' : 'LLM'}
               </button>
             ))}
@@ -1349,9 +1341,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           <div className="flex border-b border-borde">
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
-                className={`flex-1 text-center px-4 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  tabModalTipo === tab ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'
-                }`}>
+                className={`flex-1 text-center px-4 py-2 whitespace-nowrap tab-nav${tabModalTipo === tab ? ' tab-nav-activo' : ''}`}>
                 {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
               </button>
             ))}

@@ -1232,19 +1232,19 @@ function PaginaProcesarDocumentosInterna() {
       <div className="flex gap-1 border-b border-borde -mt-2">
         <button
           onClick={() => setTabPrincipal('procesar')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'procesar' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+          className={`px-4 py-2 tab-nav${tabPrincipal === 'procesar' ? ' tab-nav-activo' : ''}`}
         >
           {t('tabPasoAPaso')}
         </button>
         <button
           onClick={() => setTabPrincipal('todo')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'todo' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+          className={`px-4 py-2 tab-nav${tabPrincipal === 'todo' ? ' tab-nav-activo' : ''}`}
         >
           {t('tabVectorizar')}
         </button>
         <button
           onClick={() => setTabPrincipal('revertir')}
-          className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tabPrincipal === 'revertir' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}
+          className={`px-4 py-2 tab-nav${tabPrincipal === 'revertir' ? ' tab-nav-activo' : ''}`}
         >
           {t('tabRevertir')}
         </button>

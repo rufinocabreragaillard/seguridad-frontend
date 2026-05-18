@@ -395,11 +395,7 @@ export default function PaginaProcesoInstancias() {
                 key={t.key}
                 type="button"
                 onClick={() => setTab(t.key)}
-                className={`flex-1 text-center px-4 py-2 text-sm border-b-2 transition-colors ${
-                  tab === t.key
-                    ? 'border-primario text-primario font-medium'
-                    : 'border-transparent text-texto-muted hover:text-texto'
-                }`}
+                className={`flex-1 text-center px-4 py-2 tab-nav${tab === t.key ? ' tab-nav-activo' : ''}`}
               >
                 {t.label}
               </button>

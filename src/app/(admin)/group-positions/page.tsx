@@ -250,11 +250,7 @@ export default function PaginaCargosAdmin() {
               <button
                 key={tab.key}
                 onClick={() => setTabActiva(tab.key)}
-                className={`flex-1 text-center px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
-                  tabActiva === tab.key
-                    ? 'border-b-2 border-primario text-primario'
-                    : 'text-texto-muted hover:text-texto'
-                }`}
+                className={`flex-1 text-center px-3 py-2 whitespace-nowrap tab-nav${tabActiva === tab.key ? ' tab-nav-activo' : ''}`}
               >
                 {tab.label}
               </button>

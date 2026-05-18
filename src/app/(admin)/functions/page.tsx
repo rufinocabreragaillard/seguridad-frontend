@@ -480,7 +480,7 @@ export default function PaginaFunciones() {
           {/* Tabs */}
           <div className="flex border-b border-borde -mx-1 overflow-x-auto">
             {TABS_MODAL.map((tab) => (
-              <button key={tab.key} onClick={() => setTabModalFuncion(tab.key)} className={`flex-1 text-center px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${tabModalFuncion === tab.key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
+              <button key={tab.key} onClick={() => setTabModalFuncion(tab.key)} className={`flex-1 text-center px-3 py-2 whitespace-nowrap tab-nav${tabModalFuncion === tab.key ? ' tab-nav-activo' : ''}`}>
                 {tab.label}
               </button>
             ))}

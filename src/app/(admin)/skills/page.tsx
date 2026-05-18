@@ -210,11 +210,7 @@ export default function PaginaHabilidades() {
     modelos.find((m) => m.id_modelo === id)?.nombre_visible || '—'
 
   const tabStyle = (activo: boolean) =>
-    `flex-1 text-center px-4 py-2 text-sm border-b-2 transition-colors ${
-      activo
-        ? 'border-primario text-primario font-medium'
-        : 'border-transparent text-texto-muted hover:text-texto'
-    }`
+    `flex-1 text-center px-4 py-2 tab-nav${activo ? ' tab-nav-activo' : ''}`
 
   const totalCols = esSuperAdmin ? 7 : 6
 
