@@ -858,7 +858,7 @@ export default function PaginaChatUsuario() {
                     type="button"
                     onClick={enviarMensaje}
                     disabled={enviando || !textoInput.trim()}
-                    className="absolute right-2 bottom-2 p-1.5 rounded-lg text-texto-muted hover:text-primario disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    className="absolute right-2 bottom-2 p-1.5 rounded-lg text-texto-muted hover:text-primario-oscuro disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     title="Enviar (Enter)"
                   >
                     <CornerDownLeft size={16} />
@@ -1086,7 +1086,7 @@ export default function PaginaChatUsuario() {
               <button
                 type="button"
                 onClick={abrirModalCrear}
-                className="ml-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-primario/40 text-primario hover:bg-primario-muy-claro transition"
+                className="ml-auto flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-primario-oscuro/40 text-primario-oscuro hover:bg-primario-muy-claro transition"
                 title="Crear un Espacio de Trabajo a partir del filtro actual"
               >
                 <FolderPlus size={13} />
