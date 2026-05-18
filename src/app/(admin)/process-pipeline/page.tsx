@@ -15,7 +15,7 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
-import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi } from '@/lib/api'
+import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi, parametrosApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
 import { getDirectoryHandle, setDirectoryHandle } from '@/lib/file-handle-store'
 import {
@@ -105,12 +105,9 @@ export default function PaginaCargaDocsUsuario() {
   const [busquedaUbs, setBusquedaUbs] = useState('')
   const [etapa1Estado, setEtapa1Estado] = useState<EstadoEtapa>('pendiente')
 
-  // Selector de ubicación para acotar el pipeline (arriba de los botones)
+  // Selector de ubicación para acotar el pipeline (click sobre nodo del árbol)
   const [ubicacionSel, setUbicacionSel] = useState('')
-  const [ubicDropdownOpen, setUbicDropdownOpen] = useState(false)
-  const [ubicBusqueda, setUbicBusqueda] = useState('')
   const [ubicExpandidos, setUbicExpandidos] = useState<Set<string>>(new Set())
-  const ubicDropdownRef = useRef<HTMLDivElement>(null)
 
   // Modal CRUD ubicaciones
   const [modalUb, setModalUb] = useState(false)
@@ -159,17 +156,35 @@ export default function PaginaCargaDocsUsuario() {
 
   useEffect(() => { cargarUbicaciones() }, [cargarUbicaciones])
 
-  // Cerrar el dropdown de ubicación al hacer click fuera
+  // ── Parámetro de grupo: NIVEL_CARGA_SEMANTICA (ALTO | BAJO) ──
+  const [nivelCarga, setNivelCarga] = useState<'ALTO' | 'BAJO'>('ALTO')
+  const [guardandoNivel, setGuardandoNivel] = useState(false)
   useEffect(() => {
-    if (!ubicDropdownOpen) return
-    const onMouseDown = (e: MouseEvent) => {
-      if (ubicDropdownRef.current && !ubicDropdownRef.current.contains(e.target as Node)) {
-        setUbicDropdownOpen(false)
-      }
+    if (!grupoActivo) return
+    parametrosApi
+      .obtenerValor('PROCESAMIENTO', 'NIVEL_CARGA_SEMANTICA')
+      .then((r) => {
+        if (r?.valor === 'BAJO' || r?.valor === 'ALTO') setNivelCarga(r.valor)
+      })
+      .catch(() => {})
+  }, [grupoActivo])
+  const cambiarNivelCarga = async (v: 'ALTO' | 'BAJO') => {
+    if (v === nivelCarga || guardandoNivel) return
+    const prev = nivelCarga
+    setNivelCarga(v)
+    setGuardandoNivel(true)
+    try {
+      await parametrosApi.upsertGrupo({
+        categoria_parametro: 'PROCESAMIENTO',
+        tipo_parametro: 'NIVEL_CARGA_SEMANTICA',
+        valor_parametro: v,
+      })
+    } catch {
+      setNivelCarga(prev)
+    } finally {
+      setGuardandoNivel(false)
     }
-    document.addEventListener('mousedown', onMouseDown)
-    return () => document.removeEventListener('mousedown', onMouseDown)
-  }, [ubicDropdownOpen])
+  }
 
   // Devuelve la ubicación seleccionada + todos sus descendientes (incluye AREAs internas).
   const ubicacionesSeleccionadasConDescendientes = useCallback((): UbicacionDoc[] => {
@@ -987,9 +1002,6 @@ export default function PaginaCargaDocsUsuario() {
                 ? `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
                 : `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
 
-              const ubicacionSelObj = ubicacionSel
-                ? ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)
-                : null
               const tieneHijosUbic = (cod: string) =>
                 ubicaciones.some((u) => u.codigo_ubicacion !== cod && u.codigo_ubicacion_superior === cod)
               const toggleExpandirUbic = (e: React.MouseEvent, cod: string) => {
@@ -1015,7 +1027,7 @@ export default function PaginaCargaDocsUsuario() {
                     <div
                       className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer select-none ${selec ? 'bg-primario-muy-claro' : ''}`}
                       style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
-                      onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                      onClick={() => setUbicacionSel(ubicacionSel === u.codigo_ubicacion ? '' : u.codigo_ubicacion)}
                     >
                       {tieneHijos
                         ? <button onClick={(e) => toggleExpandirUbic(e, u.codigo_ubicacion)} className="shrink-0 hover:text-primario text-texto-muted p-0.5 -ml-0.5 rounded">
@@ -1030,89 +1042,7 @@ export default function PaginaCargaDocsUsuario() {
                   </div>
                 )
               }
-              const selectorUbicacion = (
-                <div className="flex flex-col gap-1" ref={ubicDropdownRef}>
-                  <label className="text-xs font-medium text-texto-muted">Ubicación</label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)}
-                      disabled={ejecutando}
-                      className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50"
-                    >
-                      <FolderOpen size={16} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
-                      <span className="flex-1 text-left truncate">
-                        {ubicacionSelObj?.nombre_ubicacion ?? 'Todas las ubicaciones'}
-                      </span>
-                      {ubicacionSel ? (
-                        <X
-                          size={13}
-                          className="text-texto-muted hover:text-error shrink-0"
-                          onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
-                        />
-                      ) : (
-                        <ChevronDown size={13} className="text-texto-muted shrink-0" />
-                      )}
-                    </button>
-                    {ubicDropdownOpen && (
-                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '18rem' }}>
-                        <div className="p-2 border-b border-borde shrink-0">
-                          <input
-                            type="text"
-                            placeholder="Buscar ubicación…"
-                            value={ubicBusqueda}
-                            onChange={(e) => setUbicBusqueda(e.target.value)}
-                            onClick={(e) => e.stopPropagation()}
-                            className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted"
-                            autoFocus
-                          />
-                        </div>
-                        <div className="overflow-y-auto flex-1">
-                          <div
-                            className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde"
-                            onClick={() => { setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
-                          >
-                            Todas las ubicaciones
-                          </div>
-                          {(() => {
-                            if (ubicBusqueda) {
-                              const q = ubicBusqueda.toLowerCase()
-                              const filtradas = ubicaciones.filter((u) =>
-                                u.nombre_ubicacion.toLowerCase().includes(q) ||
-                                (u.url || '').toLowerCase().includes(q)
-                              )
-                              if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
-                              return filtradas.map((u) => {
-                                const esArea = u.tipo_ubicacion === 'AREA'
-                                const selec = ubicacionSel === u.codigo_ubicacion
-                                return (
-                                  <div
-                                    key={u.codigo_ubicacion}
-                                    className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`}
-                                    style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
-                                    onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
-                                  >
-                                    <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
-                                    <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
-                                  </div>
-                                )
-                              })
-                            }
-                            const raices = ubicaciones
-                              .filter((u) => !u.codigo_ubicacion_superior)
-                              .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
-                            if (raices.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin ubicaciones</div>
-                            return raices.map((u) => renderNodoUbic(u))
-                          })()}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )
-
-              // ── Columna izquierda: carga + lista plana de ubicaciones raíz ──
+              // ── Columna izquierda: carga + árbol expandible de ubicaciones ──
               const raicesUbic = ubicaciones
                 .filter((u) => !u.codigo_ubicacion_superior)
                 .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
@@ -1147,7 +1077,7 @@ export default function PaginaCargaDocsUsuario() {
                     {cargandoUbIndividual ? 'Cargando…' : 'Solo este directorio'}
                   </Boton>
 
-                  <div className="border-t border-borde pt-2 flex-1 min-h-0">
+                  <div className="border-t border-borde pt-1 flex-1 min-h-0">
                     {cargandoUbs ? (
                       <p className="text-xs text-texto-muted text-center py-2">Cargando…</p>
                     ) : raicesUbic.length === 0 ? (
@@ -1155,20 +1085,8 @@ export default function PaginaCargaDocsUsuario() {
                         Sin ubicaciones.<br />Carga un directorio para empezar.
                       </p>
                     ) : (
-                      <div className="flex flex-col gap-0.5 max-h-48 overflow-y-auto">
-                        {raicesUbic.map((u) => (
-                          <div
-                            key={u.codigo_ubicacion}
-                            className="flex items-center gap-2 py-1 px-2 rounded hover:bg-fondo min-w-0"
-                            title={u.url || u.nombre_ubicacion}
-                          >
-                            <FolderOpen size={12} className={`shrink-0 ${u.tipo_ubicacion === 'AREA' ? 'text-amber-400' : 'text-sky-500'}`} />
-                            <span className="text-xs truncate flex-1 text-texto">{u.nombre_ubicacion}</span>
-                            {!u.ubicacion_habilitada && (
-                              <span className="text-[9px] text-texto-muted shrink-0">off</span>
-                            )}
-                          </div>
-                        ))}
+                      <div className="flex flex-col max-h-60 overflow-y-auto -mx-2">
+                        {raicesUbic.map((u) => renderNodoUbic(u))}
                       </div>
                     )}
                   </div>
@@ -1194,7 +1112,41 @@ export default function PaginaCargaDocsUsuario() {
                     onDetener: detener,
                   }}
                   ejecutando={ejecutando}
-                  slotArribaBotones={selectorUbicacion}
+                  slotArribaBotones={(
+                    <div className="flex flex-col gap-1">
+                      <label className="text-xs font-medium text-texto-muted">
+                        Nivel de carga semántica
+                      </label>
+                      <div
+                        role="radiogroup"
+                        aria-label="Nivel de carga semántica"
+                        className="inline-flex rounded-lg border border-borde bg-fondo-tarjeta p-1 w-full"
+                      >
+                        {(['BAJO', 'ALTO'] as const).map((v) => (
+                          <button
+                            key={v}
+                            type="button"
+                            role="radio"
+                            aria-checked={nivelCarga === v}
+                            disabled={guardandoNivel || ejecutando}
+                            onClick={() => cambiarNivelCarga(v)}
+                            className={`flex-1 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors disabled:opacity-50 ${
+                              nivelCarga === v
+                                ? 'bg-primario text-primario-texto'
+                                : 'text-texto-muted hover:text-texto'
+                            }`}
+                          >
+                            {v}
+                          </button>
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-texto-muted leading-snug">
+                        {nivelCarga === 'ALTO'
+                          ? 'Pipeline completo (analizar · clasificar · chunkear · vectorizar).'
+                          : 'Solo lo esencial (cargar · extraer · vectorizar).'}
+                      </span>
+                    </div>
+                  )}
                   columnaIzquierda={columnaUbicaciones}
                   porQueTexto={t('narrativoPorQue')}
                   mensajeError={mensajeError || null}
