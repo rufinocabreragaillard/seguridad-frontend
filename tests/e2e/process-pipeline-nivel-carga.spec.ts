@@ -34,9 +34,21 @@ test.describe('process-pipeline — toggle Nivel de carga semántica + árbol ub
     const alto = page.getByRole('radio', { name: /^alto$/i });
     await expect(bajo).toBeVisible({ timeout: 15000 });
 
+    // Asegurar estado inicial en ALTO (en caso de test previo fallido)
+    const altoChecked = await alto.getAttribute('aria-checked');
+    if (altoChecked !== 'true') {
+      const putAlto = page.waitForResponse(
+        (r) => r.url().includes('/parametros/usuario') && r.request().method() === 'PUT' && r.status() < 400,
+        { timeout: 10000 },
+      );
+      await alto.click();
+      await expect(alto).toHaveAttribute('aria-checked', 'true', { timeout: 5000 });
+      await putAlto;
+    }
+
     // Esperar a que el PUT al backend complete antes de reload (si no, se aborta).
     const putBajo = page.waitForResponse(
-      (r) => r.url().includes('/parametros/grupo') && r.request().method() === 'PUT' && r.status() < 400,
+      (r) => r.url().includes('/parametros/usuario') && r.request().method() === 'PUT' && r.status() < 400,
       { timeout: 10000 },
     );
     await bajo.click();
@@ -48,7 +60,7 @@ test.describe('process-pipeline — toggle Nivel de carga semántica + árbol ub
 
     // Restaurar a ALTO para no contaminar el estado.
     const putAlto = page.waitForResponse(
-      (r) => r.url().includes('/parametros/grupo') && r.request().method() === 'PUT' && r.status() < 400,
+      (r) => r.url().includes('/parametros/usuario') && r.request().method() === 'PUT' && r.status() < 400,
       { timeout: 10000 },
     );
     await page.getByRole('radio', { name: /^alto$/i }).click();
@@ -62,9 +74,9 @@ test.describe('process-pipeline — toggle Nivel de carga semántica + árbol ub
   });
 
   test('árbol de ubicaciones: si hay raíces, muestra chevrons', async ({ page }) => {
-    // Best-effort: solo verifica si hay al menos una ubicación raíz visible.
-    const cabecera = page.getByText(/^ubicaciones$/i).first();
-    await expect(cabecera).toBeVisible({ timeout: 15000 });
+    // Best-effort: solo verifica si hay al menos el botón de carga visible.
+    const btn = page.getByRole('button', { name: /cargar desde directorio/i }).first();
+    await expect(btn).toBeVisible({ timeout: 15000 });
     // No falla el test si no hay datos en el grupo (la columna existe igual).
   });
 });

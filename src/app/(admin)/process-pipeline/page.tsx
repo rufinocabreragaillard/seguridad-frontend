@@ -173,7 +173,7 @@ export default function PaginaCargaDocsUsuario() {
     setNivelCarga(v)
     setGuardandoNivel(true)
     try {
-      await parametrosApi.upsertGrupo({
+      await parametrosApi.upsertUsuario({
         categoria_parametro: 'PROCESAMIENTO',
         tipo_parametro: 'NIVEL_CARGA_SEMANTICA',
         valor_parametro: v,
