@@ -89,7 +89,7 @@ body {
   .tab-nav {
     @apply text-sm font-medium border-b-2 transition;
     border-color: transparent;
-    color: var(--color-tab-inactivo, #4B5563); /* gris 600 — más oscuro que muted */
+    color: var(--color-tab-inactivo, #9CA3AF); /* gris 400 — más tenue para diferenciar del activo */
   }
   .tab-nav:hover {
     color: var(--color-primario-oscuro, var(--color-primario, #074B91));
