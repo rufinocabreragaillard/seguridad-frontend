@@ -105,6 +105,13 @@ export default function PaginaCargaDocsUsuario() {
   const [busquedaUbs, setBusquedaUbs] = useState('')
   const [etapa1Estado, setEtapa1Estado] = useState<EstadoEtapa>('pendiente')
 
+  // Selector de ubicación para acotar el pipeline (arriba de los botones)
+  const [ubicacionSel, setUbicacionSel] = useState('')
+  const [ubicDropdownOpen, setUbicDropdownOpen] = useState(false)
+  const [ubicBusqueda, setUbicBusqueda] = useState('')
+  const [ubicExpandidos, setUbicExpandidos] = useState<Set<string>>(new Set())
+  const ubicDropdownRef = useRef<HTMLDivElement>(null)
+
   // Modal CRUD ubicaciones
   const [modalUb, setModalUb] = useState(false)
   const [editandoUb, setEditandoUb] = useState<UbicacionDoc | null>(null)
@@ -151,6 +158,35 @@ export default function PaginaCargaDocsUsuario() {
   }, [])
 
   useEffect(() => { cargarUbicaciones() }, [cargarUbicaciones])
+
+  // Cerrar el dropdown de ubicación al hacer click fuera
+  useEffect(() => {
+    if (!ubicDropdownOpen) return
+    const onMouseDown = (e: MouseEvent) => {
+      if (ubicDropdownRef.current && !ubicDropdownRef.current.contains(e.target as Node)) {
+        setUbicDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [ubicDropdownOpen])
+
+  // Devuelve la ubicación seleccionada + todos sus descendientes (incluye AREAs internas).
+  const ubicacionesSeleccionadasConDescendientes = useCallback((): UbicacionDoc[] => {
+    if (!ubicacionSel) return ubicaciones
+    const codigos = new Set<string>([ubicacionSel])
+    const stack = [ubicacionSel]
+    while (stack.length) {
+      const c = stack.pop()!
+      for (const u of ubicaciones) {
+        if (u.codigo_ubicacion_superior === c && !codigos.has(u.codigo_ubicacion)) {
+          codigos.add(u.codigo_ubicacion)
+          stack.push(u.codigo_ubicacion)
+        }
+      }
+    }
+    return ubicaciones.filter((u) => codigos.has(u.codigo_ubicacion))
+  }, [ubicaciones, ubicacionSel])
 
   // Árbol
   const toggleExpandir = (codigo: string) => {
@@ -504,7 +540,7 @@ export default function PaginaCargaDocsUsuario() {
       userId,
       grupoActivo,
       procesos,
-      filtros: { tope: tope && tope > 0 ? String(tope) : undefined },
+      filtros: { tope: tope && tope > 0 ? String(tope) : undefined, ubicacionSel: ubicacionSel || undefined },
       dirHandle: dirHandleRef.current ?? dirHandle ?? undefined,
       abortRef,
       onDirHandle: (h) => { dirHandleRef.current = h; setDirHandleState(h) },
@@ -532,7 +568,7 @@ export default function PaginaCargaDocsUsuario() {
       estadoOrigen,
       estadoDestino,
       codigoProceso: key,
-      filtros: { tope: tope && tope > 0 ? String(tope) : undefined },
+      filtros: { tope: tope && tope > 0 ? String(tope) : undefined, ubicacionSel: ubicacionSel || undefined },
       abortRef,
       resolveColaRef,
       onProgreso: (completados, total) => setPaso(key, { completados, total }),
@@ -547,7 +583,8 @@ export default function PaginaCargaDocsUsuario() {
   const ejecutarCargar = async (): Promise<boolean> => {
     setPaso('CARGAR', { total: 1, completados: 0, estado: 'activo' })
     try {
-      const ubicacionesLib: UbicacionOpt[] = ubicaciones.map((u) => ({
+      // Si hay ubicación seleccionada, acotar a esa rama (raíz + descendientes).
+      const ubicacionesLib: UbicacionOpt[] = ubicacionesSeleccionadasConDescendientes().map((u) => ({
         codigo_ubicacion: u.codigo_ubicacion,
         nombre_ubicacion: u.nombre_ubicacion,
         url: u.url ?? '',
@@ -950,6 +987,131 @@ export default function PaginaCargaDocsUsuario() {
                 ? `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
                 : `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
 
+              const ubicacionSelObj = ubicacionSel
+                ? ubicaciones.find((u) => u.codigo_ubicacion === ubicacionSel)
+                : null
+              const tieneHijosUbic = (cod: string) =>
+                ubicaciones.some((u) => u.codigo_ubicacion !== cod && u.codigo_ubicacion_superior === cod)
+              const toggleExpandirUbic = (e: React.MouseEvent, cod: string) => {
+                e.stopPropagation()
+                setUbicExpandidos((prev) => {
+                  const next = new Set(prev)
+                  next.has(cod) ? next.delete(cod) : next.add(cod)
+                  return next
+                })
+              }
+              const renderNodoUbic = (u: UbicacionDoc): React.ReactNode => {
+                const tieneHijos = tieneHijosUbic(u.codigo_ubicacion)
+                const expandido = ubicExpandidos.has(u.codigo_ubicacion)
+                const esArea = u.tipo_ubicacion === 'AREA'
+                const selec = ubicacionSel === u.codigo_ubicacion
+                const hijos = tieneHijos
+                  ? ubicaciones
+                      .filter((h) => h.codigo_ubicacion_superior === u.codigo_ubicacion)
+                      .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
+                  : []
+                return (
+                  <div key={u.codigo_ubicacion}>
+                    <div
+                      className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer select-none ${selec ? 'bg-primario-muy-claro' : ''}`}
+                      style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
+                      onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                    >
+                      {tieneHijos
+                        ? <button onClick={(e) => toggleExpandirUbic(e, u.codigo_ubicacion)} className="shrink-0 hover:text-primario text-texto-muted p-0.5 -ml-0.5 rounded">
+                            {expandido ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                          </button>
+                        : <span className="w-3 shrink-0" />}
+                      <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
+                      <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                    </div>
+                    {expandido && hijos.map((h) => renderNodoUbic(h))}
+                  </div>
+                )
+              }
+              const selectorUbicacion = (
+                <div className="flex flex-col gap-1" ref={ubicDropdownRef}>
+                  <label className="text-xs font-medium text-texto-muted">Ubicación</label>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => !ejecutando && setUbicDropdownOpen(!ubicDropdownOpen)}
+                      disabled={ejecutando}
+                      className="flex items-center gap-2 rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50"
+                    >
+                      <FolderOpen size={16} className={ubicacionSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
+                      <span className="flex-1 text-left truncate">
+                        {ubicacionSelObj?.nombre_ubicacion ?? 'Todas las ubicaciones'}
+                      </span>
+                      {ubicacionSel ? (
+                        <X
+                          size={13}
+                          className="text-texto-muted hover:text-error shrink-0"
+                          onClick={(e) => { e.stopPropagation(); setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                        />
+                      ) : (
+                        <ChevronDown size={13} className="text-texto-muted shrink-0" />
+                      )}
+                    </button>
+                    {ubicDropdownOpen && (
+                      <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '18rem' }}>
+                        <div className="p-2 border-b border-borde shrink-0">
+                          <input
+                            type="text"
+                            placeholder="Buscar ubicación…"
+                            value={ubicBusqueda}
+                            onChange={(e) => setUbicBusqueda(e.target.value)}
+                            onClick={(e) => e.stopPropagation()}
+                            className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted"
+                            autoFocus
+                          />
+                        </div>
+                        <div className="overflow-y-auto flex-1">
+                          <div
+                            className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde"
+                            onClick={() => { setUbicacionSel(''); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                          >
+                            Todas las ubicaciones
+                          </div>
+                          {(() => {
+                            if (ubicBusqueda) {
+                              const q = ubicBusqueda.toLowerCase()
+                              const filtradas = ubicaciones.filter((u) =>
+                                u.nombre_ubicacion.toLowerCase().includes(q) ||
+                                (u.url || '').toLowerCase().includes(q)
+                              )
+                              if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin coincidencias</div>
+                              return filtradas.map((u) => {
+                                const esArea = u.tipo_ubicacion === 'AREA'
+                                const selec = ubicacionSel === u.codigo_ubicacion
+                                return (
+                                  <div
+                                    key={u.codigo_ubicacion}
+                                    className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`}
+                                    style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
+                                    onClick={() => { setUbicacionSel(u.codigo_ubicacion); setUbicBusqueda(''); setUbicDropdownOpen(false) }}
+                                  >
+                                    <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
+                                    <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
+                                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-700' : 'bg-sky-100 text-sky-600'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                                  </div>
+                                )
+                              })
+                            }
+                            const raices = ubicaciones
+                              .filter((u) => !u.codigo_ubicacion_superior)
+                              .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
+                            if (raices.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">Sin ubicaciones</div>
+                            return raices.map((u) => renderNodoUbic(u))
+                          })()}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+
               return (
                 <PipelineConversacional
                   antesDeEmpezar={{
@@ -969,6 +1131,7 @@ export default function PaginaCargaDocsUsuario() {
                     onDetener: detener,
                   }}
                   ejecutando={ejecutando}
+                  slotArribaBotones={selectorUbicacion}
                   porQueTexto={t('narrativoPorQue')}
                   mensajeError={mensajeError || null}
                 />

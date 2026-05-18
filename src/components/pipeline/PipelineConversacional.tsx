@@ -61,6 +61,8 @@ interface PipelineConversacionalProps {
   /** Texto del bloque "Por qué" — ya no se renderiza, conservado por compatibilidad con callers. */
   porQueTexto?: string
   mensajeError?: string | null
+  /** Slot opcional que se renderiza dentro de la tarjeta izquierda, justo arriba de los botones. */
+  slotArribaBotones?: React.ReactNode
 }
 
 export function PipelineConversacional({
@@ -68,6 +70,7 @@ export function PipelineConversacional({
   enProceso,
   ejecutando,
   mensajeError,
+  slotArribaBotones,
 }: PipelineConversacionalProps) {
   return (
     <div className="flex flex-col gap-3">
@@ -86,6 +89,8 @@ export function PipelineConversacional({
             {antesDeEmpezar.mensajeTiempo && !ejecutando && (
               <p className="text-sm text-texto leading-relaxed">{antesDeEmpezar.mensajeTiempo}</p>
             )}
+
+            {slotArribaBotones}
 
             {/* Botones */}
             <div className="flex flex-col gap-2">
