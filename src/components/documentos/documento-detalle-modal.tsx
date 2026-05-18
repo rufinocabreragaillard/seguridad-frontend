@@ -11,6 +11,32 @@ import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { documentosApi, colaEstadosDocsApi } from '@/lib/api'
 import { abrirDocumento, descargarDocumento, abrirVentanaLoading, asegurarHandleConPermiso } from '@/lib/abrir-documento'
 import type { Documento, ColaEstadoDoc, CategoriaConCaracteristicasDocs } from '@/lib/tipos'
+import type { PayloadCifrado } from '@/lib/descifrar'
+
+/** Heurística: distingue un payload cifrado-para-usuario de un string plano. */
+function esPayload(v: unknown): v is PayloadCifrado {
+  return !!v && typeof v === 'object' && 'cifrado' in (v as object) && 'texto_cifrado' in (v as object)
+}
+
+/** Renderiza un valor que puede llegar como string plano o payload cifrado. */
+function ValorCampo({
+  valor,
+  render,
+  vacioLabel,
+}: {
+  valor: string | number | PayloadCifrado | null | undefined
+  render?: (texto: string) => React.ReactNode
+  vacioLabel?: string
+}) {
+  if (valor == null || valor === '') {
+    return <span className="text-sm text-texto-muted italic">{vacioLabel ?? '—'}</span>
+  }
+  if (esPayload(valor)) {
+    return <TextoCifrado payload={valor} render={render} vacioLabel={vacioLabel} />
+  }
+  const texto = String(valor)
+  return <>{render ? render(texto) : <span className="text-sm text-texto whitespace-pre-wrap">{texto}</span>}</>
+}
 
 type TabDetalle = 'datos' | 'resumen' | 'md' | 'caracteristicas' | 'texto' | 'chunks'
 
@@ -74,6 +100,9 @@ export function DocumentoDetalleModal({
   const [busquedaChunk, setBusquedaChunk] = useState('')
   const [busquedaChunkInput, setBusquedaChunkInput] = useState('')
   const [paginaChunk, setPaginaChunk] = useState(1)
+  // Detalle completo recargado del backend (incluye payloads cifrados-para-usuario
+  // de resumen y md, + nombre_tipo_documento / formato_archivo).
+  const [detalle, setDetalle] = useState<Documento | null>(null)
 
   // Reset al abrir/cambiar de documento.
   useEffect(() => {
@@ -86,6 +115,13 @@ export function DocumentoDetalleModal({
     setBusquedaChunk('')
     setBusquedaChunkInput('')
     setPaginaChunk(1)
+    setDetalle(null)
+    // Recargar el documento desde GET /documentos/{id} para tener los campos
+    // cifrados como payload (resumen, md) + nombre_tipo_documento.
+    documentosApi
+      .obtener(documento.codigo_documento)
+      .then(setDetalle)
+      .catch(() => setDetalle(null))
     // Cargar características y último item de cola al abrir.
     setCargandoCaract(true)
     documentosApi
@@ -98,6 +134,13 @@ export function DocumentoDetalleModal({
       .then((items) => setColaItem(items[0] ?? null))
       .catch(() => setColaItem(null))
   }, [abierto, documento, tabInicial])
+
+  // Vista efectiva: prefiere el detalle recargado; cae al prop si aún no llegó.
+  const vista = detalle ?? documento
+  const resumenValor = vista?.resumen_documento
+  const mdValor = vista?.md
+  const tieneResumen = resumenValor != null && (esPayload(resumenValor) ? resumenValor.cifrado : !!resumenValor)
+  const tieneMd = mdValor != null && (esPayload(mdValor) ? mdValor.cifrado : !!mdValor)
 
   const cargarTexto = useCallback(async (idDocumento: number) => {
     setCargandoTexto(true)
@@ -139,13 +182,13 @@ export function DocumentoDetalleModal({
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'datos' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
             Datos
           </button>
-          {documento.resumen_documento && (
+          {tieneResumen && (
             <button onClick={() => setTab('resumen')}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'resumen' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
               Resumen
             </button>
           )}
-          {documento.md && (
+          {tieneMd && (
             <button onClick={() => setTab('md')}
               className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === 'md' ? 'border-primario text-primario' : 'border-transparent text-texto-muted hover:text-texto'}`}>
               MD
@@ -222,7 +265,21 @@ export function DocumentoDetalleModal({
                   )}
                 </div>
               </div>
-              <div className="col-span-4 md:col-span-3 flex flex-col">
+              <div className="col-span-6 md:col-span-4 flex flex-col">
+                <p className="text-xs text-texto-muted mb-1">Tipo de documento</p>
+                <div className="flex items-end flex-1">
+                  {vista?.nombre_tipo_documento || vista?.codigo_tipo_documento
+                    ? <Insignia variante="primario">{vista?.nombre_tipo_documento || vista?.codigo_tipo_documento}</Insignia>
+                    : <span className="text-sm text-texto-muted">—</span>}
+                </div>
+              </div>
+              <div className="col-span-6 md:col-span-2 flex flex-col">
+                <p className="text-xs text-texto-muted mb-1">Formato</p>
+                <div className="flex items-end flex-1">
+                  <p className="text-sm text-texto uppercase">{vista?.formato_archivo || '—'}</p>
+                </div>
+              </div>
+              <div className="col-span-4 md:col-span-2 flex flex-col">
                 <p className="text-xs text-texto-muted mb-1">Estado</p>
                 <div className="flex items-end flex-1">
                   {documento.codigo_estado_doc
@@ -230,13 +287,13 @@ export function DocumentoDetalleModal({
                     : <span className="text-sm text-texto-muted">—</span>}
                 </div>
               </div>
-              <div className="col-span-4 md:col-span-3 flex flex-col">
+              <div className="col-span-4 md:col-span-2 flex flex-col">
                 <p className="text-xs text-texto-muted mb-1">Tamaño</p>
                 <div className="flex items-end flex-1">
                   <p className="text-sm text-texto">{documento.tamano_kb != null ? `${documento.tamano_kb} KB` : '—'}</p>
                 </div>
               </div>
-              <div className="col-span-4 md:col-span-6 flex flex-col">
+              <div className="col-span-4 md:col-span-2 flex flex-col">
                 <p className="text-xs text-texto-muted mb-1">Modificado</p>
                 <div className="flex items-end flex-1">
                   <p className="text-sm text-texto">{documento.fecha_modificacion ? new Date(documento.fecha_modificacion).toLocaleString('es-CL', { timeZone: 'America/Santiago' }) : '—'}</p>
@@ -305,27 +362,41 @@ export function DocumentoDetalleModal({
           </div>
         )}
 
-        {/* Tab Resumen */}
+        {/* Tab Resumen — texto cifrado en BD, el usuario lo descifra con su clave */}
         {tab === 'resumen' && (
           <div className="flex flex-col gap-3">
-            {documento.resumen_documento ? (
-              <div className="rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto whitespace-pre-wrap max-h-[60vh] overflow-y-auto">{documento.resumen_documento}</div>
+            {tieneResumen ? (
+              <ValorCampo
+                valor={resumenValor}
+                render={(texto) => (
+                  <div className="rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto whitespace-pre-wrap max-h-[60vh] overflow-y-auto">{texto}</div>
+                )}
+                vacioLabel="Sin resumen registrado."
+              />
             ) : (
               <p className="text-sm text-texto-muted py-4 text-center">Sin resumen registrado.</p>
             )}
           </div>
         )}
 
-        {/* Tab MD — contenido de documentos.md (contexto que se embebe en los vectores) */}
+        {/* Tab MD — contenido de documentos.md (contexto que se embebe en los vectores).
+            Cifrado en reposo desde mig 435; se descifra con la clave de sesión. */}
         {tab === 'md' && (
           <div className="flex flex-col gap-3">
-            {documento.md ? (
+            {tieneMd ? (
               <div className="flex flex-col gap-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-texto-muted">Contexto que se embebe junto a cada chunk en los vectores</p>
-                  <BotonCopiar texto={documento.md} />
-                </div>
-                <pre className="rounded-lg border border-borde bg-fondo px-3 py-3 text-xs text-texto whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono leading-relaxed">{documento.md}</pre>
+                <p className="text-xs text-texto-muted">Contexto que se embebe junto a cada chunk en los vectores</p>
+                <ValorCampo
+                  valor={mdValor}
+                  render={(texto) => (
+                    <div className="flex flex-col gap-1">
+                      <div className="flex items-center justify-end">
+                        <BotonCopiar texto={texto} />
+                      </div>
+                      <pre className="rounded-lg border border-borde bg-fondo px-3 py-3 text-xs text-texto whitespace-pre-wrap max-h-[60vh] overflow-y-auto font-mono leading-relaxed">{texto}</pre>
+                    </div>
+                  )}
+                />
               </div>
             ) : (
               <p className="text-sm text-texto-muted py-4 text-center">{t('sinMdGenerado')}</p>
@@ -360,7 +431,9 @@ export function DocumentoDetalleModal({
           </div>
         )}
 
-        {/* Tab Características */}
+        {/* Tab Características — valores cifrados en BD (mig 435), se descifran con
+            la clave de sesión vía <TextoCifrado>. Cada valor (texto, numérico, fecha,
+            comentarios) viaja como payload independiente. */}
         {tab === 'caracteristicas' && (
           <div className="flex flex-col gap-3">
             {cargandoCaract ? (
@@ -373,19 +446,27 @@ export function DocumentoDetalleModal({
                 return (
                   <div key={cat.codigo_cat_docs}>
                     <div className="text-xs font-semibold text-texto-muted uppercase mb-1">{cat.nombre_cat_docs}</div>
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-2">
                       {cc.caracteristicas.map((c) => {
                         const tipoNombre = c.tipos_caract_docs?.nombre_tipo_docs || c.codigo_tipo_docs
-                        const partes: string[] = []
-                        if (c.valor_texto_docs) partes.push(c.valor_texto_docs)
-                        if (c.valor_numerico_docs != null) partes.push(`#${c.valor_numerico_docs}`)
-                        if (c.valor_fecha_docs) partes.push(c.valor_fecha_docs)
-                        if (c.comentarios) partes.push(`— ${c.comentarios}`)
-                        if (partes.length === 0) return null
+                        type ValorCampoTipo = string | number | PayloadCifrado | null | undefined
+                        const campos: { label?: string; valor: ValorCampoTipo }[] = []
+                        if (c.valor_texto_docs != null) campos.push({ valor: c.valor_texto_docs })
+                        if (c.valor_numerico_docs != null) campos.push({ label: '#', valor: c.valor_numerico_docs })
+                        if (c.valor_fecha_docs != null) campos.push({ valor: c.valor_fecha_docs })
+                        if (c.comentarios != null) campos.push({ label: '—', valor: c.comentarios })
+                        if (campos.length === 0) return null
+                        const inlineRender = (texto: string) => <span className="text-texto">{texto}</span>
                         return (
-                          <div key={c.id_caracteristica_docs} className="text-sm flex items-start gap-2">
+                          <div key={c.id_caracteristica_docs} className="text-sm flex items-start gap-2 flex-wrap">
                             <span className="text-texto-muted shrink-0">{tipoNombre}:</span>
-                            <span className="text-texto">{partes.join(' · ')}</span>
+                            {campos.map((campo, idx) => (
+                              <span key={idx} className="flex items-center gap-1">
+                                {campo.label && <span className="text-texto-muted text-xs">{campo.label}</span>}
+                                <ValorCampo valor={campo.valor as never} render={inlineRender} />
+                                {idx < campos.length - 1 && <span className="text-texto-muted">·</span>}
+                              </span>
+                            ))}
                           </div>
                         )
                       })}

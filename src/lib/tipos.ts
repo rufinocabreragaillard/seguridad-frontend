@@ -615,18 +615,25 @@ export interface Tarea {
 
 // ─── Documentos ─────────────────────────────────────────────────────────────
 
+import type { PayloadCifrado } from './descifrar'
+
 export interface Documento {
   codigo_documento: number
   codigo_grupo: string
   codigo_entidad?: string | null
   nombre_documento: string
   ubicacion_documento?: string | null
-  resumen_documento?: string | null
-  md?: string | null
+  // resumen y md pueden venir como string (lista paginada, formularios) o como
+  // payload cifrado-para-usuario (GET /documentos/{id}). El modal se adapta.
+  resumen_documento?: string | PayloadCifrado | null
+  md?: string | PayloadCifrado | null
   fecha_modificacion?: string | null
   tamano_kb?: number | null
   codigo_estado_doc?: string | null
   detalle_estado?: string | null
+  codigo_tipo_documento?: string | null
+  nombre_tipo_documento?: string | null
+  formato_archivo?: string | null
 }
 
 // ─── Personas ───────────────────────────────────────────────────────────────
@@ -728,10 +735,13 @@ export interface CaracteristicaDocumento {
   codigo_documento: number
   codigo_cat_docs: string
   codigo_tipo_docs: string
-  valor_texto_docs?: string | null
-  valor_numerico_docs?: number | null
-  valor_fecha_docs?: string | null
-  comentarios?: string | null
+  // Tras mig 435 los 4 campos viajan como payload cifrado-para-usuario desde
+  // GET /documentos/{id}/caracteristicas. Los formularios siguen aceptando
+  // valores planos (string/number) al crear/editar.
+  valor_texto_docs?: string | PayloadCifrado | null
+  valor_numerico_docs?: number | string | PayloadCifrado | null
+  valor_fecha_docs?: string | PayloadCifrado | null
+  comentarios?: string | PayloadCifrado | null
   tipos_caract_docs?: { nombre_tipo_docs: string } | null
 }
 
