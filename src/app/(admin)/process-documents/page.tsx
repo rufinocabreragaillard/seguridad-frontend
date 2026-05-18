@@ -1287,7 +1287,7 @@ function PaginaProcesarDocumentosInterna() {
         <TarjetaContenido>
           <div className="flex items-center gap-x-6 gap-y-3 flex-wrap">
             {/* Proceso */}
-            <div className="flex items-center gap-2 min-w-0 flex-[2] min-w-[420px]" ref={dropdownProcesoRef}>
+            <div className="flex items-center gap-2 min-w-0 flex-[2] min-w-[340px]" ref={dropdownProcesoRef}>
               <label className="text-sm font-medium text-texto shrink-0">{t('etiquetaProceso')}:</label>
               <div className="relative flex-1 min-w-0">
                 <button
@@ -1362,7 +1362,7 @@ function PaginaProcesarDocumentosInterna() {
             </div>
 
             {/* Ubicación */}
-            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[280px]" ref={ubicDropdownRef}>
+            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[220px]" ref={ubicDropdownRef}>
               <label className="text-sm font-medium text-texto shrink-0">{t('etiquetaUbicacion')}:</label>
               <div className="relative flex-1 min-w-0">
                 <button
@@ -1480,7 +1480,7 @@ function PaginaProcesarDocumentosInterna() {
             </div>
 
             {/* Estado */}
-            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[200px]">
+            <div className="flex items-center gap-2 min-w-0 flex-1 min-w-[180px]">
               <label className="text-sm font-medium text-texto shrink-0">{t('etiquetaEstado')}:</label>
               <select
                 value={estadoFiltro}
