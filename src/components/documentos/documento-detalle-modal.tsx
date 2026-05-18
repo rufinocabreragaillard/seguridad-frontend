@@ -555,20 +555,24 @@ export function DocumentoDetalleModal({
                       {cc.caracteristicas.map((c) => {
                         const tipoNombre = c.tipos_caract_docs?.nombre_tipo_docs || c.codigo_tipo_docs
                         type ValorCampoTipo = string | number | PayloadCifrado | null | undefined
-                        const campos: { label?: string; valor: ValorCampoTipo }[] = []
-                        if (c.valor_texto_docs != null) campos.push({ valor: c.valor_texto_docs })
-                        if (c.valor_numerico_docs != null) campos.push({ label: '#', valor: c.valor_numerico_docs })
-                        if (c.valor_fecha_docs != null) campos.push({ valor: c.valor_fecha_docs })
-                        if (c.comentarios != null) campos.push({ label: '—', valor: c.comentarios })
-                        if (campos.length === 0) return null
                         const inlineRender = (texto: string) => <span className="text-texto">{texto}</span>
+                        const numericoRender = (texto: string) => {
+                          const n = Number(String(texto).replace(/[^0-9-]/g, ''))
+                          if (!Number.isFinite(n) || String(texto).trim() === '') return <span className="text-texto">{texto}</span>
+                          return <span className="text-texto">{new Intl.NumberFormat('es-CL').format(n)}</span>
+                        }
+                        const campos: { valor: ValorCampoTipo; render: (t: string) => React.ReactNode }[] = []
+                        if (c.valor_texto_docs != null) campos.push({ valor: c.valor_texto_docs, render: inlineRender })
+                        if (c.valor_numerico_docs != null) campos.push({ valor: c.valor_numerico_docs, render: numericoRender })
+                        if (c.valor_fecha_docs != null) campos.push({ valor: c.valor_fecha_docs, render: inlineRender })
+                        if (c.comentarios != null) campos.push({ valor: c.comentarios, render: inlineRender })
+                        if (campos.length === 0) return null
                         return (
                           <div key={c.id_caracteristica_docs} className="text-sm flex items-start gap-2 flex-wrap">
                             <span className="text-texto-muted shrink-0">{tipoNombre}:</span>
                             {campos.map((campo, idx) => (
                               <span key={idx} className="flex items-center gap-1">
-                                {campo.label && <span className="text-texto-muted text-xs">{campo.label}</span>}
-                                <ValorCampo valor={campo.valor as never} render={inlineRender} inline />
+                                <ValorCampo valor={campo.valor as never} render={campo.render} inline />
                                 {idx < campos.length - 1 && <span className="text-texto-muted">·</span>}
                               </span>
                             ))}
