@@ -95,7 +95,7 @@ export function PipelineConversacional({
                 disabled={antesDeEmpezar.deshabilitado || ejecutando}
                 className="min-w-[180px] justify-center"
               >
-                {antesDeEmpezar.textoBotonEmpezar ?? 'Capturar Semántica'}
+                {antesDeEmpezar.textoBotonEmpezar ?? 'Cargar Semántica'}
               </Boton>
               {enProceso.onDetener && (
                 <Boton

@@ -6,9 +6,7 @@ import {
   FolderOpen, Folder, FolderInput, FolderPlus, FolderSync,
   CheckCircle, AlertTriangle, RefreshCw, Upload, Download,
   ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
-  Eye, FileText, XCircle, ExternalLink, Search,
 } from 'lucide-react'
-import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -19,9 +17,6 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi } from '@/lib/api'
 import type { Proceso as ProcesoCatalogo } from '@/lib/api'
-import { getEstadosDocs } from '@/lib/catalogos'
-import type { EstadoDoc } from '@/lib/tipos'
-import { abrirDocumento, abrirVentanaLoading } from '@/lib/abrir-documento'
 import { getDirectoryHandle, setDirectoryHandle } from '@/lib/file-handle-store'
 import {
   escanearDirectorio, escanearDirectorioSinHijos,
@@ -37,7 +32,7 @@ import {
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
-import type { UbicacionDoc, Documento } from '@/lib/tipos'
+import type { UbicacionDoc } from '@/lib/tipos'
 import type { ResumenPipeline } from '@/lib/api'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
@@ -388,39 +383,6 @@ export default function PaginaCargaDocsUsuario() {
   const [docsPendientes, setDocsPendientes] = useState(0)
   const [docsNoVectorizables, setDocsNoVectorizables] = useState(0)
 
-  // Lista paginada de documentos en etapa 2
-  const [docsLista, setDocsLista] = useState<Documento[]>([])
-  const [docsListaPagina, setDocsListaPagina] = useState(1)
-  const [docsListaTotal, setDocsListaTotal] = useState(0)
-  const [cargandoDocsLista, setCargandoDocsLista] = useState(false)
-  const DOCS_LISTA_POR_PAGINA = 20
-
-  // Filtros de la lista de documentos (similar a /documents)
-  const [estadosCat, setEstadosCat] = useState<EstadoDoc[]>([])
-  const [docsBusqueda, setDocsBusqueda] = useState('')
-
-  useEffect(() => {
-    getEstadosDocs().then(setEstadosCat).catch(() => setEstadosCat([]))
-  }, [])
-
-  // Selector de ubicación para etapa 2 (árbol de ubicaciones, no directorio físico)
-  const [ubicacionDocSel, setUbicacionDocSel] = useState('')
-  const [ubicDocDropdownOpen, setUbicDocDropdownOpen] = useState(false)
-  const [ubicDocBusqueda, setUbicDocBusqueda] = useState('')
-  const [ubicDocExpandidos, setUbicDocExpandidos] = useState<Set<string>>(new Set())
-  const ubicDocDropdownRef = useRef<HTMLDivElement>(null)
-
-  // Cerrar dropdown al click fuera
-  useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ubicDocDropdownRef.current && !ubicDocDropdownRef.current.contains(e.target as Node)) {
-        setUbicDocDropdownOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [])
-
   const abortRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const resolveColaRef = useRef<(() => void) | null>(null)
@@ -495,24 +457,6 @@ export default function PaginaCargaDocsUsuario() {
       setDocsNoVectorizables(noVectorizables)
     } catch { /* ignorar */ }
   }, [])
-
-  const cargarDocsLista = useCallback(async (pagina: number, estadoDoc: string) => {
-    setCargandoDocsLista(true)
-    try {
-      const ubic = ubicacionDocSel ? ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel) : null
-      const rutaUbic = ubic?.url ?? undefined
-      const res = await documentosApi.listarPaginado({
-        page: pagina,
-        limit: DOCS_LISTA_POR_PAGINA,
-        codigo_estado_doc: estadoDoc || undefined,
-        q: docsBusqueda.trim() || undefined,
-        ruta_prefijo: rutaUbic,
-      })
-      setDocsLista(res.items)
-      setDocsListaTotal(res.total)
-    } catch { /* ignorar */ }
-    finally { setCargandoDocsLista(false) }
-  }, [ubicacionDocSel, ubicaciones, docsBusqueda])
 
   useEffect(() => {
     getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) { dirHandleRef.current = h; setDirHandleState(h) } })
@@ -795,21 +739,6 @@ export default function PaginaCargaDocsUsuario() {
   const todosListos = PASOS.every((p) => progresos[p.key]?.estado === 'listo')
   const etapa2Estado: EstadoEtapa = ejecutando ? 'activo' : todosListos ? 'completado' : 'pendiente'
 
-  // Cargar lista de docs cuando cambia la paginación, el estado del pipeline o los filtros
-  useEffect(() => {
-    setDocsListaPagina(1)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [todosListos, ubicacionDocSel, docsBusqueda])
-
-  useEffect(() => {
-    // Estado mostrado según fase del pipeline (sin filtro explícito del UI).
-    const estadoDoc = todosListos ? 'CHUNKEADO' : 'CARGADO'
-    // Debounce simple para la búsqueda libre.
-    const t = setTimeout(() => cargarDocsLista(docsListaPagina, estadoDoc), 250)
-    return () => clearTimeout(t)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [docsListaPagina, todosListos, ubicacionDocSel, docsBusqueda])
-
   // Barra de paquete operativo — vista lógica sobre la corrida. Doble propósito:
   // (a) acotar SQLite/WAL en cliente para soportar 100k+ docs;
   // (b) mostrar avance al usuario en pasos discretos visibles aunque la corrida sea larga.
@@ -979,24 +908,6 @@ export default function PaginaCargaDocsUsuario() {
 
   const diff = datosEscaneo ? calcularDiff() : null
 
-  // ── State para acciones de documentos ─────────────────────────────────
-  const [docDetalle, setDocDetalle] = useState<Documento | null>(null)
-  const [confirmEliminarDoc, setConfirmEliminarDoc] = useState<Documento | null>(null)
-  const [eliminandoDoc, setEliminandoDoc] = useState(false)
-
-  const ejecutarEliminarDoc = async () => {
-    if (!confirmEliminarDoc) return
-    setEliminandoDoc(true)
-    try {
-      await documentosApi.desactivar(confirmEliminarDoc.codigo_documento)
-      setDocsLista((prev) => prev.filter((d) => d.codigo_documento !== confirmEliminarDoc!.codigo_documento))
-      setDocsListaTotal((prev) => prev - 1)
-      setConfirmEliminarDoc(null)
-    } finally {
-      setEliminandoDoc(false)
-    }
-  }
-
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <div className="relative flex flex-col gap-6 max-w-6xl">
@@ -1007,133 +918,6 @@ export default function PaginaCargaDocsUsuario() {
           Contenido: Documentos
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="flex flex-col gap-4">
-            {/* Selector: árbol de ubicaciones (izquierda) + directorio físico (derecha, mismo borde) */}
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Dropdown árbol de ubicaciones */}
-              <div className="relative w-1/3 min-w-[180px]" ref={ubicDocDropdownRef}>
-                <button
-                  type="button"
-                  onClick={() => !ejecutando && setUbicDocDropdownOpen(!ubicDocDropdownOpen)}
-                  disabled={ejecutando}
-                  className="flex items-center gap-2 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto hover:border-primario transition-colors w-full disabled:opacity-50"
-                >
-                  <FolderOpen size={15} className={ubicacionDocSel ? 'text-primario shrink-0' : 'text-texto-muted shrink-0'} />
-                  <span className="flex-1 text-left truncate">
-                    {ubicacionDocSel
-                      ? (ubicaciones.find(u => u.codigo_ubicacion === ubicacionDocSel)?.nombre_ubicacion ?? t('seleccionarUbicacion'))
-                      : t('seleccionarUbicacion')}
-                  </span>
-                  {ubicacionDocSel ? (
-                    <X size={13} className="text-texto-muted hover:text-error shrink-0" onClick={(e) => { e.stopPropagation(); setUbicacionDocSel(''); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }} />
-                  ) : (
-                    <ChevronDown size={13} className="text-texto-muted shrink-0" />
-                  )}
-                </button>
-                {ubicDocDropdownOpen && (
-                  <div className="absolute top-full left-0 right-0 z-50 mt-1 bg-surface border border-borde rounded-lg shadow-lg flex flex-col" style={{ maxHeight: '16rem' }}>
-                    <div className="p-2 border-b border-borde shrink-0">
-                      <input
-                        type="text"
-                        placeholder={t('buscarUbicacionPlaceholder')}
-                        value={ubicDocBusqueda}
-                        onChange={(e) => setUbicDocBusqueda(e.target.value)}
-                        onClick={(e) => e.stopPropagation()}
-                        className="w-full text-sm border border-borde rounded px-2 py-1 bg-fondo text-texto focus:outline-none focus:ring-1 focus:ring-primario placeholder:text-texto-muted"
-                        autoFocus
-                      />
-                    </div>
-                    <div className="overflow-y-auto flex-1">
-                      <div className="px-3 py-2 hover:bg-fondo cursor-pointer text-sm text-texto-muted border-b border-borde" onClick={() => { setUbicacionDocSel(''); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }}>
-                        {t('todasLasUbicaciones')}
-                      </div>
-                      {(() => {
-                        const tieneHijosDoc = (cod: string) => ubicaciones.some(u => u.codigo_ubicacion_superior === cod)
-                        // Con búsqueda: mostrar todos los que coincidan sin restricción de árbol
-                        if (ubicDocBusqueda) {
-                          const filtradas = ubicaciones.filter(u =>
-                            u.nombre_ubicacion.toLowerCase().includes(ubicDocBusqueda.toLowerCase()) ||
-                            (u.url || '').toLowerCase().includes(ubicDocBusqueda.toLowerCase())
-                          )
-                          if (filtradas.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinCoincidencias')}</div>
-                          return filtradas.map(u => {
-                            const esArea = u.tipo_ubicacion === 'AREA'
-                            const selec = ubicacionDocSel === u.codigo_ubicacion
-                            return (
-                              <div
-                                key={u.codigo_ubicacion}
-                                className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer ${selec ? 'bg-primario-muy-claro' : ''}`}
-                                style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
-                                onClick={() => { setUbicacionDocSel(u.codigo_ubicacion); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }}
-                              >
-                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
-                                <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>{esArea ? t('area') : t('contenido')}</span>
-                              </div>
-                            )
-                          })
-                        }
-                        // Sin búsqueda: árbol colapsado — solo raíces y nodos expandidos
-                        const toggleExpandirDoc = (e: React.MouseEvent, cod: string) => {
-                          e.stopPropagation()
-                          setUbicDocExpandidos(prev => { const next = new Set(prev); next.has(cod) ? next.delete(cod) : next.add(cod); return next })
-                        }
-                        const renderNodoDropdown = (u: UbicacionDoc): React.ReactNode => {
-                          const tieneHijos = tieneHijosDoc(u.codigo_ubicacion)
-                          const expandido = ubicDocExpandidos.has(u.codigo_ubicacion)
-                          const esArea = u.tipo_ubicacion === 'AREA'
-                          const selec = ubicacionDocSel === u.codigo_ubicacion
-                          const hijos = tieneHijos
-                            ? ubicaciones
-                                .filter(h => h.codigo_ubicacion_superior === u.codigo_ubicacion)
-                                .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
-                            : []
-                          return (
-                            <div key={u.codigo_ubicacion}>
-                              <div
-                                className={`flex items-center gap-2 py-1.5 pr-3 hover:bg-fondo cursor-pointer select-none ${selec ? 'bg-primario-muy-claro' : ''}`}
-                                style={{ paddingLeft: `${(u.nivel || 0) * 16 + 12}px` }}
-                                onClick={() => { setUbicacionDocSel(u.codigo_ubicacion); setUbicDocBusqueda(''); setUbicDocDropdownOpen(false) }}
-                              >
-                                {tieneHijos
-                                  ? <button onClick={(e) => toggleExpandirDoc(e, u.codigo_ubicacion)} className="shrink-0 hover:text-primario text-texto-muted p-0.5 -ml-0.5 rounded">
-                                      {expandido ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-                                    </button>
-                                  : <span className="w-3 shrink-0" />
-                                }
-                                <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-amber-400' : 'text-sky-500'}`} />
-                                <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                                <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-amber-100 text-amber-600' : 'bg-sky-100 text-sky-600'}`}>{esArea ? t('area') : t('contenido')}</span>
-                              </div>
-                              {expandido && hijos.map(h => renderNodoDropdown(h))}
-                            </div>
-                          )
-                        }
-                        const raicesDoc = ubicaciones
-                          .filter(u => !u.codigo_ubicacion_superior)
-                          .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
-                        if (raicesDoc.length === 0) return <div className="px-3 py-4 text-sm text-texto-muted text-center">{t('sinUbicaciones')}</div>
-                        return raicesDoc.map(u => renderNodoDropdown(u))
-                      })()}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Filtro libre (texto) */}
-              <div className="relative flex-1 min-w-[180px]">
-                <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder={t('buscarDocumentoPlaceholder')}
-                  value={docsBusqueda}
-                  onChange={(e) => setDocsBusqueda(e.target.value)}
-                  disabled={ejecutando}
-                  className="w-full pl-8 pr-3 py-2 text-sm border border-borde rounded-lg bg-fondo-tarjeta text-texto focus:outline-none focus:ring-2 focus:ring-primario placeholder:text-texto-muted disabled:opacity-50"
-                />
-              </div>
-
-            </div>
-
             {/* Pipeline Conversacional — estilo C (dial triple + mensaje del asistente) */}
             {(() => {
               const idxActivo = PASOS.findIndex(p => progresos[p.key]?.estado === 'activo')
@@ -1171,7 +955,7 @@ export default function PaginaCargaDocsUsuario() {
                   antesDeEmpezar={{
                     mensajeTiempo: null,
                     onEmpezar: ejecutarPipeline,
-                    textoBotonEmpezar: 'Capturar Semántica',
+                    textoBotonEmpezar: 'Cargar Semántica',
                     deshabilitado: false,
                   }}
                   enProceso={{
@@ -1190,100 +974,6 @@ export default function PaginaCargaDocsUsuario() {
                 />
               )
             })()}
-
-            {/* Lista paginada de documentos */}
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-semibold text-texto-muted uppercase">
-                  {(() => {
-                    const estadoActivo = todosListos ? 'CHUNKEADO' : 'CARGADO'
-                    const nombre = estadosCat.find(e => e.codigo_estado_doc === estadoActivo)?.nombre_estado || estadoActivo
-                    return t('docsEnEstado', { estado: nombre })
-                  })()}
-                </p>
-                {cargandoDocsLista && <span className="text-xs text-texto-muted animate-pulse">{tc('cargando')}</span>}
-              </div>
-              {docsLista.length === 0 && !cargandoDocsLista ? (
-                <p className="text-xs text-texto-muted text-center py-3">{t('sinDocumentosEnEsteEstado')}</p>
-              ) : (
-                <>
-                  <div className="rounded-lg border border-borde overflow-hidden bg-white">
-                    <table className="w-full text-sm">
-                      <thead>
-                        <tr className="border-b border-borde">
-                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase">{t('thDocumento')}</th>
-                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase hidden md:table-cell">{t('thUbicacion')}</th>
-                          <th className="text-left px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase w-36">{t('thEstado')}</th>
-                          <th className="text-right px-3 py-2.5 text-xs font-semibold text-texto-muted uppercase w-24">{tc('acciones')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {docsLista.map((doc) => {
-                          const esRechazado = doc.codigo_estado_doc === 'NO_ANALIZABLE' || doc.codigo_estado_doc === 'NO_ESCANEABLE'
-                          const esListo = doc.codigo_estado_doc === 'CHUNKEADO' || doc.codigo_estado_doc === 'VECTORIZADO'
-                          const varianteEstado: 'error' | 'exito' | 'advertencia' | 'primario' | 'neutro' = esRechazado ? 'error' : esListo ? 'exito' : doc.codigo_estado_doc === 'CARGADO' ? 'advertencia' : 'primario'
-                          return (
-                            <tr key={doc.codigo_documento} className="border-b border-borde last:border-0 hover:bg-fondo/30 transition-colors">
-                              <td className="px-3 py-2.5 max-w-0 w-[40%]">
-                                <div className="flex items-center gap-2 min-w-0">
-                                  {iconoTipoArchivo(doc.nombre_documento)}
-                                  <span className="font-medium text-sm truncate" title={doc.nombre_documento}>{doc.nombre_documento.split('/').pop() ?? doc.nombre_documento}</span>
-                                </div>
-                              </td>
-                              <td className="px-3 py-2.5 text-xs text-texto-muted max-w-0 w-[30%] truncate hidden md:table-cell" title={doc.ubicacion_documento || ''}>{doc.ubicacion_documento || '—'}</td>
-                              <td className="px-3 py-2.5 w-36">
-                                <Insignia variante={varianteEstado}>{doc.codigo_estado_doc ?? '—'}</Insignia>
-                              </td>
-                              <td className="px-3 py-2.5 w-24">
-                                <div className="flex items-center justify-end gap-1">
-                                  {doc.ubicacion_documento && !/^https?:\/\//i.test(doc.ubicacion_documento) && (
-                                    <button type="button" title={t('abrirArchivo')} onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(doc.ubicacion_documento, win, userId, grupoActivo) }} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
-                                      <FileText size={15} />
-                                    </button>
-                                  )}
-                                  <button type="button" title={t('verDetalle')} onClick={() => setDocDetalle(doc)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors">
-                                    <Eye size={15} />
-                                  </button>
-                                  <button type="button" title={t('quitarDeBd')} onClick={() => setConfirmEliminarDoc(doc)} className="p-1.5 rounded-lg hover:bg-orange-50 text-texto-muted hover:text-orange-500 transition-colors">
-                                    <XCircle size={15} />
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          )
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  {/* Paginación */}
-                  {docsListaTotal > DOCS_LISTA_POR_PAGINA && (
-                    <div className="flex items-center justify-between pt-1">
-                      <span className="text-xs text-texto-muted">
-                        {t('paginaDe', { actual: docsListaPagina, total: Math.ceil(docsListaTotal / DOCS_LISTA_POR_PAGINA) })}
-                      </span>
-                      <div className="flex gap-2">
-                        <Boton
-                          variante="contorno"
-                          tamano="sm"
-                          onClick={() => setDocsListaPagina(p => Math.max(1, p - 1))}
-                          disabled={docsListaPagina <= 1 || cargandoDocsLista}
-                        >
-                          {t('anterior')}
-                        </Boton>
-                        <Boton
-                          variante="contorno"
-                          tamano="sm"
-                          onClick={() => setDocsListaPagina(p => Math.min(Math.ceil(docsListaTotal / DOCS_LISTA_POR_PAGINA), p + 1))}
-                          disabled={docsListaPagina >= Math.ceil(docsListaTotal / DOCS_LISTA_POR_PAGINA) || cargandoDocsLista}
-                        >
-                          {t('siguiente')}
-                        </Boton>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
 
             {/* Timer informativo (los botones ya viven en PipelineNarrativo arriba) */}
             {(ejecutando || todosListos) && (
@@ -1559,53 +1249,6 @@ export default function PaginaCargaDocsUsuario() {
           )}
         </div>
       </Modal>
-
-      {/* Modal detalle documento */}
-      <Modal abierto={!!docDetalle} alCerrar={() => setDocDetalle(null)} titulo={t('detalleDocumentoTitulo')}>
-        {docDetalle && (
-          <div className="flex flex-col gap-3 min-w-[420px]">
-            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-              <span className="text-texto-muted font-medium">{t('etiquetaNombre')}</span>
-              <span className="text-texto font-medium">{docDetalle.nombre_documento}</span>
-              <span className="text-texto-muted font-medium">{t('thEstado')}</span>
-              <span><Insignia variante={['CHUNKEADO','VECTORIZADO'].includes(docDetalle.codigo_estado_doc ?? '') ? 'exito' : ['NO_ANALIZABLE','NO_ESCANEABLE'].includes(docDetalle.codigo_estado_doc ?? '') ? 'error' : 'primario'}>{docDetalle.codigo_estado_doc ?? '—'}</Insignia></span>
-              <span className="text-texto-muted font-medium">{t('thUbicacion')}</span>
-              <span className="flex items-start gap-1">
-                <span className="text-texto text-xs break-all flex-1">{docDetalle.ubicacion_documento || '—'}</span>
-                {docDetalle.ubicacion_documento && (/^https?:\/\//i.test(docDetalle.ubicacion_documento) ? (
-                  <a href={docDetalle.ubicacion_documento} target="_blank" rel="noopener noreferrer"
-                    className="shrink-0 p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir URL">
-                    <ExternalLink size={13} />
-                  </a>
-                ) : (
-                  <button onClick={() => { const win = abrirVentanaLoading(); abrirDocumento(docDetalle.ubicacion_documento, win, userId, grupoActivo) }}
-                    className="shrink-0 p-0.5 rounded hover:bg-primario-muy-claro text-texto-muted hover:text-primario" title="Abrir documento">
-                    <FileText size={13} />
-                  </button>
-                ))}
-              </span>
-              {docDetalle.resumen_documento && (<>
-                <span className="text-texto-muted font-medium">{t('resumen')}</span>
-                <span className="text-texto text-xs">{docDetalle.resumen_documento}</span>
-              </>)}
-            </div>
-            <div className="flex justify-end pt-2">
-              <Boton variante="contorno" onClick={() => setDocDetalle(null)}>{tc('salir')}</Boton>
-            </div>
-          </div>
-        )}
-      </Modal>
-
-      {/* Modal confirmar eliminar documento */}
-      <ModalConfirmar
-        abierto={!!confirmEliminarDoc}
-        alCerrar={() => setConfirmEliminarDoc(null)}
-        alConfirmar={ejecutarEliminarDoc}
-        titulo={t('quitarDocumentoTitulo')}
-        mensaje={confirmEliminarDoc ? t('quitarDocumentoMensaje', { nombre: confirmEliminarDoc.nombre_documento }) : ''}
-        textoConfirmar={t('btnQuitar')}
-        cargando={eliminandoDoc}
-      />
 
       {/* Modal reanudación: items EN_PROCESO huérfanos de sesión previa */}
       <ModalConfirmar
