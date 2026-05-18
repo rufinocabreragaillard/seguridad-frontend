@@ -767,6 +767,15 @@ export interface RelTipoDocumentoCaracteristica {
   nombre_tipo_caract?: string | null
 }
 
+export interface RelTipoDocumentoCategoria {
+  codigo_tipo_documento: string
+  codigo_cat_docs: string
+  orden: number
+  max_por_categoria: number
+  codigo_grupo?: string | null
+  nombre_categoria?: string | null
+}
+
 // Propuestas Catalogo (Fase 5 PLAN_REDISEÑO_ANALIZAR, mig 431)
 export type PropuestaAmbito = 'tipo_documento' | 'tipo_caract' | 'categoria_caract' | 'rel_tipo_caract'
 export type PropuestaFuente = 'LLM' | 'HUMANO' | 'CURACION'

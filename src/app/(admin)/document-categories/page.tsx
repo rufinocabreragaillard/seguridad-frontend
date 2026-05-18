@@ -18,7 +18,7 @@ import {
 } from '@/lib/api'
 import type {
   CategoriaCaractDocs, TipoCaractDocs, RegistroLLM,
-  TipoDocumento, RelTipoDocumentoCaracteristica,
+  TipoDocumento, RelTipoDocumentoCaracteristica, RelTipoDocumentoCategoria,
 } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useAuth } from '@/context/AuthContext'
@@ -26,7 +26,7 @@ import { BotonChat } from '@/components/ui/boton-chat'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 type TabActiva = 'tipos_documento' | 'categorias' | 'tipos'
-type TabModalTipoDoc = 'datos' | 'system_prompt' | 'prompts' | 'caracteristicas'
+type TabModalTipoDoc = 'datos' | 'categorias' | 'caracteristicas' | 'system_prompt' | 'prompts'
 
 export default function PaginaCategoriasCaracteristicaDocs() {
   const { grupoActivo } = useAuth()
@@ -65,6 +65,16 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const [errorAgregarCaract, setErrorAgregarCaract] = useState('')
   const [guardandoAgregarCaract, setGuardandoAgregarCaract] = useState(false)
 
+  // Categorias relacionadas al tipo de documento que se edita (mig 436 + 438)
+  const [catsRel, setCatsRel] = useState<RelTipoDocumentoCategoria[]>([])
+  const [cargandoCats, setCargandoCats] = useState(false)
+  const [modalAgregarCat, setModalAgregarCat] = useState(false)
+  const [formAgregarCat, setFormAgregarCat] = useState({
+    codigo_cat_docs: '', max_por_categoria: 2,
+  })
+  const [errorAgregarCat, setErrorAgregarCat] = useState('')
+  const [guardandoAgregarCat, setGuardandoAgregarCat] = useState(false)
+
   const cargarTiposDoc = useCallback(async () => {
     setCargandoTiposDoc(true)
     try {
@@ -85,10 +95,20 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     }
   }, [])
 
+  const cargarCatsRel = useCallback(async (codigo: string) => {
+    setCargandoCats(true)
+    try {
+      setCatsRel(await tiposDocumentoApi.listarCategorias(codigo))
+    } finally {
+      setCargandoCats(false)
+    }
+  }, [])
+
   const abrirNuevoTipoDoc = () => {
     setTipoDocEditando(null)
     setFormTipoDoc({ codigo: '', nombre: '', descripcion: '', alias: '', system_prompt: '', prompt_insert: '', prompt_update: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false })
     setCaractsRel([])
+    setCatsRel([])
     setTabModalTipoDoc('datos')
     setErrorTipoDoc('')
     setModalTipoDoc(true)
@@ -111,6 +131,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     setErrorTipoDoc('')
     setModalTipoDoc(true)
     cargarCaractsRel(td.codigo)
+    cargarCatsRel(td.codigo)
   }
 
   const guardarTipoDoc = async (cerrar: boolean) => {
@@ -211,6 +232,84 @@ export default function PaginaCategoriasCaracteristicaDocs() {
     if (!tipoDocEditando) return
     await tiposDocumentoApi.eliminarCaracteristica(tipoDocEditando.codigo, r.codigo_cat_docs, r.codigo_tipo_docs)
     cargarCaractsRel(tipoDocEditando.codigo)
+  }
+
+  const reordenarCaracts = async (nuevas: RelTipoDocumentoCaracteristica[]) => {
+    if (!tipoDocEditando) return
+    // Optimistic UI
+    setCaractsRel(nuevas)
+    try {
+      // Persistimos sólo las filas cuyo orden cambió respecto al estado anterior
+      const previas = new Map(caractsRel.map((c) => [`${c.codigo_cat_docs}|${c.codigo_tipo_docs}`, c.orden]))
+      await Promise.all(
+        nuevas
+          .filter((c) => previas.get(`${c.codigo_cat_docs}|${c.codigo_tipo_docs}`) !== c.orden)
+          .map((c) =>
+            tiposDocumentoApi.actualizarCaracteristica(
+              tipoDocEditando.codigo, c.codigo_cat_docs, c.codigo_tipo_docs,
+              { orden: c.orden },
+            ),
+          ),
+      )
+    } catch {
+      // Si falla, recargamos del backend para reflejar el estado real
+      cargarCaractsRel(tipoDocEditando.codigo)
+    }
+  }
+
+  // ── Categorias relacionadas ──────────────────────────────────────────────
+  const abrirAgregarCat = () => {
+    setFormAgregarCat({ codigo_cat_docs: '', max_por_categoria: 2 })
+    setErrorAgregarCat('')
+    setModalAgregarCat(true)
+  }
+
+  const agregarCat = async () => {
+    if (!tipoDocEditando) return
+    if (!formAgregarCat.codigo_cat_docs) {
+      setErrorAgregarCat(t('errorNombreObligatorio'))
+      return
+    }
+    setGuardandoAgregarCat(true)
+    try {
+      await tiposDocumentoApi.crearCategoria(tipoDocEditando.codigo, {
+        codigo_tipo_documento: tipoDocEditando.codigo,
+        codigo_cat_docs: formAgregarCat.codigo_cat_docs,
+        max_por_categoria: formAgregarCat.max_por_categoria,
+      })
+      setModalAgregarCat(false)
+      cargarCatsRel(tipoDocEditando.codigo)
+    } catch (e) {
+      setErrorAgregarCat(e instanceof Error ? e.message : tc('errorAlGuardar'))
+    } finally {
+      setGuardandoAgregarCat(false)
+    }
+  }
+
+  const eliminarCatRel = async (r: RelTipoDocumentoCategoria) => {
+    if (!tipoDocEditando) return
+    await tiposDocumentoApi.eliminarCategoria(tipoDocEditando.codigo, r.codigo_cat_docs)
+    cargarCatsRel(tipoDocEditando.codigo)
+  }
+
+  const reordenarCats = async (nuevas: RelTipoDocumentoCategoria[]) => {
+    if (!tipoDocEditando) return
+    setCatsRel(nuevas)
+    try {
+      const previas = new Map(catsRel.map((c) => [c.codigo_cat_docs, c.orden]))
+      await Promise.all(
+        nuevas
+          .filter((c) => previas.get(c.codigo_cat_docs) !== c.orden)
+          .map((c) =>
+            tiposDocumentoApi.actualizarCategoria(
+              tipoDocEditando.codigo, c.codigo_cat_docs,
+              { orden: c.orden },
+            ),
+          ),
+      )
+    } catch {
+      cargarCatsRel(tipoDocEditando.codigo)
+    }
   }
 
   // ═════════════════════════════════════════════════════════════════════════
@@ -770,13 +869,13 @@ export default function PaginaCategoriasCaracteristicaDocs() {
         titulo={tipoDocEditando ? t('editarTipoDocTitulo', { nombre: tipoDocEditando.nombre, codigo: tipoDocEditando.codigo }) : t('nuevoTipoDocTitulo')}
         className="max-w-3xl">
         <div className="flex flex-col gap-4 min-w-[520px] min-h-[500px]">
-          {/* Tabs internas — solo mostramos "caracteristicas" si está editando */}
+          {/* Tabs internas — "categorias" y "caracteristicas" solo si está editando */}
           <div className="flex border-b border-borde">
             {([
               'datos',
+              ...(tipoDocEditando ? (['categorias', 'caracteristicas'] as const) : ([] as const)),
               'system_prompt',
               'prompts',
-              ...(tipoDocEditando ? (['caracteristicas'] as const) : ([] as const)),
             ] as const).map((tab) => (
               <button
                 key={tab}
@@ -788,6 +887,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                 {tab === 'datos' ? t('tabModalDatos')
                   : tab === 'system_prompt' ? t('tabModalSystemPrompt')
                   : tab === 'prompts' ? t('tabModalPrompts')
+                  : tab === 'categorias' ? t('tabModalCategorias')
                   : t('tabModalCaracteristicas')}
               </button>
             ))}
@@ -857,6 +957,61 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             </div>
           )}
 
+          {/* Categorias relacionadas (mig 436 + 438) */}
+          {tabModalTipoDoc === 'categorias' && tipoDocEditando && (
+            <div className="flex-1 flex flex-col gap-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-texto-muted">
+                  {catsRel.length} {catsRel.length === 1 ? t('categoriaSingular') : t('categoriaPlural')}
+                </span>
+                <Boton variante="primario" tamano="sm" onClick={abrirAgregarCat}>
+                  <Plus size={14} />{t('agregarCategoria')}
+                </Boton>
+              </div>
+              <Tabla>
+                <TablaCabecera>
+                  <tr>
+                    <TablaTh className="w-8"></TablaTh>
+                    <TablaTh>{t('colCategoria')}</TablaTh>
+                    <TablaTh>{t('etiquetaOrden')}</TablaTh>
+                    <TablaTh>{t('colMaxPorCategoria')}</TablaTh>
+                    <TablaTh className="text-right">{tc('acciones')}</TablaTh>
+                  </tr>
+                </TablaCabecera>
+                <TablaCuerpo>
+                  {cargandoCats ? (
+                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={5 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                  ) : catsRel.length === 0 ? (
+                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={5 as never}>{t('sinCategoriasRelacionadas')}</TablaTd></TablaFila>
+                  ) : (
+                    <SortableDndContext
+                      items={catsRel as unknown as Record<string, unknown>[]}
+                      getId={(r) => (r as unknown as RelTipoDocumentoCategoria).codigo_cat_docs}
+                      onReorder={(nuevas) => reordenarCats(nuevas as unknown as RelTipoDocumentoCategoria[])}
+                    >
+                      {catsRel.map((r) => (
+                        <SortableRow key={r.codigo_cat_docs} id={r.codigo_cat_docs}>
+                          <TablaTd className="text-sm font-medium">
+                            {r.nombre_categoria || <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_cat_docs}</code>}
+                          </TablaTd>
+                          <TablaTd className="text-sm">{r.orden}</TablaTd>
+                          <TablaTd>
+                            <span className="inline-flex min-w-[2.25rem] justify-center rounded-md bg-fondo px-2 py-0.5 text-xs font-mono">{r.max_por_categoria}</span>
+                          </TablaTd>
+                          <TablaTd>
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => eliminarCatRel(r)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
+                            </div>
+                          </TablaTd>
+                        </SortableRow>
+                      ))}
+                    </SortableDndContext>
+                  )}
+                </TablaCuerpo>
+              </Tabla>
+            </div>
+          )}
+
           {/* Caracteristicas relacionadas */}
           {tabModalTipoDoc === 'caracteristicas' && tipoDocEditando && (
             <div className="flex-1 flex flex-col gap-3">
@@ -871,6 +1026,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
               <Tabla>
                 <TablaCabecera>
                   <tr>
+                    <TablaTh className="w-8"></TablaTh>
                     <TablaTh>{t('colCategoria')}</TablaTh>
                     <TablaTh>{t('colTipoCaract')}</TablaTh>
                     <TablaTh>{t('etiquetaOrden')}</TablaTh>
@@ -880,28 +1036,39 @@ export default function PaginaCategoriasCaracteristicaDocs() {
                 </TablaCabecera>
                 <TablaCuerpo>
                   {cargandoCaracts ? (
-                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={5 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={6 as never}>{tc('cargando')}</TablaTd></TablaFila>
                   ) : caractsRel.length === 0 ? (
-                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={5 as never}>{t('sinCaracteristicasRelacionadas')}</TablaTd></TablaFila>
-                  ) : caractsRel.map((r) => (
-                    <TablaFila key={`${r.codigo_cat_docs}-${r.codigo_tipo_docs}`}>
-                      <TablaTd className="text-sm">
-                        {r.nombre_categoria || <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_cat_docs}</code>}
-                      </TablaTd>
-                      <TablaTd className="text-sm font-medium">
-                        {r.nombre_tipo_caract || <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_tipo_docs}</code>}
-                      </TablaTd>
-                      <TablaTd className="text-sm">{r.orden}</TablaTd>
-                      <TablaTd>
-                        <span className="inline-flex min-w-[2.25rem] justify-center rounded-md bg-fondo px-2 py-0.5 text-xs font-mono">{r.max_por_tipo}</span>
-                      </TablaTd>
-                      <TablaTd>
-                        <div className="flex items-center justify-end gap-1">
-                          <button onClick={() => eliminarCaract(r)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
-                        </div>
-                      </TablaTd>
-                    </TablaFila>
-                  ))}
+                    <TablaFila><TablaTd className="py-6 text-center text-texto-muted" colSpan={6 as never}>{t('sinCaracteristicasRelacionadas')}</TablaTd></TablaFila>
+                  ) : (
+                    <SortableDndContext
+                      items={caractsRel as unknown as Record<string, unknown>[]}
+                      getId={(r) => {
+                        const x = r as unknown as RelTipoDocumentoCaracteristica
+                        return `${x.codigo_cat_docs}|${x.codigo_tipo_docs}`
+                      }}
+                      onReorder={(nuevas) => reordenarCaracts(nuevas as unknown as RelTipoDocumentoCaracteristica[])}
+                    >
+                      {caractsRel.map((r) => (
+                        <SortableRow key={`${r.codigo_cat_docs}-${r.codigo_tipo_docs}`} id={`${r.codigo_cat_docs}|${r.codigo_tipo_docs}`}>
+                          <TablaTd className="text-sm">
+                            {r.nombre_categoria || <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_cat_docs}</code>}
+                          </TablaTd>
+                          <TablaTd className="text-sm font-medium">
+                            {r.nombre_tipo_caract || <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{r.codigo_tipo_docs}</code>}
+                          </TablaTd>
+                          <TablaTd className="text-sm">{r.orden}</TablaTd>
+                          <TablaTd>
+                            <span className="inline-flex min-w-[2.25rem] justify-center rounded-md bg-fondo px-2 py-0.5 text-xs font-mono">{r.max_por_tipo}</span>
+                          </TablaTd>
+                          <TablaTd>
+                            <div className="flex items-center justify-end gap-1">
+                              <button onClick={() => eliminarCaract(r)} className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('eliminar')}><Trash2 size={14} /></button>
+                            </div>
+                          </TablaTd>
+                        </SortableRow>
+                      ))}
+                    </SortableDndContext>
+                  )}
                 </TablaCuerpo>
               </Tabla>
             </div>
@@ -980,6 +1147,42 @@ export default function PaginaCategoriasCaracteristicaDocs() {
           <div className="flex justify-end gap-2 pt-2">
             <Boton variante="contorno" onClick={() => setModalAgregarCaract(false)}>{tc('cancelar')}</Boton>
             <Boton variante="primario" onClick={agregarCaract} cargando={guardandoAgregarCaract}>
+              {tc('agregar')}
+            </Boton>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Modal Agregar Categoria al Tipo de Documento */}
+      <Modal abierto={modalAgregarCat} alCerrar={() => setModalAgregarCat(false)}
+        titulo={tipoDocEditando ? t('modalAgregarCategoriaTitulo', { tipo: tipoDocEditando.nombre }) : ''}
+        className="max-w-lg">
+        <div className="flex flex-col gap-4 min-w-[420px]">
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">{t('selectCategoria')}</label>
+            <select
+              className="w-full rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm"
+              value={formAgregarCat.codigo_cat_docs}
+              onChange={(e) => setFormAgregarCat({ ...formAgregarCat, codigo_cat_docs: e.target.value })}
+            >
+              <option value="">{t('selectCategoriaPlaceholder')}</option>
+              {categorias
+                .filter((c) => !catsRel.some((rc) => rc.codigo_cat_docs === c.codigo_cat_docs))
+                .map((c) => (
+                  <option key={c.codigo_cat_docs} value={c.codigo_cat_docs}>{c.nombre_cat_docs}</option>
+                ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <label className="text-sm font-medium text-texto">{t('etiquetaMaxPorCategoria')}</label>
+            <input type="number" min={1} max={50} value={formAgregarCat.max_por_categoria}
+              onChange={(e) => setFormAgregarCat({ ...formAgregarCat, max_por_categoria: Math.max(1, Math.min(50, parseInt(e.target.value, 10) || 1)) })}
+              className="rounded-lg border border-borde bg-fondo-tarjeta px-3 py-2 text-sm" />
+          </div>
+          {errorAgregarCat && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorAgregarCat}</p></div>}
+          <div className="flex justify-end gap-2 pt-2">
+            <Boton variante="contorno" onClick={() => setModalAgregarCat(false)}>{tc('cancelar')}</Boton>
+            <Boton variante="primario" onClick={agregarCat} cargando={guardandoAgregarCat}>
               {tc('agregar')}
             </Boton>
           </div>

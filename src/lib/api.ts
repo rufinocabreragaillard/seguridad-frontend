@@ -30,6 +30,7 @@ import type {
   CategoriaConCaracteristicasDocs,
   TipoDocumento,
   RelTipoDocumentoCaracteristica,
+  RelTipoDocumentoCategoria,
   EstadoCanonicalProceso,
   EstadoCanonicoTarea,
   TipoConversacion,
@@ -1088,6 +1089,27 @@ export const tiposDocumentoApi = {
       .then((r) => r.data),
   eliminarCaracteristica: (codigo: string, codigo_cat: string, codigo_tipo_c: string) =>
     api.delete(`/tipos-documento/${codigo}/caracteristicas/${codigo_cat}/${codigo_tipo_c}`),
+  // Categorias relacionadas (mig 436 + 438)
+  listarCategorias: (codigo: string) =>
+    api
+      .get<RelTipoDocumentoCategoria[]>(`/tipos-documento/${codigo}/categorias`)
+      .then((r) => r.data),
+  crearCategoria: (codigo: string, datos: Partial<RelTipoDocumentoCategoria>) =>
+    api
+      .post<RelTipoDocumentoCategoria>(`/tipos-documento/${codigo}/categorias`, datos)
+      .then((r) => r.data),
+  actualizarCategoria: (
+    codigo: string, codigo_cat: string,
+    datos: { orden?: number; max_por_categoria?: number },
+  ) =>
+    api
+      .put<RelTipoDocumentoCategoria>(
+        `/tipos-documento/${codigo}/categorias/${codigo_cat}`,
+        datos,
+      )
+      .then((r) => r.data),
+  eliminarCategoria: (codigo: string, codigo_cat: string) =>
+    api.delete(`/tipos-documento/${codigo}/categorias/${codigo_cat}`),
 }
 
 // ─── Propuestas Catalogo (Fase 5) ───────────────────────────────────────────
