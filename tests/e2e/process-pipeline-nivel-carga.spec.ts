@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 
+test.describe.configure({ mode: 'serial' });
 test.describe('process-pipeline — toggle Nivel de carga semántica + árbol ubicaciones', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -33,15 +34,26 @@ test.describe('process-pipeline — toggle Nivel de carga semántica + árbol ub
     const alto = page.getByRole('radio', { name: /^alto$/i });
     await expect(bajo).toBeVisible({ timeout: 15000 });
 
+    // Esperar a que el PUT al backend complete antes de reload (si no, se aborta).
+    const putBajo = page.waitForResponse(
+      (r) => r.url().includes('/parametros/grupo') && r.request().method() === 'PUT' && r.status() < 400,
+      { timeout: 10000 },
+    );
     await bajo.click();
     await expect(bajo).toHaveAttribute('aria-checked', 'true', { timeout: 5000 });
+    await putBajo;
 
     await page.reload();
     await expect(page.getByRole('radio', { name: /^bajo$/i })).toHaveAttribute('aria-checked', 'true', { timeout: 15000 });
 
-    // Restaurar a ALTO para no contaminar el estado
+    // Restaurar a ALTO para no contaminar el estado.
+    const putAlto = page.waitForResponse(
+      (r) => r.url().includes('/parametros/grupo') && r.request().method() === 'PUT' && r.status() < 400,
+      { timeout: 10000 },
+    );
     await page.getByRole('radio', { name: /^alto$/i }).click();
     await expect(alto).toHaveAttribute('aria-checked', 'true', { timeout: 5000 });
+    await putAlto;
   });
 
   test('ya NO existe el dropdown grande "Todas las ubicaciones" en el slot', async ({ page }) => {
