@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslations } from 'next-intl'
-import { Search, ExternalLink, FileText, Download, Copy, Check } from 'lucide-react'
+import { Search, ExternalLink, FileText, Download, Copy, Check, Lock, Unlock } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { Boton } from '@/components/ui/boton'
 import { Insignia } from '@/components/ui/insignia'
@@ -11,7 +11,7 @@ import { iconoTipoArchivo } from '@/lib/icono-tipo-archivo'
 import { documentosApi, colaEstadosDocsApi } from '@/lib/api'
 import { abrirDocumento, descargarDocumento, abrirVentanaLoading, asegurarHandleConPermiso } from '@/lib/abrir-documento'
 import type { Documento, ColaEstadoDoc, CategoriaConCaracteristicasDocs } from '@/lib/tipos'
-import type { PayloadCifrado } from '@/lib/descifrar'
+import { descifrarPayload, getClaveSesion, setClaveSesion, suscribirClaveSesion, type PayloadCifrado } from '@/lib/descifrar'
 
 /** Heurística: distingue un payload cifrado-para-usuario de un string plano. */
 function esPayload(v: unknown): v is PayloadCifrado {
@@ -23,16 +23,18 @@ function ValorCampo({
   valor,
   render,
   vacioLabel,
+  inline,
 }: {
   valor: string | number | PayloadCifrado | null | undefined
   render?: (texto: string) => React.ReactNode
   vacioLabel?: string
+  inline?: boolean
 }) {
   if (valor == null || valor === '') {
     return <span className="text-sm text-texto-muted italic">{vacioLabel ?? '—'}</span>
   }
   if (esPayload(valor)) {
-    return <TextoCifrado payload={valor} render={render} vacioLabel={vacioLabel} />
+    return <TextoCifrado payload={valor} render={render} vacioLabel={vacioLabel} inline={inline} />
   }
   const texto = String(valor)
   return <>{render ? render(texto) : <span className="text-sm text-texto whitespace-pre-wrap">{texto}</span>}</>
@@ -116,6 +118,9 @@ export function DocumentoDetalleModal({
     setBusquedaChunkInput('')
     setPaginaChunk(1)
     setDetalle(null)
+    setPidiendoClaveCaract(false)
+    setClaveInputCaract('')
+    setErrorClaveCaract(null)
     // Recargar el documento desde GET /documentos/{id} para tener los campos
     // cifrados como payload (resumen, md) + nombre_tipo_documento.
     documentosApi
@@ -153,6 +158,66 @@ export function DocumentoDetalleModal({
       setCargandoTexto(false)
     }
   }, [])
+
+  // ── Descifrado global de Características ───────────────────────────────
+  // Un solo botón en el encabezado pide la clave una vez y desbloquea todos
+  // los valores cifrados de la pestaña.
+  const [claveDisponible, setClaveDisponible] = useState<boolean>(() => !!getClaveSesion())
+  const [pidiendoClaveCaract, setPidiendoClaveCaract] = useState(false)
+  const [claveInputCaract, setClaveInputCaract] = useState('')
+  const [errorClaveCaract, setErrorClaveCaract] = useState<string | null>(null)
+
+  useEffect(() => {
+    const unsub = suscribirClaveSesion((c) => setClaveDisponible(!!c))
+    return unsub
+  }, [])
+
+  // ¿Existe al menos un valor cifrado entre las características cargadas?
+  const hayCaractCifradas = useMemo(() => {
+    for (const cc of categoriasConCaract) {
+      for (const c of cc.caracteristicas) {
+        for (const v of [c.valor_texto_docs, c.valor_numerico_docs, c.valor_fecha_docs, c.comentarios]) {
+          if (esPayload(v)) return true
+        }
+      }
+    }
+    return false
+  }, [categoriasConCaract])
+
+  // Toma cualquier payload cifrado de la lista para validar la clave.
+  const payloadMuestra = useMemo<PayloadCifrado | null>(() => {
+    for (const cc of categoriasConCaract) {
+      for (const c of cc.caracteristicas) {
+        for (const v of [c.valor_texto_docs, c.valor_numerico_docs, c.valor_fecha_docs, c.comentarios]) {
+          if (esPayload(v)) return v
+        }
+      }
+    }
+    return null
+  }, [categoriasConCaract])
+
+  const descifrarCaractGlobal = async () => {
+    setErrorClaveCaract(null)
+    if (!claveInputCaract) {
+      setErrorClaveCaract(tc('ingresaUnaClave'))
+      return
+    }
+    if (!payloadMuestra) {
+      setClaveSesion(claveInputCaract)
+      setPidiendoClaveCaract(false)
+      setClaveInputCaract('')
+      return
+    }
+    try {
+      await descifrarPayload(payloadMuestra, claveInputCaract)
+      setClaveSesion(claveInputCaract)
+      setPidiendoClaveCaract(false)
+      setClaveInputCaract('')
+    } catch (e) {
+      const msg = (e as Error).message
+      setErrorClaveCaract(msg === 'clave-incorrecta' ? tc('claveIncorrecta') : tc('ingresaUnaClave'))
+    }
+  }
 
   const cargarChunks = useCallback(async (idDocumento: number, q?: string, page = 1) => {
     setCargandoChunks(true)
@@ -431,11 +496,51 @@ export function DocumentoDetalleModal({
           </div>
         )}
 
-        {/* Tab Características — valores cifrados en BD (mig 435), se descifran con
-            la clave de sesión vía <TextoCifrado>. Cada valor (texto, numérico, fecha,
-            comentarios) viaja como payload independiente. */}
+        {/* Tab Características — valores cifrados en BD (mig 435). El encabezado
+            muestra un único botón "Descifrar" que pide la clave una sola vez y
+            desbloquea todos los valores (cada TextoCifrado escucha la clave de
+            sesión). En modo inline los valores se ven como ••• hasta descifrar. */}
         {tab === 'caracteristicas' && (
           <div className="flex flex-col gap-3">
+            {hayCaractCifradas && (
+              <div className="flex flex-col gap-2">
+                <div className="flex items-center gap-2 text-sm text-texto-muted border border-dashed border-borde rounded p-3 bg-fondo">
+                  <Lock size={16} />
+                  <span className="flex-1">
+                    {claveDisponible
+                      ? 'Características descifradas con la clave de la sesión.'
+                      : 'Las características están cifradas. Ingresa la clave para verlas.'}
+                  </span>
+                  {!claveDisponible && !pidiendoClaveCaract && (
+                    <Boton variante="contorno" onClick={() => setPidiendoClaveCaract(true)}>
+                      <Unlock size={14} className="mr-1" /> {tc('descifrar')}
+                    </Boton>
+                  )}
+                </div>
+                {pidiendoClaveCaract && !claveDisponible && (
+                  <div className="flex flex-col gap-2 border border-borde rounded p-3 bg-fondo-tarjeta">
+                    <label className="text-xs text-texto-muted">{tc('claveDescifrado')}</label>
+                    <input
+                      type="password"
+                      autoFocus
+                      value={claveInputCaract}
+                      onChange={(e) => setClaveInputCaract(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === 'Enter') descifrarCaractGlobal() }}
+                      className="w-full rounded border border-borde bg-fondo px-3 py-2 text-sm focus:border-primario focus:ring-1 focus:ring-primario outline-none"
+                      placeholder={tc('ingresarPlaceholder')}
+                    />
+                    {errorClaveCaract && <span className="text-xs text-red-600">{errorClaveCaract}</span>}
+                    <div className="flex gap-2 justify-end">
+                      <Boton variante="contorno" onClick={() => { setPidiendoClaveCaract(false); setClaveInputCaract(''); setErrorClaveCaract(null) }}>
+                        {tc('cancelar')}
+                      </Boton>
+                      <Boton variante="primario" onClick={descifrarCaractGlobal}>{tc('descifrar')}</Boton>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
             {cargandoCaract ? (
               <p className="text-sm text-texto-muted py-4 text-center">{tc('cargando2')}</p>
             ) : categoriasConCaract.filter((cc) => cc.caracteristicas.length > 0).length === 0 ? (
@@ -463,7 +568,7 @@ export function DocumentoDetalleModal({
                             {campos.map((campo, idx) => (
                               <span key={idx} className="flex items-center gap-1">
                                 {campo.label && <span className="text-texto-muted text-xs">{campo.label}</span>}
-                                <ValorCampo valor={campo.valor as never} render={inlineRender} />
+                                <ValorCampo valor={campo.valor as never} render={inlineRender} inline />
                                 {idx < campos.length - 1 && <span className="text-texto-muted">·</span>}
                               </span>
                             ))}

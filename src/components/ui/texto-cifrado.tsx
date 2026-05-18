@@ -7,6 +7,7 @@ import {
   descifrarPayload,
   getClaveSesion,
   setClaveSesion,
+  suscribirClaveSesion,
   type PayloadCifrado,
 } from '@/lib/descifrar'
 import { Boton } from './boton'
@@ -18,6 +19,12 @@ interface Props {
   className?: string
   /** Texto al mostrar cuando el payload llega vacío (no cifrado). */
   vacioLabel?: string
+  /**
+   * Modo compacto: oculta el chip "Contenido cifrado…" y el botón "Descifrar"
+   * individual. Cuando aún no se ha descifrado muestra un placeholder mínimo
+   * (•••). Pensado para listas donde un botón global desbloquea todo.
+   */
+  inline?: boolean
 }
 
 /**
@@ -25,21 +32,27 @@ interface Props {
  * Al hacer click, pide la clave (modal inline) y descifra. Si la clave ya fue
  * ingresada en la sesión, descifra automáticamente.
  */
-export function TextoCifrado({ payload, render, className, vacioLabel }: Props) {
+export function TextoCifrado({ payload, render, className, vacioLabel, inline }: Props) {
   const tc = useTranslations('common')
   const [textoPlano, setTextoPlano] = useState<string | null>(null)
   const [pidiendoClave, setPidiendoClave] = useState(false)
   const [claveInput, setClaveInput] = useState('')
   const [error, setError] = useState<string | null>(null)
 
-  // Intento automático con la clave ya cacheada.
+  // Intento automático con la clave ya cacheada + reintento cuando la clave
+  // cambia en la sesión (p.ej. el usuario la ingresa desde un botón global).
   useEffect(() => {
     if (!payload || !payload.cifrado) return
-    const cacheada = getClaveSesion()
-    if (!cacheada) return
-    descifrarPayload(payload, cacheada)
-      .then(setTextoPlano)
-      .catch(() => { /* ignoramos: el usuario abrirá el modal si quiere reintentar */ })
+    let cancelado = false
+    const intentar = (clave: string | null) => {
+      if (!clave) return
+      descifrarPayload(payload, clave)
+        .then((plano) => { if (!cancelado) setTextoPlano(plano) })
+        .catch(() => { /* el usuario reintentará si quiere */ })
+    }
+    intentar(getClaveSesion())
+    const unsub = suscribirClaveSesion(intentar)
+    return () => { cancelado = true; unsub() }
   }, [payload])
 
   if (!payload || !payload.cifrado) {
@@ -52,6 +65,11 @@ export function TextoCifrado({ payload, render, className, vacioLabel }: Props) 
         {textoPlano}
       </pre>
     )}</>
+  }
+
+  // Modo compacto: sin chip ni botón individual — placeholder mínimo.
+  if (inline) {
+    return <span className="text-sm text-texto-muted font-mono tracking-wider select-none">••••••</span>
   }
 
   const intentarDescifrar = async () => {

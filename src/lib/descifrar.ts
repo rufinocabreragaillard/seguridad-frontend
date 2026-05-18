@@ -63,9 +63,15 @@ export async function descifrarPayload(
 
 /** Cache en memoria de la clave ingresada por el usuario en la sesión actual. */
 let _claveSesion: string | null = null
+const _listeners = new Set<(clave: string | null) => void>()
+
+function _emitir() {
+  for (const l of _listeners) l(_claveSesion)
+}
 
 export function setClaveSesion(clave: string) {
   _claveSesion = clave
+  _emitir()
 }
 
 export function getClaveSesion(): string | null {
@@ -74,4 +80,11 @@ export function getClaveSesion(): string | null {
 
 export function limpiarClaveSesion() {
   _claveSesion = null
+  _emitir()
+}
+
+/** Suscribirse a cambios de la clave de sesión. Retorna fn de desuscripción. */
+export function suscribirClaveSesion(fn: (clave: string | null) => void): () => void {
+  _listeners.add(fn)
+  return () => { _listeners.delete(fn) }
 }
