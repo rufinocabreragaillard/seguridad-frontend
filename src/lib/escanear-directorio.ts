@@ -176,12 +176,17 @@ export interface ArchivoEscaneado {
  * @param maxNiveles - Profundidad máxima a recorrer (default 5).
  * @param signal - AbortSignal para cancelar el escaneo.
  * @param rutasDeshabilitadas - Set de rutas completas (e.g. "/MiMusica/Cubase") que deben omitirse junto con sus hijos.
+ * @param maxArchivos - Tope opcional: el escáner se detiene en cuanto se acumulan N archivos.
+ *   Cuando se detiene por tope, rutasEscaneadas queda vacío para que el backend no
+ *   trate como "ubicaciones completamente escaneadas" rutas que no terminamos de recorrer
+ *   (eso evita que fn_carga_masiva_documentos elimine huérfanos por error).
  */
 export async function escanearArchivosDirectorio(
   handleExterno?: FileSystemDirectoryHandle | null,
   maxNiveles = 5,
   signal?: AbortSignal,
   rutasDeshabilitadas?: Set<string>,
+  maxArchivos?: number,
 ): Promise<{
   nombreRaiz: string
   archivos: ArchivoEscaneado[]
@@ -203,6 +208,9 @@ export async function escanearArchivosDirectorio(
   const nombreRaiz: string = dirHandle.name
   const archivos: ArchivoEscaneado[] = []
   const rutasEscaneadas: string[] = []
+  const topeActivo = typeof maxArchivos === 'number' && maxArchivos > 0
+  let detenidoPorTope = false
+  const topeAlcanzado = () => topeActivo && archivos.length >= (maxArchivos as number)
 
   async function recorrerArchivos(
     handle: FileSystemDirectoryHandle,
@@ -210,6 +218,7 @@ export async function escanearArchivosDirectorio(
     nivel: number,
   ): Promise<void> {
     if (signal?.aborted) return
+    if (topeAlcanzado()) { detenidoPorTope = true; return }
     // Si esta ruta está deshabilitada en BD, omitir completamente (incluyendo hijos)
     if (rutasDeshabilitadas?.has(rutaActual)) return
     rutasEscaneadas.push(rutaActual)
@@ -224,6 +233,7 @@ export async function escanearArchivosDirectorio(
     // Archivos de este directorio
     for (const entry of entries) {
       if (signal?.aborted) return
+      if (topeAlcanzado()) { detenidoPorTope = true; return }
       if (entry.kind === 'file') {
         const nombre = entry.handle.name
         if (nombre.startsWith('.')) continue
@@ -246,6 +256,7 @@ export async function escanearArchivosDirectorio(
     if (nivel < maxNiveles) {
       for (const entry of entries) {
         if (signal?.aborted) return
+        if (topeAlcanzado()) { detenidoPorTope = true; return }
         if (entry.kind === 'directory') {
           const nombre = entry.handle.name
           if (nombre.startsWith('.') || nombre === 'node_modules' || nombre === '__pycache__') continue
@@ -254,6 +265,7 @@ export async function escanearArchivosDirectorio(
             `${rutaActual}/${nombre}`,
             nivel + 1,
           )
+          if (detenidoPorTope) return
         }
       }
     }
@@ -263,7 +275,16 @@ export async function escanearArchivosDirectorio(
 
   if (signal?.aborted) return null
 
-  return { nombreRaiz, archivos, carpetasSinMatch: [], rutasEscaneadas, dirHandle }
+  // Si nos detuvimos por tope, vaciamos rutasEscaneadas: el cliente no debe afirmar
+  // que recorrió completamente esas rutas (huérfanos del backend usaría esa lista
+  // para borrar docs que en realidad sí estaban en el filesystem y no alcanzamos a leer).
+  return {
+    nombreRaiz,
+    archivos,
+    carpetasSinMatch: [],
+    rutasEscaneadas: detenidoPorTope ? [] : rutasEscaneadas,
+    dirHandle,
+  }
 }
 
 export async function escanearDirectorioSinHijos(): Promise<{

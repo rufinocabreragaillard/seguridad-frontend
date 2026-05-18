@@ -108,6 +108,7 @@ export async function escanearParaCarga(opts: {
     nivelesDirectorio,
     abortSignal,
     rutasDeshabilitadas,
+    tope ? parseInt(tope) : undefined,
   )
   if (!scan) return null
 

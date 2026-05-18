@@ -756,7 +756,7 @@ function PaginaProcesarDocumentosInterna() {
       setEscaneandoDir(true)
       let scan: Awaited<ReturnType<typeof escanearArchivosDirectorio>>
       try {
-        scan = await escanearArchivosDirectorio(handleEfectivo ?? undefined, nivelesDirectorio, scanAbort.signal, rutasDeshabilitadas)
+        scan = await escanearArchivosDirectorio(handleEfectivo ?? undefined, nivelesDirectorio, scanAbort.signal, rutasDeshabilitadas, tope ? parseInt(tope) : undefined)
       } finally {
         setEscaneandoDir(false)
         scanAbortRef.current = null
