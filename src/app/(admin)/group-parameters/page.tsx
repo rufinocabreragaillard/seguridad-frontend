@@ -2,8 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, Eye, Save, Lock, EyeClosed, RotateCcw } from 'lucide-react'
-import { Boton } from '@/components/ui/boton'
+import { Trash2, Eye, Save, Lock, EyeClosed, RotateCcw } from 'lucide-react'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Insignia } from '@/components/ui/insignia'
@@ -47,10 +46,6 @@ export default function PaginaParametrosGrupo() {
   const [valoresRevelados, setValoresRevelados] = useState<Record<string, string>>({})
   const [revelando, setRevelando] = useState<string | null>(null)
 
-  // Nuevo valor
-  const [nuevoVal, setNuevoVal] = useState({ categoria_parametro: '', tipo_parametro: '', valor_parametro: '' })
-  const [tiposPorCat, setTiposPorCat] = useState<TipoParametro[]>([])
-
   // Eliminar / Nulificar
   const [valAEliminar, setValAEliminar] = useState<ValorGrupo | null>(null)
   const [eliminando, setEliminando] = useState(false)
@@ -78,17 +73,6 @@ export default function PaginaParametrosGrupo() {
   }, [])
 
   useEffect(() => { cargarCatalogo(); cargarValores() }, [cargarCatalogo, cargarValores])
-
-  useEffect(() => {
-    if (!nuevoVal.categoria_parametro) { setTiposPorCat([]); return }
-    datosBasicosApi.listarTipos(nuevoVal.categoria_parametro).then(setTiposPorCat).catch(() => {})
-  }, [nuevoVal.categoria_parametro])
-
-  useEffect(() => {
-    if (filtroCategoria) {
-      setNuevoVal((prev) => ({ ...prev, categoria_parametro: filtroCategoria, tipo_parametro: '' }))
-    }
-  }, [filtroCategoria])
 
   // ── Revelar valor privado ──────────────────────────────────────────────────
   const revelarValor = async (v: ValorGrupo) => {
@@ -122,16 +106,6 @@ export default function PaginaParametrosGrupo() {
     finally { setGuardando(null) }
   }
 
-  // ── Agregar nuevo valor ────────────────────────────────────────────────────
-  const agregarNuevo = async () => {
-    if (!nuevoVal.categoria_parametro || !nuevoVal.tipo_parametro || !nuevoVal.valor_parametro) {
-      setError(t('errorCategoriaTipoValorObligatorios')); return
-    }
-    const cat = categorias.find((c) => c.categoria_parametro === nuevoVal.categoria_parametro)
-    await guardarInline(nuevoVal.categoria_parametro, nuevoVal.tipo_parametro, nuevoVal.valor_parametro, cat?.privado ?? false)
-    setNuevoVal({ categoria_parametro: '', tipo_parametro: '', valor_parametro: '' })
-  }
-
   // ── Eliminar / Nulificar ───────────────────────────────────────────────────
   const confirmarEliminar = async () => {
     if (!valAEliminar) return
@@ -158,10 +132,6 @@ export default function PaginaParametrosGrupo() {
     ...c,
     nValores: valores.filter((v) => v.categoria_parametro === c.categoria_parametro).length,
   }))
-
-  const tiposDisponibles = tiposPorCat.filter(
-    (t) => !valores.some((v) => v.categoria_parametro === t.categoria_parametro && v.tipo_parametro === t.tipo_parametro)
-  )
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'categorias', label: t('tabCategorias') },
@@ -330,39 +300,6 @@ export default function PaginaParametrosGrupo() {
             </div>
           )}
 
-          {/* Agregar nuevo */}
-          <div className="border-t border-borde pt-4 mt-2">
-            <p className="text-xs font-semibold text-texto-muted uppercase tracking-wider mb-3">{t('agregarParametro')}</p>
-            <div className="flex flex-col gap-2">
-              <div className={`gap-2 ${filtroCategoria ? 'flex' : 'grid grid-cols-2'}`}>
-                {!filtroCategoria && (
-                  <select value={nuevoVal.categoria_parametro}
-                    onChange={(e) => setNuevoVal({ categoria_parametro: e.target.value, tipo_parametro: '', valor_parametro: nuevoVal.valor_parametro })}
-                    className={selectCls}>
-                    <option value="">{t('seleccionaCategoria')}</option>
-                    {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
-                  </select>
-                )}
-                <select value={nuevoVal.tipo_parametro}
-                  onChange={(e) => setNuevoVal({ ...nuevoVal, tipo_parametro: e.target.value })}
-                  disabled={!nuevoVal.categoria_parametro && !filtroCategoria} className={`${selectCls} flex-1`}>
-                  <option value="">{t('seleccionaTipo')}</option>
-                  {tiposDisponibles.map((tp) => <option key={tp.tipo_parametro} value={tp.tipo_parametro}>{tp.nombre}</option>)}
-                </select>
-              </div>
-              <div className="flex gap-2">
-                <input
-                  type={categorias.find((c) => c.categoria_parametro === (nuevoVal.categoria_parametro || filtroCategoria))?.privado ? 'password' : 'text'}
-                  placeholder={t('placeholderValor')} value={nuevoVal.valor_parametro}
-                  onChange={(e) => setNuevoVal({ ...nuevoVal, valor_parametro: e.target.value })}
-                  className="flex-1 rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario font-mono" />
-                <Boton variante="primario" tamano="sm" onClick={agregarNuevo}
-                  disabled={!nuevoVal.categoria_parametro || !nuevoVal.tipo_parametro || !nuevoVal.valor_parametro}>
-                  <Plus size={14} /> {t('agregar')}
-                </Boton>
-              </div>
-            </div>
-          </div>
         </>
       )}
 
