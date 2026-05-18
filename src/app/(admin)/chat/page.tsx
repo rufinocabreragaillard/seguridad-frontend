@@ -876,7 +876,7 @@ export default function PaginaChatUsuario() {
                   onClick={() => { setAreaDropdownAbierto((v) => !v); setEspacioDropdownAbierto(false) }}
                   className={`flex items-center gap-2 text-xs px-3 py-1.5 rounded-lg border transition ${
                     areaSel
-                      ? 'bg-primario-muy-claro border-primario text-primario font-medium'
+                      ? 'bg-primario-muy-claro border-primario-oscuro text-primario-oscuro font-medium'
                       : 'bg-white border-borde text-texto-muted hover:text-texto'
                   }`}
                 >
