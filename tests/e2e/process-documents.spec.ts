@@ -82,11 +82,8 @@ test.describe('process-documents', () => {
     await tabs.nth(2).click();
     await page.waitForTimeout(2500);
 
-    // Cambiar filtro de Estado a ESCANEADO
-    const estadoSelect = page.locator('select').first();
-    await estadoSelect.selectOption({ label: /Escaneado/i });
-
     // Abrir dropdown de Proceso y elegir "Revertir Análisis (ESCANEADO → METADATA)"
+    // Al elegir el proceso, el componente setea automáticamente estadoFiltro = ESCANEADO
     const procesoBtn = page.locator('button:has-text("— Sin valor —")').first();
     await procesoBtn.click();
     const menuPortal = page.locator('body > div.fixed.z-\\[9999\\]').first();
