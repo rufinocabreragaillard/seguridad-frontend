@@ -92,11 +92,11 @@ body {
     color: var(--color-tab-inactivo, #4B5563); /* gris 600 — más oscuro que muted */
   }
   .tab-nav:hover {
-    color: var(--color-texto, #1A1E2E);
+    color: var(--color-primario-oscuro, var(--color-primario, #074B91));
   }
   .tab-nav-activo {
-    border-color: var(--color-primario, #074B91);
-    color: var(--color-primario, #074B91);
+    border-color: var(--color-primario-oscuro, var(--color-primario, #074B91));
+    color: var(--color-primario-oscuro, var(--color-primario, #074B91));
   }
 }
 
