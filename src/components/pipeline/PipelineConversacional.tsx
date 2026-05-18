@@ -63,6 +63,12 @@ interface PipelineConversacionalProps {
   mensajeError?: string | null
   /** Slot opcional que se renderiza dentro de la tarjeta izquierda, justo arriba de los botones. */
   slotArribaBotones?: React.ReactNode
+  /**
+   * Slot opcional para una PRIMERA columna a la izquierda del dial.
+   * Cuando se entrega, el layout pasa de 2 columnas a 3:
+   * [columnaIzquierda] · [dial+mensaje] · [tarjeta botones + Ahora mismo]
+   */
+  columnaIzquierda?: React.ReactNode
 }
 
 export function PipelineConversacional({
@@ -71,7 +77,9 @@ export function PipelineConversacional({
   ejecutando,
   mensajeError,
   slotArribaBotones,
+  columnaIzquierda,
 }: PipelineConversacionalProps) {
+  const tresColumnas = !!columnaIzquierda
   return (
     <div className="flex flex-col gap-3">
       {mensajeError && (
@@ -80,11 +88,21 @@ export function PipelineConversacional({
         </div>
       )}
 
-      {/* Dos columnas: ANTES DE EMPEZAR (izq) · MENSAJE + DIAL (der) — el layout no cambia al procesar */}
-      <div className="grid gap-6 items-start grid-cols-1 md:grid-cols-2">
+      {/*
+        Layout:
+        - Sin columnaIzquierda → 2 columnas: [botones] · [dial]
+        - Con columnaIzquierda → 3 columnas: [ubicaciones] · [dial] · [botones]
+      */}
+      <div className={`grid gap-6 items-start grid-cols-1 ${tresColumnas ? 'md:grid-cols-3' : 'md:grid-cols-2'}`}>
 
-        {/* ── Columna izquierda: botones + (en proceso) mensaje + AHORA MISMO + submensaje ── */}
-        <div className="flex flex-col gap-2">
+        {tresColumnas && (
+          <div className="flex flex-col gap-2 min-w-0">
+            {columnaIzquierda}
+          </div>
+        )}
+
+        {/* Tarjeta de botones (en layout de 3 cols se mueve a la derecha, en layout de 2 cols queda a la izquierda) */}
+        <div className={`flex flex-col gap-2 ${tresColumnas ? 'md:order-last' : ''}`}>
           <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-3 min-w-0">
             {antesDeEmpezar.mensajeTiempo && !ejecutando && (
               <p className="text-sm text-texto leading-relaxed">{antesDeEmpezar.mensajeTiempo}</p>

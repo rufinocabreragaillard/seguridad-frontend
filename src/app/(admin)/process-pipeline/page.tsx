@@ -947,7 +947,7 @@ export default function PaginaCargaDocsUsuario() {
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
-    <div className="relative flex flex-col gap-6 max-w-6xl">
+    <div className="relative flex flex-col gap-6 max-w-7xl">
       <BotonChat className="top-0 right-0" />
       <PageHeader className="pr-28" i18nNamespace="processPipeline" />
 
@@ -1112,6 +1112,69 @@ export default function PaginaCargaDocsUsuario() {
                 </div>
               )
 
+              // ── Columna izquierda: carga + lista plana de ubicaciones raíz ──
+              const raicesUbic = ubicaciones
+                .filter((u) => !u.codigo_ubicacion_superior)
+                .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
+              const columnaUbicaciones = (
+                <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-3 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
+                      Ubicaciones
+                    </span>
+                    {ubicaciones.length > 0 && (
+                      <span className="text-[10px] text-texto-muted">{raicesUbic.length}</span>
+                    )}
+                  </div>
+
+                  <Boton
+                    variante="contorno"
+                    onClick={iniciarEscaneoDir}
+                    disabled={escaneandoDir || ejecutando}
+                    className="justify-center"
+                  >
+                    <FolderPlus size={14} className="mr-1.5" />
+                    {escaneandoDir ? 'Escaneando…' : 'Cargar desde directorio'}
+                  </Boton>
+
+                  <Boton
+                    variante="fantasma"
+                    onClick={cargarUbicacionIndividual}
+                    disabled={cargandoUbIndividual || ejecutando}
+                    className="justify-center text-xs"
+                  >
+                    <FolderInput size={12} className="mr-1.5" />
+                    {cargandoUbIndividual ? 'Cargando…' : 'Solo este directorio'}
+                  </Boton>
+
+                  <div className="border-t border-borde pt-2 flex-1 min-h-0">
+                    {cargandoUbs ? (
+                      <p className="text-xs text-texto-muted text-center py-2">Cargando…</p>
+                    ) : raicesUbic.length === 0 ? (
+                      <p className="text-xs text-texto-muted text-center py-2 leading-relaxed">
+                        Sin ubicaciones.<br />Carga un directorio para empezar.
+                      </p>
+                    ) : (
+                      <div className="flex flex-col gap-0.5 max-h-48 overflow-y-auto">
+                        {raicesUbic.map((u) => (
+                          <div
+                            key={u.codigo_ubicacion}
+                            className="flex items-center gap-2 py-1 px-2 rounded hover:bg-fondo min-w-0"
+                            title={u.url || u.nombre_ubicacion}
+                          >
+                            <FolderOpen size={12} className={`shrink-0 ${u.tipo_ubicacion === 'AREA' ? 'text-amber-400' : 'text-sky-500'}`} />
+                            <span className="text-xs truncate flex-1 text-texto">{u.nombre_ubicacion}</span>
+                            {!u.ubicacion_habilitada && (
+                              <span className="text-[9px] text-texto-muted shrink-0">off</span>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+
               return (
                 <PipelineConversacional
                   antesDeEmpezar={{
@@ -1132,6 +1195,7 @@ export default function PaginaCargaDocsUsuario() {
                   }}
                   ejecutando={ejecutando}
                   slotArribaBotones={selectorUbicacion}
+                  columnaIzquierda={columnaUbicaciones}
                   porQueTexto={t('narrativoPorQue')}
                   mensajeError={mensajeError || null}
                 />
@@ -1162,7 +1226,7 @@ export default function PaginaCargaDocsUsuario() {
                 { key: 'programacion_update', label: t('tabProgUpdate') },
                 { key: 'md', label: t('tabMd') },
               ] as { key: typeof tabModalUb; label: string }[]).map(({ key, label }) => (
-                <button key={key} onClick={() => setTabModalUb(key)} className={`px-4 py-2 text-sm font-medium transition-colors ${tabModalUb === key ? 'border-b-2 border-primario text-primario' : 'text-texto-muted hover:text-texto'}`}>
+                <button key={key} onClick={() => setTabModalUb(key)} className={`px-4 py-2 tab-nav${tabModalUb === key ? ' tab-nav-activo' : ''}`}>
                   {label}
                 </button>
               ))}
