@@ -165,6 +165,7 @@ export default function PaginaParametrosGenerales() {
           nombre: formCat.nombre, descripcion: formCat.descripcion,
           replica_grupo: formCat.replica_grupo, visible_grupo: formCat.visible_grupo, editable_grupo: formCat.editable_grupo,
           replica_usuario: formCat.replica_usuario, visible_usuario: formCat.visible_usuario, editable_usuario: formCat.editable_usuario,
+          python_editado_manual: true, javascript_editado_manual: true,
         })
         if (!cerrar) setCatEditando(creada)
       }
@@ -186,7 +187,7 @@ export default function PaginaParametrosGenerales() {
         const actualizado = await datosBasicosApi.actualizarTipo(tipoEditando.categoria_parametro, tipoEditando.tipo_parametro, { nombre: formTipo.nombre, descripcion: formTipo.descripcion, prompt_insert: promptsTipo.prompt_insert, prompt_update: promptsTipo.prompt_update, system_prompt: promptsTipo.system_prompt, python_insert: promptsTipo.python_insert, python_update: promptsTipo.python_update, javascript: promptsTipo.javascript, python_editado_manual: promptsTipo.python_editado_manual, javascript_editado_manual: promptsTipo.javascript_editado_manual })
         setTipoEditando(actualizado)
       } else {
-        const creado = await datosBasicosApi.crearTipo({ categoria_parametro: formTipo.categoria_parametro, tipo_parametro: formTipo.tipo_parametro.toUpperCase(), nombre: formTipo.nombre, descripcion: formTipo.descripcion })
+        const creado = await datosBasicosApi.crearTipo({ categoria_parametro: formTipo.categoria_parametro, tipo_parametro: formTipo.tipo_parametro.toUpperCase(), nombre: formTipo.nombre, descripcion: formTipo.descripcion, python_editado_manual: true, javascript_editado_manual: true })
         if (!cerrar) setTipoEditando(creado)
       }
       if (cerrar) setModalTipo(false)
