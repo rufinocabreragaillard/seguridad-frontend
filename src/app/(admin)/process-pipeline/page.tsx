@@ -40,7 +40,7 @@ import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { PipelineConversacional } from '@/components/pipeline/PipelineConversacional'
 import { FASES_NARRATIVAS, formatearMinutos } from '@/lib/pipeline-narrativo'
 
-// ── Pipeline ──────────────────────────────────────────────────────────────────
+// ── Pipeline (v2) ─────────────────────────────────────────────────────────────
 // Numeración global de pasos:
 //   Paso 1 = INDEXAR_UBICACIONES (solo tab Ubicaciones)
 //   Paso 2 = CARGAR     (filesystem → docs.CARGADO)
