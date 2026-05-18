@@ -1962,7 +1962,15 @@
     "placeholderDescripcion": "Parameter description",
     "errorCategoriaTipoObligatorios": "Category and type are required",
     "eliminarTitulo": "Delete Parameter",
-    "eliminarConfirm": "Delete parameter \"{categoria} / {tipo}\"? This action may affect system behavior."
+    "eliminarConfirm": "Delete parameter \"{categoria} / {tipo}\"? This action may affect system behavior.",
+    "sincronizarReplicas": "Sync Replicas",
+    "sincronizando": "Syncing...",
+    "sincronizarReplicasConfirm": "This action will delete group and user replicas that should not be replicated per category settings, and insert missing ones with the system value. Existing custom overrides will not be modified. Continue?",
+    "sincronizacionCompletada": "Synchronization completed",
+    "grupoEliminados": "Group: {n} replicas deleted",
+    "grupoInsertados": "{n} inserted",
+    "usuarioEliminados": "User: {n} replicas deleted",
+    "usuarioInsertados": "{n} inserted"
   },
   "groupParameters": {
     "titulo": "Group Parameters",

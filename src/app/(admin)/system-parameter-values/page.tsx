@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, Search, Download, FileText } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Download, FileText, RefreshCw } from 'lucide-react'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -63,6 +63,14 @@ export default function PaginaValoresParametrosGenerales() {
   const [aEliminar, setAEliminar] = useState<ParametroGeneral | null>(null)
   const [eliminando, setEliminando] = useState(false)
   const [itemsLocales, setItemsLocales] = useState<ParametroGeneral[]>([])
+
+  // Sincronizar réplicas
+  const [sincronizando, setSincronizando] = useState(false)
+  const [resultadoSync, setResultadoSync] = useState<{
+    eliminados_grupo: number; eliminados_usuario: number;
+    insertados_grupo: number; insertados_usuario: number;
+  } | null>(null)
+  const [confirmarSync, setConfirmarSync] = useState(false)
 
   const { items, total, page, limit, cargando, setPage, setLimit, refetch } = usePaginacion<
     ParametroGeneral,
@@ -176,6 +184,25 @@ export default function PaginaValoresParametrosGenerales() {
     }
   }
 
+  const ejecutarSincronizacion = async () => {
+    setSincronizando(true)
+    setResultadoSync(null)
+    setConfirmarSync(false)
+    try {
+      const res = await parametrosApi.sincronizarReplicas()
+      setResultadoSync({
+        eliminados_grupo: res.eliminados_grupo,
+        eliminados_usuario: res.eliminados_usuario,
+        insertados_grupo: res.insertados_grupo,
+        insertados_usuario: res.insertados_usuario,
+      })
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSincronizando(false)
+    }
+  }
+
   return (
     <div className="relative flex flex-col gap-6">
       <BotonChat />
@@ -226,11 +253,35 @@ export default function PaginaValoresParametrosGenerales() {
           >
             <Download size={15} /> {tc('exportarExcel')}
           </Boton>
+          <Boton
+            variante="contorno"
+            tamano="sm"
+            onClick={() => setConfirmarSync(true)}
+            disabled={sincronizando}
+          >
+            <RefreshCw size={15} className={sincronizando ? 'animate-spin' : ''} />
+            {sincronizando ? t('sincronizando') : t('sincronizarReplicas')}
+          </Boton>
           <Boton variante="primario" onClick={abrirNuevo}>
             <Plus size={16} /> {t('nuevoValor')}
           </Boton>
         </div>
       </div>
+
+      {/* Resultado sincronización */}
+      {resultadoSync && (
+        <div className="flex items-start gap-3 rounded-lg border border-exito/30 bg-exito/5 px-4 py-3">
+          <RefreshCw size={16} className="mt-0.5 text-exito shrink-0" />
+          <div className="text-sm text-texto">
+            <p className="font-medium text-exito mb-1">{t('sincronizacionCompletada')}</p>
+            <ul className="text-texto-muted space-y-0.5">
+              <li>{t('grupoEliminados', { n: resultadoSync.eliminados_grupo })} · {t('grupoInsertados', { n: resultadoSync.insertados_grupo })}</li>
+              <li>{t('usuarioEliminados', { n: resultadoSync.eliminados_usuario })} · {t('usuarioInsertados', { n: resultadoSync.insertados_usuario })}</li>
+            </ul>
+          </div>
+          <button onClick={() => setResultadoSync(null)} className="ml-auto text-texto-muted hover:text-texto text-xs">✕</button>
+        </div>
+      )}
 
       {/* Tabla */}
       {cargando ? (
@@ -426,6 +477,17 @@ export default function PaginaValoresParametrosGenerales() {
           : ''}
         textoConfirmar={tc('eliminar')}
         cargando={eliminando}
+      />
+
+      {/* ── Modal confirmar sincronización de réplicas ── */}
+      <ModalConfirmar
+        abierto={confirmarSync}
+        alCerrar={() => setConfirmarSync(false)}
+        alConfirmar={ejecutarSincronizacion}
+        titulo={t('sincronizarReplicas')}
+        mensaje={t('sincronizarReplicasConfirm')}
+        textoConfirmar={t('sincronizarReplicas')}
+        cargando={sincronizando}
       />
     </div>
   )

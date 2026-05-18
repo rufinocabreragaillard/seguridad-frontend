@@ -1928,7 +1928,15 @@
     "placeholderDescripcion": "Beschreibung des Parameters",
     "errorCategoriaTipoObligatorios": "Kategorie und Typ sind Pflichtfelder",
     "eliminarTitulo": "Parameter löschen",
-    "eliminarConfirm": "Parameter „{categoria} / {tipo}“ löschen? Diese Aktion kann das Systemverhalten beeinflussen."
+    “eliminarConfirm”: “Parameter „{categoria} / {tipo}” löschen? Diese Aktion kann das Systemverhalten beeinflussen.”,
+    “sincronizarReplicas”: “Replikate synchronisieren”,
+    “sincronizando”: “Synchronisierung...”,
+    “sincronizarReplicasConfirm”: “Diese Aktion löscht Gruppen- und Benutzerreplikate, die gemäß der Kategoriekonfiguration nicht repliziert werden sollen, und fügt fehlende mit dem Systemwert ein. Bestehende benutzerdefinierte Überschreibungen werden nicht geändert. Fortfahren?”,
+    “sincronizacionCompletada”: “Synchronisierung abgeschlossen”,
+    “grupoEliminados”: “Gruppe: {n} Replikate gelöscht”,
+    “grupoInsertados”: “{n} eingefügt”,
+    “usuarioEliminados”: “Benutzer: {n} Replikate gelöscht”,
+    “usuarioInsertados”: “{n} eingefügt”
   },
   "groupParameters": {
     "titulo": "Gruppenparameter",

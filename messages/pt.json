@@ -1928,7 +1928,15 @@
     "placeholderDescripcion": "Descrição do parâmetro",
     "errorCategoriaTipoObligatorios": "Categoria e tipo são obrigatórios",
     "eliminarTitulo": "Eliminar parâmetro",
-    "eliminarConfirm": "Eliminar o parâmetro \"{categoria} / {tipo}\"? Esta ação pode afetar o comportamento do sistema."
+    "eliminarConfirm": "Eliminar o parâmetro \"{categoria} / {tipo}\"? Esta ação pode afetar o comportamento do sistema.",
+    "sincronizarReplicas": "Sincronizar Réplicas",
+    "sincronizando": "Sincronizando...",
+    "sincronizarReplicasConfirm": "Esta ação excluirá réplicas de grupo e usuário que não devem ser replicadas conforme a configuração de categorias, e inserirá as ausentes com o valor do sistema. Substituições personalizadas existentes não serão modificadas. Continuar?",
+    "sincronizacionCompletada": "Sincronização concluída",
+    "grupoEliminados": "Grupo: {n} réplicas eliminadas",
+    "grupoInsertados": "{n} inseridas",
+    "usuarioEliminados": "Usuário: {n} réplicas eliminadas",
+    "usuarioInsertados": "{n} inseridas"
   },
   "groupParameters": {
     "titulo": "Parâmetros do Grupo",

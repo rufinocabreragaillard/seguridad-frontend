@@ -583,6 +583,14 @@ export const parametrosApi = {
     api.delete(`/parametros/usuario/${categoria}/${tipo}`),
   reordenarUsuario: (items: { categoria_parametro: string; tipo_parametro: string; orden: number }[]) =>
     api.put('/parametros/usuario/reordenar', items),
+  sincronizarReplicas: () =>
+    api.post<{
+      mensaje: string;
+      eliminados_grupo: number;
+      eliminados_usuario: number;
+      insertados_grupo: number;
+      insertados_usuario: number;
+    }>('/parametros/sincronizar-replicas').then((r) => r.data),
 }
 
 // ─── Auditoría ────────────────────────────────────────────────────────────────
