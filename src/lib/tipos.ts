@@ -757,6 +757,32 @@ export interface RelTipoDocumentoCaracteristica {
   nombre_tipo_caract?: string | null
 }
 
+// Propuestas Catalogo (Fase 5 PLAN_REDISEÑO_ANALIZAR, mig 431)
+export type PropuestaAmbito = 'tipo_documento' | 'tipo_caract' | 'categoria_caract' | 'rel_tipo_caract'
+export type PropuestaFuente = 'LLM' | 'HUMANO' | 'CURACION'
+export type PropuestaEstado = 'PENDIENTE' | 'APROBADA' | 'RECHAZADA' | 'MODIFICADA'
+
+export interface PropuestaCatalogo {
+  id_propuesta: number
+  codigo_grupo?: string | null
+  ambito: PropuestaAmbito
+  codigo_propuesto?: string | null
+  nombre_propuesto: string
+  descripcion_propuesta?: string | null
+  categoria_destino?: string | null
+  tipo_destino?: string | null
+  fuente: PropuestaFuente
+  codigo_habilidad_origen?: string | null
+  evidencia?: Record<string, unknown> | null
+  frecuencia_observada: number
+  estado: PropuestaEstado
+  decision_admin?: string | null
+  decidido_por?: string | null
+  decidido_en?: string | null
+  created_at?: string | null
+  updated_at?: string | null
+}
+
 export interface CategoriaConCaracteristicasDocs {
   categoria: CategoriaCaractDocs
   caracteristicas: CaracteristicaDocumento[]

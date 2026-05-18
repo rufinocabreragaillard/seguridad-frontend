@@ -1090,6 +1090,42 @@ export const tiposDocumentoApi = {
     api.delete(`/tipos-documento/${codigo}/caracteristicas/${codigo_cat}/${codigo_tipo_c}`),
 }
 
+// ─── Propuestas Catalogo (Fase 5) ───────────────────────────────────────────
+
+import type { PropuestaCatalogo, PropuestaAmbito, PropuestaEstado, PropuestaFuente } from '@/lib/tipos'
+
+export const propuestasCatalogoApi = {
+  listar: (filtros?: {
+    estado?: PropuestaEstado
+    ambito?: PropuestaAmbito
+    fuente?: PropuestaFuente
+    incluir_decididas?: boolean
+  }) => {
+    const params = new URLSearchParams()
+    if (filtros?.estado) params.set('estado', filtros.estado)
+    if (filtros?.ambito) params.set('ambito', filtros.ambito)
+    if (filtros?.fuente) params.set('fuente', filtros.fuente)
+    if (filtros?.incluir_decididas) params.set('incluir_decididas', 'true')
+    const qs = params.toString()
+    return api.get<PropuestaCatalogo[]>(`/propuestas-catalogo${qs ? `?${qs}` : ''}`).then((r) => r.data)
+  },
+  detalle: (id: number) =>
+    api.get<PropuestaCatalogo>(`/propuestas-catalogo/${id}`).then((r) => r.data),
+  crear: (datos: Partial<PropuestaCatalogo>) =>
+    api.post<PropuestaCatalogo>('/propuestas-catalogo', datos).then((r) => r.data),
+  decidir: (
+    id: number,
+    decision: {
+      estado: 'APROBADA' | 'RECHAZADA' | 'MODIFICADA'
+      decision_admin?: string
+      codigo_propuesto?: string
+      nombre_propuesto?: string
+      descripcion_propuesta?: string
+    },
+  ) => api.post<PropuestaCatalogo>(`/propuestas-catalogo/${id}/decidir`, decision).then((r) => r.data),
+  eliminar: (id: number) => api.delete(`/propuestas-catalogo/${id}`),
+}
+
 // ─── Registro LLM ───────────────────────────────────────────────────────────
 
 export const registroLLMApi = {
