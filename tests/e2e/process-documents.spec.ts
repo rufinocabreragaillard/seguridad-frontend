@@ -71,6 +71,42 @@ test.describe('process-documents', () => {
     }
   });
 
+  test('tab Revertir: ESCANEADO→METADATA muestra conteo > 0 si hay docs ESCANEADO (regresión: cola_estados_docs no es fuente de verdad)', async ({ page }) => {
+    // Bug reportado: tras una primera reversa, intentar revertir ESCANEADO→METADATA
+    // mostraba "0 documentos a procesar" aunque la lista listaba 152 docs en ESCANEADO.
+    // Causa: el endpoint /revertir filtraba por JOIN obligatorio con cola_estados_docs
+    // por (codigo_usuario, codigo_estado_doc_destino), ignorando docs que llegaron
+    // al estado por flujos sin paso por cola. Fix: usar documentos.codigo_estado_doc
+    // como única fuente de verdad.
+    const tabs = page.locator('div.border-b button').filter({ hasText: /.+/ });
+    await tabs.nth(2).click();
+    await page.waitForTimeout(2500);
+
+    // Cambiar filtro de Estado a ESCANEADO
+    const estadoSelect = page.locator('select').first();
+    await estadoSelect.selectOption({ label: /Escaneado/i });
+
+    // Abrir dropdown de Proceso y elegir "Revertir Análisis (ESCANEADO → METADATA)"
+    const procesoBtn = page.locator('button:has-text("— Sin valor —")').first();
+    await procesoBtn.click();
+    const menuPortal = page.locator('body > div.fixed.z-\\[9999\\]').first();
+    await expect(menuPortal).toBeVisible({ timeout: 5000 });
+    const opcionEscanMeta = menuPortal.locator('button').filter({ hasText: /ESCANEADO\s*→\s*METADATA/ }).first();
+    await expect(opcionEscanMeta).toBeVisible({ timeout: 10000 });
+    await opcionEscanMeta.click();
+
+    // El botón Ejecutar debe mostrar conteo > 0 (no quedar deshabilitado en 0)
+    const ejecutarBtn = page.locator('button').filter({ hasText: /^(Ejecutar|Eliminar)( \(\d+\))?$/ }).first();
+    await expect(ejecutarBtn).toBeVisible({ timeout: 15000 });
+    await expect(ejecutarBtn).toHaveText(/\((\d+)\)/, { timeout: 20000 });
+    const texto = await ejecutarBtn.textContent();
+    const match = texto?.match(/\((\d+)\)/);
+    expect(match).not.toBeNull();
+    const conteo = parseInt(match![1]);
+    expect(conteo).toBeGreaterThan(0);
+    await expect(ejecutarBtn).toBeEnabled();
+  });
+
   test('tab Revertir: tope reduce el conteo del botón Ejecutar', async ({ page }) => {
     const tabs = page.locator('div.border-b button').filter({ hasText: /.+/ });
     await tabs.nth(2).click();
