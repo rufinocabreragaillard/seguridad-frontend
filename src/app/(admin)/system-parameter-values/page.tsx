@@ -237,6 +237,15 @@ export default function PaginaValoresParametrosGenerales() {
           <Boton
             variante="contorno"
             tamano="sm"
+            onClick={() => setConfirmarSync(true)}
+            disabled={sincronizando}
+          >
+            <RefreshCw size={15} className={sincronizando ? 'animate-spin' : ''} />
+            {sincronizando ? t('sincronizando') : t('sincronizarReplicas')}
+          </Boton>
+          <Boton
+            variante="contorno"
+            tamano="sm"
             disabled={items.length === 0}
             onClick={() =>
               exportarExcel(
@@ -252,15 +261,6 @@ export default function PaginaValoresParametrosGenerales() {
             }
           >
             <Download size={15} /> {tc('exportarExcel')}
-          </Boton>
-          <Boton
-            variante="contorno"
-            tamano="sm"
-            onClick={() => setConfirmarSync(true)}
-            disabled={sincronizando}
-          >
-            <RefreshCw size={15} className={sincronizando ? 'animate-spin' : ''} />
-            {sincronizando ? t('sincronizando') : t('sincronizarReplicas')}
           </Boton>
           <Boton variante="primario" onClick={abrirNuevo}>
             <Plus size={16} /> {t('nuevoValor')}

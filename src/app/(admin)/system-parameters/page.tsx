@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, Eye, Search, Download } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, Search, Download, RefreshCw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
@@ -14,7 +14,7 @@ import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
-import { datosBasicosApi, promptsApi } from '@/lib/api'
+import { datosBasicosApi, promptsApi, parametrosApi } from '@/lib/api'
 import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -74,6 +74,30 @@ export default function PaginaParametrosGenerales() {
   // ── Eliminación ────────────────────────────────────────────────────────────
   const [itemAEliminar, setItemAEliminar] = useState<ItemEliminar | null>(null)
   const [eliminando, setEliminando] = useState(false)
+
+  // ── Sincronizar réplicas ───────────────────────────────────────────────────
+  const [sincronizando, setSincronizando] = useState(false)
+  const [confirmarSync, setConfirmarSync] = useState(false)
+  const [resultadoSync, setResultadoSync] = useState<{
+    eliminados_grupo: number; eliminados_usuario: number;
+    insertados_grupo: number; insertados_usuario: number;
+  } | null>(null)
+
+  const ejecutarSincronizacion = async () => {
+    setSincronizando(true)
+    setResultadoSync(null)
+    setConfirmarSync(false)
+    try {
+      const res = await parametrosApi.sincronizarReplicas()
+      setResultadoSync({
+        eliminados_grupo: res.eliminados_grupo,
+        eliminados_usuario: res.eliminados_usuario,
+        insertados_grupo: res.insertados_grupo,
+        insertados_usuario: res.insertados_usuario,
+      })
+    } catch (e) { console.error(e) }
+    finally { setSincronizando(false) }
+  }
 
   // ── Carga ──────────────────────────────────────────────────────────────────
   const cargarCategorias = useCallback(async () => {
@@ -244,6 +268,21 @@ export default function PaginaParametrosGenerales() {
         ))}
       </div>
 
+      {/* Resultado sincronización */}
+      {resultadoSync && (
+        <div className="flex items-start gap-3 rounded-lg border border-exito/30 bg-exito/5 px-4 py-3">
+          <RefreshCw size={16} className="mt-0.5 text-exito shrink-0" />
+          <div className="text-sm text-texto">
+            <p className="font-medium text-exito mb-1">{t('sincronizacionCompletada')}</p>
+            <ul className="text-texto-muted space-y-0.5">
+              <li>{t('grupoEliminados', { n: resultadoSync.eliminados_grupo })} · {t('grupoInsertados', { n: resultadoSync.insertados_grupo })}</li>
+              <li>{t('usuarioEliminados', { n: resultadoSync.eliminados_usuario })} · {t('usuarioInsertados', { n: resultadoSync.insertados_usuario })}</li>
+            </ul>
+          </div>
+          <button onClick={() => setResultadoSync(null)} className="ml-auto text-texto-muted hover:text-texto text-xs">✕</button>
+        </div>
+      )}
+
       {/* ── Tab: Categorías ── */}
       {tabActiva === 'categorias' && (
         <>
@@ -252,6 +291,10 @@ export default function PaginaParametrosGenerales() {
               <Input placeholder={t('buscarCategoriaPlaceholder')} value={busquedaCat} onChange={(e) => setBusquedaCat(e.target.value)} icono={<Search size={15} />} />
             </div>
             <div className="flex gap-2 ml-auto">
+              <Boton variante="contorno" tamano="sm" onClick={() => setConfirmarSync(true)} disabled={sincronizando}>
+                <RefreshCw size={15} className={sincronizando ? 'animate-spin' : ''} />
+                {sincronizando ? tc('cargando') : t('sincronizarReplicas')}
+              </Boton>
               <Boton variante="contorno" tamano="sm" disabled={catsFiltradas.length === 0}
                 onClick={() => exportarExcel(catsFiltradas as unknown as Record<string, unknown>[], [
                   { titulo: t('colCodigo'), campo: 'categoria_parametro' },
@@ -800,6 +843,17 @@ export default function PaginaParametrosGenerales() {
           : ''}
         textoConfirmar={tc('eliminar')}
         cargando={eliminando}
+      />
+
+      {/* ── Confirmar sincronización ── */}
+      <ModalConfirmar
+        abierto={confirmarSync}
+        alCerrar={() => setConfirmarSync(false)}
+        alConfirmar={ejecutarSincronizacion}
+        titulo={t('sincronizarReplicas')}
+        mensaje={t('sincronizarReplicasConfirm')}
+        textoConfirmar={t('sincronizarReplicas')}
+        cargando={sincronizando}
       />
     </div>
   )

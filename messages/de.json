@@ -765,10 +765,17 @@
     "mdSincronizadoOk": "Dokument {accion} (Code {codigo}). Bereit zum CHUNKED + VECTORIZIEREN.",
     "mdErrorGenerar": "Fehler beim Generieren",
     "mdErrorSincronizar": "Fehler beim Synchronisieren",
-    "eliminarCategoriaConfirm": "Kategorie „{nombre}“ löschen? Ihre Typen werden ebenfalls gelöscht.",
-    "eliminarTipoConfirm": "Typ „{nombre}“ löschen?"
+    “eliminarCategoriaConfirm”: “Kategorie „{nombre}” löschen? Ihre Typen werden ebenfalls gelöscht.”,
+    “eliminarTipoConfirm”: “Typ „{nombre}” löschen?”,
+    “sincronizarReplicas”: “Replikate synchronisieren”,
+    “sincronizarReplicasConfirm”: “Diese Aktion löscht Gruppen- und Benutzerreplikate, die gemäß der Kategoriekonfiguration nicht repliziert werden sollen, und fügt fehlende mit dem Systemwert ein. Bestehende benutzerdefinierte Überschreibungen werden nicht geändert. Fortfahren?”,
+    “sincronizacionCompletada”: “Synchronisierung abgeschlossen”,
+    “grupoEliminados”: “Gruppe: {n} Replikate gelöscht”,
+    “grupoInsertados”: “{n} eingefügt”,
+    “usuarioEliminados”: “Benutzer: {n} Replikate gelöscht”,
+    “usuarioInsertados”: “{n} eingefügt”
   },
-  "people": {
+  “people”: {
     "titulo": "Personen",
     "subtitulo": "Personenregister der aktiven Gruppe",
     "buscarPlaceholder": "Nach Name oder Dokument suchen...",

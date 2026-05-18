@@ -766,7 +766,14 @@
     "mdErrorGenerar": "Erreur lors de la génération",
     "mdErrorSincronizar": "Erreur lors de la synchronisation",
     "eliminarCategoriaConfirm": "Supprimer la catégorie « {nombre} » ? Ses types seront également supprimés.",
-    "eliminarTipoConfirm": "Supprimer le type « {nombre} » ?"
+    "eliminarTipoConfirm": "Supprimer le type « {nombre} » ?",
+    "sincronizarReplicas": "Synchroniser les répliques",
+    "sincronizarReplicasConfirm": "Cette action supprimera les répliques de groupe et d'utilisateur qui ne doivent pas être répliquées selon la configuration des catégories, et insérera les manquantes avec la valeur du système. Les remplacements personnalisés existants ne seront pas modifiés. Continuer ?",
+    "sincronizacionCompletada": "Synchronisation terminée",
+    "grupoEliminados": "Groupe : {n} répliques supprimées",
+    "grupoInsertados": "{n} insérées",
+    "usuarioEliminados": "Utilisateur : {n} répliques supprimées",
+    "usuarioInsertados": "{n} insérées"
   },
   "people": {
     "titulo": "Personnes",

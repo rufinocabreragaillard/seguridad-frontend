@@ -803,7 +803,14 @@
     "mdErrorGenerar": "Error al generar",
     "mdErrorSincronizar": "Error al sincronizar",
     "eliminarCategoriaConfirm": "¿Eliminar la categoría \"{nombre}\"? Se eliminarán también sus tipos.",
-    "eliminarTipoConfirm": "¿Eliminar el tipo \"{nombre}\"?"
+    "eliminarTipoConfirm": "¿Eliminar el tipo \"{nombre}\"?",
+    "sincronizarReplicas": "Sincronizar Réplicas",
+    "sincronizarReplicasConfirm": "Esta acción eliminará las réplicas en grupo y usuario que no deben replicarse según la configuración de categorías, e insertará las que falten con el valor del sistema. Las réplicas con override personalizado no serán modificadas. ¿Continuar?",
+    "sincronizacionCompletada": "Sincronización completada",
+    "grupoEliminados": "Grupo: {n} réplicas eliminadas",
+    "grupoInsertados": "{n} insertadas",
+    "usuarioEliminados": "Usuario: {n} réplicas eliminadas",
+    "usuarioInsertados": "{n} insertadas"
   },
   "people": {
     "titulo": "Personas",
