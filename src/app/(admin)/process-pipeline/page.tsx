@@ -151,10 +151,17 @@ export default function PaginaCargaDocsUsuario() {
   const cargarUbicaciones = useCallback(async () => {
     setCargandoUbs(true)
     try { setUbicaciones(await ubicacionesDocsApi.listar()) }
+    catch { /* el estado vacío se renderiza igual */ }
     finally { setCargandoUbs(false) }
   }, [])
 
-  useEffect(() => { cargarUbicaciones() }, [cargarUbicaciones])
+  // Espera a que el usuario esté hidratado (userId) para evitar la primera
+  // llamada sin JWT, que vuelve sin datos y deja la UI vacía hasta que el
+  // usuario refresca. También re-carga si cambia el grupo activo.
+  useEffect(() => {
+    if (!userId) return
+    cargarUbicaciones()
+  }, [cargarUbicaciones, userId, grupoActivo])
 
   // ── Parámetro de grupo: NIVEL_CARGA_SEMANTICA (ALTO | BAJO) ──
   const [nivelCarga, setNivelCarga] = useState<'ALTO' | 'BAJO'>('ALTO')
@@ -523,9 +530,11 @@ export default function PaginaCargaDocsUsuario() {
 
   useEffect(() => {
     getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) { dirHandleRef.current = h; setDirHandleState(h) } })
-    cargarConteos()
+    // Solo dispara la carga de conteos cuando el usuario ya está hidratado;
+    // de otro modo la primera llamada puede salir sin JWT y devolver 0.
+    if (userId) cargarConteos()
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grupoActivo])
+  }, [grupoActivo, userId])
 
   // Chequeo de huérfanos al montar / cambiar de grupo. Sólo abre el modal si hay > 0.
   useEffect(() => {
@@ -1087,16 +1096,19 @@ export default function PaginaCargaDocsUsuario() {
                           </p>
                         )}
                       </div>
-                    ) : cargandoUbs ? (
-                      <p className="text-xs text-texto-muted text-center py-2">Cargando…</p>
-                    ) : raicesUbic.length === 0 ? (
-                      <p className="text-xs text-texto-muted text-center py-2 leading-relaxed">
-                        Sin ubicaciones.<br />Carga un directorio para empezar.
-                      </p>
-                    ) : (
+                    ) : raicesUbic.length > 0 ? (
                       <div className="flex flex-col max-h-60 overflow-y-auto -mx-2">
                         {raicesUbic.map((u) => renderNodoUbic(u))}
                       </div>
+                    ) : cargandoUbs ? (
+                      <div className="flex items-center justify-center gap-2 py-4">
+                        <Loader2 size={14} className="text-texto-muted animate-spin" />
+                        <span className="text-xs text-texto-muted">Cargando ubicaciones…</span>
+                      </div>
+                    ) : (
+                      <p className="text-xs text-texto-muted text-center py-2 leading-relaxed">
+                        Sin ubicaciones.<br />Carga un directorio para empezar.
+                      </p>
                     )}
                   </div>
                 </div>
