@@ -28,7 +28,7 @@ interface Props {
 export function TablaUsoLLM({ filas, mostrarGrupo = false, sinFilas = 'Sin llamadas registradas' }: Props) {
   const [detalle, setDetalle] = useState<LLMUsoFila | null>(null)
 
-  const colSpan = mostrarGrupo ? 13 : 12
+  const colSpan = mostrarGrupo ? 14 : 13
 
   return (
     <>
@@ -42,7 +42,8 @@ export function TablaUsoLLM({ filas, mostrarGrupo = false, sinFilas = 'Sin llama
             <TablaTh>Key</TablaTh>
             <TablaTh>Usuario</TablaTh>
             <TablaTh>Función</TablaTh>
-            <TablaTh>Operación</TablaTh>
+            <TablaTh>Habilidad</TablaTh>
+            <TablaTh>Proceso</TablaTh>
             <TablaTh className="text-right">Tok. In</TablaTh>
             <TablaTh className="text-right">Tok. Out</TablaTh>
             <TablaTh className="text-right">Costo</TablaTh>
@@ -71,7 +72,8 @@ export function TablaUsoLLM({ filas, mostrarGrupo = false, sinFilas = 'Sin llama
               </TablaTd>
               <TablaTd className="text-xs">{f.codigo_usuario ?? '—'}</TablaTd>
               <TablaTd className="text-xs">{f.codigo_funcion ?? '—'}</TablaTd>
-              <TablaTd className="text-xs">{f.operacion ?? '—'}</TablaTd>
+              <TablaTd className="text-xs font-mono">{f.codigo_habilidad}</TablaTd>
+              <TablaTd className="text-xs font-mono">{f.codigo_proceso ?? '—'}</TablaTd>
               <TablaTd className="text-right">{fmtInt(f.tokens_input)}</TablaTd>
               <TablaTd className="text-right">{fmtInt(f.tokens_output)}</TablaTd>
               <TablaTd className="text-right font-medium">{fmtUsd(f.costo_estimado_usd)}</TablaTd>
@@ -108,8 +110,8 @@ export function TablaUsoLLM({ filas, mostrarGrupo = false, sinFilas = 'Sin llama
               <Campo label="Entidad" valor={detalle.codigo_entidad ?? '—'} />
               <Campo label="Usuario" valor={detalle.codigo_usuario ?? '—'} />
               <Campo label="Función" valor={detalle.codigo_funcion ?? '—'} />
-              <Campo label="Habilidad" valor={detalle.codigo_habilidad ?? '—'} />
-              <Campo label="Operación" valor={detalle.operacion ?? '—'} />
+              <Campo label="Habilidad" valor={detalle.codigo_habilidad} />
+              <Campo label="Proceso" valor={detalle.codigo_proceso ?? '—'} mono />
               <Campo label="Proveedor" valor={detalle.proveedor} />
               <Campo label="Modelo" valor={detalle.modelo} mono />
               <Campo label="Key" valor={detalle.uso_key_casa ? 'Casa (key propia)' : (detalle.alias_credencial ?? 'Grupo')} />
