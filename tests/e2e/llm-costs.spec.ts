@@ -11,8 +11,8 @@ test.describe.serial('Costos LLM (/llm-cost)', () => {
   })
 
   test('carga la página y muestra tarjetas de resumen', async ({ page }) => {
-    await expect(page.locator('text=Mes actual')).toBeVisible({ timeout: 15000 })
-    await expect(page.locator('text=Costo total')).toBeVisible()
+    await expect(page.locator('text=Mes actual').first()).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('text=Costo total').first()).toBeVisible()
   })
 
   test('tabla muestra columnas Función, Habilidad y Proceso (mig 443) y NO Operación', async ({ page }) => {
