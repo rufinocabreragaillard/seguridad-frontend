@@ -886,6 +886,13 @@ export interface ProcesoInstancia {
   updated_at: string | null
 }
 
+export interface ProcesoInstanciaListResponse {
+  items: ProcesoInstancia[]
+  total: number
+  page: number
+  page_size: number
+}
+
 export const procesosInstanciasApi = {
   listar: (params?: {
     codigo_categoria_proceso?: string
@@ -894,9 +901,13 @@ export const procesosInstanciasApi = {
     codigo_grupo?: string
     codigo_entidad?: string
     codigo_usuario?: string
+    codigo_usuario_asignado?: string
     q?: string
-    limit?: number
-  }) => api.get<ProcesoInstancia[]>('/procesos-instancias', { params }).then((r) => r.data),
+    page?: number
+    page_size?: number
+    order_by?: string
+    order_dir?: 'asc' | 'desc'
+  }) => api.get<ProcesoInstanciaListResponse>('/procesos-instancias', { params }).then((r) => r.data),
   obtener: (codigo: string) =>
     api.get<ProcesoInstancia>(`/procesos-instancias/${codigo}`).then((r) => r.data),
   crear: (data: {
