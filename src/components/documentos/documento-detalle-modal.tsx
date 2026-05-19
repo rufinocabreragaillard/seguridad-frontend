@@ -18,6 +18,13 @@ function esPayload(v: unknown): v is PayloadCifrado {
   return !!v && typeof v === 'object' && 'cifrado' in (v as object) && 'texto_cifrado' in (v as object)
 }
 
+/** Valor sin contenido real — null, string vacío, o payload sin texto cifrado. */
+function esValorVacio(v: string | number | PayloadCifrado | null | undefined): boolean {
+  if (v == null || v === '') return true
+  if (esPayload(v)) return !v.cifrado || !v.texto_cifrado
+  return false
+}
+
 /** Renderiza un valor que puede llegar como string plano o payload cifrado. */
 function ValorCampo({
   valor,
@@ -562,10 +569,10 @@ export function DocumentoDetalleModal({
                           return <span className="text-texto">{new Intl.NumberFormat('es-CL').format(n)}</span>
                         }
                         const campos: { valor: ValorCampoTipo; render: (t: string) => React.ReactNode }[] = []
-                        if (c.valor_texto_docs != null) campos.push({ valor: c.valor_texto_docs, render: inlineRender })
-                        if (c.valor_numerico_docs != null) campos.push({ valor: c.valor_numerico_docs, render: numericoRender })
-                        if (c.valor_fecha_docs != null) campos.push({ valor: c.valor_fecha_docs, render: inlineRender })
-                        if (c.comentarios != null) campos.push({ valor: c.comentarios, render: inlineRender })
+                        if (!esValorVacio(c.valor_texto_docs)) campos.push({ valor: c.valor_texto_docs, render: inlineRender })
+                        if (!esValorVacio(c.valor_numerico_docs)) campos.push({ valor: c.valor_numerico_docs, render: numericoRender })
+                        if (!esValorVacio(c.valor_fecha_docs)) campos.push({ valor: c.valor_fecha_docs, render: inlineRender })
+                        if (!esValorVacio(c.comentarios)) campos.push({ valor: c.comentarios, render: inlineRender })
                         if (campos.length === 0) return null
                         return (
                           <div key={c.id_caracteristica_docs} className="text-sm flex items-start gap-2 flex-wrap">
