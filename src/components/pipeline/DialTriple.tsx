@@ -90,6 +90,8 @@ interface DialTripleProps {
   colorInterno?: string
   /** Diámetro total del dial en px. Default 220. */
   tamano?: number
+  /** Si false, los tres anillos y el % se renderizan en 0 (estado "no iniciado"). Default true. */
+  ejecutando?: boolean
 }
 
 export function DialTriple({
@@ -101,6 +103,7 @@ export function DialTriple({
   colorMedio = '#0EA5E9',
   colorInterno = '#22C55E',
   tamano = 220,
+  ejecutando = true,
 }: DialTripleProps) {
   const cx = tamano / 2
   const cy = tamano / 2
@@ -112,19 +115,22 @@ export function DialTriple({
   const rMedio = rExterno - grosor - margen
   const rInterno = rMedio - grosor - margen
 
-  // Progresos normalizados
-  const progLote = lote.total > 0 ? lote.actual / lote.total : 0
-  const progEtapa = etapa.total > 0 ? (etapa.indiceActivo + 1) / etapa.total : 0
-  const progActual = actual.total > 0 ? actual.completados / actual.total : 0
+  // Progresos normalizados. Si !ejecutando, se fuerzan a 0 (estado "no iniciado")
+  // para que la rueda no aparezca "llena" cuando aún no se ha empezado nada.
+  const progLote = ejecutando && lote.total > 0 ? lote.actual / lote.total : 0
+  const progEtapa = ejecutando && etapa.total > 0 ? (etapa.indiceActivo + 1) / etapa.total : 0
+  const progActual = ejecutando && actual.total > 0 ? actual.completados / actual.total : 0
 
   // % global = combinación ponderada. Cada lote vale 1/lote.total del total.
   // Dentro del lote, el progreso es (etapa completas + fracción de etapa activa) / etapa.total.
   const fraccionLote = etapa.total > 0
     ? (etapa.indiceActivo + progActual) / etapa.total
     : 0
-  const pctGlobal = lote.total > 0
-    ? Math.min(100, Math.round(((Math.max(0, lote.actual - 1) + fraccionLote) / lote.total) * 100))
-    : Math.round(progActual * 100)
+  const pctGlobal = !ejecutando
+    ? 0
+    : lote.total > 0
+      ? Math.min(100, Math.round(((Math.max(0, lote.actual - 1) + fraccionLote) / lote.total) * 100))
+      : Math.round(progActual * 100)
 
   return (
     <div className="inline-flex flex-col items-center gap-2">

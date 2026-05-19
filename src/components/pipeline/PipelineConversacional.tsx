@@ -164,6 +164,7 @@ export function PipelineConversacional({
             }}
             actual={enProceso.actual}
             pulsando={ejecutando ? 'interno' : null}
+            ejecutando={ejecutando}
             tamano={220}
           />
 
