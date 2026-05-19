@@ -21,6 +21,7 @@ import {
   type UbicacionOpt,
 } from '../_lib/ejecutar-paso'
 import { PipelineNarrativo } from '@/components/pipeline/PipelineNarrativo'
+import { NivelCargaToggle } from './nivel-carga-toggle'
 
 // Pasos 3-6: procesamiento de documentos
 const PASOS_PIPELINE = [
@@ -517,6 +518,7 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
                 })()}
               </span>
               <div className="ml-auto flex items-center gap-3">
+                <NivelCargaToggle disabled={ejecutando} />
                 <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando || !!pendingCarga}>
                   {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
                   {t('botonVectorizar')}

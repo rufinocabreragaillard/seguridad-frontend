@@ -24,6 +24,7 @@ import { abrirDocumento, descargarDocumento, abrirVentanaLoading, esVisualizable
 import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
+import { NivelCargaToggle } from './_components/nivel-carga-toggle'
 import { escanearArchivosDirectorio, escanearDirectorio as escanearDirectorioUbicaciones } from '@/lib/escanear-directorio'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -1607,6 +1608,7 @@ function PaginaProcesarDocumentosInterna() {
                   Eliminar índices sin archivo ({docsSinDisco.length})
                 </Boton>
               )}
+              <NivelCargaToggle disabled={ejecutando} />
               <Boton variante="primario" onClick={ejecutar}
                 disabled={ejecutando || (!!procesoSel && escaneandoDir) || !procesoSel}>
                 {(ejecutando || (!!procesoSel && escaneandoDir)) ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
