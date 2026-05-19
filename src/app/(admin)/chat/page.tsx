@@ -783,12 +783,9 @@ export default function PaginaChatUsuario() {
           {/* Área principal de chat */}
           <main className="flex-1 flex flex-col border border-borde rounded-lg overflow-hidden min-w-0" style={{ background: '#f8f9fb' }}>
             <>
-              {/* Cabecera del chat: titulo + acciones (debug super-admin) */}
+              {/* Cabecera del chat: acciones (debug super-admin) */}
               {esSuperAdmin && convActivaId != null && (
-                <div className="border-b border-borde px-4 py-2 flex items-center justify-between gap-2 bg-fondo rounded-t-lg">
-                  <span className="text-xs text-texto-muted truncate">
-                    {conversaciones.find((c) => c.id_conversacion === convActivaId)?.titulo || ''}
-                  </span>
+                <div className="border-b border-borde px-4 py-2 flex items-center justify-end gap-2 bg-fondo rounded-t-lg">
                   <button
                     type="button"
                     onClick={verSystemPrompt}
