@@ -39,7 +39,8 @@ import { BotonChat } from '@/components/ui/boton-chat'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { PipelineConversacional } from '@/components/pipeline/PipelineConversacional'
-import { FASES_NARRATIVAS, formatearMinutos } from '@/lib/pipeline-narrativo'
+import { formatearMinutos } from '@/lib/pipeline-narrativo'
+import { useFasesNarrativas } from '@/hooks/useFasesNarrativas'
 
 // ── Pipeline (v2) ─────────────────────────────────────────────────────────────
 // Numeración global de pasos:
@@ -87,6 +88,7 @@ export default function PaginaCargaDocsUsuario() {
   const t = useTranslations('processPipeline')
   const tc = useTranslations('common')
   const { grupoActivo, usuario } = useAuth()
+  const fasesNarrativas = useFasesNarrativas()
   const userId = usuario?.codigo_usuario ?? null
 
   const [procesos, setProcesos] = useState<ProcesoCatalogo[]>([])
@@ -999,10 +1001,10 @@ export default function PaginaCargaDocsUsuario() {
             {(() => {
               const idxActivo = PASOS.findIndex(p => progresos[p.key]?.estado === 'activo')
               const idxFase = idxActivo >= 0
-                ? FASES_NARRATIVAS.findIndex(f => f.estadoDestino === PASOS[idxActivo].estadoDestino)
+                ? fasesNarrativas.findIndex(f => f.estadoDestino === PASOS[idxActivo].estadoDestino)
                 : -1
               const indiceActivo = idxFase >= 0 ? idxFase : 0
-              const nombreEtapa = idxFase >= 0 ? FASES_NARRATIVAS[idxFase].etiquetaCorta : 'CARGANDO'
+              const nombreEtapa = idxFase >= 0 ? fasesNarrativas[idxFase].etiquetaCorta : 'CARGANDO'
 
               const paq = resumenPipeline?.paquete
               const lote = paq && paq.paquetes_totales > 0
@@ -1125,7 +1127,7 @@ export default function PaginaCargaDocsUsuario() {
                   enProceso={{
                     mensaje: mensajeEnProc,
                     lote,
-                    etapa: { indiceActivo, total: FASES_NARRATIVAS.length, nombre: nombreEtapa },
+                    etapa: { indiceActivo, total: fasesNarrativas.length, nombre: nombreEtapa },
                     actual,
                     estadisticas: {
                       vectorizados: docsVectorizados,

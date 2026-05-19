@@ -182,7 +182,11 @@ export function DialTriple({
             textAnchor="middle"
             dominantBaseline="middle"
             className="fill-texto-muted"
-            style={{ fontSize: Math.round(tamano * 0.055), fontWeight: 500, letterSpacing: '0.08em', textTransform: 'uppercase' }}
+            // Acotar el ancho al 85% del diámetro interno para que etiquetas
+            // largas se compriman en vez de salirse del círculo.
+            textLength={Math.round(rInterno * 2 * 0.85)}
+            lengthAdjust="spacingAndGlyphs"
+            style={{ fontSize: Math.round(tamano * 0.055), fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}
           >
             {etapa.nombre}
           </text>
