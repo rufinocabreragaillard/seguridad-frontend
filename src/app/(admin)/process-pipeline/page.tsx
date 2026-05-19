@@ -142,7 +142,7 @@ export default function PaginaCargaDocsUsuario() {
   const [escaneandoDir, setEscaneandoDir] = useState(false)
   const [sincronizando, setSincronizando] = useState(false)
   const [datosEscaneo, setDatosEscaneo] = useState<{ nombreRaiz: string; directorios: DirectorioEscaneado[] } | null>(null)
-  const [resultadoSync, setResultadoSync] = useState<{ insertadas: number; eliminadas: number; actualizadas: number; total: number; excluidas: number } | null>(null)
+  const [resultadoSync, setResultadoSync] = useState<{ insertadas: number; deshabilitadas: number; actualizadas: number; total: number; excluidas: number } | null>(null)
   // Barra de progreso inline para sincronización (sin modal)
   type SyncEstado = 'idle' | 'escaneando' | 'sincronizando' | 'listo' | 'error'
   const [syncEstado, setSyncEstado] = useState<SyncEstado>('idle')
@@ -293,7 +293,13 @@ export default function PaginaCargaDocsUsuario() {
     if (!datosEscaneo) return
     setSincronizando(true)
     try {
-      const res = await ubicacionesDocsApi.sincronizar({ directorios: datosEscaneo.directorios })
+      // Pasar codigo_ubicacion_raiz para que el backend deshabilite las
+      // ubicaciones del subárbol que ya no aparecen en el escaneo.
+      const raiz = datosEscaneo.directorios.find((d) => !d.codigo_ubicacion_superior)
+      const res = await ubicacionesDocsApi.sincronizar({
+        directorios: datosEscaneo.directorios,
+        codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+      })
       setResultadoSync(res); cargarUbicaciones()
       setEtapa1Estado('completado')
     } catch (e) {
@@ -312,8 +318,12 @@ export default function PaginaCargaDocsUsuario() {
       if (!r) { setSyncEstado('idle'); return }
       setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
       setSyncEstado('sincronizando')
-      const res = await ubicacionesDocsApi.sincronizar({ directorios: r.directorios })
-      setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.eliminadas} eliminadas`)
+      const raiz = r.directorios.find((d) => !d.codigo_ubicacion_superior)
+      const res = await ubicacionesDocsApi.sincronizar({
+        directorios: r.directorios,
+        codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+      })
+      setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.deshabilitadas} deshabilitadas`)
       setSyncEstado('listo')
       setEtapa1Estado('completado')
       cargarUbicaciones()
@@ -338,11 +348,14 @@ export default function PaginaCargaDocsUsuario() {
     return { filtrados, excluidos: dirs.length - filtrados.length }
   }
   const calcularDiff = () => {
-    if (!datosEscaneo) return { nuevas: 0, aEliminar: 0, sinCambio: 0, excluidas: 0 }
+    if (!datosEscaneo) return { nuevas: 0, aDeshabilitar: 0, sinCambio: 0, excluidas: 0 }
     const { filtrados, excluidos } = filtrarPorInhabilitadas(datosEscaneo.directorios)
     const actuals = new Set(ubicaciones.map((u) => u.codigo_ubicacion))
     const escans = new Set(filtrados.map((d) => d.codigo_ubicacion))
-    return { nuevas: filtrados.filter((d) => !actuals.has(d.codigo_ubicacion)).length, aEliminar: ubicaciones.filter((u) => !escans.has(u.codigo_ubicacion)).length, sinCambio: filtrados.filter((d) => actuals.has(d.codigo_ubicacion)).length, excluidas: excluidos }
+    // "A deshabilitar" = ubicaciones que están en BD habilitadas y NO aparecen en el escaneo.
+    // El backend marcará ubicacion_habilitada=false; nunca borra datos.
+    const aDeshabilitar = ubicaciones.filter((u) => u.ubicacion_habilitada && !escans.has(u.codigo_ubicacion)).length
+    return { nuevas: filtrados.filter((d) => !actuals.has(d.codigo_ubicacion)).length, aDeshabilitar, sinCambio: filtrados.filter((d) => actuals.has(d.codigo_ubicacion)).length, excluidas: excluidos }
   }
 
   // Render árbol
@@ -721,11 +734,15 @@ export default function PaginaCargaDocsUsuario() {
         if (!soportaDirectoryPicker()) { setMensajeError(t('alertNavegadorNoSoporta') || 'Navegador no soporta File System Access API'); return }
         setPaso(PASO_INDEXAR, { total: 1, completados: 0, estado: 'activo' })
         try {
-          const r = await escanearDirectorio()
+          const r = await escanearDirectorio(null, clavesDeshabilitadasBD())
           if (!r) { setPaso(PASO_INDEXAR, { estado: 'listo' }) /* usuario canceló */; return }
           setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
-          const res = await ubicacionesDocsApi.sincronizar({ directorios: r.directorios })
-          setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.eliminadas} eliminadas`)
+          const raiz = r.directorios.find((d) => !d.codigo_ubicacion_superior)
+          const res = await ubicacionesDocsApi.sincronizar({
+            directorios: r.directorios,
+            codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+          })
+          setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.deshabilitadas} deshabilitadas`)
           setPaso(PASO_INDEXAR, { total: 1, completados: 1, estado: 'listo' })
           setEtapa1Estado('completado')
           await cargarUbicaciones()
@@ -1373,7 +1390,7 @@ export default function PaginaCargaDocsUsuario() {
               {diff && (
                 <div className={`grid ${diff.excluidas > 0 ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>
                   <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-green-600">{diff.nuevas}</p><p className="text-xs text-texto-muted">{t('nuevas')}</p></div>
-                  <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-red-600">{diff.aEliminar}</p><p className="text-xs text-texto-muted">{t('aEliminar')}</p></div>
+                  <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-amber-600">{diff.aDeshabilitar}</p><p className="text-xs text-texto-muted">{t('aDeshabilitar')}</p></div>
                   <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-texto-muted">{diff.sinCambio}</p><p className="text-xs text-texto-muted">{t('sinCambio')}</p></div>
                   {diff.excluidas > 0 && <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-center"><p className="stat-number text-amber-600">{diff.excluidas}</p><p className="text-xs text-amber-700">{t('excluidasLabel')}</p></div>}
                 </div>
@@ -1399,7 +1416,7 @@ export default function PaginaCargaDocsUsuario() {
                   {datosEscaneo.directorios.length > 30 && <p className="px-4 py-2 text-xs text-texto-muted text-center">{t('yMas', { n: datosEscaneo.directorios.length - 30 })}</p>}
                 </div>
               </div>
-              {diff && diff.aEliminar > 0 && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700">{t('avisoEliminacion', { n: diff.aEliminar })}</div>}
+              {diff && diff.aDeshabilitar > 0 && <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 text-sm text-amber-700">{t('avisoDeshabilitacion', { n: diff.aDeshabilitar })}</div>}
               <div className="flex gap-3 justify-end pt-1">
                 <Boton variante="contorno" onClick={cerrarModalCarga}>{tc('cancelar')}</Boton>
                 <Boton variante="primario" onClick={ejecutarSincronizacion} cargando={sincronizando}><RefreshCw size={14} />{t('btnSincronizar')}</Boton>
@@ -1411,7 +1428,7 @@ export default function PaginaCargaDocsUsuario() {
               <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center"><p className="text-lg font-medium text-green-800">{t('sincronizacionCompletada')}</p></div>
               <div className={`grid ${resultadoSync.excluidas > 0 ? 'grid-cols-4' : 'grid-cols-3'} gap-3`}>
                 <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-green-600">{resultadoSync.insertadas}</p><p className="text-xs text-texto-muted">{t('insertadas')}</p></div>
-                <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-red-600">{resultadoSync.eliminadas}</p><p className="text-xs text-texto-muted">{t('eliminadasLabel')}</p></div>
+                <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-amber-600">{resultadoSync.deshabilitadas}</p><p className="text-xs text-texto-muted">{t('deshabilitadasLabel')}</p></div>
                 <div className="border border-borde rounded-lg p-3 text-center"><p className="stat-number text-primario">{resultadoSync.actualizadas}</p><p className="text-xs text-texto-muted">{t('actualizadas')}</p></div>
                 {resultadoSync.excluidas > 0 && <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 text-center"><p className="stat-number text-amber-600">{resultadoSync.excluidas}</p><p className="text-xs text-amber-700">{t('excluidasLabel')}</p></div>}
               </div>

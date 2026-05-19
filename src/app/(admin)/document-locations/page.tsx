@@ -119,7 +119,7 @@ export default function PaginaUbicacionesDocs() {
   } | null>(null)
   const [resultadoSync, setResultadoSync] = useState<{
     insertadas: number
-    eliminadas: number
+    deshabilitadas: number
     actualizadas: number
     total: number
     excluidas: number
@@ -578,14 +578,16 @@ export default function PaginaUbicacionesDocs() {
   }
 
   const calcularDiferencias = () => {
-    if (!datosEscaneo) return { nuevas: 0, aEliminar: 0, sinCambio: 0, excluidas: 0 }
+    if (!datosEscaneo) return { nuevas: 0, aDeshabilitar: 0, sinCambio: 0, excluidas: 0 }
     const { filtrados: dirsFiltrados, excluidos } = filtrarPorInhabilitadas(datosEscaneo.directorios)
     const codigosActuales = new Set(arbolCompletoCache.map((u) => u.codigo_ubicacion))
     const codigosEscaneados = new Set(dirsFiltrados.map((d) => d.codigo_ubicacion))
     const nuevas = dirsFiltrados.filter((d) => !codigosActuales.has(d.codigo_ubicacion)).length
-    // Acotar "a eliminar" al subárbol de la raíz escaneada — coincide con la
-    // lógica del backend (Opción A): sólo se borran descendientes (o la raíz
-    // misma) que estén en BD pero no en el escaneo.
+    // Acotar "a deshabilitar" al subárbol de la raíz escaneada — coincide con
+    // la lógica del backend (sólo toca descendientes de la raíz). NO destruye
+    // nada: solo marca ubicacion_habilitada=false. Documentos quedan intactos.
+    // Solo cuenta las que están actualmente habilitadas (las ya inhabilitadas
+    // no se vuelven a tocar).
     const codigoRaiz = datosEscaneo.directorios.find((d) => !d.codigo_ubicacion_superior)?.codigo_ubicacion
     const enSubarbol = new Set<string>()
     if (codigoRaiz && codigosActuales.has(codigoRaiz)) {
@@ -609,11 +611,11 @@ export default function PaginaUbicacionesDocs() {
         }
       }
     }
-    const aEliminar = arbolCompletoCache.filter(
-      (u) => enSubarbol.has(u.codigo_ubicacion) && !codigosEscaneados.has(u.codigo_ubicacion)
+    const aDeshabilitar = arbolCompletoCache.filter(
+      (u) => u.ubicacion_habilitada && enSubarbol.has(u.codigo_ubicacion) && !codigosEscaneados.has(u.codigo_ubicacion)
     ).length
     const sinCambio = dirsFiltrados.length - nuevas
-    return { nuevas, aEliminar, sinCambio, excluidas: excluidos }
+    return { nuevas, aDeshabilitar, sinCambio, excluidas: excluidos }
   }
 
   // La búsqueda es server-side (modo q en el endpoint). Aquí filtrados === ubicaciones.
@@ -1138,8 +1140,8 @@ export default function PaginaUbicacionesDocs() {
                     <p className="text-xs text-texto-muted">Nuevas</p>
                   </div>
                   <div className="border border-borde rounded-lg p-3 text-center">
-                    <p className="stat-number text-red-600">{diff.aEliminar}</p>
-                    <p className="text-xs text-texto-muted">A eliminar</p>
+                    <p className="stat-number text-amber-600">{diff.aDeshabilitar}</p>
+                    <p className="text-xs text-texto-muted">A deshabilitar</p>
                   </div>
                   <div className="border border-borde rounded-lg p-3 text-center">
                     <p className="stat-number text-texto-muted">{diff.sinCambio}</p>
@@ -1222,10 +1224,10 @@ export default function PaginaUbicacionesDocs() {
                 </div>
               )}
 
-              {diff && diff.aEliminar > 0 && (
-                <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
-                  <p className="text-sm text-red-700">
-                    Se eliminarán {diff.aEliminar} ubicación(es) que ya no existen en el directorio seleccionado.
+              {diff && diff.aDeshabilitar > 0 && (
+                <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+                  <p className="text-sm text-amber-700">
+                    Se deshabilitarán {diff.aDeshabilitar} ubicación(es) que ya no existen en el directorio seleccionado. Sus documentos quedan intactos y pueden volver a habilitarse manualmente.
                   </p>
                 </div>
               )}
@@ -1255,8 +1257,8 @@ export default function PaginaUbicacionesDocs() {
                   <p className="text-xs text-texto-muted">Insertadas</p>
                 </div>
                 <div className="border border-borde rounded-lg p-3 text-center">
-                  <p className="stat-number text-red-600">{resultadoSync.eliminadas}</p>
-                  <p className="text-xs text-texto-muted">Eliminadas</p>
+                  <p className="stat-number text-amber-600">{resultadoSync.deshabilitadas}</p>
+                  <p className="text-xs text-texto-muted">Deshabilitadas</p>
                 </div>
                 <div className="border border-borde rounded-lg p-3 text-center">
                   <p className="stat-number text-primario">{resultadoSync.actualizadas}</p>

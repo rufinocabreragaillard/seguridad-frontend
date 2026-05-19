@@ -165,10 +165,14 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
       if (!resultado) { setP1Estado('esperando'); return false }
       const total = resultado.directorios.length
       setP1Total(total)
-      const sync = await ubicacionesDocsApi.sincronizar({ directorios: resultado.directorios })
+      const raiz = resultado.directorios.find((d) => !d.codigo_ubicacion_superior)
+      const sync = await ubicacionesDocsApi.sincronizar({
+        directorios: resultado.directorios,
+        codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+      })
       setP1Completados(total)
       setP1Estado('listo')
-      setP1Mensaje(t('p1Resultado', { insertadas: sync.insertadas ?? 0, actualizadas: sync.actualizadas ?? 0, eliminadas: sync.eliminadas ?? 0 }))
+      setP1Mensaje(t('p1Resultado', { insertadas: sync.insertadas ?? 0, actualizadas: sync.actualizadas ?? 0, deshabilitadas: sync.deshabilitadas ?? 0 }))
       return true
     } catch (e) {
       setP1Estado('error'); setP1Mensaje(e instanceof Error ? e.message : t('errorIndexar')); return false
