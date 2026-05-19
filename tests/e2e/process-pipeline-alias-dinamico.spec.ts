@@ -6,7 +6,13 @@ import { test, expect } from '@playwright/test';
 
 test.describe.configure({ mode: 'serial' });
 test.describe('process-pipeline — alias dinámico de tipos_proceso en el dial', () => {
-  test.beforeEach(async ({ page }) => {
+  test('llama al endpoint /procesos-datos-basicos/tipos con categoria PROCESAR_DOCS', async ({ page }) => {
+    // Registrar el listener ANTES de navegar para no perder la respuesta.
+    const respPromise = page.waitForResponse(
+      (r) => /\/procesos-datos-basicos\/tipos/.test(r.url()) && r.status() === 200,
+      { timeout: 30000 }
+    );
+
     await page.goto('/');
     await page.getByLabel(/email|correo/i).fill('rufino@rufinocabrera.cl');
     await page.getByLabel(/password|contraseña/i).fill('Test1234!');
@@ -14,13 +20,8 @@ test.describe('process-pipeline — alias dinámico de tipos_proceso en el dial'
     await expect(page).not.toHaveURL(/login/i, { timeout: 15000 });
     await page.goto('/process-pipeline');
     await expect(page).toHaveURL(/process-pipeline/, { timeout: 10000 });
-  });
 
-  test('llama al endpoint /procesos-datos-basicos/tipos con categoria PROCESAR_DOCS', async ({ page }) => {
-    const resp = await page.waitForResponse(
-      (r) => /\/procesos-datos-basicos\/tipos/.test(r.url()) && r.status() === 200,
-      { timeout: 15000 }
-    );
+    const resp = await respPromise;
     const url = new URL(resp.url());
     expect(url.searchParams.get('categoria')).toBe('PROCESAR_DOCS');
     const body = await resp.json();
@@ -34,6 +35,14 @@ test.describe('process-pipeline — alias dinámico de tipos_proceso en el dial'
   });
 
   test('el texto de la etiqueta no excede el diámetro interno del SVG', async ({ page }) => {
+    await page.goto('/');
+    await page.getByLabel(/email|correo/i).fill('rufino@rufinocabrera.cl');
+    await page.getByLabel(/password|contraseña/i).fill('Test1234!');
+    await page.getByRole('button', { name: /iniciar sesión|ingresar|login/i }).click();
+    await expect(page).not.toHaveURL(/login/i, { timeout: 15000 });
+    await page.goto('/process-pipeline');
+    await expect(page).toHaveURL(/process-pipeline/, { timeout: 10000 });
+
     // Esperar a que aparezca el SVG del dial
     const svg = page.locator('svg[role="img"]').first();
     await expect(svg).toBeVisible({ timeout: 15000 });
