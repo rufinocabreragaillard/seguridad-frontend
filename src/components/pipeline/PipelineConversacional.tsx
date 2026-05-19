@@ -53,6 +53,8 @@ interface PipelineConversacionalProps {
     actual: { completados: number; total: number; archivoActual?: string }
     /** Mensaje secundario abajo del dial (ej. "documento 234 · 1 no analizables hasta ahora"). */
     submensaje?: string
+    /** Contadores acumulados que se muestran SIEMPRE debajo del dial. */
+    estadisticas?: { vectorizados: number; noProcesables: number }
     onVerDetalles?: () => void
     onDetener?: () => void
   }
@@ -155,18 +157,38 @@ export function PipelineConversacional({
 
         {/* ── Columna derecha: dial + estadística a su derecha ── */}
         <div className="flex flex-row gap-5 items-center md:items-start">
-          <DialTriple
-            lote={enProceso.lote}
-            etapa={{
-              indiceActivo: enProceso.etapa.indiceActivo,
-              total: enProceso.etapa.total,
-              nombre: enProceso.etapa.nombre,
-            }}
-            actual={enProceso.actual}
-            pulsando={ejecutando ? 'interno' : null}
-            ejecutando={ejecutando}
-            tamano={220}
-          />
+          <div className="flex flex-col items-center gap-3">
+            <DialTriple
+              lote={enProceso.lote}
+              etapa={{
+                indiceActivo: enProceso.etapa.indiceActivo,
+                total: enProceso.etapa.total,
+                nombre: enProceso.etapa.nombre,
+              }}
+              actual={enProceso.actual}
+              pulsando={ejecutando ? 'interno' : null}
+              ejecutando={ejecutando}
+              tamano={220}
+            />
+            {enProceso.estadisticas && (
+              <div className="flex items-center gap-4 text-xs tabular-nums">
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-2.5 h-2.5 rounded-full bg-green-500" />
+                  <span className="font-semibold text-texto">
+                    {enProceso.estadisticas.vectorizados.toLocaleString()}
+                  </span>
+                  <span className="text-texto-muted">vectorizados</span>
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400" />
+                  <span className="font-semibold text-texto">
+                    {enProceso.estadisticas.noProcesables.toLocaleString()}
+                  </span>
+                  <span className="text-texto-muted">no procesables</span>
+                </span>
+              </div>
+            )}
+          </div>
 
           {ejecutando && (
             <div className="flex flex-col gap-1 min-w-0 self-center">

@@ -1115,9 +1115,10 @@ export default function PaginaCargaDocsUsuario() {
                     lote,
                     etapa: { indiceActivo, total: FASES_NARRATIVAS.length, nombre: nombreEtapa },
                     actual,
-                    submensaje: docsNoVectorizables > 0
-                      ? `${docsNoVectorizables.toLocaleString()} no vectorizables`
-                      : undefined,
+                    estadisticas: {
+                      vectorizados: docsVectorizados,
+                      noProcesables: docsNoVectorizables,
+                    },
                     onDetener: detener,
                   }}
                   ejecutando={ejecutando}
