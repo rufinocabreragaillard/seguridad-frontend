@@ -6,6 +6,7 @@ import {
   FolderOpen, Folder, FolderPlus, FolderSync,
   CheckCircle, AlertTriangle, RefreshCw, Upload, Download,
   ChevronRight, ChevronDown, ToggleLeft, ToggleRight, Shuffle, Plus, Pencil, Trash2, X,
+  Loader2,
 } from 'lucide-react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { Boton } from '@/components/ui/boton'
@@ -1043,7 +1044,19 @@ export default function PaginaCargaDocsUsuario() {
                   </Boton>
 
                   <div className="border-t border-borde pt-1 flex-1 min-h-0">
-                    {cargandoUbs ? (
+                    {escaneandoDir || sincronizando ? (
+                      <div className="flex flex-col items-center justify-center gap-3 py-6">
+                        <Loader2 size={48} className="text-primario animate-spin" />
+                        <p className="text-xs font-medium text-texto text-center">
+                          {sincronizando ? 'Sincronizando ubicaciones…' : 'Escaneando directorio…'}
+                        </p>
+                        {dirHandle?.name && (
+                          <p className="text-[11px] text-texto-muted font-mono text-center truncate max-w-full px-2" title={dirHandle.name}>
+                            {dirHandle.name}
+                          </p>
+                        )}
+                      </div>
+                    ) : cargandoUbs ? (
                       <p className="text-xs text-texto-muted text-center py-2">Cargando…</p>
                     ) : raicesUbic.length === 0 ? (
                       <p className="text-xs text-texto-muted text-center py-2 leading-relaxed">
