@@ -450,7 +450,18 @@ export default function PaginaUbicacionesDocs() {
           if (perm === 'granted') handlePersistido = h
         }
       }
-      const resultado = await escanearDirectorio(handlePersistido)
+      // Cargar el árbol completo ANTES del escaneo: lo usamos tanto para el
+      // preview como para construir el set de ubicaciones inhabilitadas que
+      // se le pasa al escáner (omite carpetas que mapean a inhabilitadas en BD
+      // y sus hijos — evita reparenteos a códigos que el backend no insertará).
+      const todasUbs = await asegurarArbolCompleto()
+      const deshabilitadas = new Set<string>()
+      for (const u of todasUbs) {
+        if (!u.ubicacion_habilitada) {
+          deshabilitadas.add(`${u.codigo_ubicacion_superior ?? ''}/${u.codigo_ubicacion}`)
+        }
+      }
+      const resultado = await escanearDirectorio(handlePersistido, deshabilitadas)
       if (!resultado) {
         setEscaneando(false)
         return // usuario canceló
@@ -463,8 +474,6 @@ export default function PaginaUbicacionesDocs() {
       // Persistir el handle para que luego se puedan abrir documentos
       // sin volver a pedir la carpeta al usuario.
       idbSetHandle(resultado.dirHandle, userId, grupoActivo)
-      // El preview/sincronización compara contra TODAS las ubicaciones del grupo.
-      await asegurarArbolCompleto()
       setDatosEscaneo(resultado)
       setModalCarga(true)
     } catch (e: unknown) {

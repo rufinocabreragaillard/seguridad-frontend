@@ -263,12 +263,26 @@ export default function PaginaCargaDocsUsuario() {
     catch { setConfirmElim(null); setPreviewElim(null) } finally { setEliminandoUb(false) }
   }
 
+  // Set de claves "${padre ?? ''}/${codigo}" para ubicaciones inhabilitadas
+  // en BD del grupo/entidad actual. El escaneo omite estas carpetas (y sus
+  // hijos) — evita generar códigos duplicados y reparenteos a nodos que
+  // nunca se van a insertar.
+  const clavesDeshabilitadasBD = useCallback((): Set<string> => {
+    const s = new Set<string>()
+    for (const u of ubicaciones) {
+      if (!u.ubicacion_habilitada) {
+        s.add(`${u.codigo_ubicacion_superior ?? ''}/${u.codigo_ubicacion}`)
+      }
+    }
+    return s
+  }, [ubicaciones])
+
   // Carga desde directorio
   const iniciarEscaneoDir = async () => {
     if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoporta')); return }
     setEscaneandoDir(true); setResultadoSync(null)
     try {
-      const r = await escanearDirectorio()
+      const r = await escanearDirectorio(null, clavesDeshabilitadasBD())
       if (!r) { setEscaneandoDir(false); return }
       setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
       setDatosEscaneo(r); setModalCarga(true)
@@ -294,7 +308,7 @@ export default function PaginaCargaDocsUsuario() {
     if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoporta')); return }
     setSyncEstado('escaneando'); setSyncMensaje('')
     try {
-      const r = await escanearDirectorio()
+      const r = await escanearDirectorio(null, clavesDeshabilitadasBD())
       if (!r) { setSyncEstado('idle'); return }
       setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
       setSyncEstado('sincronizando')

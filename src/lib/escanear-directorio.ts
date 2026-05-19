@@ -41,6 +41,10 @@ function hacerUnico(codigo: string, existentes: Set<string>): string {
 
 /**
  * Recorre recursivamente un FileSystemDirectoryHandle.
+ *
+ * @param deshabilitadas - Set de claves "${codigoPadre ?? ''}/${codigo}" para
+ *   ubicaciones inhabilitadas en BD. Si el directorio físico mapea a una de esas
+ *   claves, se omite completo (no se añade y no se recursa en sus hijos).
  */
 async function recorrer(
   handle: FileSystemDirectoryHandle,
@@ -49,6 +53,7 @@ async function recorrer(
   nivel: number,
   resultado: DirectorioEscaneado[],
   codigos: Set<string>,
+  deshabilitadas?: Set<string>,
 ): Promise<void> {
   const entries: FileSystemHandle[] = []
   for await (const entry of (handle as unknown as { values(): AsyncIterable<FileSystemHandle> }).values()) {
@@ -67,8 +72,15 @@ async function recorrer(
       continue
     }
 
-    let codigo = generarCodigo(nombre)
-    codigo = hacerUnico(codigo, codigos)
+    const codigoBase = generarCodigo(nombre)
+    // Si esta ubicación (bajo el mismo padre) está deshabilitada en BD, omitirla
+    // sin recursar. Evita generar duplicados "_2" para sus hermanos y previene
+    // que el backend intente reparentar a códigos que no van a insertarse.
+    const clave = `${codigoPadre ?? ''}/${codigoBase}`
+    if (deshabilitadas?.has(clave)) {
+      continue
+    }
+    const codigo = hacerUnico(codigoBase, codigos)
     codigos.add(codigo)
 
     const ruta = `${rutaPadre}/${nombre}`
@@ -89,6 +101,7 @@ async function recorrer(
       nivel + 1,
       resultado,
       codigos,
+      deshabilitadas,
     )
   }
 }
@@ -108,6 +121,7 @@ export function soportaDirectoryPicker(): boolean {
  */
 export async function escanearDirectorio(
   handleExterno?: FileSystemDirectoryHandle | null,
+  deshabilitadas?: Set<string>,
 ): Promise<{
   nombreRaiz: string
   directorios: DirectorioEscaneado[]
@@ -139,7 +153,7 @@ export async function escanearDirectorio(
     nivel: 0,
   }]
 
-  await recorrer(dirHandle, codigoRaiz, `/${nombreRaiz}`, 1, resultado, codigos)
+  await recorrer(dirHandle, codigoRaiz, `/${nombreRaiz}`, 1, resultado, codigos, deshabilitadas)
 
   return { nombreRaiz, directorios: resultado, dirHandle }
 }
