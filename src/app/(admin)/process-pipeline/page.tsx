@@ -1010,6 +1010,7 @@ export default function PaginaCargaDocsUsuario() {
               const lote = paq && paq.paquetes_totales > 0
                 ? { actual: paq.paquete_actual, total: paq.paquetes_totales }
                 : { actual: 1, total: 1 }
+              const tamanoPaq = paq?.tamano_paquete ?? 0
 
               const progActiva = idxActivo >= 0 ? progresos[PASOS[idxActivo].key] : null
               // Documento "AHORA MISMO":
@@ -1018,9 +1019,18 @@ export default function PaginaCargaDocsUsuario() {
               const archivoActual = archivoActualLocal
                 ?? resumenPipeline?.doc_en_proceso?.nombre_documento
                 ?? undefined
+              // Rueda interna = operación actual DENTRO del lote. Las fases client-side
+              // (CARGAR/EXTRAER) no respetan el tope y reportan el total del dataset
+              // (p.ej. 658), lo que rompe el marco "estamos en un lote". Acotamos el
+              // denominador al tamaño del paquete para que sea consistente con el lote.
+              const totalActivaRaw = progActiva?.total || 0
+              const totalActiva = tamanoPaq > 0
+                ? Math.min(totalActivaRaw || tamanoPaq, tamanoPaq)
+                : (totalActivaRaw || totalDocs || 1)
+              const completadosActiva = Math.min(progActiva?.completados ?? docsVectorizados, totalActiva)
               const actual = {
-                completados: progActiva?.completados ?? docsVectorizados,
-                total: progActiva?.total || totalDocs || 1,
+                completados: completadosActiva,
+                total: totalActiva,
                 archivoActual,
               }
 

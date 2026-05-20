@@ -175,22 +175,28 @@ export function DialTriple({
         >
           {pctGlobal}%
         </text>
-        {etapa.nombre && (
-          <text
-            x={cx}
-            y={cy + Math.round(tamano * 0.13)}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            className="fill-texto-muted"
-            // Acotar el ancho al 85% del diámetro interno para que etiquetas
-            // largas se compriman en vez de salirse del círculo.
-            textLength={Math.round(rInterno * 2 * 0.85)}
-            lengthAdjust="spacingAndGlyphs"
-            style={{ fontSize: Math.round(tamano * 0.055), fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}
-          >
-            {etapa.nombre}
-          </text>
-        )}
+        {etapa.nombre && (() => {
+          const fontEtapa = Math.round(tamano * 0.055)
+          const maxAncho = Math.round(rInterno * 2 * 0.85)
+          // Ancho natural estimado (≈0.62·fontSize por glifo en mayúsculas + letterSpacing).
+          // Solo COMPRIMIMOS etiquetas que se saldrían; nunca estiramos las cortas
+          // (textLength con lengthAdjust estira los glifos → efecto "ensanchado").
+          const anchoNatural = etapa.nombre.length * fontEtapa * 0.62 + (etapa.nombre.length - 1) * fontEtapa * 0.04
+          const necesitaComprimir = anchoNatural > maxAncho
+          return (
+            <text
+              x={cx}
+              y={cy + Math.round(tamano * 0.13)}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              className="fill-texto-muted"
+              {...(necesitaComprimir ? { textLength: maxAncho, lengthAdjust: 'spacingAndGlyphs' as const } : {})}
+              style={{ fontSize: fontEtapa, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}
+            >
+              {etapa.nombre}
+            </text>
+          )
+        })()}
       </svg>
 
       {/* Leyenda mínima debajo del dial: lote actual / etapa actual / archivo actual */}
