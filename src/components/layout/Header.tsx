@@ -53,6 +53,7 @@ export function Header({ titulo }: { titulo?: string }) {
     nombre: '', telefono: '', alias: '', descripcion: '',
     sidebar_colapsado: false,
     id_rol_principal: null as number | null,
+    aplicacion_por_defecto: '' as string,
   })
   const [guardandoCuenta, setGuardandoCuenta] = useState(false)
   const [errorCuenta, setErrorCuenta] = useState('')
@@ -139,6 +140,7 @@ export function Header({ titulo }: { titulo?: string }) {
       descripcion: '',
       sidebar_colapsado: false,
       id_rol_principal: usuario?.id_rol_principal ?? null,
+      aplicacion_por_defecto: usuario?.aplicacion_activa ?? '',
     })
     setErrorCuenta('')
     setExitoCuenta('')
@@ -153,6 +155,7 @@ export function Header({ titulo }: { titulo?: string }) {
             descripcion: u.descripcion || '',
             sidebar_colapsado: u.sidebar_colapsado ?? false,
             id_rol_principal: u.id_rol_principal ?? null,
+            aplicacion_por_defecto: u.aplicacion_por_defecto ?? '',
           }
           setFormCuenta(datos)
           setDatosOriginales(datos)
@@ -186,6 +189,9 @@ export function Header({ titulo }: { titulo?: string }) {
       }
       if (formCuenta.id_rol_principal !== datosOriginales.id_rol_principal) {
         cambios.id_rol_principal = formCuenta.id_rol_principal
+      }
+      if (formCuenta.aplicacion_por_defecto !== datosOriginales.aplicacion_por_defecto) {
+        cambios.aplicacion_por_defecto = formCuenta.aplicacion_por_defecto || null
       }
       await usuariosApi.actualizar(usuario.codigo_usuario, cambios)
       setExitoCuenta(t('datosActualizados'))
@@ -449,6 +455,26 @@ export function Header({ titulo }: { titulo?: string }) {
                     .map((r) => (
                     <option key={`${r.codigo_grupo}-${r.id_rol}`} value={r.id_rol}>
                       {r.nombre}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-texto-muted">{t('rolPorDefectoAyuda')}</p>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-sm font-medium text-texto">{t('aplicacionPorDefecto')}</label>
+                <select
+                  value={formCuenta.aplicacion_por_defecto ?? ''}
+                  onChange={(e) => setFormCuenta({
+                    ...formCuenta,
+                    aplicacion_por_defecto: e.target.value,
+                  })}
+                  className="w-full h-10 px-3 rounded-lg border border-borde bg-surface text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario/30 focus:border-primario"
+                >
+                  <option value="">{t('sinAplicacionPorDefecto')}</option>
+                  {(usuario?.aplicaciones_disponibles || []).map((app) => (
+                    <option key={app.codigo_aplicacion} value={app.codigo_aplicacion}>
+                      {tr('aplicaciones', 'nombre', app.codigo_aplicacion, app.nombre)}
                     </option>
                   ))}
                 </select>

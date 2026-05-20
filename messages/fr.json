@@ -237,6 +237,8 @@
     "descripcion": "Description",
     "rolPrincipal": "Rôle principal",
     "sinRolPrincipal": "Aucun rôle principal",
+    "aplicacionPorDefecto": "Application par défaut",
+    "sinAplicacionPorDefecto": "Aucune application par défaut",
     "rolPorDefectoAyuda": "S'appliquera à la prochaine connexion ou au rafraîchissement de la page.",
     "nombreObligatorio": "Le nom est obligatoire",
     "datosActualizados": "Données mises à jour avec succès",

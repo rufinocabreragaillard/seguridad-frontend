@@ -237,6 +237,8 @@
     "descripcion": "Descrição",
     "rolPrincipal": "Papel principal",
     "sinRolPrincipal": "Nenhum papel principal",
+    "aplicacionPorDefecto": "Aplicação padrão",
+    "sinAplicacionPorDefecto": "Sem aplicação padrão",
     "rolPorDefectoAyuda": "Será aplicado no próximo login ou ao atualizar a página.",
     "nombreObligatorio": "O nome é obrigatório",
     "datosActualizados": "Dados atualizados com sucesso",

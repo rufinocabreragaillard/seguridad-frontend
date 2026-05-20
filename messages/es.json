@@ -273,6 +273,8 @@
     "descripcion": "Descripción",
     "rolPrincipal": "Rol principal",
     "sinRolPrincipal": "Sin rol principal",
+    "aplicacionPorDefecto": "Aplicación por defecto",
+    "sinAplicacionPorDefecto": "Sin aplicación por defecto",
     "rolPorDefectoAyuda": "Se aplicará al próximo inicio de sesión o al refrescar la página.",
     "nombreObligatorio": "El nombre es obligatorio",
     "datosActualizados": "Datos actualizados correctamente",

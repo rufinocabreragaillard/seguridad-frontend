@@ -237,6 +237,8 @@
     "descripcion": "Description",
     "rolPrincipal": "Primary Role",
     "sinRolPrincipal": "No primary role",
+    "aplicacionPorDefecto": "Default application",
+    "sinAplicacionPorDefecto": "No default application",
     "rolPorDefectoAyuda": "Will be applied on next login or page refresh.",
     "nombreObligatorio": "Name is required",
     "datosActualizados": "Data updated successfully",
