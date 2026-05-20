@@ -96,7 +96,7 @@ interface UbicacionOption {
 
 interface ItemCola {
   id_cola: number
-  codigo_documento: number
+  codigo_documento: string
   nombre_documento: string
   ubicacion_documento?: string
   estado_cola: string
@@ -694,7 +694,7 @@ function PaginaProcesarDocumentosInterna() {
         const res = await documentosApi.resetearACargado(ids)
         setCola([{
           id_cola: 0,
-          codigo_documento: 0,
+          codigo_documento: '',
           nombre_documento: `Reseteados a CARGADO: ${res.reseteados} documentos`,
           ubicacion_documento: undefined,
           estado_cola: 'COMPLETADO',
@@ -702,7 +702,7 @@ function PaginaProcesarDocumentosInterna() {
         setProcesados(res.reseteados)
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Error al resetear'
-        setCola([{ id_cola: 0, codigo_documento: 0, nombre_documento: msg, estado_cola: 'ERROR' }])
+        setCola([{ id_cola: 0, codigo_documento: '', nombre_documento: msg, estado_cola: 'ERROR' }])
       }
       setEjecutando(false)
       cargarDocumentos()
@@ -716,7 +716,7 @@ function PaginaProcesarDocumentosInterna() {
         const res = await documentosApi.restablecerEstado(ids)
         setCola([{
           id_cola: 0,
-          codigo_documento: 0,
+          codigo_documento: '',
           nombre_documento: `Restablecidos: ${res.restablecidos} (${res.a_cargado} a CARGADO, ${res.a_metadata} a METADATA)`,
           ubicacion_documento: undefined,
           estado_cola: 'COMPLETADO',
@@ -724,7 +724,7 @@ function PaginaProcesarDocumentosInterna() {
         setProcesados(res.restablecidos)
       } catch (e) {
         const msg = e instanceof Error ? e.message : 'Error al restablecer'
-        setCola([{ id_cola: 0, codigo_documento: 0, nombre_documento: msg, estado_cola: 'ERROR' }])
+        setCola([{ id_cola: 0, codigo_documento: '', nombre_documento: msg, estado_cola: 'ERROR' }])
       }
       setEjecutando(false)
       cargarDocumentos()
@@ -831,7 +831,7 @@ function PaginaProcesarDocumentosInterna() {
         : todosEnDisco
       if (tope) docsAExtraer = docsAExtraer.slice(0, parseInt(tope))
       const colaInicial: ItemCola[] = docsAExtraer.map((doc) => ({
-        id_cola: doc.codigo_documento,
+        id_cola: 0,
         codigo_documento: doc.codigo_documento,
         nombre_documento: doc.nombre_documento,
         ubicacion_documento: doc.ubicacion_documento || undefined,
@@ -1173,7 +1173,7 @@ function PaginaProcesarDocumentosInterna() {
     abortRef.current = false
     setCola([{
       id_cola: 0,
-      codigo_documento: 0,
+      codigo_documento: '',
       nombre_documento: `Cargando ${archivosParaCargar.length} archivos desde ${scan.nombreRaiz}…`,
       estado_cola: 'EN_PROCESO',
     }])
@@ -1185,7 +1185,7 @@ function PaginaProcesarDocumentosInterna() {
       const resumen = `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`
       setCola([{
         id_cola: 0,
-        codigo_documento: 0,
+        codigo_documento: '',
         nombre_documento: resumen,
         estado_cola: 'COMPLETADO',
       }])
@@ -1193,7 +1193,7 @@ function PaginaProcesarDocumentosInterna() {
       setMensajeCarga({ tipo: 'exito', texto: resumen })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error al cargar'
-      setCola([{ id_cola: 0, codigo_documento: 0, nombre_documento: msg, estado_cola: 'ERROR' }])
+      setCola([{ id_cola: 0, codigo_documento: '', nombre_documento: msg, estado_cola: 'ERROR' }])
       console.error('[CARGAR] error:', e)
       setMensajeCarga({ tipo: 'error', texto: msg })
     }

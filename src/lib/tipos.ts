@@ -618,7 +618,7 @@ export interface Tarea {
 import type { PayloadCifrado } from './descifrar'
 
 export interface Documento {
-  codigo_documento: number
+  codigo_documento: string
   codigo_grupo: string
   codigo_entidad?: string | null
   nombre_documento: string
@@ -732,7 +732,7 @@ export interface TipoCaractDocs {
 
 export interface CaracteristicaDocumento {
   id_caracteristica_docs: number
-  codigo_documento: number
+  codigo_documento: string
   codigo_cat_docs: string
   codigo_tipo_docs: string
   // Tras mig 435 los 4 campos viajan como payload cifrado-para-usuario desde
@@ -867,7 +867,7 @@ export interface EstadoDoc {
 export interface ColaEstadoDoc {
   id_cola: number
   codigo_grupo: string
-  codigo_documento: number
+  codigo_documento: string
   codigo_estado_doc_origen?: string | null
   codigo_estado_doc_destino: string
   estado_cola: string
@@ -884,7 +884,7 @@ export interface ColaEstadoDoc {
   // No viene en la respuesta de /cola-estados-docs; se mantiene optional sólo
   // por compatibilidad con respuestas legacy hasta que se dropee la columna.
   max_intentos?: number
-  documentos?: { codigo_documento: number; nombre_documento: string; codigo_estado_doc: string | null; ubicacion_documento?: string | null } | null
+  documentos?: { codigo_documento: string; nombre_documento: string; codigo_estado_doc: string | null; ubicacion_documento?: string | null } | null
 }
 
 // ─── SQL Ejecutados ────────────────────────────────────────────────────────
@@ -1053,7 +1053,7 @@ export type EstadoCola = 'PENDIENTE' | 'EN_PROCESO' | 'COMPLETADO' | 'ERROR'
 // (cola_estados_docs filtrada por categoria/tipo='ESPACIOS_TRABAJO').
 export interface DocumentoEspacio {
   id_cola: number
-  codigo_documento: number
+  codigo_documento: string
   codigo_grupo: string
   codigo_entidad?: string | null
   nombre_documento: string

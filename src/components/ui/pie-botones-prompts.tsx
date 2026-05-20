@@ -17,7 +17,7 @@ interface PieBotonesPromptsProps {
   mostrarSincronizar?: boolean
   sincronizarHabilitado?: boolean  // override del disabled de Sincronizar (undefined = lógica por defecto)
   onCodigoGenerado?: (r: { python_insert?: string | null; python_update?: string | null; javascript?: string | null }) => void
-  onSincronizado?: (r: { codigo_documento: number; accion: string }) => void
+  onSincronizado?: (r: { codigo_documento: string; accion: string }) => void
   onMensaje?: (m: { tipo: 'ok' | 'error'; texto: string }) => void
 }
 

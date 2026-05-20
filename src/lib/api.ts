@@ -658,12 +658,12 @@ export const documentosApi = {
   eliminarBulk: (ids: number[]) =>
     api.post<{ eliminados: number }>('/documentos/eliminar-bulk', { codigos_documento: ids }).then((r) => r.data),
   // Restablecer documentos NO_ESCANEABLE / NO_ENCONTRADO a CARGADO/METADATA
-  restablecerEstado: (codigos_documento: number[]) =>
+  restablecerEstado: (codigos_documento: string[]) =>
     api.post<{ restablecidos: number; a_cargado: number; a_metadata: number; omitidos: number }>(
       '/documentos/restablecer-estado',
       { codigos_documento },
     ).then((r) => r.data),
-  resetearACargado: (codigos_documento: number[]) =>
+  resetearACargado: (codigos_documento: string[]) =>
     api.post<{ reseteados: number }>(
       '/documentos/resetear-a-cargado',
       { codigos_documento },
@@ -672,7 +672,7 @@ export const documentosApi = {
   // estados_origen incluye éxito + inválido del mismo paso.
   // Ej: ['VECTORIZADO','NO_VECTORIZADO'] → 'CHUNKEADO'  (NO toca NO_CHUNKEADO)
   revertirEstado: (
-    codigos_documento: number[],
+    codigos_documento: string[],
     estados_origen: string[] = ['VECTORIZADO', 'NO_VECTORIZADO'],
     estado_destino = 'CHUNKEADO',
   ) =>
@@ -736,7 +736,7 @@ export const documentosApi = {
       timings_debug?: Record<string, unknown>
     },
   ) =>
-    api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
+    api.post<{ codigo_documento: string; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
       // Timeout 180s: bajo sliding window con N=6 docs paralelos, el endpoint
       // se satura (cifrado + RPC) y docs que caen al fondo de la cola pueden
       // tardar más de los 60s originales. 180s da margen mientras evaluamos
@@ -747,7 +747,7 @@ export const documentosApi = {
     const blob = new Blob([pdfBytes], { type: 'application/pdf' })
     const form = new FormData()
     form.append('archivo', blob, 'documento.pdf')
-    return api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
+    return api.post<{ codigo_documento: string; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
       // Timeout 300s: PDFs grandes con OCR Tesseract pueden tardar bastante
       // (medimos 49s para 19 págs; 50+ págs densas pueden pasarse de 120s).
       `/documentos/${id}/ocr`, form, { timeout: 300000 },
@@ -758,14 +758,14 @@ export const documentosApi = {
     const blob = new Blob([docBytes], { type: 'application/msword' })
     const form = new FormData()
     form.append('archivo', blob, 'documento.doc')
-    return api.post<{ codigo_documento: number; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
+    return api.post<{ codigo_documento: string; codigo_estado_doc: string; caracteres: number; paginas: number | null }>(
       `/documentos/${id}/doc`, form, { timeout: 90000 },
     ).then((r) => r.data)
   },
   // TEXTO: ver texto_fuente extraído en EXTRAER (tabla documento_texto)
   obtenerTexto: (id: number) =>
     api.get<{
-      codigo_documento: number
+      codigo_documento: string
       nombre_documento: string | null
       codigo_estado_doc: string | null
       detalle_estado: string | null
@@ -781,7 +781,7 @@ export const documentosApi = {
     params?: { q?: string; page?: number; limit?: number },
   ) =>
     api.get<{
-      documento: { codigo_documento: number; nombre_documento: string; codigo_estado_doc: string }
+      documento: { codigo_documento: string; nombre_documento: string; codigo_estado_doc: string }
       stats: { total_chunks: number; n_chars_total: number; avg_chars: number; vectorizado: boolean }
       busqueda: { q: string; total_filtrado: number; page: number; limit: number }
       chunks: {
@@ -1225,7 +1225,7 @@ export interface LLMUsoFila {
   codigo_funcion: string | null
   codigo_habilidad: string
   codigo_proceso: string | null
-  id_documento: number | null
+  id_documento: string | null
   exito: boolean
   error_mensaje: string | null
   duracion_ms: number | null
@@ -1516,7 +1516,7 @@ export const colaEstadosDocsApi = {
   listarPaginado: (params: { page: number; limit: number; estado_cola?: string; q?: string }) =>
     api.get<RespuestaPaginadaApi<ColaEstadoDoc>>('/cola-estados-docs/paginado', { params }).then((r) => r.data),
   inicializar: (
-    items: { codigo_documento: number; codigo_estado_doc_destino: string; prioridad?: number }[],
+    items: { codigo_documento: string; codigo_estado_doc_destino: string; prioridad?: number }[],
     opts?: { codigo_proceso?: string; codigo_funcion?: string },
   ) =>
     api.post<{ encolados: number; omitidos: number; total: number }>(
@@ -1578,7 +1578,7 @@ export interface ResumenPaquete {
 }
 
 export interface DocEnProceso {
-  codigo_documento: number
+  codigo_documento: string
   nombre_documento: string
   codigo_estado_doc_destino: string
 }
@@ -2099,7 +2099,7 @@ export const promptsApi = {
     api.post<CompilarPromptResponse>('/prompts/compilar', req, { timeout: 120_000 }).then((r) => r.data),
 
   sincronizarFila: (tabla: string, pk_columna: string, pk_valor: string) =>
-    api.post<{ codigo_documento: number; accion: string; nombre: string }>(
+    api.post<{ codigo_documento: string; accion: string; nombre: string }>(
       '/prompts/sincronizar/fila',
       { tabla, pk_columna, pk_valor },
     ).then((r) => r.data),
@@ -2149,7 +2149,7 @@ export interface FuentePromptClasificar {
 
 export interface PromptVivoClasificar {
   codigo_grupo: string
-  codigo_documento: number | null
+  codigo_documento: string | null
   system_prompt_limpio: string
   system_prompt_marcado: string
   user_prompt_limpio: string

@@ -29,7 +29,7 @@ import type { RealtimeChannel, RealtimePostgresChangesPayload } from '@supabase/
 export type ColaRealtimePayload = RealtimePostgresChangesPayload<{
   id_cola: number
   codigo_grupo: string
-  codigo_documento: number
+  codigo_documento: string
   codigo_estado_doc_destino: string
   estado_cola: string
   resultado?: string
@@ -59,7 +59,7 @@ export function useColaRealtime(grupoActivo: string | null, onCambio: OnCambioCo
       .on<{
         id_cola: number
         codigo_grupo: string
-        codigo_documento: number
+        codigo_documento: string
         codigo_estado_doc_destino: string
         estado_cola: string
         resultado?: string

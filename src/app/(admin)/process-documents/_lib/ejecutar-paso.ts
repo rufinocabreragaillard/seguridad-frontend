@@ -29,7 +29,7 @@ import type { MutableRefObject } from 'react'
 
 export interface ItemColaLocal {
   id_cola: number
-  codigo_documento: number
+  codigo_documento: string
   nombre_documento: string
   ubicacion_documento?: string
   estado_cola: string
@@ -201,7 +201,7 @@ export async function ejecutarExtraer(opts: {
 
   // 5. Cola local inicial
   const colaInicial: ItemColaLocal[] = docsFinal.map((doc) => ({
-    id_cola: doc.codigo_documento,
+    id_cola: 0,
     codigo_documento: doc.codigo_documento,
     nombre_documento: doc.nombre_documento,
     ubicacion_documento: doc.ubicacion_documento || undefined,

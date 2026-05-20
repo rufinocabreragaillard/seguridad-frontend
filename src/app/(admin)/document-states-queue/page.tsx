@@ -64,7 +64,7 @@ export default function PaginaColaEstadosDocs() {
 
   // ── Modal Inicializar ─────────────────────────────────────────────────────
   const [modalInit, setModalInit] = useState(false)
-  const [docsSeleccionados, setDocsSeleccionados] = useState<Set<number>>(new Set())
+  const [docsSeleccionados, setDocsSeleccionados] = useState<Set<string>>(new Set())
   const [estadoDestino, setEstadoDestino] = useState('')
   const [inicializando, setInicializando] = useState(false)
   const [resultadoInit, setResultadoInit] = useState<{ encolados: number; omitidos: number } | null>(null)
