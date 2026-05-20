@@ -1102,7 +1102,6 @@ export interface Habilidad {
 export interface ReeplicarEspacioRespuesta {
   id_espacio: number
   encolados: number
-  worker_disparado: boolean
   mensaje: string
 }
 
