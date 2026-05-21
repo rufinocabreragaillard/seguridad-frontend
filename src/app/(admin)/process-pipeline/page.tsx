@@ -1019,15 +1019,34 @@ export default function PaginaCargaDocsUsuario() {
               const archivoActual = archivoActualLocal
                 ?? resumenPipeline?.doc_en_proceso?.nombre_documento
                 ?? undefined
-              // Rueda interna = operación actual DENTRO del lote. Las fases client-side
-              // (CARGAR/EXTRAER) no respetan el tope y reportan el total del dataset
-              // (p.ej. 658), lo que rompe el marco "estamos en un lote". Acotamos el
-              // denominador al tamaño del paquete para que sea consistente con el lote.
+              // Rueda interna = operación actual DENTRO del lote, en bloques de
+              // `tamanoPaq` docs. Las fases client-side (CARGAR/EXTRAER) no respetan
+              // el tope y procesan TODO el dataset en una sola pasada, reportando
+              // completados que crecen por encima de tamanoPaq (p.ej. 0→1387).
+              // Antes acotábamos con Math.min(..., tamanoPaq) → el anillo se CONGELABA
+              // en 500/500 mientras el trabajo seguía. Ahora el anillo CICLA: al
+              // completar un bloque de N vuelve a 0 y cuenta el siguiente bloque, dando
+              // feedback continuo de avance.
               const totalActivaRaw = progActiva?.total || 0
-              const totalActiva = tamanoPaq > 0
-                ? Math.min(totalActivaRaw || tamanoPaq, tamanoPaq)
-                : (totalActivaRaw || totalDocs || 1)
-              const completadosActiva = Math.min(progActiva?.completados ?? docsVectorizados, totalActiva)
+              const completadosRaw = progActiva?.completados ?? docsVectorizados
+              let totalActiva: number
+              let completadosActiva: number
+              if (tamanoPaq > 0 && totalActivaRaw > tamanoPaq) {
+                // Fase que excede el tamaño de paquete (client-side full-dataset): ciclar.
+                totalActiva = tamanoPaq
+                completadosActiva = completadosRaw % tamanoPaq
+                // Al cerrar un bloque exacto (mod 0) con trabajo aún pendiente, mostrar
+                // el anillo lleno un instante antes de reiniciar a 0 con el siguiente doc.
+                if (completadosActiva === 0 && completadosRaw > 0 && completadosRaw < totalActivaRaw) {
+                  completadosActiva = tamanoPaq
+                }
+              } else {
+                // Fase backend acotada al paquete (tope=tamanoPaq) o modo legacy sin paquetes.
+                totalActiva = tamanoPaq > 0
+                  ? Math.min(totalActivaRaw || tamanoPaq, tamanoPaq)
+                  : (totalActivaRaw || totalDocs || 1)
+                completadosActiva = Math.min(completadosRaw, totalActiva)
+              }
               const actual = {
                 completados: completadosActiva,
                 total: totalActiva,
