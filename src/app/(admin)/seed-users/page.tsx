@@ -360,6 +360,10 @@ export default function PaginaUsuariosSemilla() {
       setError('El grupo por defecto es obligatorio para el usuario semilla')
       return false
     }
+    if (!form.entidad_por_defecto) {
+      setError('La entidad por defecto es obligatoria para el usuario semilla')
+      return false
+    }
     setGuardando(true)
     try {
       const datos = {
@@ -881,7 +885,7 @@ export default function PaginaUsuariosSemilla() {
 
                   {/* Entidad buscable */}
                   <div className="flex flex-col gap-1">
-                    <label className="text-sm font-medium text-texto">Entidad por defecto</label>
+                    <label className="text-sm font-medium text-texto">Entidad por defecto *</label>
                     <div className="relative" ref={dropdownEntidadFormRef}>
                       <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-texto-muted pointer-events-none" />
                       <input type="text" placeholder={cargandoEntidades ? 'Cargando...' : 'Buscar entidad...'}

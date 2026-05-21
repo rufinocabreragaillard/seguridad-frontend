@@ -294,6 +294,10 @@ export default function PaginaUsuarios() {
       setError('El correo y el nombre son obligatorios')
       return false
     }
+    if (usuarioEditando && form.grupo_por_defecto && !form.entidad_por_defecto) {
+      setError('La entidad por defecto es obligatoria')
+      return false
+    }
     setGuardando(true)
     try {
       if (usuarioEditando) {
@@ -803,7 +807,7 @@ export default function PaginaUsuarios() {
               <div className="grid grid-cols-2 gap-x-6 gap-y-3">
                 {/* Entidad por defecto */}
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-sm font-medium text-texto">Entidad por defecto</label>
+                  <label className="text-sm font-medium text-texto">Entidad por defecto *</label>
                   <select
                     value={form.entidad_por_defecto}
                     onChange={handleEntidadDefaultChange}
