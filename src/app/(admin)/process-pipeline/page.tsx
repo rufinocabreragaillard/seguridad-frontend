@@ -41,6 +41,13 @@ import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { PipelineConversacional } from '@/components/pipeline/PipelineConversacional'
 import { formatearMinutos } from '@/lib/pipeline-narrativo'
 import { useFasesNarrativas } from '@/hooks/useFasesNarrativas'
+import {
+  esperarClientLM,
+  elegirCarpetaLocal,
+  ingestarLocal,
+  ejecutarLocal,
+  statusLocal,
+} from '@/lib/client-lm'
 
 // ── Pipeline (v2) ─────────────────────────────────────────────────────────────
 // Numeración global de pasos:
@@ -442,6 +449,10 @@ export default function PaginaCargaDocsUsuario() {
 
   const [progresos, setProgresos] = useState<Record<string, ProgresoPaso>>(progresosIniciales)
   const [ejecutando, setEjecutando] = useState(false)
+  // Modo local (Client LM): pipeline 100% local contra el FastAPI 127.0.0.1.
+  const [modoLocal, setModoLocal] = useState(false)
+  const modoLocalRef = useRef(false)
+  const [carpetaLocal, setCarpetaLocal] = useState('')
   const [dirHandle, _setDirHandleState] = useState<FileSystemDirectoryHandle | null>(null)
   const setDirHandleState = (h: FileSystemDirectoryHandle | null) => {
     dirHandleRef.current = h
@@ -507,7 +518,20 @@ export default function PaginaCargaDocsUsuario() {
     return () => { if (resumenPollRef.current) clearInterval(resumenPollRef.current) }
   }, [ejecutando, grupoActivo])
 
+  const cargarConteosLocal = useCallback(async () => {
+    try {
+      const s = await statusLocal()
+      const docs = s.docs_por_estado ?? {}
+      const pendientes = ESTADOS_PENDIENTES.reduce((acc, e) => acc + (docs[e] ?? 0), 0)
+      setTotalDocs(s.total_docs ?? 0)
+      setDocsVectorizados(s.vectorizados ?? 0)
+      setDocsPendientes(pendientes)
+      setDocsNoVectorizables(s.no_procesables ?? 0)
+    } catch { /* ignorar */ }
+  }, [])
+
   const cargarConteos = useCallback(async () => {
+    if (modoLocalRef.current) { await cargarConteosLocal(); return }
     try {
       const conteos = await documentosApi.contarPorEstado()
       setProgresos((prev) => {
@@ -528,6 +552,19 @@ export default function PaginaCargaDocsUsuario() {
       setDocsPendientes(pendientes)
       setDocsNoVectorizables(noVectorizables)
     } catch { /* ignorar */ }
+  }, [cargarConteosLocal])
+
+  // Detecta presencia del Client LM una sola vez al montar (puente async).
+  useEffect(() => {
+    let cancelado = false
+    esperarClientLM().then((ok) => {
+      if (cancelado || !ok) return
+      modoLocalRef.current = true
+      setModoLocal(true)
+      cargarConteosLocal()
+    })
+    return () => { cancelado = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -681,7 +718,44 @@ export default function PaginaCargaDocsUsuario() {
   // limpia COMPLETADOs entre paquetes para acotar SQLite/WAL en cliente y dar
   // feedback amigable al usuario en pasos discretos. Ver:
   // docs/planes/PLAN_PROCESAMIENTO_PAQUETES.md § Paquete operativo
+  // Pipeline 100% LOCAL (Client LM): elegir carpeta nativa → ingestar → procesar
+  // → poll del estado local. El contenido y los embeddings nunca suben al servidor.
+  const ejecutarPipelineLocal = async () => {
+    setMensajeError(''); abortRef.current = false; setEjecutando(true)
+    setTiempoInicio(Date.now()); setTiempoTranscurrido(0)
+    setProgresos(progresosIniciales()); setArchivoActualLocal(null)
+    try {
+      let dir = carpetaLocal
+      if (!dir) {
+        dir = await elegirCarpetaLocal()
+        if (!dir) { setEjecutando(false); return }
+        setCarpetaLocal(dir)
+      }
+      await ingestarLocal(dir)
+      await ejecutarLocal()
+      let estable = 0
+      for (;;) {
+        if (abortRef.current) break
+        await new Promise((r) => setTimeout(r, 1500))
+        const s = await statusLocal()
+        const docs = s.docs_por_estado ?? {}
+        const pendientesDoc = ESTADOS_PENDIENTES.reduce((acc, e) => acc + (docs[e] ?? 0), 0)
+        setTotalDocs(s.total_docs ?? 0)
+        setDocsVectorizados(s.vectorizados ?? 0)
+        setDocsPendientes(pendientesDoc)
+        setDocsNoVectorizables(s.no_procesables ?? 0)
+        const restantes = (s.tareas_pendientes ?? 0) + (s.en_proceso ?? 0)
+        if (restantes === 0) { if (++estable >= 2) break } else { estable = 0 }
+      }
+    } catch (e) {
+      setMensajeError(e instanceof Error ? e.message : t('errorInesperado'))
+    } finally {
+      setEjecutando(false); await cargarConteosLocal()
+    }
+  }
+
   const ejecutarPipeline = async () => {
+    if (modoLocalRef.current) { await ejecutarPipelineLocal(); return }
     setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
     try {
       // Leer tamaño de paquete del resumen del pipeline
@@ -738,6 +812,7 @@ export default function PaginaCargaDocsUsuario() {
   // - Si ya hay ubicaciones en BD → salta el Paso 1 (no abre el finder) y va directo al pipeline.
   // - Si no hay ubicaciones → abre el finder para crearlas primero.
   const ejecutarPipelineUbicaciones = async () => {
+    if (modoLocalRef.current) { await ejecutarPipelineLocal(); return }
     setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
     try {
       // Paso 1: indexar ubicaciones — solo si no hay ubicaciones en BD
@@ -1148,9 +1223,9 @@ export default function PaginaCargaDocsUsuario() {
               return (
                 <PipelineConversacional
                   antesDeEmpezar={{
-                    mensajeTiempo: null,
+                    mensajeTiempo: modoLocal ? 'Procesamiento 100% local (el contenido no sube al servidor).' : null,
                     onEmpezar: ejecutarPipeline,
-                    textoBotonEmpezar: 'Cargar Semántica',
+                    textoBotonEmpezar: modoLocal ? 'Cargar Semántica (local)' : 'Cargar Semántica',
                     deshabilitado: false,
                   }}
                   enProceso={{

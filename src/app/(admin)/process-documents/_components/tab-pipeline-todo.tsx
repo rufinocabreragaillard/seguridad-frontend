@@ -22,6 +22,13 @@ import {
 } from '../_lib/ejecutar-paso'
 import { PipelineNarrativo } from '@/components/pipeline/PipelineNarrativo'
 import { NivelCargaToggle } from './nivel-carga-toggle'
+import {
+  esperarClientLM,
+  elegirCarpetaLocal,
+  ingestarLocal,
+  ejecutarLocal,
+  statusLocal,
+} from '@/lib/client-lm'
 
 // Pasos 3-6: procesamiento de documentos
 const PASOS_PIPELINE = [
@@ -98,6 +105,13 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
 
   const [conteosPorEstado, setConteosPorEstado] = useState<Record<string, number>>({})
 
+  // Modo local: corre dentro del Client LM (window.serverlmClient). El pipeline
+  // completo (escanear → extraer → chunkear → vectorizar) corre 100% local
+  // contra el FastAPI 127.0.0.1; el contenido nunca sube al servidor.
+  const [modoLocal, setModoLocal] = useState(false)
+  const modoLocalRef = useRef(false)
+  const [carpetaLocal, setCarpetaLocal] = useState('')
+
   const abortRef = useRef(false)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const resolveColaRef = useRef<(() => void) | null>(null)
@@ -118,7 +132,16 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
 
   const conteosTimerRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
+  // Conteos locales (Client LM): lee el SQLite local vía el FastAPI 127.0.0.1.
+  const cargarConteosLocal = useCallback(async () => {
+    try {
+      const s = await statusLocal()
+      setConteosPorEstado(s.docs_por_estado ?? {})
+    } catch { /* ignorar */ }
+  }, [])
+
   const cargarConteos = useCallback(async () => {
+    if (modoLocalRef.current) { await cargarConteosLocal(); return }
     try {
       const conteos = await documentosApi.contarPorEstado()
       setConteosPorEstado(conteos as Record<string, number>)
@@ -130,7 +153,7 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
         return next
       })
     } catch { /* ignorar */ }
-  }, [])
+  }, [cargarConteosLocal])
 
   useEffect(() => {
     if (ejecutando && tiempoInicio) {
@@ -145,6 +168,19 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
       if (conteosTimerRef.current) clearInterval(conteosTimerRef.current)
     }
   }, [ejecutando, tiempoInicio, cargarConteos])
+
+  // Detecta presencia del Client LM una sola vez al montar (puente async).
+  useEffect(() => {
+    let cancelado = false
+    esperarClientLM().then((ok) => {
+      if (cancelado || !ok) return
+      modoLocalRef.current = true
+      setModoLocal(true)
+      cargarConteosLocal()
+    })
+    return () => { cancelado = true }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   useEffect(() => {
     getDirectoryHandle(userId, grupoActivo).then((h) => { if (h) setDirHandleState(h) })
@@ -334,7 +370,62 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
     }
   }
 
+  // ── Pipeline 100% LOCAL (Client LM) ───────────────────────────────────────
+  // Etapa activa según el estado más temprano que aún tiene documentos.
+  const etapaLocalActiva = (docs: Record<string, number>): number | null => {
+    if ((docs['CARGADO'] ?? 0) > 0) return 0   // EXTRAER
+    if ((docs['METADATA'] ?? 0) > 0) return 1   // ANALIZAR
+    if ((docs['ESCANEADO'] ?? 0) > 0) return 2   // CHUNKEAR
+    if ((docs['CHUNKEADO'] ?? 0) > 0) return 3   // VECTORIZAR
+    return null
+  }
+
+  const ejecutarPipelineLocal = async () => {
+    setMensajeError(''); abortRef.current = false; setEjecutando(true); setPasoActualIdx(null)
+    setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales())
+    try {
+      // 1. Elegir carpeta con el Finder nativo (ruta ABSOLUTA).
+      let dir = carpetaLocal
+      if (!dir) {
+        dir = await elegirCarpetaLocal()
+        if (!dir) { setEjecutando(false); return }
+        setCarpetaLocal(dir)
+      }
+
+      // 2. Ingesta: escanear + encolar (alta CARGADO).
+      setP2Estado('activo'); setP2Mensaje(t('escaneandoDirectorio'))
+      const ing = await ingestarLocal(dir)
+      setP2Total(ing.encolados); setP2Completados(ing.encolados); setP2Estado('listo')
+      setP2Mensaje(t('nArchivosEncontrados', { n: ing.encolados }))
+
+      // 3. Disparar el procesador local (drena la cola en background).
+      await ejecutarLocal()
+
+      // 4. Polling del estado local hasta drenar la cola.
+      let estable = 0
+      for (;;) {
+        if (abortRef.current) break
+        await new Promise((r) => setTimeout(r, 1500))
+        const s = await statusLocal()
+        setConteosPorEstado(s.docs_por_estado ?? {})
+        setPasoActualIdx(etapaLocalActiva(s.docs_por_estado ?? {}))
+        const restantes = (s.tareas_pendientes ?? 0) + (s.en_proceso ?? 0)
+        if (restantes === 0) {
+          // Dos lecturas seguidas en cero para evitar cortar entre transiciones encadenadas.
+          if (++estable >= 2) break
+        } else {
+          estable = 0
+        }
+      }
+    } catch (e) {
+      setMensajeError(e instanceof Error ? e.message : t('errorPipeline'))
+    } finally {
+      setEjecutando(false); setPasoActualIdx(null); await cargarConteosLocal()
+    }
+  }
+
   const ejecutarPipeline = async () => {
+    if (modoLocalRef.current) { await ejecutarPipelineLocal(); return }
     setMensajeError(''); abortRef.current = false; setEjecutando(true); setPasoActualIdx(null)
     setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales())
     suscribirCola()
@@ -518,6 +609,11 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
                 })()}
               </span>
               <div className="ml-auto flex items-center gap-3">
+                {modoLocal && (
+                  <span className="text-[11px] font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-700" title="El pipeline corre 100% local; el contenido no sube al servidor.">
+                    Local
+                  </span>
+                )}
                 <NivelCargaToggle disabled={ejecutando} />
                 <Boton variante="primario" onClick={ejecutarPipeline} disabled={ejecutando || !!pendingCarga}>
                   {ejecutando ? <Loader2 size={16} className="animate-spin" /> : <Play size={16} />}
