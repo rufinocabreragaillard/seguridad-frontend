@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink, CornerDownLeft, FileSpreadsheet, Archive, Pencil, Check } from 'lucide-react'
+import { Plus, Trash2, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, ArrowDown, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink, CornerDownLeft, FileSpreadsheet, Archive, Pencil, Check } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -99,7 +99,11 @@ export default function PaginaChatUsuario() {
   const [respuestaEnCurso, setRespuestaEnCurso] = useState('')
   const [actividad, setActividad] = useState('')
   const [eliminando, setEliminando] = useState(false)
-  const mensajesEndRef = useRef<HTMLDivElement>(null)
+  const [mostrarIrAbajo, setMostrarIrAbajo] = useState(false)
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const scrollPosPorConv = useRef<Map<number, number>>(new Map())
+  const convAnteriorRef = useRef<number | null>(null)
+  const estabaAbajoRef = useRef(true)
   const inputRef = useRef<HTMLTextAreaElement>(null)
 
   // ── Preview del system_prompt (debug, solo super-admin) ──
@@ -229,9 +233,50 @@ export default function PaginaChatUsuario() {
     if (convActivaId != null) cargarConversacion(convActivaId)
   }, [convActivaId, cargarConversacion])
 
+  const irAlFinal = useCallback((suave = true) => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    el.scrollTo({ top: el.scrollHeight, behavior: suave ? 'smooth' : 'auto' })
+    estabaAbajoRef.current = true
+    setMostrarIrAbajo(false)
+  }, [])
+
+  const onScrollMensajes = useCallback(() => {
+    const el = scrollContainerRef.current
+    if (!el) return
+    const abajo = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+    estabaAbajoRef.current = abajo
+    setMostrarIrAbajo(!abajo)
+    if (convActivaId != null) scrollPosPorConv.current.set(convActivaId, el.scrollTop)
+  }, [convActivaId])
+
   useEffect(() => {
-    mensajesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [mensajes, respuestaEnCurso])
+    if (convActivaId == null) return
+    const el = scrollContainerRef.current
+    if (!el) return
+
+    // Cambio de conversación: restaurar la posición previa o saltar al final
+    // SIN animación (evita el "desfile" de toda la conversación al entrar).
+    if (convAnteriorRef.current !== convActivaId) {
+      convAnteriorRef.current = convActivaId
+      const guardada = scrollPosPorConv.current.get(convActivaId)
+      requestAnimationFrame(() => {
+        el.scrollTop = guardada != null ? guardada : el.scrollHeight
+        const abajo = el.scrollHeight - el.scrollTop - el.clientHeight < 80
+        estabaAbajoRef.current = abajo
+        setMostrarIrAbajo(!abajo)
+      })
+      return
+    }
+
+    // Mensaje nuevo / streaming en la conversación actual: seguir al final
+    // solo si el usuario ya estaba abajo; si subió a leer, no lo arrastramos.
+    if (estabaAbajoRef.current) {
+      irAlFinal(!respuestaEnCurso)
+    } else {
+      setMostrarIrAbajo(true)
+    }
+  }, [mensajes, respuestaEnCurso, convActivaId, irAlFinal])
 
   const nuevaConversacion = async () => {
     setErrorLista('')
@@ -781,7 +826,7 @@ export default function PaginaChatUsuario() {
           </aside>
 
           {/* Área principal de chat */}
-          <main className="flex-1 flex flex-col border border-borde rounded-lg overflow-hidden min-w-0" style={{ background: '#f8f9fb' }}>
+          <main className="relative flex-1 flex flex-col border border-borde rounded-lg overflow-hidden min-w-0" style={{ background: '#f8f9fb' }}>
             <>
               {/* Cabecera del chat: acciones (debug super-admin) */}
               {esSuperAdmin && convActivaId != null && (
@@ -798,7 +843,7 @@ export default function PaginaChatUsuario() {
                 </div>
               )}
               <AvisoI18nAdmin tipoAcceso={usuario?.tipo_acceso} />
-              <div className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
+              <div ref={scrollContainerRef} onScroll={onScrollMensajes} className="flex-1 overflow-y-auto px-4 py-4 flex flex-col gap-4">
                 {cargandoConv ? (
                   <p className="text-sm text-texto-muted text-center">{t('cargando') ?? 'Cargando...'}</p>
                 ) : convActivaId == null ? (
@@ -831,8 +876,18 @@ export default function PaginaChatUsuario() {
                     )}
                   </>
                 )}
-                <div ref={mensajesEndRef} />
               </div>
+
+              {mostrarIrAbajo && convActivaId != null && (
+                <button
+                  type="button"
+                  onClick={() => irAlFinal(true)}
+                  title={t('irAlFinal') ?? 'Ir al final'}
+                  className="absolute right-6 bottom-28 z-10 flex items-center justify-center w-9 h-9 rounded-full bg-primario text-white shadow-lg hover:opacity-90 transition"
+                >
+                  <ArrowDown size={18} />
+                </button>
+              )}
 
               {errorConv && (
                 <div className="px-4 py-2 text-sm text-error bg-red-50">{errorConv}</div>
