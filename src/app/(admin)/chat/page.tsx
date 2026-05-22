@@ -72,7 +72,7 @@ function iconoEstadoCola(estado: string | null | undefined) {
 }
 
 export default function PaginaChatUsuario() {
-  const { grupoActivo, usuario } = useAuth()
+  const { grupoActivo, usuario, cargando: cargandoAuth } = useAuth()
   const codigoUsuario = usuario?.codigo_usuario ?? ''
   const t = useTranslations('chat')
   const tc = useTranslations('common')
@@ -205,15 +205,20 @@ export default function PaginaChatUsuario() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Esperar a que la sesión esté hidratada antes de cargar: grupoActivo arranca
+  // en null y luego cambia al valor real, lo que dispararía estos efectos dos
+  // veces (doble carga + parpadeo en blanco). Con el guard corren una sola vez.
   useEffect(() => {
+    if (cargandoAuth || !grupoActivo) return
     cargarLista(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [grupoActivo])
+  }, [grupoActivo, cargandoAuth])
 
   useEffect(() => {
+    if (cargandoAuth || !grupoActivo) return
     setConvActivaId(null)
     setMensajes([])
-  }, [grupoActivo])
+  }, [grupoActivo, cargandoAuth])
 
   const cargarConversacion = useCallback(async (id: number) => {
     setCargandoConv(true)
