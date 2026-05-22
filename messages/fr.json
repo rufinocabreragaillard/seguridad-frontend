@@ -1043,6 +1043,7 @@
     "placeholderSegGrupo": "Ex: \"Attribuez le rôle DOC-ADMIN à jean@exemple.fr\", \"montrez-moi les utilisateurs du groupe\"... (Entrée pour envoyer)",
     "placeholderPrimerMensaje": "Nouvelle conversation. Écrivez votre premier message ci-dessous.",
     "pensando": "Réflexion en cours…",
+    "irAlFinal": "Aller en bas",
     "procesandoResultados": "Traitement des résultats…",
     "errorTool": "Un problème est survenu avec la requête. Nouvelle tentative…",
     "buscandoDocumentos": "Recherche dans vos documents…",

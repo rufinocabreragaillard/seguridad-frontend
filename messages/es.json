@@ -1080,6 +1080,7 @@
     "placeholderSegGrupo": "Ej: \"Asigna el rol DOC-ADMIN a juan@ejemplo.cl\", \"muéstrame los usuarios del grupo\"... (Enter para enviar)",
     "placeholderPrimerMensaje": "Conversación nueva. Escribe tu primer mensaje abajo.",
     "pensando": "Pensando…",
+    "irAlFinal": "Ir al final",
     "procesandoResultados": "Procesando resultados…",
     "errorTool": "Hubo un problema con la consulta. Reintentando…",
     "buscandoDocumentos": "Buscando en tus documentos…",

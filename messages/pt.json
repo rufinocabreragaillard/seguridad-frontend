@@ -1043,6 +1043,7 @@
     "placeholderSegGrupo": "Ex: \"Atribua o papel DOC-ADMIN a juan@exemplo.cl\", \"mostre-me os usuários do grupo\"... (Enter para enviar)",
     "placeholderPrimerMensaje": "Nova conversa. Escreva sua primeira mensagem abaixo.",
     "pensando": "Pensando...",
+    "irAlFinal": "Ir para o final",
     "procesandoResultados": "Processando resultados...",
     "errorTool": "Houve um problema com a consulta. Tentando novamente...",
     "buscandoDocumentos": "Buscando em seus documentos...",
