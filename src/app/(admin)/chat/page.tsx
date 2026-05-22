@@ -1729,8 +1729,9 @@ function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMens
                 ),
                 a: ({ href, children, ...props }) => {
                   const hrefSeguro = typeof href === 'string' && /^(https?:\/\/|\/)/i.test(href) ? href : '#'
-                  // Detectar link a documento: /documentos?codigo=X
-                  const matchDoc = hrefSeguro.match(/^\/documentos[?&]codigo=(\d+)/)
+                  // Detectar link a documento: /documents?codigo=X
+                  // Acepta tambien /documentos (links de conversaciones antiguas).
+                  const matchDoc = hrefSeguro.match(/^\/document(?:o)?s[?&]codigo=(\d+)/)
                   if (matchDoc && onAbrirDoc) {
                     const codigo = parseInt(matchDoc[1], 10)
                     return (
