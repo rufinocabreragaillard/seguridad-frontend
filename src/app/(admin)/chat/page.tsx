@@ -119,34 +119,20 @@ export default function PaginaChatUsuario() {
   const [spCopiado, setSpCopiado] = useState(false)
   const esSuperAdmin = grupoActivo === 'ADMIN'
 
-  // ── Visor de documento en modal (evita popup blocker) ──
-  const [visorBlobUrl, setVisorBlobUrl] = useState<string | null>(null)
-  const [visorNombre, setVisorNombre] = useState<string>('')
-
-  const cerrarVisor = useCallback(() => {
-    if (visorBlobUrl) URL.revokeObjectURL(visorBlobUrl)
-    setVisorBlobUrl(null)
-    setVisorNombre('')
-  }, [visorBlobUrl])
 
   const abrirDocDesdeLink = useCallback(async (codigo: number) => {
-    // Asegurar handle + permiso ANTES del await del API: requestPermission()
+    // Asegurar handle + permiso ANTES de abrir la pestaña: requestPermission()
     // y showDirectoryPicker() requieren un user gesture activo, que se pierde
     // si llamamos primero a documentosApi.obtener.
     const { continuar, handle } = await asegurarHandleConPermiso(codigoUsuario || null, grupoActivo)
     if (!continuar) return
+    // Abrir la pestaña nueva (con loading) de inmediato para evitar el popup blocker.
+    const win = abrirVentanaLoading()
     try {
       const doc = await documentosApi.obtener(codigo)
-      if (!doc.ubicacion_documento) return
-      await cargarBlobDocumento(
-        doc.ubicacion_documento,
-        (url, nombre) => { setVisorBlobUrl(url); setVisorNombre(nombre) },
-        (msg) => alert(msg),
-        codigoUsuario || null,
-        grupoActivo,
-        handle,
-      )
-    } catch { /* silencioso */ }
+      if (!doc.ubicacion_documento) { win?.close(); return }
+      await abrirDocumento(doc.ubicacion_documento, win, codigoUsuario || null, grupoActivo, handle)
+    } catch { win?.close() }
   }, [codigoUsuario, grupoActivo])
 
   const verSystemPrompt = async () => {
@@ -1672,23 +1658,6 @@ export default function PaginaChatUsuario() {
         ) : null}
       </Modal>
 
-      {/* Visor de documento en modal — evita popup blocker */}
-      {visorBlobUrl && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/80" onClick={cerrarVisor}>
-          <div className="flex items-center justify-between px-4 py-2 bg-surface border-b border-borde" onClick={e => e.stopPropagation()}>
-            <span className="text-sm font-medium text-texto truncate max-w-[80vw]">{visorNombre}</span>
-            <button onClick={cerrarVisor} className="p-1.5 rounded hover:bg-fondo text-texto-muted hover:text-texto">
-              <X size={18} />
-            </button>
-          </div>
-          <iframe
-            src={visorBlobUrl}
-            className="flex-1 w-full border-0"
-            title={visorNombre}
-            onClick={e => e.stopPropagation()}
-          />
-        </div>
-      )}
     </div>
   )
 }
