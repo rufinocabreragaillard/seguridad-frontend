@@ -122,11 +122,19 @@ export async function escanearParaCarga(opts: {
   return { scan, archivosParaCargar, codigosUbicacionEscaneadas }
 }
 
-// Tamaño de lote para el POST de carga. Un solo POST con cientos de miles de
-// archivos (~90 MB de JSON) supera el límite de tamaño del proxy de Railway y
-// falla con ERR_NETWORK ("no se recibió respuesta"). Troceamos: ~5k archivos por
-// lote ≈ 1.7 MB, cómodo bajo cualquier límite.
-const TAMANO_LOTE_CARGA = 5000
+// Tamaño de lote por defecto si no se puede leer el parámetro de configuración.
+const TAMANO_LOTE_CARGA_DEFAULT = 3000
+
+// El tamaño de lote de la carga reutiliza el mismo parámetro que los demás pasos
+// del pipeline (PROCESAMIENTO / TAMANO_PAQUETE), para tener un único knob.
+async function obtenerTamanoLoteCarga(): Promise<number> {
+  try {
+    const r = await parametrosApi.obtenerValor('PROCESAMIENTO', 'TAMANO_PAQUETE')
+    const n = parseInt(String(r?.valor ?? ''), 10)
+    if (Number.isFinite(n) && n > 0) return n
+  } catch { /* usar default */ }
+  return TAMANO_LOTE_CARGA_DEFAULT
+}
 
 export async function ejecutarCarga(
   pending: PendingCarga,
@@ -140,9 +148,14 @@ export async function ejecutarCarga(
   const total = archivosParaCargar.length
   const codigosUbic = codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined
 
+  // Un solo POST con cientos de miles de archivos (~90 MB de JSON) supera el
+  // límite de tamaño del proxy de Railway y falla con ERR_NETWORK ("no se recibió
+  // respuesta"). Troceamos en lotes de TAMANO_PAQUETE; el UPSERT del backend es
+  // idempotente, así que enviar en lotes es seguro.
+  const tamanoLote = await obtenerTamanoLoteCarga()
   const lotes: (typeof archivosParaCargar)[] = []
-  for (let i = 0; i < total; i += TAMANO_LOTE_CARGA) {
-    lotes.push(archivosParaCargar.slice(i, i + TAMANO_LOTE_CARGA))
+  for (let i = 0; i < total; i += tamanoLote) {
+    lotes.push(archivosParaCargar.slice(i, i + tamanoLote))
   }
   if (lotes.length === 0) lotes.push([])
 
@@ -165,7 +178,7 @@ export async function ejecutarCarga(
     insertados += res.insertados
     actualizados += res.actualizados
     eliminados += res.eliminados ?? 0
-    onProgreso?.(Math.min((idx + 1) * TAMANO_LOTE_CARGA, total), total)
+    onProgreso?.(Math.min((idx + 1) * tamanoLote, total), total)
   }
 
   return { insertados, actualizados, eliminados }
