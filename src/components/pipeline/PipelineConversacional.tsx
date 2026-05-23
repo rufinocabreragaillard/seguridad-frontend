@@ -59,7 +59,10 @@ interface PipelineConversacionalProps {
   ejecutando: boolean
   /** Texto del bloque "Por qué" — ya no se renderiza, conservado por compatibilidad con callers. */
   porQueTexto?: string
+  /** Mensaje de error inhabilitador (rojo). */
   mensajeError?: string | null
+  /** Mensaje de advertencia no bloqueante (amarillo). */
+  mensajeAdvertencia?: string | null
   /** Slot opcional que se renderiza dentro de la tarjeta izquierda, justo arriba de los botones. */
   slotArribaBotones?: React.ReactNode
   /**
@@ -75,6 +78,7 @@ export function PipelineConversacional({
   enProceso,
   ejecutando,
   mensajeError,
+  mensajeAdvertencia,
   slotArribaBotones,
   columnaIzquierda,
 }: PipelineConversacionalProps) {
@@ -84,6 +88,12 @@ export function PipelineConversacional({
       {mensajeError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {mensajeError}
+        </div>
+      )}
+
+      {mensajeAdvertencia && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {mensajeAdvertencia}
         </div>
       )}
 

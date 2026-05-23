@@ -80,8 +80,11 @@ interface PipelineNarrativoProps {
   /** Texto del bloque "Por qué" — ya no se renderiza, conservado por compatibilidad con callers. */
   porQueTexto?: string
 
-  /** Mensaje de error/aviso opcional. */
+  /** Mensaje de error inhabilitador opcional (rojo). */
   mensajeError?: string | null
+
+  /** Mensaje de advertencia opcional (amarillo). No bloquea, solo informa. */
+  mensajeAdvertencia?: string | null
 
   /** Si false, oculta el bloque "Antes de empezar" (carpeta + Empezar). Default: true. */
   mostrarAntesDeEmpezar?: boolean
@@ -153,6 +156,7 @@ export function PipelineNarrativo({
   ejecutando,
   onDetener,
   mensajeError,
+  mensajeAdvertencia,
   mostrarAntesDeEmpezar = true,
   mostrarEstadisticas = true,
   mostrarProgresoYResumen = true,
@@ -165,6 +169,12 @@ export function PipelineNarrativo({
       {mensajeError && (
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {mensajeError}
+        </div>
+      )}
+
+      {mensajeAdvertencia && (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700">
+          {mensajeAdvertencia}
         </div>
       )}
 

@@ -462,6 +462,7 @@ export default function PaginaCargaDocsUsuario() {
   const [tiempoInicio, setTiempoInicio] = useState<number | null>(null)
   const [tiempoTranscurrido, setTiempoTranscurrido] = useState(0)
   const [mensajeError, setMensajeError] = useState('')
+  const [mensajeAdvertencia, setMensajeAdvertencia] = useState('')
   const [totalDocs, setTotalDocs] = useState(0)
   const [docsVectorizados, setDocsVectorizados] = useState(0)
   const [docsPendientes, setDocsPendientes] = useState(0)
@@ -688,7 +689,7 @@ export default function PaginaCargaDocsUsuario() {
       setPaso('CARGAR', { total: totalArchivos, completados: totalArchivos, estado: 'listo' })
       const vacios = contarArchivosVacios(pending.archivosParaCargar)
       if (vacios > 0) {
-        setMensajeError(`⚠ ${vacios} archivo(s) están en 0 bytes (solo en línea en Dropbox/iCloud). Se cargaron pero no se podrán procesar hasta descargarlos localmente y recargar.`)
+        setMensajeAdvertencia(`⚠ ${vacios} archivo(s) están en 0 bytes (solo en línea en Dropbox/iCloud). Se cargaron pero no se podrán procesar hasta descargarlos localmente y recargar.`)
       }
       return true
     } catch (e) {
@@ -727,7 +728,7 @@ export default function PaginaCargaDocsUsuario() {
   // Pipeline 100% LOCAL (Client LM): elegir carpeta nativa → ingestar → procesar
   // → poll del estado local. El contenido y los embeddings nunca suben al servidor.
   const ejecutarPipelineLocal = async () => {
-    setMensajeError(''); abortRef.current = false; setEjecutando(true)
+    setMensajeError(''); setMensajeAdvertencia(''); abortRef.current = false; setEjecutando(true)
     setTiempoInicio(Date.now()); setTiempoTranscurrido(0)
     setProgresos(progresosIniciales()); setArchivoActualLocal(null)
     try {
@@ -762,7 +763,7 @@ export default function PaginaCargaDocsUsuario() {
 
   const ejecutarPipeline = async () => {
     if (modoLocalRef.current) { await ejecutarPipelineLocal(); return }
-    setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
+    setMensajeError(''); setMensajeAdvertencia(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
     try {
       // Leer tamaño de paquete del resumen del pipeline
       let tamanoPaquete = 0
@@ -819,7 +820,7 @@ export default function PaginaCargaDocsUsuario() {
   // - Si no hay ubicaciones → abre el finder para crearlas primero.
   const ejecutarPipelineUbicaciones = async () => {
     if (modoLocalRef.current) { await ejecutarPipelineLocal(); return }
-    setMensajeError(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
+    setMensajeError(''); setMensajeAdvertencia(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
     try {
       // Paso 1: indexar ubicaciones — solo si no hay ubicaciones en BD
       if (ubicaciones.length === 0) {
@@ -1286,6 +1287,7 @@ export default function PaginaCargaDocsUsuario() {
                   columnaIzquierda={columnaUbicaciones}
                   porQueTexto={t('narrativoPorQue')}
                   mensajeError={mensajeError || null}
+                  mensajeAdvertencia={mensajeAdvertencia || null}
                 />
               )
             })()}
