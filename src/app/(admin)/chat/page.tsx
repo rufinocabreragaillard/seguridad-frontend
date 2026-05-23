@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useRef, useCallback, useMemo, KeyboardEvent } from 'react'
-import { Plus, Trash2, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, ArrowDown, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink, CornerDownLeft, FileSpreadsheet, Archive, Pencil, Check } from 'lucide-react'
+import { Plus, Trash2, MessageCircle, FolderOpen, Search, FileText, X, RefreshCw, ArrowUp, ArrowDown, FolderPlus, Sparkles, ChevronRight, ChevronDown, Info, Eye, Copy, Zap, Download, ExternalLink, CornerDownLeft, FileSpreadsheet, Archive, Pencil, Check, Square } from 'lucide-react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeSanitize from 'rehype-sanitize'
@@ -105,6 +105,8 @@ export default function PaginaChatUsuario() {
   const convAnteriorRef = useRef<number | null>(null)
   const estabaAbajoRef = useRef(true)
   const inputRef = useRef<HTMLTextAreaElement>(null)
+  const abortRef = useRef<AbortController | null>(null)
+  const omitirCargaConvRef = useRef<number | null>(null)
 
   // ── Preview del system_prompt (debug, solo super-admin) ──
   const [modalSpAbierto, setModalSpAbierto] = useState(false)
@@ -221,7 +223,15 @@ export default function PaginaChatUsuario() {
   }, [])
 
   useEffect(() => {
-    if (convActivaId != null) cargarConversacion(convActivaId)
+    if (convActivaId == null) return
+    // Si acabamos de crear esta conversación al enviar el primer mensaje, no
+    // recargarla desde el backend: vendría vacía y borraría el mensaje recién
+    // agregado en pantalla (race con setMensajes) + ocultaría el indicador.
+    if (omitirCargaConvRef.current === convActivaId) {
+      omitirCargaConvRef.current = null
+      return
+    }
+    cargarConversacion(convActivaId)
   }, [convActivaId, cargarConversacion])
 
   const irAlFinal = useCallback((suave = true) => {
@@ -295,6 +305,9 @@ export default function PaginaChatUsuario() {
       try {
         const nueva = await chatApi.crearConversacion(CODIGO_FUNCION)
         idConv = nueva.id_conversacion
+        // Evitar que el efecto de cambio de convActivaId recargue (vacía) la
+        // conversación recién creada y borre el mensaje que estamos por mostrar.
+        omitirCargaConvRef.current = idConv
         setConvActivaId(idConv)
         await cargarLista(false)
       } catch { return }
@@ -314,6 +327,24 @@ export default function PaginaChatUsuario() {
     setMensajes((prev) => [...prev, tempUserMsg])
     setTextoInput('')
     let acumulado = ''
+    const controller = new AbortController()
+    abortRef.current = controller
+    const commitLocal = () => {
+      const ahora = new Date().toISOString()
+      setMensajes((prev) => {
+        const sinTemp = prev.filter((m) => m.id_mensaje !== tempUserMsg.id_mensaje)
+        const mensajeAsistente: ChatMensaje = {
+          id_mensaje: -Date.now(),
+          id_conversacion: idConv,
+          rol: 'assistant',
+          contenido: acumulado,
+          fecha_creacion: ahora,
+        }
+        return [...sinTemp, tempUserMsg, ...(acumulado ? [mensajeAsistente] : [])]
+      })
+      setRespuestaEnCurso('')
+      setActividad('')
+    }
     await chatApi.enviarMensajeStream(
       idConv,
       texto,
@@ -359,15 +390,25 @@ export default function PaginaChatUsuario() {
           setActividad('')
           setMensajes((prev) => prev.filter((m) => m.id_mensaje !== tempUserMsg.id_mensaje))
         },
+        onAbort: () => {
+          // Detención manual: conservar la pregunta y lo ya recibido.
+          commitLocal()
+        },
       },
       {
         codigo_ubicacion_area: areaSel || null,
         id_espacio: espacioSel,
       },
+      controller.signal,
     )
+    abortRef.current = null
     setEnviando(false)
     inputRef.current?.focus()
     setTimeout(() => cargarLista(false, false), 800)
+  }
+
+  const detenerConsulta = () => {
+    abortRef.current?.abort()
   }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -897,15 +938,26 @@ export default function PaginaChatUsuario() {
                     style={{ minHeight: '44px', maxHeight: '200px' }}
                     className="w-full resize-none rounded-xl bg-transparent px-3 py-3 pr-10 text-sm text-texto placeholder:text-texto-muted outline-none disabled:opacity-50 overflow-y-auto"
                   />
-                  <button
-                    type="button"
-                    onClick={enviarMensaje}
-                    disabled={enviando || !textoInput.trim()}
-                    className="absolute right-2 bottom-2 p-1.5 rounded-lg text-texto-muted hover:text-primario-oscuro disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    title="Enviar (Enter)"
-                  >
-                    <CornerDownLeft size={16} />
-                  </button>
+                  {enviando ? (
+                    <button
+                      type="button"
+                      onClick={detenerConsulta}
+                      className="absolute right-2 bottom-2 p-1.5 rounded-lg bg-primario text-white hover:opacity-90 transition-colors"
+                      title={t('detenerConsulta') ?? 'Detener'}
+                    >
+                      <Square size={16} fill="currentColor" />
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={enviarMensaje}
+                      disabled={!textoInput.trim()}
+                      className="absolute right-2 bottom-2 p-1.5 rounded-lg text-texto-muted hover:text-primario-oscuro disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      title="Enviar (Enter)"
+                    >
+                      <CornerDownLeft size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             </>

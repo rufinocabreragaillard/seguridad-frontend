@@ -1744,11 +1744,13 @@ export const chatApi = {
       onError: (mensaje: string) => void
       onToolUse?: (info: { id: string; name: string; input: Record<string, unknown> }) => void
       onToolResult?: (info: { id: string; ok?: boolean; n_filas?: number; duracion_ms?: number; error?: string }) => void
+      onAbort?: () => void
     },
     filtros?: {
       codigo_ubicacion_area?: string | null
       id_espacio?: number | null
     },
+    signal?: AbortSignal,
   ): Promise<void> => {
     const token = await obtenerToken()
     if (!token) {
@@ -1784,8 +1786,13 @@ export const chatApi = {
           ...overrideHeaders,
         },
         body: JSON.stringify({ contenido }),
+        signal,
       })
     } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') {
+        callbacks.onAbort?.()
+        return
+      }
       callbacks.onError(e instanceof Error ? e.message : 'Error de red')
       return
     }
@@ -1840,6 +1847,10 @@ export const chatApi = {
         }
       }
     } catch (e) {
+      if (e instanceof Error && e.name === 'AbortError') {
+        callbacks.onAbort?.()
+        return
+      }
       callbacks.onError(e instanceof Error ? e.message : 'Error leyendo stream')
     }
   },
