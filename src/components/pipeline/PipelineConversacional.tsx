@@ -45,14 +45,11 @@ interface PipelineConversacionalProps {
     deshabilitado?: boolean
   }
 
-  /** "En proceso" — mensaje + dial triple. */
+  /** "En proceso" — dial triple. */
   enProceso: {
-    mensaje: string  // "234 de 2,847…"
     lote: { actual: number; total: number }
     etapa: { indiceActivo: number; total: number; nombre: string }
     actual: { completados: number; total: number; archivoActual?: string }
-    /** Mensaje secundario abajo del dial (ej. "documento 234 · 1 no analizables hasta ahora"). */
-    submensaje?: string
     /** Contadores acumulados que se muestran SIEMPRE debajo del dial. */
     estadisticas?: { vectorizados: number; noProcesables: number }
     onVerDetalles?: () => void
@@ -155,7 +152,7 @@ export function PipelineConversacional({
           </div>
         </div>
 
-        {/* ── Columna derecha: dial + estadística a su derecha ── */}
+        {/* ── Columna derecha: dial + estadística (vectorizados / no procesables) ── */}
         <div className="flex flex-row gap-5 items-center md:items-start">
           <div className="flex flex-col items-center gap-3">
             <DialTriple
@@ -189,15 +186,6 @@ export function PipelineConversacional({
               </div>
             )}
           </div>
-
-          {ejecutando && (
-            <div className="flex flex-col gap-1 min-w-0 self-center">
-              <p className="text-sm text-texto leading-relaxed">{enProceso.mensaje}</p>
-              {enProceso.submensaje && (
-                <p className="text-sm text-texto leading-relaxed">{enProceso.submensaje}</p>
-              )}
-            </div>
-          )}
 
           {/* Pie: Ver detalles (Detener proceso vive ahora en la columna izquierda, junto a Capturar) */}
           {enProceso.onVerDetalles && (

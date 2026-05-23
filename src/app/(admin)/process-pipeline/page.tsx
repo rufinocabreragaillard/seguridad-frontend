@@ -1046,6 +1046,12 @@ export default function PaginaCargaDocsUsuario() {
     return { totalEnCurso, velocidadMin: Math.round(velocidadMin * 10) / 10, minutosEta }
   })()
 
+  // Mensaje "X de Y documentos" — se muestra bajo el dial, debajo de "Procesando…".
+  const minEtaPipeline = etaInfo?.minutosEta ?? null
+  const mensajeEnProc = minEtaPipeline != null
+    ? `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEtaPipeline).replace('~', '')}.`
+    : `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
+
   const formatEta = (min: number | null): string => {
     if (min === null) return '—'
     if (min < 1) return '<1 min'
@@ -1133,11 +1139,6 @@ export default function PaginaCargaDocsUsuario() {
                 total: totalActiva,
                 archivoActual,
               }
-
-              const minEta = etaInfo?.minutosEta ?? null
-              const mensajeEnProc = minEta != null
-                ? `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEta).replace('~', '')}.`
-                : `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
 
               const tieneHijosUbic = (cod: string) =>
                 ubicaciones.some((u) => u.codigo_ubicacion !== cod && u.codigo_ubicacion_superior === cod)
@@ -1235,7 +1236,6 @@ export default function PaginaCargaDocsUsuario() {
                     deshabilitado: false,
                   }}
                   enProceso={{
-                    mensaje: mensajeEnProc,
                     lote,
                     etapa: { indiceActivo, total: fasesNarrativas.length, nombre: nombreEtapa },
                     actual,
@@ -1290,9 +1290,14 @@ export default function PaginaCargaDocsUsuario() {
 
             {/* Timer informativo (los botones ya viven en PipelineNarrativo arriba) */}
             {(ejecutando || todosListos) && (
-              <p className="text-center text-xs text-texto-muted">
-                {ejecutando ? t('procesando', { tiempo: formatTiempo(tiempoTranscurrido) }) : t('completadoEn', { tiempo: formatTiempo(tiempoTranscurrido) })}
-              </p>
+              <div className="flex flex-col items-center gap-0.5">
+                <p className="text-center text-base text-texto-muted">
+                  {ejecutando ? t('procesando', { tiempo: formatTiempo(tiempoTranscurrido) }) : t('completadoEn', { tiempo: formatTiempo(tiempoTranscurrido) })}
+                </p>
+                {ejecutando && (
+                  <p className="text-center text-base text-texto-muted">{mensajeEnProc}</p>
+                )}
+              </div>
             )}
         </div>
 
