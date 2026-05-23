@@ -122,17 +122,53 @@ export async function escanearParaCarga(opts: {
   return { scan, archivosParaCargar, codigosUbicacionEscaneadas }
 }
 
-export async function ejecutarCarga(pending: PendingCarga): Promise<{
+// Tamaño de lote para el POST de carga. Un solo POST con cientos de miles de
+// archivos (~90 MB de JSON) supera el límite de tamaño del proxy de Railway y
+// falla con ERR_NETWORK ("no se recibió respuesta"). Troceamos: ~5k archivos por
+// lote ≈ 1.7 MB, cómodo bajo cualquier límite.
+const TAMANO_LOTE_CARGA = 5000
+
+export async function ejecutarCarga(
+  pending: PendingCarga,
+  onProgreso?: (completados: number, total: number) => void,
+): Promise<{
   insertados: number
   actualizados: number
   eliminados: number
 }> {
   const { archivosParaCargar, codigosUbicacionEscaneadas } = pending
-  const res = await cargaDocumentosApi.cargar({
-    archivos: archivosParaCargar,
-    codigos_ubicacion_escaneadas: codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined,
-  })
-  return { insertados: res.insertados, actualizados: res.actualizados, eliminados: res.eliminados ?? 0 }
+  const total = archivosParaCargar.length
+  const codigosUbic = codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined
+
+  const lotes: (typeof archivosParaCargar)[] = []
+  for (let i = 0; i < total; i += TAMANO_LOTE_CARGA) {
+    lotes.push(archivosParaCargar.slice(i, i + TAMANO_LOTE_CARGA))
+  }
+  if (lotes.length === 0) lotes.push([])
+
+  let insertados = 0
+  let actualizados = 0
+  let eliminados = 0
+  onProgreso?.(0, total)
+
+  // `codigos_ubicacion_escaneadas` dispara en el backend el borrado de documentos
+  // huérfanos: los que están en esas ubicaciones pero NO vienen en el lote actual.
+  // Con múltiples lotes eso borraría lo cargado por los lotes anteriores, así que
+  // solo lo enviamos cuando hay un único lote (preserva el comportamiento previo en
+  // cargas chicas). El UPSERT del backend es idempotente, por eso trocear es seguro.
+  const esLoteUnico = lotes.length === 1
+  for (let idx = 0; idx < lotes.length; idx++) {
+    const res = await cargaDocumentosApi.cargar({
+      archivos: lotes[idx],
+      codigos_ubicacion_escaneadas: esLoteUnico ? codigosUbic : undefined,
+    })
+    insertados += res.insertados
+    actualizados += res.actualizados
+    eliminados += res.eliminados ?? 0
+    onProgreso?.(Math.min((idx + 1) * TAMANO_LOTE_CARGA, total), total)
+  }
+
+  return { insertados, actualizados, eliminados }
 }
 
 // ── EXTRAER: CARGADO → METADATA (client-side) ─────────────────────────────────

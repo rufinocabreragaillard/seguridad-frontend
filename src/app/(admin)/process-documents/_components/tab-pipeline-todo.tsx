@@ -258,7 +258,7 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
     setP2Completados(0)
     setP2Mensaje(t('cargandoNArchivos', { n: pending.archivosParaCargar.length }))
     try {
-      const res = await ejecutarCarga(pending)
+      const res = await ejecutarCarga(pending, (completados) => setP2Completados(completados))
       setP2Completados(pending.archivosParaCargar.length)
       setP2Estado('listo')
       setP2Mensaje(t('cargaResultado', { insertados: res.insertados, actualizados: res.actualizados, eliminados: res.eliminados }))

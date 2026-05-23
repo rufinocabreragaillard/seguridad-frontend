@@ -682,7 +682,8 @@ export default function PaginaCargaDocsUsuario() {
       }
       const totalArchivos = pending.archivosParaCargar.length || 1
       setPaso('CARGAR', { total: totalArchivos, completados: 0, estado: 'activo' })
-      await ejecutarCargaLib(pending)
+      await ejecutarCargaLib(pending, (completados, total) =>
+        setPaso('CARGAR', { completados, total: total || totalArchivos }))
       setPaso('CARGAR', { total: totalArchivos, completados: totalArchivos, estado: 'listo' })
       return true
     } catch (e) {
