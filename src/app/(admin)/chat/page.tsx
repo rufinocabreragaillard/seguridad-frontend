@@ -1716,9 +1716,39 @@ export default function PaginaChatUsuario() {
 
 // ── Subcomponente Mensaje ──────────────────────────────────────────────────────
 
+const LIMITE_VISIBLE_FILAS = 10
+
 function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMensaje; streaming?: boolean; onAbrirDoc?: (codigo: number) => void }) {
   const esUser = mensaje.rol === 'user'
   const tieneTabla = !esUser && /(^|\n)\s*\|.*\|.*\n\s*\|[-:| ]+\|/.test(mensaje.contenido)
+  const contenidoRef = useRef<HTMLDivElement>(null)
+  const [expandido, setExpandido] = useState(false)
+  const [filasOcultas, setFilasOcultas] = useState(0)
+
+  // Colapsa listados largos: tras el render cuenta filas de tabla / items de
+  // lista de primer nivel y, si superan LIMITE_VISIBLE_FILAS, muestra solo las
+  // primeras y un boton "Ver mas" que revela el resto en el cliente (sin nueva
+  // llamada al LLM). Las filas viven en el markdown del mensaje, que se
+  // persiste, asi que el colapso sobrevive a recargar la conversacion.
+  useEffect(() => {
+    const root = contenidoRef.current
+    let ocultas = 0
+    if (root && !esUser && !streaming) {
+      const filasTabla = root.querySelectorAll('table tbody tr').length
+      const itemsLista = root.querySelectorAll(':scope > ol > li, :scope > ul > li').length
+      const total = Math.max(filasTabla, itemsLista)
+      ocultas = total > LIMITE_VISIBLE_FILAS ? total - LIMITE_VISIBLE_FILAS : 0
+    }
+    // Medir el DOM renderizado exige setState en el efecto: la cuenta debe
+    // calzar con las filas que el CSS oculta (nth-child), no con el markdown.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setFilasOcultas(ocultas)
+  }, [mensaje.contenido, streaming, esUser])
+
+  const colapsar = filasOcultas > 0 && !expandido
+  const claseColapso = colapsar
+    ? '[&_table_tbody_tr:nth-child(n+11)]:hidden [&>ol>li:nth-child(n+11)]:hidden [&>ul>li:nth-child(n+11)]:hidden'
+    : ''
   return (
     <div className={`flex ${esUser ? 'justify-end' : 'justify-start'}`}>
       <div
@@ -1729,7 +1759,7 @@ function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMens
         {esUser ? (
           <div className="whitespace-pre-wrap">{mensaje.contenido}</div>
         ) : (
-          <div className="prose prose-sm max-w-none prose-p:my-1 prose-pre:my-2 prose-pre:bg-surface prose-pre:text-texto prose-code:text-texto prose-code:bg-surface prose-code:px-1 prose-code:rounded prose-code:text-xs prose-headings:my-2 prose-a:text-primario prose-a:underline">
+          <div ref={contenidoRef} className={`prose prose-sm max-w-none prose-p:my-1 prose-pre:my-2 prose-pre:bg-surface prose-pre:text-texto prose-code:text-texto prose-code:bg-surface prose-code:px-1 prose-code:rounded prose-code:text-xs prose-headings:my-2 prose-a:text-primario prose-a:underline ${claseColapso}`}>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               rehypePlugins={[rehypeSanitize]}
@@ -1834,6 +1864,19 @@ function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMens
               {mensaje.contenido}
             </ReactMarkdown>
             {streaming && <span className="inline-block w-1 h-3 ml-0.5 bg-primario animate-pulse" />}
+            {filasOcultas > 0 && !streaming && (
+              <button
+                type="button"
+                onClick={() => setExpandido((e) => !e)}
+                className="mt-1 inline-flex items-center gap-1 text-xs text-primario hover:text-primario-hover bg-transparent border-0 p-0 cursor-pointer"
+              >
+                {expandido ? (
+                  <><ChevronDown size={12} /> Ver menos</>
+                ) : (
+                  <><ChevronRight size={12} /> Ver {filasOcultas} más</>
+                )}
+              </button>
+            )}
           </div>
         )}
       </div>
