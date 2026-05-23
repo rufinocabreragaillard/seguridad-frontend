@@ -1751,8 +1751,9 @@ function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMens
                 a: ({ href, children, ...props }) => {
                   const hrefSeguro = typeof href === 'string' && /^(https?:\/\/|\/)/i.test(href) ? href : '#'
                   // Detectar link a documento: /documents?codigo=X
-                  // Acepta tambien /documentos (links de conversaciones antiguas).
-                  const matchDoc = hrefSeguro.match(/^\/document(?:o)?s[?&]codigo=(\d+)/)
+                  // Acepta /documentos (links antiguos) y tolera que el LLM
+                  // anteponga un esquema+dominio inventado (https://serverlm.cl/documents?codigo=X).
+                  const matchDoc = hrefSeguro.match(/\/document(?:o)?s[?&]codigo=(\d+)/i)
                   if (matchDoc && onAbrirDoc) {
                     const codigo = parseInt(matchDoc[1], 10)
                     return (
