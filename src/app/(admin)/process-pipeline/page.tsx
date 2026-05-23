@@ -1047,10 +1047,12 @@ export default function PaginaCargaDocsUsuario() {
   })()
 
   // Mensaje "X de Y documentos" — se muestra bajo el dial, debajo de "Procesando…".
+  // La estimación "Quedan unos…" va en su propia línea (debajo), centrada.
   const minEtaPipeline = etaInfo?.minutosEta ?? null
-  const mensajeEnProc = minEtaPipeline != null
-    ? `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos. Quedan unos ${formatearMinutos(minEtaPipeline).replace('~', '')}.`
-    : `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
+  const mensajeEnProc = `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
+  const mensajeEtaPipeline = minEtaPipeline != null
+    ? `Quedan unos ${formatearMinutos(minEtaPipeline).replace('~', '')}.`
+    : null
 
   const formatEta = (min: number | null): string => {
     if (min === null) return '—'
@@ -1295,7 +1297,12 @@ export default function PaginaCargaDocsUsuario() {
                   {ejecutando ? t('procesando', { tiempo: formatTiempo(tiempoTranscurrido) }) : t('completadoEn', { tiempo: formatTiempo(tiempoTranscurrido) })}
                 </p>
                 {ejecutando && (
-                  <p className="text-center text-base text-texto-muted">{mensajeEnProc}</p>
+                  <>
+                    <p className="text-center text-base text-texto-muted">{mensajeEnProc}</p>
+                    {mensajeEtaPipeline && (
+                      <p className="text-center text-base text-texto-muted">{mensajeEtaPipeline}</p>
+                    )}
+                  </>
                 )}
               </div>
             )}
