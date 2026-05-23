@@ -172,6 +172,16 @@ export interface ArchivoEscaneado {
   ruta_directorio: string   // ruta del directorio que lo contiene
   tamano_kb: number
   fecha_modificacion: string  // ISO 8601
+  vacio: boolean            // true si el archivo pesa 0 bytes (típico de Dropbox/iCloud "solo en línea")
+}
+
+/**
+ * Cuenta cuántos archivos escaneados están vacíos (0 bytes). Un conteo > 0 suele
+ * indicar archivos "solo en línea" (Dropbox/iCloud smart-sync) que no se descargaron
+ * localmente: se cargan pero luego fallan en el pipeline por no tener contenido.
+ */
+export function contarArchivosVacios(archivos: ArchivoEscaneado[]): number {
+  return archivos.reduce((n, a) => n + (a.vacio ? 1 : 0), 0)
 }
 
 /**
@@ -259,6 +269,7 @@ export async function escanearArchivosDirectorio(
             ruta_directorio: rutaActual,
             tamano_kb: Math.round((file.size / 1024) * 100) / 100,
             fecha_modificacion: new Date(file.lastModified).toISOString(),
+            vacio: file.size === 0,
           })
         } catch {
           // archivo no accesible, ignorar

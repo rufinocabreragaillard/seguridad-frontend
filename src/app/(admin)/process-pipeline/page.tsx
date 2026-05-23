@@ -22,6 +22,7 @@ import { getDirectoryHandle, setDirectoryHandle } from '@/lib/file-handle-store'
 import {
   escanearDirectorio,
   soportaDirectoryPicker, type DirectorioEscaneado,
+  contarArchivosVacios,
 } from '@/lib/escanear-directorio'
 import {
   escanearParaCarga,
@@ -685,6 +686,10 @@ export default function PaginaCargaDocsUsuario() {
       await ejecutarCargaLib(pending, (completados, total) =>
         setPaso('CARGAR', { completados, total: total || totalArchivos }))
       setPaso('CARGAR', { total: totalArchivos, completados: totalArchivos, estado: 'listo' })
+      const vacios = contarArchivosVacios(pending.archivosParaCargar)
+      if (vacios > 0) {
+        setMensajeError(`⚠ ${vacios} archivo(s) están en 0 bytes (solo en línea en Dropbox/iCloud). Se cargaron pero no se podrán procesar hasta descargarlos localmente y recargar.`)
+      }
       return true
     } catch (e) {
       setPaso('CARGAR', { estado: 'error' })

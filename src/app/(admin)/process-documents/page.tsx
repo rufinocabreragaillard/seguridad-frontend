@@ -25,7 +25,7 @@ import { TabPipelineTodo } from './_components/tab-pipeline-todo'
 import { ChatProcesar } from './_components/chat-procesar'
 import { TabRevertir } from './_components/tab-revertir'
 import { NivelCargaToggle } from './_components/nivel-carga-toggle'
-import { escanearArchivosDirectorio, escanearDirectorio as escanearDirectorioUbicaciones } from '@/lib/escanear-directorio'
+import { escanearArchivosDirectorio, escanearDirectorio as escanearDirectorioUbicaciones, contarArchivosVacios } from '@/lib/escanear-directorio'
 import { useColaRealtime } from '@/hooks/useColaRealtime'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { DocumentoDetalleModal } from '@/components/documentos/documento-detalle-modal'
@@ -1182,7 +1182,11 @@ function PaginaProcesarDocumentosInterna() {
         archivos: archivosParaCargar,
         codigos_ubicacion_escaneadas: codigosUbicacionEscaneadas.length > 0 ? codigosUbicacionEscaneadas : undefined,
       })
-      const resumen = `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados`
+      const vacios = contarArchivosVacios(archivosParaCargar)
+      const avisoVacios = vacios > 0
+        ? ` · ⚠ ${vacios} archivo(s) en 0 bytes (solo en línea en Dropbox/iCloud): descárgalos localmente y vuelve a cargar para que se puedan procesar.`
+        : ''
+      const resumen = `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados${avisoVacios}`
       setCola([{
         id_cola: 0,
         codigo_documento: '',
@@ -1190,7 +1194,7 @@ function PaginaProcesarDocumentosInterna() {
         estado_cola: 'COMPLETADO',
       }])
       setProcesados(res.insertados + res.actualizados)
-      setMensajeCarga({ tipo: 'exito', texto: resumen })
+      setMensajeCarga({ tipo: vacios > 0 ? 'error' : 'exito', texto: resumen })
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Error al cargar'
       setCola([{ id_cola: 0, codigo_documento: '', nombre_documento: msg, estado_cola: 'ERROR' }])

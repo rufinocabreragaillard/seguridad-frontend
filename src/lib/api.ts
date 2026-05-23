@@ -1699,6 +1699,18 @@ export const cargaDocumentosApi = {
         }
       }
     }
+    // Se agotaron los reintentos sin respuesta del servidor. El navegador no recibió
+    // cuerpo de error (no hay nada que "leer"), así que damos un mensaje accionable
+    // en vez del genérico de red: casi siempre es Railway despertando de reposo o un
+    // lote demasiado grande.
+    const err = ultimoError as { code?: string; response?: unknown }
+    if (err && !err.response) {
+      throw new Error(
+        'No se pudo cargar: el servidor no respondió tras 3 intentos. ' +
+        'Suele ser el servidor despertando de reposo o una carga demasiado grande. ' +
+        'Espera ~30 s y reintenta; si persiste, prueba con una carpeta más pequeña.',
+      )
+    }
     throw ultimoError
   },
 }
