@@ -387,8 +387,9 @@ function PaginaProcesarDocumentosInterna() {
       if (matchProcesar) { setProcesoSel(matchProcesar.codigo_proceso); setCategoriaSel('PROCESAR'); setSeleccionInicialLista(true); return }
       if (matchCorregir) { setProcesoSel(matchCorregir.codigo_proceso); setCategoriaSel('CORREGIR'); setSeleccionInicialLista(true); return }
     }
-    // Sin ?estado= (o sin coincidencia): autoseleccionar el primer proceso PROCESAR
-    if (procesos.length > 0) { setProcesoSel(procesos[0].codigo_proceso); setCategoriaSel('PROCESAR') }
+    // Sin ?estado= (o sin coincidencia): abrir SIN proceso seleccionado, mostrando
+    // todos los documentos (como /documents). Proceso, estado, ubicación y texto
+    // libre son filtros independientes que se suman; cualquiera aplica por sí solo.
     setSeleccionInicialLista(true)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [estadoDesdeUrl, cargandoInicial, procesos, procesosCorregir])
