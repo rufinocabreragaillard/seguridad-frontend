@@ -170,7 +170,7 @@ export default function PaginaChatUsuario() {
     } catch { /* */ }
   }
 
-  const cargarLista = useCallback(async (autoCrear = false, mostrarCargando = true) => {
+  const cargarLista = useCallback(async (mostrarCargando = true) => {
     if (mostrarCargando) setCargandoLista(true)
     setErrorLista('')
     try {
@@ -178,11 +178,6 @@ export default function PaginaChatUsuario() {
       setConversaciones(data)
       if (data.length > 0 && convActivaId == null) {
         setConvActivaId(data[0].id_conversacion)
-      } else if (data.length === 0 && autoCrear) {
-        const nueva = await chatApi.crearConversacion(CODIGO_FUNCION)
-        const data2 = await chatApi.listarConversaciones({ codigo_funcion: CODIGO_FUNCION })
-        setConversaciones(data2)
-        setConvActivaId(nueva.id_conversacion)
       }
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Error al cargar conversaciones'
@@ -198,7 +193,7 @@ export default function PaginaChatUsuario() {
   // veces (doble carga + parpadeo en blanco). Con el guard corren una sola vez.
   useEffect(() => {
     if (cargandoAuth || !grupoActivo) return
-    cargarLista(true)
+    cargarLista()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [grupoActivo, cargandoAuth])
 
@@ -309,7 +304,7 @@ export default function PaginaChatUsuario() {
         // conversación recién creada y borre el mensaje que estamos por mostrar.
         omitirCargaConvRef.current = idConv
         setConvActivaId(idConv)
-        await cargarLista(false)
+        await cargarLista()
       } catch { return }
     }
     if (!idConv) return
@@ -404,7 +399,7 @@ export default function PaginaChatUsuario() {
     abortRef.current = null
     setEnviando(false)
     inputRef.current?.focus()
-    setTimeout(() => cargarLista(false, false), 800)
+    setTimeout(() => cargarLista(false), 800)
   }
 
   const detenerConsulta = () => {
