@@ -1226,7 +1226,7 @@
     "sinValor": "— No value —",
     "todosEstadoLabel": "— All —",
     "filtroLibreLabel": "Free Filter",
-    "filtroLibrePlaceholder": "Filter by name, directory, status, or comments… (Press Enter to apply)",
+    "filtroLibrePlaceholder": "Filter by name, directory, status, or comments…",
     "paralelo": "Parallel:",
     "tope": "Cap:",
     "todosPlaceholder": "all",

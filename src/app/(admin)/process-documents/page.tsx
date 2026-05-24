@@ -529,6 +529,21 @@ function PaginaProcesarDocumentosInterna() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [procesoSel, ubicacionSel, estadoFiltro, filtroLibre, cargandoInicial, seleccionInicialLista])
 
+  // Filtro libre EN VIVO: aplica mientras se escribe con debounce 300ms, igual
+  // que /documents. Enter sigue funcionando como apply inmediato (onKeyDown).
+  const filtroLibreAplicadoRef = useRef(filtroLibre)
+  filtroLibreAplicadoRef.current = filtroLibre
+  useEffect(() => {
+    const next = filtroLibreInput.trim()
+    if (next === filtroLibreAplicadoRef.current) return
+    const id = setTimeout(() => {
+      setFiltroLibre(next)
+      setYaCargado(false)
+    }, 300)
+    return () => clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filtroLibreInput])
+
   // Separar en dos grupos: encontrados en disco y no encontrados.
   // Si no hay directorio escaneado, todos van al grupo "enDisco".
   const todosEnDisco = esExtraer && archivosEnDir
@@ -1525,7 +1540,7 @@ function PaginaProcesarDocumentosInterna() {
                   onChange={(e) => setFiltroLibreInput(e.target.value)}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
-                      setFiltroLibre(filtroLibreInput)
+                      setFiltroLibre(filtroLibreInput.trim())
                       setYaCargado(false)
                     }
                   }}

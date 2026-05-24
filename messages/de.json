@@ -1226,7 +1226,7 @@
     "sinValor": "— Ohne Wert —",
     "todosEstadoLabel": "— Alle —",
     "filtroLibreLabel": "Freitextfilter",
-    "filtroLibrePlaceholder": "Nach Name, Verzeichnis, Status oder Kommentaren filtern… (Enter zum Anwenden)",
+    "filtroLibrePlaceholder": "Nach Name, Verzeichnis, Status oder Kommentaren filtern…",
     "paralelo": "Parallel:",
     "tope": "Limit:",
     "todosPlaceholder": "alle",
