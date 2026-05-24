@@ -1858,6 +1858,8 @@ export const chatApi = {
           } catch { /* línea malformada, ignorar */ }
         }
       }
+      // Conexión cerrada sin evento done: tratar como error
+      callbacks.onError('La conexión se cerró inesperadamente. Por favor intenta de nuevo.')
     } catch (e) {
       if (e instanceof Error && e.name === 'AbortError') {
         callbacks.onAbort?.()

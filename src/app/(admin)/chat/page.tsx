@@ -398,6 +398,7 @@ export default function PaginaChatUsuario() {
     )
     abortRef.current = null
     setEnviando(false)
+    setActividad('')
     inputRef.current?.focus()
     setTimeout(() => cargarLista(false), 800)
   }
