@@ -2351,4 +2351,48 @@ export const mensajeriaApi = {
     api.post<number[]>('/mensajes/disparar', null, { params: { evento } }).then((r) => r.data),
 }
 
+// ── Pagos / Suscripciones (Paddle tras frontera neutral) ──────────────────
+export interface PlanVendible {
+  codigo_plan: string
+  nombre: string
+  precio_mensual_usd: number | null
+  tokens_mensuales: number | null
+  documentos_maximos: number | null
+  usuarios_externos_maximos: number | null
+  stripe_price_id_mensual: string | null
+  orden: number
+}
+
+export interface SuscripcionGrupo {
+  codigo_plan: string | null
+  estado: string
+  fecha_inicio: string | null
+  fecha_fin_periodo: string | null
+  fecha_fin_trial: string | null
+  cancelar_al_fin_periodo: boolean
+  proveedor: string
+}
+
+export interface EstadoPagos {
+  grupo: string
+  suscripcion: SuscripcionGrupo | null
+  planes: PlanVendible[]
+}
+
+export interface DatosCheckout {
+  estilo: 'overlay' | 'redirect'
+  url: string | null
+  client_token: string | null
+  price_id: string | null
+  custom_data: Record<string, string>
+}
+
+export const pagosApi = {
+  estado: () => api.get<EstadoPagos>('/pagos/estado').then((r) => r.data),
+  crearCheckout: (codigoPlan: string) =>
+    api.post<DatosCheckout>('/pagos/checkout-session', { codigo_plan: codigoPlan }).then((r) => r.data),
+  abrirPortal: () =>
+    api.post<{ url: string }>('/pagos/portal-session').then((r) => r.data),
+}
+
 export default api
