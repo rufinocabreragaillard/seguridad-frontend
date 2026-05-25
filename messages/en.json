@@ -1021,7 +1021,10 @@
     "selectCategoriaPlaceholder": "— Select a category —",
     "selectTipoCaractPlaceholder": "— Select a type —",
     "etiquetaOrden": "Order",
-    "etiquetaMaxPorTipoRel": "Max per document"
+    "etiquetaMaxPorTipoRel": "Max per document",
+    "regenerarTraducciones": "Regenerate translations",
+    "traduccionesEnProceso": "Translation generation started. It may take a few minutes; check the Translations screen for progress.",
+    "errorTraducciones": "Could not start translation generation."
   },
   "chat": {
     "conversaciones": "Conversations",
@@ -2509,7 +2512,8 @@
     "glosarioGenerado": "Glossary generated successfully ({tamano} bytes, model {modelo}).",
     "errorRegenerarGlosario": "Error regenerating glossary",
     "verGlosario": "View glossary",
-    "descripcionGeneracionConHabilidad": "Translations use the TRANSLATE_TEXTS ability (configurable model in /abilities). The ability's system prompt references Server_LM.md and Glossary.md."
+    "descripcionGeneracionConHabilidad": "Translations use the TRANSLATE_TEXTS ability (configurable model in /abilities). The ability's system prompt references Server_LM.md and Glossary.md.",
+    "soloCatalogosDocs": "Document catalogs only"
   },
   "tipoElemento": {
     "USUARIO": "User",
@@ -2539,8 +2543,6 @@
     "vacio": "empty"
   },
   "secrets": {
-    "titulo": "Group Secrets",
-    "subtitulo": "Sensitive group credentials, encrypted at rest. The value is never shown: it can only be replaced.",
     "buscarPlaceholder": "Search secret…",
     "nuevoSecreto": "New secret",
     "sinSecretos": "No secrets registered.",
@@ -2564,8 +2566,6 @@
     "errorValorObligatorio": "Value is required."
   },
   "secretsSystem": {
-    "titulo": "Product Secrets",
-    "subtitulo": "Global product credentials (system level), encrypted at rest. Super-admin only. The value is never shown: it can only be replaced.",
     "buscarPlaceholder": "Search secret…",
     "nuevoSecreto": "New secret",
     "sinSecretos": "No product secrets.",

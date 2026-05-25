@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react'
 import { useTranslations } from 'next-intl'
 import {
   Languages, RefreshCw, Play, CheckCircle2, AlertCircle,
-  Globe, Plus, Trash2, Loader2, XCircle, BookOpen, Eye,
+  Globe, Plus, Trash2, Loader2, XCircle, BookOpen, Eye, FolderTree,
 } from 'lucide-react'
 import { traduccionesApi } from '@/lib/api'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -288,11 +288,15 @@ export default function TraduccionesPage() {
   }
 
   // ── Disparar generación (fire & forget → polling) ─────────────────────────
-  const dispararGeneracion = async (modo: 'completo' | 'incremental', idiomas?: string[]) => {
+  const dispararGeneracion = async (
+    modo: 'completo' | 'incremental',
+    idiomas?: string[],
+    grupoTabla?: string,
+  ) => {
     setResultadoGen(null)
     setErrorGen('')
     try {
-      await traduccionesApi.generar(modo, idiomas)
+      await traduccionesApi.generar(modo, idiomas, grupoTabla)
       // El backend devuelve 202 inmediatamente → iniciamos polling
       await cargarEstado()
       iniciarPolling()
@@ -315,6 +319,12 @@ export default function TraduccionesPage() {
 
   const generarIncremental = async () => {
     await dispararGeneracion('incremental')
+  }
+
+  // Regenera SOLO las traducciones de los catálogos de documentos (categorías,
+  // tipos de característica y tipos de documento), sin tocar el resto.
+  const generarCatalogosDocs = async () => {
+    await dispararGeneracion('completo', undefined, 'catalogos_docs')
   }
 
   const regenerarLocale = async (codigo: string) => {
@@ -465,6 +475,15 @@ export default function TraduccionesPage() {
             className="gap-2"
           >
             <RefreshCw size={14} /> {t('soloCambios', { total: estado?.cambios_pendientes ?? 0 })}
+          </Boton>
+          <Boton
+            variante="contorno"
+            onClick={generarCatalogosDocs}
+            cargando={enGeneracion}
+            disabled={enGeneracion}
+            className="gap-2"
+          >
+            <FolderTree size={14} /> {t('soloCatalogosDocs')}
           </Boton>
         </div>
       </div>

@@ -1058,7 +1058,10 @@
     "desactivarCategoriaConfirm": "¿Desactivar la categoría \"{nombre}\"?",
     "desactivarTipoTitulo": "Desactivar tipo",
     "desactivarTipoConfirm": "¿Desactivar el tipo \"{nombre}\"?",
-    "desactivar": "Desactivar"
+    "desactivar": "Desactivar",
+    "regenerarTraducciones": "Regenerar traducciones",
+    "traduccionesEnProceso": "Generación de traducciones iniciada. Puede tardar unos minutos; revisa la pantalla de Traducciones para ver el progreso.",
+    "errorTraducciones": "No se pudo iniciar la generación de traducciones."
   },
   "chat": {
     "conversaciones": "Conversaciones",
@@ -2551,7 +2554,8 @@
     "errorRegenerarGlosario": "Error al regenerar el glosario",
     "errorGlosarioTimeout": "La generación del glosario superó el tiempo de espera (el modelo LLM puede tardar varios minutos con documentos extensos). El servidor puede haberlo completado de todas formas — recarga la página para verificar, o intenta de nuevo.",
     "verGlosario": "Ver glosario",
-    "descripcionGeneracionConHabilidad": "Las traducciones usan la habilidad TRADUCIR_TEXTOS (modelo configurable en /habilidades). El system prompt de la habilidad referencia Server_LM.md y Glosario.md."
+    "descripcionGeneracionConHabilidad": "Las traducciones usan la habilidad TRADUCIR_TEXTOS (modelo configurable en /habilidades). El system prompt de la habilidad referencia Server_LM.md y Glosario.md.",
+    "soloCatalogosDocs": "Solo catálogos de docs"
   },
   "tipoElemento": {
     "USUARIO": "Usuario",

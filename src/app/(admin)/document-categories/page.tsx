@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { Plus, Pencil, Trash2, Download, Search } from 'lucide-react'
+import { Plus, Pencil, Trash2, Download, Search, FolderTree } from 'lucide-react'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
@@ -14,7 +14,7 @@ import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import {
-  categoriasCaractDocsApi, promptsApi, registroLLMApi, tiposDocumentoApi,
+  categoriasCaractDocsApi, promptsApi, registroLLMApi, tiposDocumentoApi, traduccionesApi,
 } from '@/lib/api'
 import type {
   CategoriaCaractDocs, TipoCaractDocs, RegistroLLM,
@@ -34,6 +34,29 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   const tc = useTranslations('common')
 
   const [tabActiva, setTabActiva] = useState<TabActiva>('tipos_documento')
+
+  // ── Regenerar traducciones de catálogos de docs (categorías + tipos + tipos_documento) ──
+  const [generandoTraducciones, setGenerandoTraducciones] = useState(false)
+  const [mensajeTraducciones, setMensajeTraducciones] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
+
+  const regenerarTraduccionesCatalogos = async () => {
+    setGenerandoTraducciones(true)
+    setMensajeTraducciones(null)
+    try {
+      await traduccionesApi.generarCatalogosDocs()
+      setMensajeTraducciones({ tipo: 'ok', texto: t('traduccionesEnProceso') })
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : t('errorTraducciones')
+      // 409 = ya hay una generación en curso
+      if (msg.includes('409') || msg.includes('en curso')) {
+        setMensajeTraducciones({ tipo: 'ok', texto: t('traduccionesEnProceso') })
+      } else {
+        setMensajeTraducciones({ tipo: 'error', texto: msg })
+      }
+    } finally {
+      setGenerandoTraducciones(false)
+    }
+  }
 
   // ═════════════════════════════════════════════════════════════════════════
   // TIPO DE DOCUMENTO
@@ -645,9 +668,28 @@ export default function PaginaCategoriasCaracteristicaDocs() {
   return (
     <div className="relative flex flex-col gap-6 max-w-6xl">
       <BotonChat className="top-0 right-0" />
-      <div className="pr-28">
+      <div className="pr-28 flex items-start justify-between gap-4">
         <PageHeader i18nNamespace="documentCategories" />
+        <Boton
+          variante="contorno"
+          tamano="sm"
+          onClick={regenerarTraduccionesCatalogos}
+          cargando={generandoTraducciones}
+          disabled={generandoTraducciones}
+          className="gap-2 shrink-0"
+        >
+          <FolderTree size={15} />{t('regenerarTraducciones')}
+        </Boton>
       </div>
+      {mensajeTraducciones && (
+        <div className={`text-xs px-3 py-2 rounded-lg ${
+          mensajeTraducciones.tipo === 'ok'
+            ? 'bg-green-50 border border-green-200 text-green-700'
+            : 'bg-red-50 border border-red-200 text-error'
+        }`}>
+          {mensajeTraducciones.texto}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-borde">

@@ -1021,7 +1021,10 @@
     "selectCategoriaPlaceholder": "— Seleccione una categoría —",
     "selectTipoCaractPlaceholder": "— Seleccione un tipo —",
     "etiquetaOrden": "Orden",
-    "etiquetaMaxPorTipoRel": "Máx por documento"
+    "etiquetaMaxPorTipoRel": "Máx por documento",
+    "regenerarTraducciones": "Regenerar traduções",
+    "traduccionesEnProceso": "Geração de traduções iniciada. Pode levar alguns minutos; verifique a tela de Traduções para acompanhar o progresso.",
+    "errorTraducciones": "Não foi possível iniciar a geração de traduções."
   },
   "chat": {
     "conversaciones": "Conversas",
@@ -2454,7 +2457,8 @@
     "glosarioGenerado": "Glossário gerado corretamente ({tamano} bytes, modelo {modelo}).",
     "errorRegenerarGlosario": "Erro ao regenerar o glossário",
     "verGlosario": "Ver glossário",
-    "descripcionGeneracionConHabilidad": "As traduções usam a habilidade TRADUZIR_TEXTOS (modelo configurável em /habilidades). O system prompt da habilidade referencia Server_LM.md e Glosario.md."
+    "descripcionGeneracionConHabilidad": "As traduções usam a habilidade TRADUZIR_TEXTOS (modelo configurável em /habilidades). O system prompt da habilidade referencia Server_LM.md e Glosario.md.",
+    "soloCatalogosDocs": "Somente catálogos de docs"
   },
   "tipoElemento": {
     "USUARIO": "Usuário",
@@ -2484,8 +2488,6 @@
     "vacio": "vazio"
   },
   "secrets": {
-    "titulo": "Group Secrets",
-    "subtitulo": "Sensitive group credentials, encrypted at rest. The value is never shown: it can only be replaced.",
     "buscarPlaceholder": "Search secret…",
     "nuevoSecreto": "New secret",
     "sinSecretos": "No secrets registered.",
@@ -2509,8 +2511,6 @@
     "errorValorObligatorio": "Value is required."
   },
   "secretsSystem": {
-    "titulo": "Product Secrets",
-    "subtitulo": "Global product credentials (system level), encrypted at rest. Super-admin only. The value is never shown: it can only be replaced.",
     "buscarPlaceholder": "Search secret…",
     "nuevoSecreto": "New secret",
     "sinSecretos": "No product secrets.",

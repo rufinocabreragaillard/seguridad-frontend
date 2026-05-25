@@ -1935,11 +1935,23 @@ export const traduccionesApi = {
 
   // Devuelve 202 inmediato; la generación corre en background.
   // Usa polling de /traducciones/estado para seguir el progreso.
-  generar: (modo: 'completo' | 'incremental', idiomas?: string[]) =>
+  // grupoTabla restringe la corrida a un subconjunto de tablas (ej. 'catalogos_docs').
+  generar: (modo: 'completo' | 'incremental', idiomas?: string[], grupoTabla?: string) =>
     api.post<{ status: string; mensaje: string }>(
       '/traducciones/generar',
-      { modo, idiomas },
+      { modo, idiomas, grupo_tabla: grupoTabla },
       { timeout: 30_000 }  // 30s — solo esperar la respuesta 202
+    ).then((r) => r.data),
+
+  // Regenera SOLO las traducciones de los catálogos de documentos
+  // (categorías, tipos de característica y tipos de documento) en los 5 idiomas.
+  // Útil al inicio cuando los catálogos cambian mucho. Modo 'completo' por defecto
+  // para reflejar fielmente el estado actual de los catálogos.
+  generarCatalogosDocs: (modo: 'completo' | 'incremental' = 'completo', idiomas?: string[]) =>
+    api.post<{ status: string; mensaje: string }>(
+      '/traducciones/generar',
+      { modo, idiomas, grupo_tabla: 'catalogos_docs' },
+      { timeout: 30_000 }
     ).then((r) => r.data),
 
   // Resetea el estado GENERANDO (para desatascar una generación fallida)

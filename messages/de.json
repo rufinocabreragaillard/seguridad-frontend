@@ -1021,7 +1021,10 @@
     "selectCategoriaPlaceholder": "— Seleccione una categoría —",
     "selectTipoCaractPlaceholder": "— Seleccione un tipo —",
     "etiquetaOrden": "Orden",
-    "etiquetaMaxPorTipoRel": "Máx por documento"
+    "etiquetaMaxPorTipoRel": "Máx por documento",
+    "regenerarTraducciones": "Übersetzungen neu generieren",
+    "traduccionesEnProceso": "Generierung der Übersetzungen gestartet. Es kann einige Minuten dauern; den Fortschritt sehen Sie im Bildschirm „Übersetzungen“.",
+    "errorTraducciones": "Die Generierung der Übersetzungen konnte nicht gestartet werden."
   },
   "chat": {
     "conversaciones": "Konversationen",
@@ -2454,7 +2457,8 @@
     "glosarioGenerado": "Glossar erfolgreich generiert ({tamano} Bytes, Modell {modelo}).",
     "errorRegenerarGlosario": "Fehler beim Regenerieren des Glossars",
     "verGlosario": "Glossar anzeigen",
-    "descripcionGeneracionConHabilidad": "Die Übersetzungen nutzen die Fähigkeit TEXT_ÜBERSETZEN (Modell konfigurierbar unter /fähigkeiten). Der System-Prompt der Fähigkeit referenziert Server_LM.md und Glosario.md."
+    "descripcionGeneracionConHabilidad": "Die Übersetzungen nutzen die Fähigkeit TEXT_ÜBERSETZEN (Modell konfigurierbar unter /fähigkeiten). Der System-Prompt der Fähigkeit referenziert Server_LM.md und Glosario.md.",
+    "soloCatalogosDocs": "Nur Dokumentkataloge"
   },
   "tipoElemento": {
     "USUARIO": "Nutzer",
@@ -2484,8 +2488,6 @@
     "vacio": "leer"
   },
   "secrets": {
-    "titulo": "Group Secrets",
-    "subtitulo": "Sensitive group credentials, encrypted at rest. The value is never shown: it can only be replaced.",
     "buscarPlaceholder": "Search secret…",
     "nuevoSecreto": "New secret",
     "sinSecretos": "No secrets registered.",
@@ -2509,8 +2511,6 @@
     "errorValorObligatorio": "Value is required."
   },
   "secretsSystem": {
-    "titulo": "Product Secrets",
-    "subtitulo": "Global product credentials (system level), encrypted at rest. Super-admin only. The value is never shown: it can only be replaced.",
     "buscarPlaceholder": "Search secret…",
     "nuevoSecreto": "New secret",
     "sinSecretos": "No product secrets.",

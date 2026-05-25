@@ -1021,7 +1021,10 @@
     "selectCategoriaPlaceholder": "— Seleccione una categoría —",
     "selectTipoCaractPlaceholder": "— Seleccione un tipo —",
     "etiquetaOrden": "Orden",
-    "etiquetaMaxPorTipoRel": "Máx por documento"
+    "etiquetaMaxPorTipoRel": "Máx por documento",
+    "regenerarTraducciones": "Régénérer les traductions",
+    "traduccionesEnProceso": "Génération des traductions lancée. Cela peut prendre quelques minutes ; consultez l’écran Traductions pour suivre la progression.",
+    "errorTraducciones": "Impossible de lancer la génération des traductions."
   },
   "chat": {
     "conversaciones": "Conversations",
@@ -2454,7 +2457,8 @@
     "glosarioGenerado": "Glossaire généré avec succès ({tamano} octets, modèle {modelo}).",
     "errorRegenerarGlosario": "Erreur lors de la régénération du glossaire",
     "verGlosario": "Voir le glossaire",
-    "descripcionGeneracionConHabilidad": "Les traductions utilisent la capacité TRADUIRE_TEXTES (modèle configurable dans /capacités). Le system prompt de la capacité référence Server_LM.md et Glosario.md."
+    "descripcionGeneracionConHabilidad": "Les traductions utilisent la capacité TRADUIRE_TEXTES (modèle configurable dans /capacités). Le system prompt de la capacité référence Server_LM.md et Glosario.md.",
+    "soloCatalogosDocs": "Catalogues de docs uniquement"
   },
   "tipoElemento": {
     "USUARIO": "Utilisateur",
@@ -2484,8 +2488,6 @@
     "vacio": "vide"
   },
   "secrets": {
-    "titulo": "Group Secrets",
-    "subtitulo": "Sensitive group credentials, encrypted at rest. The value is never shown: it can only be replaced.",
     "buscarPlaceholder": "Search secret…",
     "nuevoSecreto": "New secret",
     "sinSecretos": "No secrets registered.",
@@ -2509,8 +2511,6 @@
     "errorValorObligatorio": "Value is required."
   },
   "secretsSystem": {
-    "titulo": "Product Secrets",
-    "subtitulo": "Global product credentials (system level), encrypted at rest. Super-admin only. The value is never shown: it can only be replaced.",
     "buscarPlaceholder": "Search secret…",
     "nuevoSecreto": "New secret",
     "sinSecretos": "No product secrets.",
