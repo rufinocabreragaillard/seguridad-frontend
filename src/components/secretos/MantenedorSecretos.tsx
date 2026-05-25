@@ -1,13 +1,13 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-import { PageHeader } from '@/components/layout/PageHeader'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { BarraHerramientas } from '@/components/ui/barra-herramientas'
+import { BotonChat } from '@/components/ui/boton-chat'
 import {
   TablaCrud,
   columnaNombre,
@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/tabla-crud'
 import type { SecretoGrupo } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
+import { useFuncionActual } from '@/hooks/useFuncionActual'
 
 type FormSecreto = {
   tipo_secreto: string
@@ -41,6 +42,7 @@ interface Props {
 export function MantenedorSecretos({ namespace, apiClient, excelNombre }: Props) {
   const t = useTranslations(namespace)
   const tc = useTranslations('common')
+  const funcion = useFuncionActual()
 
   const crud = useCrudPage<SecretoGrupo, FormSecreto>({
     cargarFn: () => apiClient.listar(),
@@ -85,9 +87,12 @@ export function MantenedorSecretos({ namespace, apiClient, excelNombre }: Props)
 
   return (
     <div className="relative flex flex-col gap-6 max-w-3xl">
+      <BotonChat />
       <div>
-        <PageHeader i18nNamespace={namespace} conSubtitulo={false} />
-        <p className="text-sm text-texto-muted mt-1">{t('subtitulo')}</p>
+        <h2 className="page-heading">{funcion?.nombre ?? t('titulo')}</h2>
+        {(funcion?.ayuda || t('subtitulo')) && (
+          <p className="text-sm text-texto-muted mt-1">{funcion?.ayuda ?? t('subtitulo')}</p>
+        )}
       </div>
 
       <BarraHerramientas
