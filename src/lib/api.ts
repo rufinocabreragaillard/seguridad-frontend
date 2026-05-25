@@ -63,6 +63,7 @@ import type {
   ReeplicarEspacioRespuesta,
   Habilidad,
   TipoAcceso,
+  SecretoGrupo,
   TransicionEstado,
 } from './tipos'
 
@@ -2161,6 +2162,30 @@ export const tiposAccesoApi = {
     api.put<TipoAcceso>(`/tipos-acceso/${codigo}`, data).then((r) => r.data),
   eliminar: (codigo: string) => api.delete(`/tipos-acceso/${codigo}`),
 }
+
+// ─── Secretos del grupo (cifrados; valor solo-escritura) ──────────────────────
+
+function crearSecretosApi(base: '/secrets' | '/secrets-system') {
+  return {
+    listar: () => api.get<SecretoGrupo[]>(base).then((r) => r.data),
+    crear: (data: { tipo_secreto: string; valor: string; descripcion?: string }) =>
+      api.post<SecretoGrupo>(base, data).then((r) => r.data),
+    actualizar: (
+      tipo_secreto: string,
+      data: { valor?: string; descripcion?: string },
+    ) =>
+      api
+        .put<SecretoGrupo>(`${base}/${encodeURIComponent(tipo_secreto)}`, data)
+        .then((r) => r.data),
+    eliminar: (tipo_secreto: string) =>
+      api.delete(`${base}/${encodeURIComponent(tipo_secreto)}`),
+  }
+}
+
+// Secretos del grupo activo
+export const secretosApi = crearSecretosApi('/secrets')
+// Secretos del producto (codigo_grupo IS NULL, nivel sistema)
+export const secretosSistemaApi = crearSecretosApi('/secrets-system')
 
 // ─── Limpieza de logs ────────────────────────────────────────────────────────
 import type { PoliticaLimpieza, ResultadoLimpieza } from './tipos'

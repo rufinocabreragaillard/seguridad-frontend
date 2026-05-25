@@ -1112,6 +1112,15 @@ export interface TipoAcceso {
   tipo_acceso_superior?: string | null
 }
 
+// ─── Secretos del grupo (cifrados en reposo) ──────────────────────────────────
+export interface SecretoGrupo {
+  tipo_secreto: string
+  descripcion?: string | null
+  creado_en?: string | null
+  actualizado_en?: string | null
+  [key: string]: unknown
+}
+
 // ─── Limpieza de logs ─────────────────────────────────────────────────────────
 export interface PoliticaLimpieza {
   codigo_tabla: string
