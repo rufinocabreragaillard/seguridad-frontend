@@ -6,7 +6,6 @@ import { CreditCard, Check, ExternalLink, Loader2 } from 'lucide-react'
 
 import { Boton } from '@/components/ui/boton'
 import { BotonChat } from '@/components/ui/boton-chat'
-import { useAuth } from '@/context/AuthContext'
 import { useFuncionActual } from '@/hooks/useFuncionActual'
 import { useToast } from '@/context/ToastContext'
 import { pagosApi, type EstadoPagos, type PlanVendible } from '@/lib/api'
@@ -35,7 +34,6 @@ const ESTADO_LABEL: Record<string, string> = {
 
 export default function PaginaMiCuenta() {
   const funcion = useFuncionActual()
-  const { usuario } = useAuth()
   const { error: toastError } = useToast()
 
   const [estado, setEstado] = useState<EstadoPagos | null>(null)
@@ -43,11 +41,8 @@ export default function PaginaMiCuenta() {
   const [paddleListo, setPaddleListo] = useState(false)
   const [procesando, setProcesando] = useState<string | null>(null)
 
-  // ¿El usuario puede contratar? Solo admins (rol ADMIN o tipo admin del grupo).
-  const esAdmin =
-    usuario?.rol_principal === 'ADMIN' ||
-    (usuario?.roles?.includes('ADMIN') ?? false) ||
-    (usuario?.grupos?.some((g) => g.codigo_grupo === 'ADMIN') ?? false)
+  // ¿El usuario puede contratar? El backend lo decide por tipo_acceso del grupo (§8.b).
+  const esAdmin = estado?.es_admin ?? false
 
   const cargar = useCallback(async () => {
     setCargando(true)

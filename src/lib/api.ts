@@ -2389,6 +2389,7 @@ export interface EstadoPagos {
   grupo: string
   suscripcion: SuscripcionGrupo | null
   planes: PlanVendible[]
+  es_admin: boolean
 }
 
 export interface DatosCheckout {
