@@ -401,6 +401,10 @@ export default function PaginaValoresParametrosGenerales() {
                 value={form.categoria_parametro}
                 disabled={!!editando}
                 onChange={(e) => setForm({ ...form, categoria_parametro: e.target.value.toUpperCase() })}
+                name="param-categoria"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
               />
             </div>
             <div>
@@ -411,6 +415,10 @@ export default function PaginaValoresParametrosGenerales() {
                 value={form.tipo_parametro}
                 disabled={!!editando}
                 onChange={(e) => setForm({ ...form, tipo_parametro: e.target.value.toUpperCase() })}
+                name="param-tipo"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
               />
             </div>
           </div>
@@ -439,6 +447,10 @@ export default function PaginaValoresParametrosGenerales() {
                 placeholder={t('placeholderValor')}
                 value={form.valor_parametro}
                 onChange={(e) => setForm({ ...form, valor_parametro: e.target.value })}
+                name="param-valor"
+                autoComplete="off"
+                data-lpignore="true"
+                data-1p-ignore="true"
               />
             </div>
           )}
