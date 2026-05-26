@@ -125,38 +125,21 @@ function _abrirEnPestanaConNombre(blob: Blob, nombre: string, winPreAbierta?: Wi
     return
   }
 
-  const isPdf = (nombre.split('.').pop() || '').toLowerCase() === 'pdf'
-
-  if (isPdf) {
-    const setTitle = (win: Window) => {
-      const trySetTitle = (attempts: number) => {
-        if (win.closed) return
-        try { win.document.title = nombre } catch { /* cross-origin tras navegación */ }
-        if (attempts > 0) setTimeout(() => trySetTitle(attempts - 1), 300)
-      }
-      trySetTitle(5)
-    }
-    if (winPreAbierta && !winPreAbierta.closed) {
-      winPreAbierta.location.replace(url)
-      setTitle(winPreAbierta)
-      return
-    }
-    const win = window.open(url, '_blank')
-    if (win) {
-      setTitle(win)
-    } else {
-      window.dispatchEvent(new CustomEvent('serverlm:preview', { detail: { url, nombre } }))
-    }
-    return
-  }
-
+  // Tanto PDF como el resto de visualizables se muestran dentro de un wrapper
+  // HTML con <iframe>: así el título de la pestaña y el nombre de descarga son
+  // el nombre real del documento (la blob: URL cruda solo expone un UUID).
   const titulo = _escapeHtml(nombre)
   const src = _escapeHtml(url)
+  const dl = _escapeHtml(mensajesActivos.descargarArchivo)
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>${titulo}</title></head>
-<body style="margin:0;padding:0;overflow:hidden;background:#1f1f1f">
-<iframe src="${src}" style="width:100vw;height:100vh;border:0" title="${titulo}"></iframe>
+<body style="margin:0;padding:0;overflow:hidden;background:#1f1f1f;display:flex;flex-direction:column;height:100vh">
+<div style="flex:0 0 auto;display:flex;align-items:center;gap:1rem;padding:8px 14px;background:#2a2a2a;font-family:sans-serif">
+<span style="color:#ddd;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${titulo}">${titulo}</span>
+<a href="${src}" download="${titulo}" style="color:#6ab0f5;font-size:13px;text-decoration:none;white-space:nowrap">${dl}</a>
+</div>
+<iframe src="${src}" style="flex:1 1 auto;width:100%;border:0" title="${titulo}"></iframe>
 </body>
 </html>`
   const wrapperBlob = new Blob([html], { type: 'text/html' })
