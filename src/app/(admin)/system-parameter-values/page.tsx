@@ -489,6 +489,15 @@ export default function PaginaValoresParametrosGenerales() {
                     {mostrarValor ? <EyeClosed size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+              ) : form.tipo_widget === 'BOOLEAN' ? (
+                <select
+                  className={inputCls}
+                  value={(form.valor_parametro || '').trim().toLowerCase() === 'true' ? 'true' : 'false'}
+                  onChange={(e) => setForm({ ...form, valor_parametro: e.target.value })}
+                >
+                  <option value="true">Sí (true)</option>
+                  <option value="false">No (false)</option>
+                </select>
               ) : (
                 <input
                   className={inputCls}

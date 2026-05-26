@@ -379,6 +379,7 @@ export interface TipoParametro {
   javascript?: string | null
   python_editado_manual?: boolean
   javascript_editado_manual?: boolean
+  tipo_widget?: TipoWidget
 }
 
 // ─── Auditoría ───────────────────────────────────────────────────────────────

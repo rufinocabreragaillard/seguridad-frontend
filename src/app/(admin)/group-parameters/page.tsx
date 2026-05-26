@@ -274,6 +274,21 @@ export default function PaginaParametrosGrupo() {
                           <RotateCcw size={14} />
                         </button>
                       </>
+                    ) : tipo?.tipo_widget === 'BOOLEAN' ? (
+                      <>
+                        <select
+                          defaultValue={(v.valor_parametro || '').trim().toLowerCase() === 'true' ? 'true' : 'false'}
+                          onChange={(e) => { if (e.target.value !== v.valor_parametro) guardarInline(v.categoria_parametro, v.tipo_parametro, e.target.value, false) }}
+                          className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
+                        >
+                          <option value="true">Sí (true)</option>
+                          <option value="false">No (false)</option>
+                        </select>
+                        <button onClick={() => setValAEliminar(v)}
+                          className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title={tc('eliminar')}>
+                          <Trash2 size={14} />
+                        </button>
+                      </>
                     ) : (
                       <>
                         <input
