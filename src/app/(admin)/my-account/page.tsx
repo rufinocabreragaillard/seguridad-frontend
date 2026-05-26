@@ -32,6 +32,49 @@ const ESTADO_LABEL: Record<string, string> = {
   expirada: 'Expirada',
 }
 
+// ⚠️ COPIA MANUAL de las features del sitio comercial (serverlm-sitio:
+// frontend/content/planes.mjs). Mientras no exista el puente sitio→app,
+// esta lista debe mantenerse SINCRONIZADA A MANO con planes.mjs cada vez
+// que cambien las features. Solo features cualitativas: los límites
+// (tokens/documentos) ya salen de los campos numéricos de la BD.
+const FEATURES_PLAN: Record<string, string[]> = {
+  PERSONAL: [
+    'Chat ilimitado con tus documentos',
+    'Búsqueda semántica vectorial',
+    'Procesamiento PDF, Word, Excel',
+    'Historial de conversaciones',
+  ],
+  TEAM: [
+    'Todo lo del plan Professional',
+    'Control de acceso por área o cargo',
+    'Cada miembro ve sólo su área',
+    'Administrador del equipo',
+    'Auditoría de accesos',
+  ],
+  BUSINESS: [
+    'Todo lo del plan Team',
+    'Client LM: la indexación no sale de tu red',
+    'Elección de IA: Claude, GPT, Gemini, open source',
+    'Permisos granulares por rol, función y cargo',
+    'Branding propio (color, logo, nombre)',
+    'API de integración con sistemas internos',
+    'Soporte prioritario',
+  ],
+  ENTERPRISE: [
+    'Todo lo del plan Business',
+    'Multi-entidad para holdings',
+    'Administración centralizada',
+    'Espacio de BD propio (BYO infrastructure)',
+    'Soporte dedicado y SLA garantizado',
+  ],
+  CORPORATE: [
+    'Todo lo del plan Enterprise',
+    'Arquitectura y despliegue a medida',
+    'Integraciones y modelos a pedido',
+    'Acuerdo comercial y SLA personalizados',
+  ],
+}
+
 export default function PaginaMiCuenta() {
   const funcion = useFuncionActual()
   const { error: toastError } = useToast()
@@ -220,6 +263,12 @@ export default function PaginaMiCuenta() {
                       {plan.usuarios_externos_maximos != null && (
                         <li>{plan.usuarios_externos_maximos.toLocaleString()} usuarios externos</li>
                       )}
+                      {(FEATURES_PLAN[plan.codigo_plan] ?? []).map((f) => (
+                        <li key={f} className="flex gap-2">
+                          <Check size={14} className="mt-0.5 flex-none text-primario" />
+                          <span>{f}</span>
+                        </li>
+                      ))}
                     </ul>
                     <Boton
                       variante={esActual ? 'contorno' : 'primario'}
