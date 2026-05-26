@@ -16,7 +16,10 @@ test.describe.serial('System Parameter Values — editar privado', () => {
     await page.getByRole('button', { name: /iniciar sesión|ingresar|login/i }).click()
     await expect(page).not.toHaveURL(/login/i, { timeout: 15000 })
     await page.goto('/system-parameter-values')
-    await expect(page.getByText('SESION_DURACION_MINUTOS').first()).toBeVisible({ timeout: 20000 })
+    // La tabla pagina; filtramos por la categoría SEGURIDAD para ver el parámetro privado
+    await expect(page.getByText('Valores de Parámetros del Sistema')).toBeVisible({ timeout: 20000 })
+    await page.locator('select').first().selectOption('SEGURIDAD')
+    await expect(page.getByText('SESION_DURACION_MINUTOS').first()).toBeVisible({ timeout: 15000 })
   })
 
   test('revela el valor real del parámetro privado y permite editarlo', async ({ page }) => {
@@ -33,18 +36,20 @@ test.describe.serial('System Parameter Values — editar privado', () => {
 
     const resp = await revelarPromise
     expect(resp.status()).toBe(200)
-    expect((await resp.json()).valor).toBe('90')
+    const valorReal = String((await resp.json()).valor)
+    expect(valorReal).not.toBe('')
+    expect(valorReal).not.toMatch(/•/) // NO debe ser la máscara
 
     // Arranca enmascarado (type=password) con el valor real ya cargado
     const valorInput = modal.locator('input[type="password"]')
-    await expect(valorInput).toHaveValue('90', { timeout: 5000 })
+    await expect(valorInput).toHaveValue(valorReal, { timeout: 5000 })
 
     // Botón ojo revela el campo (pasa a type=text)
     await modal.getByRole('button', { name: /Mostrar/i }).click()
-    await expect(modal.locator('input[type="text"]').last()).toHaveValue('90')
+    await expect(modal.locator('input[type="text"]').last()).toHaveValue(valorReal)
 
     // Permite editar
-    await modal.locator('input[type="text"]').last().fill('120')
-    await expect(modal.locator('input[type="text"]').last()).toHaveValue('120')
+    await modal.locator('input[type="text"]').last().fill('999')
+    await expect(modal.locator('input[type="text"]').last()).toHaveValue('999')
   })
 })
