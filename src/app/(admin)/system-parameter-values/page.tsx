@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Plus, Pencil, Trash2, Search, Download, FileText, RefreshCw } from 'lucide-react'
+import { Plus, Pencil, Trash2, Search, Download, FileText, RefreshCw, Eye, EyeClosed, Lock } from 'lucide-react'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -19,6 +19,8 @@ import type { ParametroGeneral, TipoWidget } from '@/lib/tipos'
 import { PageHeader } from '@/components/layout/PageHeader'
 
 const inputCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
+
+const MASCARA = '••••••••••••••••'
 
 // Fetcher estable fuera del componente para evitar re-renders infinitos en usePaginacion
 const fetcherParametros = (params: { page: number; limit: number; q: string; categoria: string }) =>
@@ -59,6 +61,13 @@ export default function PaginaValoresParametrosGenerales() {
   const [form, setForm] = useState<FormData>(FORM_VACIO)
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState('')
+
+  // Parámetros privados (categoría con privado=true): el valor llega enmascarado
+  // desde el backend; al editar se revela vía revelarGeneral y se permite alternar
+  // su visibilidad con el botón ojo.
+  const [esPrivado, setEsPrivado] = useState(false)
+  const [revelando, setRevelando] = useState(false)
+  const [mostrarValor, setMostrarValor] = useState(false)
 
   const [aEliminar, setAEliminar] = useState<ParametroGeneral | null>(null)
   const [eliminando, setEliminando] = useState(false)
@@ -116,13 +125,17 @@ export default function PaginaValoresParametrosGenerales() {
 
   const abrirNuevo = () => {
     setEditando(null)
+    setEsPrivado(false)
+    setMostrarValor(false)
     setForm({ ...FORM_VACIO, categoria_parametro: filtroCategoria })
     setError('')
     setModal(true)
   }
 
-  const abrirEditar = (p: ParametroGeneral) => {
+  const abrirEditar = async (p: ParametroGeneral) => {
     setEditando(p)
+    setEsPrivado(p.es_privado === true)
+    setMostrarValor(false)
     setForm({
       categoria_parametro: p.categoria_parametro,
       tipo_parametro: p.tipo_parametro,
@@ -133,6 +146,19 @@ export default function PaginaValoresParametrosGenerales() {
     })
     setError('')
     setModal(true)
+
+    // Parámetro privado: el valor llegó enmascarado; traer el valor real.
+    if (p.es_privado === true) {
+      setRevelando(true)
+      try {
+        const { valor } = await parametrosApi.revelarGeneral(p.categoria_parametro, p.tipo_parametro)
+        setForm((f) => ({ ...f, valor_parametro: valor ?? '' }))
+      } catch (e) {
+        setError(e instanceof Error ? e.message : tc('errorAlGuardar'))
+      } finally {
+        setRevelando(false)
+      }
+    }
   }
 
   const guardar = async (cerrar: boolean) => {
@@ -143,10 +169,15 @@ export default function PaginaValoresParametrosGenerales() {
     setGuardando(true)
     setError('')
     try {
+      // Privado sin tocar el valor (sigue enmascarado): el backend interpreta la
+      // máscara como "no cambiar". Enviamos la máscara para no sobrescribir.
+      const valorAEnviar = esPrivado && form.valor_parametro === MASCARA
+        ? MASCARA
+        : form.valor_parametro || (form.tipo_widget === 'TEXTAREA' ? '(ver system_prompt)' : '')
       await parametrosApi.upsertGenerales({
         categoria_parametro: form.categoria_parametro.toUpperCase().trim(),
         tipo_parametro: form.tipo_parametro.toUpperCase().trim(),
-        valor_parametro: form.valor_parametro || (form.tipo_widget === 'TEXTAREA' ? '(ver system_prompt)' : ''),
+        valor_parametro: valorAEnviar,
         descripcion: form.descripcion || undefined,
         system_prompt: form.tipo_widget === 'TEXTAREA' ? (form.system_prompt || null) : undefined,
       })
@@ -433,13 +464,39 @@ export default function PaginaValoresParametrosGenerales() {
             </div>
           ) : (
             <div>
-              <label className="block text-sm font-medium text-texto mb-1">{t('etiquetaValor')}</label>
-              <input
-                className={inputCls}
-                placeholder={t('placeholderValor')}
-                value={form.valor_parametro}
-                onChange={(e) => setForm({ ...form, valor_parametro: e.target.value })}
-              />
+              <label className="flex items-center gap-1 text-sm font-medium text-texto mb-1">
+                {t('etiquetaValor')}
+                {esPrivado && <Lock size={12} className="text-amber-500" />}
+              </label>
+              {esPrivado ? (
+                <div className="relative">
+                  <input
+                    className={inputCls + ' pr-10'}
+                    type={mostrarValor ? 'text' : 'password'}
+                    placeholder={t('placeholderValor')}
+                    value={form.valor_parametro}
+                    disabled={revelando}
+                    autoComplete="off"
+                    onChange={(e) => setForm({ ...form, valor_parametro: e.target.value })}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarValor((v) => !v)}
+                    disabled={revelando}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded text-texto-muted hover:text-primario disabled:opacity-50"
+                    title={mostrarValor ? 'Ocultar' : 'Mostrar'}
+                  >
+                    {mostrarValor ? <EyeClosed size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              ) : (
+                <input
+                  className={inputCls}
+                  placeholder={t('placeholderValor')}
+                  value={form.valor_parametro}
+                  onChange={(e) => setForm({ ...form, valor_parametro: e.target.value })}
+                />
+              )}
             </div>
           )}
 

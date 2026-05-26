@@ -318,6 +318,7 @@ export interface ParametroGeneral {
   descripcion?: string
   system_prompt?: string | null
   tipo_widget?: TipoWidget
+  es_privado?: boolean
 }
 
 export interface ParametroGrupo {
