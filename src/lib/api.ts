@@ -127,8 +127,20 @@ export function clearOverridesSesion() {
   Object.values(OVERRIDE_KEYS).forEach((k) => localStorage.removeItem(k))
 }
 
+// Evento de actividad de red: cada request al backend lo emite para que el
+// timer de inactividad del AuthContext se resetee. Así una operación larga sin
+// interacción del usuario (ej: carga/procesamiento de documentos, que sí hace
+// requests periódicos) cuenta como actividad y no dispara el logout por inactividad.
+export const EVENTO_ACTIVIDAD_API = 'serverlm:actividad-api'
+function emitirActividadApi() {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(EVENTO_ACTIVIDAD_API))
+  }
+}
+
 // Interceptor: agrega el token JWT de Supabase, codigo_funcion y overrides en cada request
 api.interceptors.request.use(async (config) => {
+  emitirActividadApi()
   const token = await obtenerToken()
   if (token) config.headers.Authorization = `Bearer ${token}`
   const funcion = resolverFuncion()

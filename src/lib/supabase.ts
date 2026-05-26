@@ -34,8 +34,34 @@ const lockConSteal = async <R>(
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
     lock: lockConSteal,
+    // Refresca el access token automáticamente en background (timer interno de
+    // gotrue) sin depender de que el usuario haga un request. Sin esto, una
+    // pestaña inactiva dejaba expirar el JWT (~1h) y el refresh_token, forzando
+    // re-login tras pocas horas aunque hubiera trabajo en curso (ej: cargas).
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true,
   },
 })
+
+// gotrue-js detiene su auto-refresh cuando la pestaña pierde foco (visibilitychange).
+// Al volver, reanuda; pero si pasaron horas el access token ya expiró y solo se
+// renueva en el próximo getSession()/request. Forzamos un refresh inmediato al
+// recuperar visibilidad para que la sesión esté viva apenas el usuario vuelve.
+if (typeof document !== 'undefined') {
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        if (!session) return
+        const expira = session.expires_at ?? 0
+        const ahora = Math.floor(Date.now() / 1000)
+        if ((expira - ahora) / 60 < 10) {
+          supabase.auth.refreshSession().catch(() => {})
+        }
+      }).catch(() => {})
+    }
+  })
+}
 
 /**
  * Obtiene el token JWT de la sesión activa de Supabase.

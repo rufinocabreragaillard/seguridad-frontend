@@ -13,7 +13,7 @@ import {
 import { useRouter, usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { supabase } from '@/lib/supabase'
-import { authApi, actualizarMapaFunciones, setOverrideSesion, clearOverridesSesion } from '@/lib/api'
+import { authApi, actualizarMapaFunciones, setOverrideSesion, clearOverridesSesion, EVENTO_ACTIVIDAD_API } from '@/lib/api'
 import { invalidarTodosLosCatalogos } from '@/lib/catalogos'
 import type { UsuarioContexto } from '@/lib/tipos'
 import { purgarBaseAntigua } from '@/lib/file-handle-store'
@@ -231,13 +231,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }, timeoutMs)
     }
 
+    // Eventos de interacción del usuario + actividad de red (cada request al
+    // backend emite EVENTO_ACTIVIDAD_API). Incluir la actividad de red evita
+    // botar al usuario por inactividad mientras corre una operación larga sin
+    // clicks/teclado (ej: carga y procesamiento de documentos).
     const events = ['mousedown', 'keydown', 'scroll', 'touchstart']
     events.forEach((e) => window.addEventListener(e, resetTimer))
+    window.addEventListener(EVENTO_ACTIVIDAD_API, resetTimer)
     resetTimer()
 
     return () => {
       if (inactivityTimer.current) clearTimeout(inactivityTimer.current)
       events.forEach((e) => window.removeEventListener(e, resetTimer))
+      window.removeEventListener(EVENTO_ACTIVIDAD_API, resetTimer)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario])
