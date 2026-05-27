@@ -1,4 +1,12 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Server LM — Frontend
+
+**Infraestructura RAG para conversar con tus documentos y dar contexto preciso a tus agentes de IA.**
+
+Frontend Web de Server LM (Next.js 16, App Router → Vercel). Server LM tiene un doble propósito: permitir conversar con los documentos en lenguaje natural y entregar ese conocimiento como contexto preciso —filtrado por RBAC— a agentes de IA externos (vía MCP, API REST y CLI). El chat es uno de los usos, no el único; Server LM **da contexto** a los agentes, no es la plataforma sobre la que se montan. Su diferenciador es la facilidad de llevar los documentos a la base vectorial: apuntar al directorio → escanear, vectorizar e **indexar** automáticamente.
+
+Documento maestro: [`../CLAUDE.md`](../CLAUDE.md) y [`../docs/INDEX.md`](../docs/INDEX.md).
+
+---
 
 ## Getting Started
 

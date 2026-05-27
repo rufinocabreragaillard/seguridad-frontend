@@ -86,6 +86,7 @@ export default function PaginaParametrosGenerales() {
   const [errorTipo, setErrorTipo] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [busquedaCat, setBusquedaCat] = useState('')
+  const [busquedaTipo, setBusquedaTipo] = useState('')
 
   // ── Eliminación ────────────────────────────────────────────────────────────
   const [itemAEliminar, setItemAEliminar] = useState<ItemEliminar | null>(null)
@@ -131,7 +132,7 @@ export default function PaginaParametrosGenerales() {
     cargando: cargandoTipo, setPage: setPageTipo, setLimit: setLimitTipo, refetch: refetchTipos,
   } = usePaginacion<TipoParametro, { q: string; categoria: string }>({
     fetcher: fetcherTipos,
-    filtros: { q: '', categoria: filtroCategoria },
+    filtros: { q: busquedaTipo, categoria: filtroCategoria },
     limitInicial: 20,
   })
 
@@ -410,8 +411,11 @@ export default function PaginaParametrosGenerales() {
       {tabActiva === 'tipos' && (
         <>
           <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <p className="text-sm text-texto-muted">{t('filtrarPorCategoria')}</p>
+            <div className="flex items-center gap-3 flex-1">
+              <div className="max-w-sm flex-1">
+                <Input placeholder={t('buscarTipoPlaceholder')} value={busquedaTipo} onChange={(e) => setBusquedaTipo(e.target.value)} icono={<Search size={15} />} />
+              </div>
+              <p className="text-sm text-texto-muted whitespace-nowrap">{t('filtrarPorCategoria')}</p>
               <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
                 <option value="">{t('todas')}</option>
                 {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
@@ -420,7 +424,7 @@ export default function PaginaParametrosGenerales() {
             <Boton variante="primario" onClick={abrirNuevoTipo}><Plus size={16} /> {t('nuevoTipo')}</Boton>
           </div>
 
-          {filtroCategoria === '' && (
+          {filtroCategoria === '' && busquedaTipo.trim() === '' && (
             <div className="bg-primario-muy-claro/50 border border-primario/20 rounded-lg px-4 py-3">
               <p className="text-sm text-primario-oscuro">{t('seleccionaCategoriaTipos')}</p>
             </div>

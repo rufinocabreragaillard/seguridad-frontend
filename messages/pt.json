@@ -708,6 +708,7 @@
     "tabCategorias": "Categorias de Parâmetro",
     "tabTipos": "Tipos de Parâmetro",
     "buscarCategoriaPlaceholder": "Buscar categoria...",
+    "buscarTipoPlaceholder": "Buscar por código, nome ou descrição...",
     "nuevaCategoria": "Nova categoria",
     "nuevoTipo": "Novo tipo",
     "colCodigo": "Código",

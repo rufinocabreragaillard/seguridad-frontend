@@ -708,6 +708,7 @@
     "tabCategorias": "Parameter Categories",
     "tabTipos": "Parameter Types",
     "buscarCategoriaPlaceholder": "Search category...",
+    "buscarTipoPlaceholder": "Search by code, name or description...",
     "nuevaCategoria": "New Category",
     "nuevoTipo": "New Type",
     "colCodigo": "Code",
