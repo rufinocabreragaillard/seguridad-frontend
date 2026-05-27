@@ -1978,7 +1978,8 @@
     "parametroEliminado": "Parameter gelöscht",
     "errorCategoriaTipoValorObligatorios": "Kategorie, Typ und Wert sind Pflichtfelder",
     "eliminarTitulo": "Parameter löschen",
-    "eliminarConfirm": "Parameter {categoria}/{tipo} löschen?"
+    "eliminarConfirm": "Parameter {categoria}/{tipo} löschen?",
+    "verDescripcion": "Beschreibung anzeigen"
   },
   "plans": {
     "titulo": "Kundenpläne",

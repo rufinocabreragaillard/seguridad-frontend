@@ -2012,7 +2012,8 @@
     "parametroEliminado": "Parameter deleted",
     "errorCategoriaTipoValorObligatorios": "Category, type, and value are required",
     "eliminarTitulo": "Delete Parameter",
-    "eliminarConfirm": "Delete parameter {categoria}/{tipo}?"
+    "eliminarConfirm": "Delete parameter {categoria}/{tipo}?",
+    "verDescripcion": "View description"
   },
   "plans": {
     "titulo": "Client Plans",

@@ -2,9 +2,10 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Eye, Save, Lock, EyeClosed, Search } from 'lucide-react'
+import { Eye, Save, Lock, EyeClosed, Search, HelpCircle } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaTd, TablaTh } from '@/components/ui/tabla'
+import { Modal } from '@/components/ui/modal'
 import { datosBasicosApi, parametrosApi } from '@/lib/api'
 import type { TipoParametro } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -39,6 +40,9 @@ export default function PaginaParametrosGrupo() {
   // Revelar valores privados
   const [valoresRevelados, setValoresRevelados] = useState<Record<string, string>>({})
   const [revelando, setRevelando] = useState<string | null>(null)
+
+  // Modal de descripción del parámetro
+  const [infoParam, setInfoParam] = useState<{ titulo: string; codigo: string; descripcion: string } | null>(null)
 
   const mostrarExito = (msg: string) => { setMensajeExito(msg); setTimeout(() => setMensajeExito(''), 3000) }
 
@@ -164,7 +168,22 @@ export default function PaginaParametrosGrupo() {
                     <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{v.tipo_parametro}</code>
                     {esPrivado && <Lock size={10} className="text-amber-500 ml-1 inline" />}
                   </TablaTd>
-                  <TablaTd className="text-texto-muted text-sm">{tipo?.nombre || <span className="text-texto-light">—</span>}</TablaTd>
+                  <TablaTd className="text-texto-muted text-sm">
+                    <div className="flex items-center gap-1.5">
+                      <span>{tipo?.nombre || <span className="text-texto-light">—</span>}</span>
+                      {tipo?.descripcion && (
+                        <button
+                          type="button"
+                          onClick={() => setInfoParam({ titulo: tipo.nombre || key, codigo: key, descripcion: tipo.descripcion! })}
+                          className="p-0.5 rounded text-texto-light hover:text-primario transition-colors shrink-0"
+                          title={t('verDescripcion')}
+                          aria-label={t('verDescripcion')}
+                        >
+                          <HelpCircle size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </TablaTd>
                   <TablaTd className="max-w-[360px]">
                     {esPrivado ? (
                       <div className="flex items-center gap-2">
@@ -225,6 +244,19 @@ export default function PaginaParametrosGrupo() {
             })}
           </TablaCuerpo>
         </Tabla>
+      )}
+
+      {infoParam && (
+        <Modal
+          abierto={!!infoParam}
+          alCerrar={() => setInfoParam(null)}
+          titulo={infoParam.titulo}
+        >
+          <div className="flex flex-col gap-3">
+            <code className="text-xs bg-fondo border border-borde rounded px-2 py-1 self-start text-texto-muted">{infoParam.codigo}</code>
+            <p className="text-sm text-texto whitespace-pre-wrap leading-relaxed">{infoParam.descripcion}</p>
+          </div>
+        </Modal>
       )}
     </div>
   )

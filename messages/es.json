@@ -2053,7 +2053,8 @@
     "parametroEliminado": "Parámetro eliminado",
     "errorCategoriaTipoValorObligatorios": "Categoría, tipo y valor son obligatorios",
     "eliminarTitulo": "Eliminar parámetro",
-    "eliminarConfirm": "¿Eliminar el parámetro {categoria}/{tipo}?"
+    "eliminarConfirm": "¿Eliminar el parámetro {categoria}/{tipo}?",
+    "verDescripcion": "Ver descripción"
   },
   "myAccount": {
     "titulo": "Mi Cuenta",
