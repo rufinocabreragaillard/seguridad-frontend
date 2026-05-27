@@ -24,10 +24,11 @@ const nextConfig: NextConfig & { eslint?: { ignoreDuringBuilds?: boolean } } = {
     // Dev necesita unsafe-eval (React Refresh) y unsafe-inline (HMR).
     // Prod: endurecemos script-src quitando unsafe-eval; dejamos unsafe-inline
     // hasta migrar a nonces (Next.js hidrata con scripts inline).
-    // Paddle.js se carga desde cdn.paddle.com (checkout). Debe permitirse en script-src.
+    // Paddle.js (checkout) carga desde cdn.paddle.com en prod y sandbox-cdn.paddle.com
+    // en sandbox. Usamos *.paddle.com para cubrir ambos.
     const scriptSrc = isDev
-      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://cdn.paddle.com"
-      : "script-src 'self' 'unsafe-inline' https://cdn.paddle.com";
+      ? "script-src 'self' 'unsafe-eval' 'unsafe-inline' https://*.paddle.com"
+      : "script-src 'self' 'unsafe-inline' https://*.paddle.com";
     return [
       {
         source: "/(.*)",
@@ -45,7 +46,7 @@ const nextConfig: NextConfig & { eslint?: { ignoreDuringBuilds?: boolean } } = {
             value: [
               "default-src 'self'",
               scriptSrc,
-              "style-src 'self' 'unsafe-inline'",
+              "style-src 'self' 'unsafe-inline' https://*.paddle.com",
               "img-src 'self' data: blob: https:",
               "font-src 'self' data:",
               `connect-src 'self' ${process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"} https://*.supabase.co wss://*.supabase.co https://*.paddle.com`,
