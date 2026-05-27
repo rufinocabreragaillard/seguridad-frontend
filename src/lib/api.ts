@@ -199,6 +199,22 @@ api.interceptors.response.use(
         return Promise.reject(new Error('Sesión expirada'))
       }
     }
+    // 403 en /auth/me: sesión válida en Supabase Auth pero el usuario ya no existe
+    // en la tabla `usuarios` (ej: su grupo fue eliminado) o está inactivo. No es un
+    // servidor caído: cerrar la sesión Supabase y mandar a login para permitir
+    // registrarse de nuevo, en vez de quedar en loop de "servidor no disponible".
+    if (
+      error.response?.status === 403 &&
+      typeof window !== 'undefined' &&
+      (error.config?.url || '').includes('/auth/me')
+    ) {
+      const { supabase } = await import('./supabase')
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login'
+      }
+      return Promise.reject(new Error('Tu cuenta ya no está registrada. Inicia sesión o regístrate nuevamente.'))
+    }
     // Sin respuesta del servidor (red caída, timeout, CORS, servidor dormido)
     if (!error.response) {
       // Ruta exacta que falló (sin baseURL) para diagnóstico inmediato
