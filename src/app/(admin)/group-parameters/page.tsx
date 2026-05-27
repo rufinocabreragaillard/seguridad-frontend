@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Trash2, Eye, Save, Lock, EyeClosed, RotateCcw } from 'lucide-react'
+import { Eye, Save, Lock, EyeClosed, RotateCcw } from 'lucide-react'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { Insignia } from '@/components/ui/insignia'
@@ -284,10 +284,6 @@ export default function PaginaParametrosGrupo() {
                           <option value="true">Sí (true)</option>
                           <option value="false">No (false)</option>
                         </select>
-                        <button onClick={() => setValAEliminar(v)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title={tc('eliminar')}>
-                          <Trash2 size={14} />
-                        </button>
                       </>
                     ) : (
                       <>
@@ -302,10 +298,6 @@ export default function PaginaParametrosGrupo() {
                           disabled={guardando === key}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title={tc('guardar')}>
                           <Save size={14} />
-                        </button>
-                        <button onClick={() => setValAEliminar(v)}
-                          className="p-1.5 rounded-lg hover:bg-red-50 text-texto-muted hover:text-error transition-colors shrink-0" title={tc('eliminar')}>
-                          <Trash2 size={14} />
                         </button>
                       </>
                     )}

@@ -1,9 +1,10 @@
 import { test, expect } from '@playwright/test'
 
 /**
- * En /group-parameters NO debe existir la opción de "Agregar parámetros".
- * El tab "Valores" muestra solo los parámetros existentes (editar/eliminar/nulificar),
- * sin el bloque inferior de "Agregar nuevo".
+ * En /group-parameters NO debe existir la opción de "Agregar parámetros"
+ * ni el basurero de "Eliminar" un parámetro de grupo.
+ * El tab "Valores" muestra solo los parámetros existentes (editar / revertir
+ * réplica privada al valor del sistema), sin agregar ni eliminar.
  */
 test.describe('Group Parameters — sin opción de Agregar', () => {
   test.beforeEach(async ({ page }) => {
@@ -33,5 +34,19 @@ test.describe('Group Parameters — sin opción de Agregar', () => {
 
     // No debe haber placeholder "Selecciona categoría" en esta vista
     await expect(page.getByText(/Selecciona categor[íi]a/i)).toHaveCount(0)
+  })
+
+  test('el tab Valores no muestra el basurero de Eliminar', async ({ page }) => {
+    await page.waitForLoadState('networkidle')
+
+    const tabValores = page.getByRole('button').filter({ hasText: /^Valores/i }).first()
+    if (await tabValores.count()) {
+      await tabValores.click()
+    }
+    await page.waitForLoadState('networkidle')
+
+    // No debe existir el botón basurero (title="Eliminar") de parámetro de grupo
+    await expect(page.getByRole('button', { name: /^Eliminar$/i })).toHaveCount(0)
+    await expect(page.locator('button[title="Eliminar"]')).toHaveCount(0)
   })
 })
