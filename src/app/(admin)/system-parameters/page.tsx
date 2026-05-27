@@ -14,6 +14,8 @@ import { TabPrompts, type CamposPrompt } from '@/components/ui/tab-prompts'
 import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
 import { SortableDndContext, SortableRow } from '@/components/ui/sortable'
+import { Paginador } from '@/components/ui/paginador'
+import { usePaginacion } from '@/hooks/usePaginacion'
 import { datosBasicosApi, promptsApi, parametrosApi } from '@/lib/api'
 import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
@@ -30,14 +32,30 @@ type ItemEliminar =
 const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 const inputCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
+// Fetchers estables fuera del componente para evitar re-renders infinitos en usePaginacion
+const fetcherCategorias = (params: { page: number; limit: number; q: string }) =>
+  datosBasicosApi.listarCategoriasPaginado({
+    page: params.page,
+    limit: params.limit,
+    q: params.q || undefined,
+  })
+
+const fetcherTipos = (params: { page: number; limit: number; q: string; categoria: string }) =>
+  datosBasicosApi.listarTiposPaginado({
+    page: params.page,
+    limit: params.limit,
+    q: params.q || undefined,
+    categoria: params.categoria || undefined,
+  })
+
 export default function PaginaParametrosGenerales() {
   const t = useTranslations('systemParameters')
   const tc = useTranslations('common')
   const [tabActiva, setTabActiva] = useState<TabId>('categorias')
 
   // ── Categorías ─────────────────────────────────────────────────────────────
+  // Lista completa de categorías (corta): alimenta los <select> de filtro y modales.
   const [categorias, setCategorias] = useState<CategoriaParametro[]>([])
-  const [cargandoCat, setCargandoCat] = useState(true)
   const [modalCat, setModalCat] = useState(false)
   const [catEditando, setCatEditando] = useState<CategoriaParametro | null>(null)
   const [formCat, setFormCat] = useState({
@@ -55,8 +73,6 @@ export default function PaginaParametrosGenerales() {
   const [errorCat, setErrorCat] = useState('')
 
   // ── Tipos ──────────────────────────────────────────────────────────────────
-  const [tipos, setTipos] = useState<TipoParametro[]>([])
-  const [cargandoTipo, setCargandoTipo] = useState(true)
   const [modalTipo, setModalTipo] = useState(false)
   const [tipoEditando, setTipoEditando] = useState<TipoParametro | null>(null)
   const [formTipo, setFormTipo] = useState({ categoria_parametro: '', tipo_parametro: '', nombre: '', descripcion: '' })
@@ -99,46 +115,62 @@ export default function PaginaParametrosGenerales() {
     finally { setSincronizando(false) }
   }
 
-  // ── Carga ──────────────────────────────────────────────────────────────────
+  // ── Paginación servidor: Categorías ─────────────────────────────────────────
+  const {
+    items: catsPagina, total: totalCats, page: pageCat, limit: limitCat,
+    cargando: cargandoCat, setPage: setPageCat, setLimit: setLimitCat, refetch: refetchCats,
+  } = usePaginacion<CategoriaParametro, { q: string }>({
+    fetcher: fetcherCategorias,
+    filtros: { q: busquedaCat },
+    limitInicial: 20,
+  })
+
+  // ── Paginación servidor: Tipos ──────────────────────────────────────────────
+  const {
+    items: tiposPagina, total: totalTipos, page: pageTipo, limit: limitTipo,
+    cargando: cargandoTipo, setPage: setPageTipo, setLimit: setLimitTipo, refetch: refetchTipos,
+  } = usePaginacion<TipoParametro, { q: string; categoria: string }>({
+    fetcher: fetcherTipos,
+    filtros: { q: '', categoria: filtroCategoria },
+    limitInicial: 20,
+  })
+
+  // Items locales (copias mutables para el drag & drop dentro de la página actual)
+  const [catsLocales, setCatsLocales] = useState<CategoriaParametro[]>([])
+  const [tiposLocales, setTiposLocales] = useState<TipoParametro[]>([])
+  useEffect(() => { setCatsLocales(catsPagina) }, [catsPagina])
+  useEffect(() => { setTiposLocales(tiposPagina) }, [tiposPagina])
+
+  // Lista completa de categorías (para los <select> de filtro y modales).
   const cargarCategorias = useCallback(async () => {
-    setCargandoCat(true)
     try { setCategorias(await datosBasicosApi.listarCategorias()) }
-    finally { setCargandoCat(false) }
+    catch { /* silencioso */ }
   }, [])
 
-  const cargarTipos = useCallback(async () => {
-    setCargandoTipo(true)
-    try { setTipos(await datosBasicosApi.listarTipos()) }
-    finally { setCargandoTipo(false) }
-  }, [])
+  const cargarTipos = refetchTipos
 
-  // ── Reordenar ─────────────────────────────────────────────────────────────
+  useEffect(() => { cargarCategorias() }, [cargarCategorias])
+
+  // ── Reordenar (dentro de la página visible, con offset) ─────────────────────
   const reordenarCategorias = async (nuevas: CategoriaParametro[]) => {
-    const conOrden = nuevas.map((c, idx) => ({ ...c, orden: idx + 1 }))
-    setCategorias(conOrden)
+    setCatsLocales(nuevas)
+    const offset = (pageCat - 1) * limitCat
     try {
       await datosBasicosApi.reordenarCategorias(
-        conOrden.map((c) => ({ categoria_parametro: c.categoria_parametro, orden: c.orden ?? 0 }))
+        nuevas.map((c, i) => ({ categoria_parametro: c.categoria_parametro, orden: offset + i + 1 }))
       )
-    } catch { cargarCategorias() }
+    } catch { setCatsLocales(catsPagina) }
   }
 
   const reordenarTipos = async (nuevos: TipoParametro[]) => {
-    const conOrden = nuevos.map((t, idx) => ({ ...t, orden: idx + 1 }))
-    if (filtroCategoria) {
-      const resto = tipos.filter((t) => t.categoria_parametro !== filtroCategoria)
-      setTipos([...resto, ...conOrden])
-    } else {
-      setTipos(conOrden)
-    }
+    setTiposLocales(nuevos)
+    const offset = (pageTipo - 1) * limitTipo
     try {
       await datosBasicosApi.reordenarTipos(
-        conOrden.map((t) => ({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, orden: t.orden ?? 0 }))
+        nuevos.map((t, i) => ({ categoria_parametro: t.categoria_parametro, tipo_parametro: t.tipo_parametro, orden: offset + i + 1 }))
       )
-    } catch { cargarTipos() }
+    } catch { setTiposLocales(tiposPagina) }
   }
-
-  useEffect(() => { cargarCategorias(); cargarTipos() }, [cargarCategorias, cargarTipos])
 
   // ── Categorías: guardar ────────────────────────────────────────────────────
   const abrirNuevaCat = () => {
@@ -194,7 +226,7 @@ export default function PaginaParametrosGenerales() {
         if (!cerrar) setCatEditando(creada)
       }
       if (cerrar) setModalCat(false)
-      cargarCategorias()
+      refetchCats(); cargarCategorias()
     } catch (e) { setErrorCat(e instanceof Error ? e.message : tc('errorAlGuardar')) }
     finally { setGuardandoCat(false) }
   }
@@ -227,7 +259,7 @@ export default function PaginaParametrosGenerales() {
     try {
       if (itemAEliminar.tipo === 'categoria') {
         await datosBasicosApi.eliminarCategoria(itemAEliminar.item.categoria_parametro)
-        cargarCategorias(); cargarTipos()
+        refetchCats(); cargarCategorias(); cargarTipos()
       } else {
         const t = itemAEliminar.item as TipoParametro
         await datosBasicosApi.eliminarTipo(t.categoria_parametro, t.tipo_parametro)
@@ -237,14 +269,6 @@ export default function PaginaParametrosGenerales() {
     } catch (e) { console.error(e) }
     finally { setEliminando(false) }
   }
-
-  const catsFiltradas = categorias.filter((c) =>
-    busquedaCat.length === 0 ||
-    c.categoria_parametro.toLowerCase().includes(busquedaCat.toLowerCase()) ||
-    c.nombre.toLowerCase().includes(busquedaCat.toLowerCase())
-  )
-
-  const tiposFiltrados = filtroCategoria ? tipos.filter((t) => t.categoria_parametro === filtroCategoria) : tipos
 
   const tabs: { id: TabId; label: string }[] = [
     { id: 'categorias', label: t('tabCategorias') },
@@ -295,8 +319,8 @@ export default function PaginaParametrosGenerales() {
                 <RefreshCw size={15} className={sincronizando ? 'animate-spin' : ''} />
                 {sincronizando ? tc('cargando') : t('sincronizarReplicas')}
               </Boton>
-              <Boton variante="contorno" tamano="sm" disabled={catsFiltradas.length === 0}
-                onClick={() => exportarExcel(catsFiltradas as unknown as Record<string, unknown>[], [
+              <Boton variante="contorno" tamano="sm" disabled={catsLocales.length === 0}
+                onClick={() => exportarExcel(catsLocales as unknown as Record<string, unknown>[], [
                   { titulo: t('colCodigo'), campo: 'categoria_parametro' },
                   { titulo: t('colNombre'), campo: 'nombre' },
                   { titulo: t('colRepGrupo'), campo: 'replica_grupo', formato: (v: unknown) => (v ? tc('si') : tc('no')) },
@@ -332,16 +356,16 @@ export default function PaginaParametrosGenerales() {
                 <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
-                {catsFiltradas.length === 0 ? (
+                {catsLocales.length === 0 ? (
                   <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={12 as never}>{busquedaCat ? t('sinCategoriasEncontradas') : t('sinCategoriasRegistradas')}</TablaTd></tr>
                 ) : (
                   <SortableDndContext
-                    items={catsFiltradas as unknown as Record<string, unknown>[]}
+                    items={catsLocales as unknown as Record<string, unknown>[]}
                     getId={(item) => (item as unknown as CategoriaParametro).categoria_parametro}
                     onReorder={(items) => reordenarCategorias(items as unknown as CategoriaParametro[])}
                     disabled={!!busquedaCat}
                   >
-                    {catsFiltradas.map((c, idx) => (
+                    {catsLocales.map((c, idx) => (
                       <SortableRow key={c.categoria_parametro} id={c.categoria_parametro}>
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{c.orden ?? idx + 1}</TablaTd>
                         <TablaTd onDoubleClick={() => abrirEditarCat(c)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
@@ -366,6 +390,18 @@ export default function PaginaParametrosGenerales() {
                 )}
               </TablaCuerpo>
             </Tabla>
+          )}
+
+          {!cargandoCat && (
+            <Paginador
+              page={pageCat}
+              limit={limitCat}
+              total={totalCats}
+              onChangePage={setPageCat}
+              onChangeLimit={setLimitCat}
+              cargando={cargandoCat}
+              opcionesLimit={[20, 50, 100, 200]}
+            />
           )}
         </>
       )}
@@ -402,15 +438,15 @@ export default function PaginaParametrosGenerales() {
                 <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
-                {tiposFiltrados.length === 0 ? (
+                {tiposLocales.length === 0 ? (
                   <tr><TablaTd className="text-center text-texto-muted py-8" colSpan={8 as never}>{t('sinTiposRegistrados')}</TablaTd></tr>
                 ) : (
                   <SortableDndContext
-                    items={tiposFiltrados as unknown as Record<string, unknown>[]}
+                    items={tiposLocales as unknown as Record<string, unknown>[]}
                     getId={(item) => { const t = item as unknown as TipoParametro; return `${t.categoria_parametro}/${t.tipo_parametro}` }}
                     onReorder={(items) => reordenarTipos(items as unknown as TipoParametro[])}
                   >
-                    {tiposFiltrados.map((t, idx) => (
+                    {tiposLocales.map((t, idx) => (
                       <SortableRow key={`${t.categoria_parametro}/${t.tipo_parametro}`} id={`${t.categoria_parametro}/${t.tipo_parametro}`}>
                         <TablaTd className="text-xs text-texto-muted w-10 text-center">{t.orden ?? idx + 1}</TablaTd>
                         <TablaTd onDoubleClick={() => abrirEditarTipo(t)}><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{t.categoria_parametro}</code></TablaTd>
@@ -432,6 +468,18 @@ export default function PaginaParametrosGenerales() {
                 )}
               </TablaCuerpo>
             </Tabla>
+          )}
+
+          {!cargandoTipo && (
+            <Paginador
+              page={pageTipo}
+              limit={limitTipo}
+              total={totalTipos}
+              onChangePage={setPageTipo}
+              onChangeLimit={setLimitTipo}
+              cargando={cargandoTipo}
+              opcionesLimit={[20, 50, 100, 200]}
+            />
           )}
         </>
       )}

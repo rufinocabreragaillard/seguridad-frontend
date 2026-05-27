@@ -618,6 +618,10 @@ export const auditoriaApi = {
 export const datosBasicosApi = {
   listarCategorias: () =>
     api.get<CategoriaParametro[]>('/datos-basicos/categorias').then((r) => r.data),
+  listarCategoriasPaginado: (params: { page: number; limit: number; q?: string }) =>
+    api.get<{ items: CategoriaParametro[]; total: number; page: number; limit: number }>(
+      '/datos-basicos/categorias/paginado', { params }
+    ).then((r) => r.data),
   crearCategoria: (datos: Partial<CategoriaParametro>) =>
     api.post<CategoriaParametro>('/datos-basicos/categorias', datos).then((r) => r.data),
   actualizarCategoria: (categoria: string, datos: Partial<CategoriaParametro>) =>
@@ -630,6 +634,10 @@ export const datosBasicosApi = {
 
   listarTipos: (categoria?: string) =>
     api.get<TipoParametro[]>('/datos-basicos/tipos', { params: categoria ? { categoria } : {} }).then((r) => r.data),
+  listarTiposPaginado: (params: { page: number; limit: number; q?: string; categoria?: string }) =>
+    api.get<{ items: TipoParametro[]; total: number; page: number; limit: number }>(
+      '/datos-basicos/tipos/paginado', { params }
+    ).then((r) => r.data),
   crearTipo: (datos: Partial<TipoParametro>) =>
     api.post<TipoParametro>('/datos-basicos/tipos', datos).then((r) => r.data),
   actualizarTipo: (categoria: string, tipo: string, datos: Partial<TipoParametro>) =>
