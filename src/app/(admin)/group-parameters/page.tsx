@@ -2,16 +2,13 @@
 
 import { useEffect, useState, useCallback } from 'react'
 import { useTranslations } from 'next-intl'
-import { Eye, Save, Lock, EyeClosed, RotateCcw } from 'lucide-react'
-import { ModalConfirmar } from '@/components/ui/modal-confirmar'
-import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { Insignia } from '@/components/ui/insignia'
+import { Eye, Save, Lock, EyeClosed, Search } from 'lucide-react'
+import { Input } from '@/components/ui/input'
+import { Tabla, TablaCabecera, TablaCuerpo, TablaTd, TablaTh } from '@/components/ui/tabla'
 import { datosBasicosApi, parametrosApi } from '@/lib/api'
-import type { CategoriaParametro, TipoParametro } from '@/lib/tipos'
+import type { TipoParametro } from '@/lib/tipos'
 import { BotonChat } from '@/components/ui/boton-chat'
 import { PageHeader } from '@/components/layout/PageHeader'
-
-type TabId = 'categorias' | 'valores'
 
 interface ValorGrupo {
   categoria_parametro: string
@@ -21,22 +18,19 @@ interface ValorGrupo {
   es_privado?: boolean
 }
 
-const MASCARA = '••••••••••••••••'
 const selectCls = 'rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
 
 export default function PaginaParametrosGrupo() {
   const t = useTranslations('groupParameters')
   const tc = useTranslations('common')
-  const [tabActiva, setTabActiva] = useState<TabId>('categorias')
 
-  // ── Catálogo ───────────────────────────────────────────────────────────────
-  const [categorias, setCategorias] = useState<CategoriaParametro[]>([])
+  // ── Catálogo de tipos (para mostrar nombre y widget) ─────────────────────────
   const [tipos, setTipos] = useState<TipoParametro[]>([])
-  const [cargandoCat, setCargandoCat] = useState(true)
 
   // ── Valores del grupo ──────────────────────────────────────────────────────
   const [valores, setValores] = useState<ValorGrupo[]>([])
   const [cargandoVal, setCargandoVal] = useState(true)
+  const [busqueda, setBusqueda] = useState('')
   const [filtroCategoria, setFiltroCategoria] = useState('')
   const [guardando, setGuardando] = useState<string | null>(null)
   const [error, setError] = useState('')
@@ -46,20 +40,14 @@ export default function PaginaParametrosGrupo() {
   const [valoresRevelados, setValoresRevelados] = useState<Record<string, string>>({})
   const [revelando, setRevelando] = useState<string | null>(null)
 
-  // Eliminar / Nulificar
-  const [valAEliminar, setValAEliminar] = useState<ValorGrupo | null>(null)
-  const [eliminando, setEliminando] = useState(false)
-
   const mostrarExito = (msg: string) => { setMensajeExito(msg); setTimeout(() => setMensajeExito(''), 3000) }
 
   // ── Carga ──────────────────────────────────────────────────────────────────
-  const cargarCatalogo = useCallback(async () => {
-    setCargandoCat(true)
+  const cargarTipos = useCallback(async () => {
     try {
-      const [cats, tips] = await Promise.all([datosBasicosApi.listarCategorias(), datosBasicosApi.listarTipos()])
-      setCategorias(cats)
+      const tips = await datosBasicosApi.listarTipos()
       setTipos(tips)
-    } finally { setCargandoCat(false) }
+    } catch { /* silencioso */ }
   }, [])
 
   const cargarValores = useCallback(async () => {
@@ -72,7 +60,7 @@ export default function PaginaParametrosGrupo() {
     finally { setCargandoVal(false) }
   }, [])
 
-  useEffect(() => { cargarCatalogo(); cargarValores() }, [cargarCatalogo, cargarValores])
+  useEffect(() => { cargarTipos(); cargarValores() }, [cargarTipos, cargarValores])
 
   // ── Revelar valor privado ──────────────────────────────────────────────────
   const revelarValor = async (v: ValorGrupo) => {
@@ -90,11 +78,7 @@ export default function PaginaParametrosGrupo() {
   }
 
   // ── Guardar valor inline ───────────────────────────────────────────────────
-  const guardarInline = async (cat: string, tipo: string, valor: string, esPrivado: boolean) => {
-    if (esPrivado && (!valor || valor === MASCARA)) {
-      mostrarExito('Sin cambios (campo privado vacío).')
-      return
-    }
+  const guardarInline = async (cat: string, tipo: string, valor: string) => {
     const key = `${cat}/${tipo}`
     setGuardando(key); setError('')
     try {
@@ -106,40 +90,19 @@ export default function PaginaParametrosGrupo() {
     finally { setGuardando(null) }
   }
 
-  // ── Eliminar / Nulificar ───────────────────────────────────────────────────
-  const confirmarEliminar = async () => {
-    if (!valAEliminar) return
-    setEliminando(true)
-    try {
-      if (valAEliminar.es_privado) {
-        // Privado: nulificar (elimina la réplica, vuelve al valor del sistema)
-        await parametrosApi.nulificarGrupo(valAEliminar.categoria_parametro, valAEliminar.tipo_parametro)
-        mostrarExito('Réplica eliminada. El grupo usará el valor del sistema.')
-      } else {
-        await parametrosApi.eliminarGrupo(valAEliminar.categoria_parametro, valAEliminar.tipo_parametro)
-        mostrarExito(t('parametroEliminado'))
-      }
-      setValAEliminar(null)
-      cargarValores()
-    } catch (e) { setError(e instanceof Error ? e.message : tc('errorAlEliminar')) }
-    finally { setEliminando(false) }
-  }
-
   // ── Datos derivados ────────────────────────────────────────────────────────
-  const valoresFiltrados = filtroCategoria ? valores.filter((v) => v.categoria_parametro === filtroCategoria) : valores
+  const categoriasDisponibles = Array.from(new Set(valores.map((v) => v.categoria_parametro))).sort()
 
-  // Solo categorías replicables a nivel grupo (el resto son parámetros de sistema)
-  const categoriasGrupo = categorias.filter((c) => c.visible_grupo !== false)
-
-  const categoriasConInfo = categoriasGrupo.map((c) => ({
-    ...c,
-    nValores: valores.filter((v) => v.categoria_parametro === c.categoria_parametro).length,
-  }))
-
-  const tabs: { id: TabId; label: string }[] = [
-    { id: 'categorias', label: t('tabCategorias') },
-    { id: 'valores', label: t('tabValores') },
-  ]
+  const q = busqueda.trim().toLowerCase()
+  const valoresFiltrados = valores.filter((v) => {
+    if (filtroCategoria && v.categoria_parametro !== filtroCategoria) return false
+    if (!q) return true
+    return (
+      v.categoria_parametro.toLowerCase().includes(q) ||
+      v.tipo_parametro.toLowerCase().includes(q) ||
+      (v.valor_parametro || '').toLowerCase().includes(q)
+    )
+  })
 
   return (
     <div className="relative flex flex-col gap-6">
@@ -151,102 +114,60 @@ export default function PaginaParametrosGrupo() {
       {mensajeExito && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3"><p className="text-sm text-exito">{mensajeExito}</p></div>}
       {error && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{error}</p></div>}
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-fondo rounded-lg border border-borde w-fit">
-        {tabs.map((tab) => (
-          <button key={tab.id} onClick={() => setTabActiva(tab.id)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${tabActiva === tab.id ? 'bg-surface text-primario-oscuro shadow-sm border border-borde' : 'text-texto-muted hover:text-texto'}`}
-          >{tab.label}</button>
-        ))}
+      {/* Filtros */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="max-w-xs flex-1">
+          <Input
+            placeholder={tc('buscar')}
+            value={busqueda}
+            onChange={(e) => setBusqueda(e.target.value)}
+            icono={<Search size={15} />}
+          />
+        </div>
+        <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
+          <option value="">{t('todas')}</option>
+          {categoriasDisponibles.map((c) => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
-      {/* ── Tab: Categorías ── */}
-      {tabActiva === 'categorias' && (
-        <>
-          {cargandoCat ? (
-            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-          ) : (
-            <Tabla>
-              <TablaCabecera><tr>
-                <TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh>
-                <TablaTh>{t('colValoresConfig')}</TablaTh>
-                <TablaTh className="text-center"><Lock size={13} className="inline" /></TablaTh>
-                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
-              </tr></TablaCabecera>
-              <TablaCuerpo>
-                {categoriasConInfo.length === 0 ? (
-                  <TablaFila><TablaTd className="text-center text-texto-muted py-8" colSpan={6 as never}>{t('sinCategoriasCatalogo')}</TablaTd></TablaFila>
-                ) : categoriasConInfo.map((c) => (
-                  <TablaFila key={c.categoria_parametro}>
-                    <TablaTd><code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{c.categoria_parametro}</code></TablaTd>
-                    <TablaTd className="font-medium">{c.nombre}</TablaTd>
-                    <TablaTd className="text-texto-muted text-sm" onDoubleClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('valores') }}>{c.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
-                    <TablaTd>
-                      {c.nValores > 0
-                        ? <Insignia variante="exito">{t('configurados', { n: c.nValores })}</Insignia>
-                        : <Insignia variante="neutro">{t('sinValores')}</Insignia>}
-                    </TablaTd>
-                    <TablaTd className="text-center">
-                      {c.privado
-                        ? <span title="Valores privados (tipo API Key)" className="text-amber-600"><Lock size={13} /></span>
-                        : <span className="text-texto-light">—</span>}
-                    </TablaTd>
-                    <TablaTd>
-                      <div className="flex items-center justify-end gap-1">
-                        <button onClick={() => { setFiltroCategoria(c.categoria_parametro); setTabActiva('valores') }}
-                          className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={t('verValores')}>
-                          <Eye size={14} />
-                        </button>
-                      </div>
-                    </TablaTd>
-                  </TablaFila>
-                ))}
-              </TablaCuerpo>
-            </Tabla>
-          )}
-        </>
-      )}
+      {cargandoVal ? (
+        <div className="flex flex-col gap-2">{[1, 2, 3, 4, 5].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
+      ) : (
+        <Tabla>
+          <TablaCabecera>
+            <tr>
+              <TablaTh>{t('colCodigo')}</TablaTh>
+              <TablaTh>{t('colNombre')}</TablaTh>
+              <TablaTh>{t('placeholderValor')}</TablaTh>
+              <TablaTh className="text-right">{tc('guardar')}</TablaTh>
+            </tr>
+          </TablaCabecera>
+          <TablaCuerpo>
+            {valoresFiltrados.length === 0 ? (
+              <tr>
+                <TablaTd className="text-center text-texto-muted py-8" colSpan={4 as never}>
+                  {busqueda || filtroCategoria ? t('sinValoresCategoria') : t('sinValoresGrupo')}
+                </TablaTd>
+              </tr>
+            ) : valoresFiltrados.map((v) => {
+              const key = `${v.categoria_parametro}/${v.tipo_parametro}`
+              const tipo = tipos.find((tp) => tp.categoria_parametro === v.categoria_parametro && tp.tipo_parametro === v.tipo_parametro)
+              const esPrivado = v.es_privado === true
+              const valorRevelado = valoresRevelados[key]
+              const estaRevelado = valorRevelado !== undefined
 
-      {/* ── Tab: Valores ── */}
-      {tabActiva === 'valores' && (
-        <>
-          <div className="flex items-center gap-3">
-            <p className="text-sm text-texto-muted">{t('filtrarPorCategoria')}</p>
-            <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
-              <option value="">{t('todas')}</option>
-              {categoriasGrupo.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
-            </select>
-          </div>
-
-          {cargandoVal ? (
-            <div className="flex flex-col gap-2">{[1, 2, 3].map((i) => <div key={i} className="h-12 bg-surface rounded-lg border border-borde animate-pulse" />)}</div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {valoresFiltrados.length === 0 ? (
-                <p className="text-sm text-texto-muted text-center py-8">
-                  {filtroCategoria ? t('sinValoresCategoria') : t('sinValoresGrupo')}
-                </p>
-              ) : valoresFiltrados.map((v) => {
-                const key = `${v.categoria_parametro}/${v.tipo_parametro}`
-                const tipo = tipos.find((t) => t.categoria_parametro === v.categoria_parametro && t.tipo_parametro === v.tipo_parametro)
-                const esPrivado = v.es_privado === true
-                const valorRevelado = valoresRevelados[key]
-                const estaRevelado = valorRevelado !== undefined
-
-                return (
-                  <div key={key} className={`flex items-center gap-2 px-3 py-2 rounded-lg border bg-surface ${esPrivado ? 'border-amber-200' : 'border-borde'}`}>
-                    <div className="shrink-0 w-72">
-                      <p className="text-xs font-semibold text-texto-muted flex items-center gap-1">
-                        <code>{v.categoria_parametro}</code>
-                        <span className="mx-1 text-texto-light">/</span>
-                        <code>{v.tipo_parametro}</code>
-                        {esPrivado && <Lock size={10} className="text-amber-500 ml-1" />}
-                      </p>
-                      {tipo && <p className="text-xs text-texto-muted mt-0.5">{tipo.nombre}</p>}
-                    </div>
-
+              return (
+                <tr key={key} className="border-b border-borde last:border-0 hover:bg-fondo/50">
+                  <TablaTd>
+                    <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{v.categoria_parametro}</code>
+                    <span className="mx-1 text-texto-light">/</span>
+                    <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{v.tipo_parametro}</code>
+                    {esPrivado && <Lock size={10} className="text-amber-500 ml-1 inline" />}
+                  </TablaTd>
+                  <TablaTd className="text-texto-muted text-sm">{tipo?.nombre || <span className="text-texto-light">—</span>}</TablaTd>
+                  <TablaTd className="max-w-[360px]">
                     {esPrivado ? (
-                      <>
+                      <div className="flex items-center gap-2">
                         <input
                           type={estaRevelado ? 'text' : 'password'}
                           defaultValue={estaRevelado ? valorRevelado : ''}
@@ -254,7 +175,7 @@ export default function PaginaParametrosGrupo() {
                           placeholder="Ingresar nuevo valor para reemplazar"
                           onBlur={(e) => {
                             const val = e.target.value.trim()
-                            if (val && val !== valorRevelado) guardarInline(v.categoria_parametro, v.tipo_parametro, val, true)
+                            if (val && val !== valorRevelado) guardarInline(v.categoria_parametro, v.tipo_parametro, val)
                           }}
                           className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5 font-mono"
                         />
@@ -268,64 +189,43 @@ export default function PaginaParametrosGrupo() {
                             ? <span className="text-xs">...</span>
                             : estaRevelado ? <EyeClosed size={14} /> : <Eye size={14} />}
                         </button>
-                        {/* Nulificar: elimina la réplica, vuelve al valor del sistema */}
-                        <button
-                          onClick={() => setValAEliminar(v)}
-                          className="p-1.5 rounded-lg hover:bg-amber-50 text-texto-muted hover:text-amber-600 transition-colors shrink-0"
-                          title="Quitar réplica (usar valor del sistema)"
-                        >
-                          <RotateCcw size={14} />
-                        </button>
-                      </>
+                      </div>
                     ) : tipo?.tipo_widget === 'BOOLEAN' ? (
-                      <>
-                        <select
-                          defaultValue={(v.valor_parametro || '').trim().toLowerCase() === 'true' ? 'true' : 'false'}
-                          onChange={(e) => { if (e.target.value !== v.valor_parametro) guardarInline(v.categoria_parametro, v.tipo_parametro, e.target.value, false) }}
-                          className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
-                        >
-                          <option value="true">Sí (true)</option>
-                          <option value="false">No (false)</option>
-                        </select>
-                      </>
+                      <select
+                        defaultValue={(v.valor_parametro || '').trim().toLowerCase() === 'true' ? 'true' : 'false'}
+                        onChange={(e) => { if (e.target.value !== v.valor_parametro) guardarInline(v.categoria_parametro, v.tipo_parametro, e.target.value) }}
+                        className="w-full text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
+                      >
+                        <option value="true">Sí (true)</option>
+                        <option value="false">No (false)</option>
+                      </select>
                     ) : (
-                      <>
-                        <input
-                          type="text"
-                          defaultValue={v.valor_parametro}
-                          onBlur={(e) => { if (e.target.value !== v.valor_parametro) guardarInline(v.categoria_parametro, v.tipo_parametro, e.target.value, false) }}
-                          className="flex-1 min-w-0 text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
-                        />
+                      <input
+                        type="text"
+                        defaultValue={v.valor_parametro}
+                        onBlur={(e) => { if (e.target.value !== v.valor_parametro) guardarInline(v.categoria_parametro, v.tipo_parametro, e.target.value) }}
+                        className="w-full text-sm text-texto bg-transparent border-b border-transparent hover:border-borde focus:border-primario focus:outline-none py-0.5"
+                      />
+                    )}
+                  </TablaTd>
+                  <TablaTd>
+                    <div className="flex items-center justify-end gap-1">
+                      {!esPrivado && tipo?.tipo_widget !== 'BOOLEAN' && (
                         <button
-                          onClick={(e) => { const inp = (e.currentTarget.parentElement?.querySelector('input') as HTMLInputElement); if (inp) guardarInline(v.categoria_parametro, v.tipo_parametro, inp.value, false) }}
+                          onClick={(e) => { const inp = (e.currentTarget.closest('tr')?.querySelector('input') as HTMLInputElement); if (inp) guardarInline(v.categoria_parametro, v.tipo_parametro, inp.value) }}
                           disabled={guardando === key}
                           className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors shrink-0" title={tc('guardar')}>
                           <Save size={14} />
                         </button>
-                      </>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-        </>
+                      )}
+                    </div>
+                  </TablaTd>
+                </tr>
+              )
+            })}
+          </TablaCuerpo>
+        </Tabla>
       )}
-
-      <ModalConfirmar
-        abierto={!!valAEliminar}
-        alCerrar={() => setValAEliminar(null)}
-        alConfirmar={confirmarEliminar}
-        titulo={valAEliminar?.es_privado ? 'Quitar réplica de grupo' : t('eliminarTitulo')}
-        mensaje={valAEliminar
-          ? valAEliminar.es_privado
-            ? `¿Quitar la réplica del parámetro ${valAEliminar.tipo_parametro} de este grupo? El grupo volverá a usar el valor del sistema.`
-            : t('eliminarConfirm', { categoria: valAEliminar.categoria_parametro, tipo: valAEliminar.tipo_parametro })
-          : ''}
-        textoConfirmar={valAEliminar?.es_privado ? 'Quitar réplica' : tc('eliminar')}
-        cargando={eliminando}
-      />
     </div>
   )
 }
