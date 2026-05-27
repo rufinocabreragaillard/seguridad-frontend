@@ -43,10 +43,9 @@ test.describe.serial('Mi Cuenta (/my-account)', () => {
     await expect(page.locator('text=Planes disponibles').first()).toBeVisible({ timeout: 15000 })
     await expect(page.locator('text=Corporate').first()).toBeVisible({ timeout: 15000 })
     await expect(page.locator('text=A medida').first()).toBeVisible()
-    // Botón de contacto (mailto), no un botón "Contratar".
-    const contacto = page.getByRole('link', { name: /contactarnos/i }).first()
+    // Botón de contacto (abre mailto vía window.open), no un botón "Contratar".
+    const contacto = page.getByRole('button', { name: /contactarnos/i }).first()
     await expect(contacto).toBeVisible()
-    await expect(contacto).toHaveAttribute('href', /^mailto:/)
   })
 
   test('como admin, muestra el botón Contratar (no el aviso de solo-admin)', async ({ page }) => {
