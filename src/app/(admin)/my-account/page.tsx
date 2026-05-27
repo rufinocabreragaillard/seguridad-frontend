@@ -75,6 +75,15 @@ const FEATURES_PLAN: Record<string, string[]> = {
   ],
 }
 
+// Plan recomendado: se resalta con la tarjeta oscura (espejo del sitio
+// comercial serverlm.ai, donde Business lleva el badge "Recomendado").
+const PLAN_RESALTADO = 'BUSINESS'
+
+// Corporate NO es self-service: el backend lo excluye del catálogo (no tiene
+// price_id en Paddle). Se renderiza como tarjeta estática "a medida" con
+// botón "Contactarnos", igual que en el sitio comercial.
+const CORREO_VENTAS = 'rufinocabreragaillard@gmail.com'
+
 export default function PaginaMiCuenta() {
   const funcion = useFuncionActual()
   const { error: toastError } = useToast()
@@ -231,29 +240,53 @@ export default function PaginaMiCuenta() {
                 Solo el administrador del grupo puede contratar o cambiar el plan.
               </div>
             )}
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {estado?.planes.map((plan) => {
                 const esActual = plan.codigo_plan === planActual
+                const destacado = plan.codigo_plan === PLAN_RESALTADO
                 return (
                   <div
                     key={plan.codigo_plan}
-                    className={`rounded-lg border p-5 flex flex-col gap-3 ${
-                      esActual ? 'border-primario bg-primario-muy-claro/40' : 'border-borde bg-surface'
+                    className={`relative rounded-lg border p-5 flex flex-col gap-3 ${
+                      destacado
+                        ? 'border-primario bg-primario text-white shadow-lg lg:scale-[1.03]'
+                        : esActual
+                          ? 'border-primario bg-primario-muy-claro/40'
+                          : 'border-borde bg-surface'
                     }`}
                   >
                     <div className="flex items-center justify-between">
-                      <h4 className="font-semibold text-texto">{plan.nombre}</h4>
-                      {esActual && (
-                        <span className="text-xs flex items-center gap-1 text-primario font-medium">
+                      <h4 className={`font-semibold ${destacado ? 'text-white' : 'text-texto'}`}>
+                        {plan.nombre}
+                      </h4>
+                      {esActual ? (
+                        <span
+                          className={`text-xs flex items-center gap-1 font-medium ${
+                            destacado ? 'text-white' : 'text-primario'
+                          }`}
+                        >
                           <Check size={14} /> Actual
                         </span>
-                      )}
+                      ) : destacado ? (
+                        <span className="text-[10px] uppercase tracking-[0.15em] bg-white/20 text-white px-2 py-1 rounded-full">
+                          Recomendado
+                        </span>
+                      ) : null}
                     </div>
-                    <div className="text-2xl font-bold text-texto">
+                    <div className={`text-2xl font-bold ${destacado ? 'text-white' : 'text-texto'}`}>
                       ${plan.precio_mensual_usd}
-                      <span className="text-sm font-normal text-texto-muted"> /mes</span>
+                      <span
+                        className={`text-sm font-normal ${destacado ? 'text-white/70' : 'text-texto-muted'}`}
+                      >
+                        {' '}
+                        /mes
+                      </span>
                     </div>
-                    <ul className="text-sm text-texto-muted flex flex-col gap-1">
+                    <ul
+                      className={`text-sm flex flex-col gap-1 ${
+                        destacado ? 'text-white/90' : 'text-texto-muted'
+                      }`}
+                    >
                       {plan.documentos_maximos != null && (
                         <li>{plan.documentos_maximos.toLocaleString()} documentos</li>
                       )}
@@ -265,16 +298,23 @@ export default function PaginaMiCuenta() {
                       )}
                       {(FEATURES_PLAN[plan.codigo_plan] ?? []).map((f) => (
                         <li key={f} className="flex gap-2">
-                          <Check size={14} className="mt-0.5 flex-none text-primario" />
+                          <Check
+                            size={14}
+                            className={`mt-0.5 flex-none ${destacado ? 'text-white' : 'text-primario'}`}
+                          />
                           <span>{f}</span>
                         </li>
                       ))}
                     </ul>
                     <Boton
-                      variante={esActual ? 'contorno' : 'primario'}
+                      variante={destacado ? 'contorno' : esActual ? 'contorno' : 'primario'}
                       onClick={() => contratar(plan)}
                       disabled={!esAdmin || esActual || procesando === plan.codigo_plan}
-                      className="mt-auto"
+                      className={`mt-auto ${
+                        destacado && !esActual
+                          ? 'bg-white text-primario border-white hover:bg-white/90'
+                          : ''
+                      }`}
                     >
                       {procesando === plan.codigo_plan ? (
                         <Loader2 size={16} className="animate-spin" />
@@ -284,6 +324,31 @@ export default function PaginaMiCuenta() {
                   </div>
                 )
               })}
+
+              {/* Corporate — plan a medida (no self-service). Espejo del sitio
+                  comercial: precio "A medida" + botón "Contactarnos". */}
+              <div className="relative rounded-lg border border-borde bg-surface p-5 flex flex-col gap-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="font-semibold text-texto">Corporate</h4>
+                </div>
+                <div className="text-2xl font-bold text-texto">A medida</div>
+                <ul className="text-sm text-texto-muted flex flex-col gap-1">
+                  <li>Tokens y capacidad a medida</li>
+                  <li>Volumen de documentos sin límite definido</li>
+                  {FEATURES_PLAN.CORPORATE.map((f) => (
+                    <li key={f} className="flex gap-2">
+                      <Check size={14} className="mt-0.5 flex-none text-primario" />
+                      <span>{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href={`mailto:${CORREO_VENTAS}?subject=${encodeURIComponent('Consulta plan Corporate — Server LM')}`}
+                  className="mt-auto inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors px-4 py-2 text-sm border border-borde bg-surface text-texto hover:bg-fondo"
+                >
+                  <ExternalLink size={15} /> Contactarnos
+                </a>
+              </div>
             </div>
           </section>
         </>

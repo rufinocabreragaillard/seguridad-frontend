@@ -33,6 +33,22 @@ test.describe.serial('Mi Cuenta (/my-account)', () => {
     await expect(page.locator('text=Control de acceso por área o cargo').first()).toBeVisible()
   })
 
+  test('resalta Business como plan recomendado (espejo del sitio comercial)', async ({ page }) => {
+    await expect(page.locator('text=Planes disponibles').first()).toBeVisible({ timeout: 15000 })
+    // El badge "Recomendado" aparece (en la tarjeta destacada = Business).
+    await expect(page.locator('text=Recomendado').first()).toBeVisible({ timeout: 15000 })
+  })
+
+  test('muestra la tarjeta Corporate "A medida" con botón Contactarnos', async ({ page }) => {
+    await expect(page.locator('text=Planes disponibles').first()).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('text=Corporate').first()).toBeVisible({ timeout: 15000 })
+    await expect(page.locator('text=A medida').first()).toBeVisible()
+    // Botón de contacto (mailto), no un botón "Contratar".
+    const contacto = page.getByRole('link', { name: /contactarnos/i }).first()
+    await expect(contacto).toBeVisible()
+    await expect(contacto).toHaveAttribute('href', /^mailto:/)
+  })
+
   test('como admin, muestra el botón Contratar (no el aviso de solo-admin)', async ({ page }) => {
     await expect(page.locator('text=Planes disponibles').first()).toBeVisible({ timeout: 15000 })
     await expect(page.getByRole('button', { name: /contratar/i }).first()).toBeVisible()
