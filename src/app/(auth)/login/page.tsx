@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { Mail, Lock, Eye, EyeOff, ArrowLeft, Globe } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
@@ -42,6 +42,15 @@ export default function PaginaLogin() {
   const [formRegistro, setFormRegistro] = useState({ email: '', nombre: '', empresa: '' })
   const [enviandoRegistro, setEnviandoRegistro] = useState(false)
   const [mensajeRegistro, setMensajeRegistro] = useState('')
+  const [registroConfirmado, setRegistroConfirmado] = useState(false)
+  const [reenviando, setReenviando] = useState(false)
+  const [cooldownReenvio, setCooldownReenvio] = useState(0)
+
+  useEffect(() => {
+    if (cooldownReenvio <= 0) return
+    const id = setTimeout(() => setCooldownReenvio((s) => s - 1), 1000)
+    return () => clearTimeout(id)
+  }, [cooldownReenvio])
 
   const algunLoading = cargandoEmail || cargandoGoogle || cargandoMicrosoft
 
@@ -116,11 +125,30 @@ export default function PaginaLogin() {
     try {
       const res = await api.post('/auth/registro', { email: email.toLowerCase(), nombre, empresa })
       setMensajeRegistro(res.data.mensaje)
+      setRegistroConfirmado(Boolean(res.data.ya_confirmado))
+      if (!res.data.ya_confirmado) setCooldownReenvio(30)
     } catch (err: unknown) {
       const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
       setErrorLocal(detail || t('errorRegistro'))
     } finally {
       setEnviandoRegistro(false)
+    }
+  }
+
+  const handleReenviar = async () => {
+    if (cooldownReenvio > 0 || reenviando) return
+    setReenviando(true)
+    setErrorLocal('')
+    try {
+      const res = await api.post('/auth/reenviar-invitacion', { email: formRegistro.email.toLowerCase() })
+      setMensajeRegistro(res.data.mensaje)
+      setRegistroConfirmado(Boolean(res.data.ya_confirmado))
+      if (!res.data.ya_confirmado) setCooldownReenvio(30)
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
+      setErrorLocal(detail || t('errorRegistro'))
+    } finally {
+      setReenviando(false)
     }
   }
 
@@ -180,6 +208,8 @@ export default function PaginaLogin() {
                     setModoRegistro(false)
                     setErrorLocal('')
                     setMensajeRegistro('')
+                    setRegistroConfirmado(false)
+                    setCooldownReenvio(0)
                     setFormRegistro({ email: '', nombre: '', empresa: '' })
                   }}
                   className="flex items-center gap-1 text-sm text-primario hover:text-primario-hover transition-colors mb-4"
@@ -193,8 +223,50 @@ export default function PaginaLogin() {
                 </p>
 
                 {mensajeRegistro ? (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
-                    <p className="text-sm text-blue-700">{mensajeRegistro}</p>
+                  <div className="flex flex-col gap-3">
+                    <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3">
+                      <p className="text-sm text-blue-700">{mensajeRegistro}</p>
+                    </div>
+
+                    {mensajeError && (
+                      <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+                        <p className="text-sm text-error">{mensajeError}</p>
+                      </div>
+                    )}
+
+                    {registroConfirmado ? (
+                      <Boton
+                        type="button"
+                        variante="primario"
+                        className="w-full"
+                        style={{ backgroundColor: '#1A1E2E', borderColor: '#1A1E2E' }}
+                        onClick={() => {
+                          setModoRegistro(false)
+                          setMensajeRegistro('')
+                          setRegistroConfirmado(false)
+                          setErrorLocal('')
+                          setFormRegistro({ email: '', nombre: '', empresa: '' })
+                        }}
+                      >
+                        {t('volverLogin')}
+                      </Boton>
+                    ) : (
+                      <div className="flex flex-col gap-1">
+                        <p className="text-xs text-texto-muted">¿No recibiste el correo? Revisa spam o reenvíalo.</p>
+                        <button
+                          type="button"
+                          onClick={handleReenviar}
+                          disabled={cooldownReenvio > 0 || reenviando}
+                          className="text-sm font-medium text-primario hover:text-primario-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-left"
+                        >
+                          {reenviando
+                            ? 'Reenviando…'
+                            : cooldownReenvio > 0
+                              ? `Reenviar correo (${cooldownReenvio}s)`
+                              : 'Reenviar correo'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 ) : (
                   <form onSubmit={handleRegistro} className="flex flex-col gap-4">
