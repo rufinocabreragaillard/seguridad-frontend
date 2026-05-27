@@ -128,7 +128,10 @@ export default function PaginaParametrosGrupo() {
   // ── Datos derivados ────────────────────────────────────────────────────────
   const valoresFiltrados = filtroCategoria ? valores.filter((v) => v.categoria_parametro === filtroCategoria) : valores
 
-  const categoriasConInfo = categorias.map((c) => ({
+  // Solo categorías replicables a nivel grupo (el resto son parámetros de sistema)
+  const categoriasGrupo = categorias.filter((c) => c.visible_grupo !== false)
+
+  const categoriasConInfo = categoriasGrupo.map((c) => ({
     ...c,
     nValores: valores.filter((v) => v.categoria_parametro === c.categoria_parametro).length,
   }))
@@ -211,7 +214,7 @@ export default function PaginaParametrosGrupo() {
             <p className="text-sm text-texto-muted">{t('filtrarPorCategoria')}</p>
             <select value={filtroCategoria} onChange={(e) => setFiltroCategoria(e.target.value)} className={selectCls}>
               <option value="">{t('todas')}</option>
-              {categorias.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
+              {categoriasGrupo.map((c) => <option key={c.categoria_parametro} value={c.categoria_parametro}>{c.nombre}</option>)}
             </select>
           </div>
 

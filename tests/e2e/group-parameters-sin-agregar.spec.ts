@@ -49,4 +49,18 @@ test.describe('Group Parameters — sin opción de Agregar', () => {
     await expect(page.getByRole('button', { name: /^Eliminar$/i })).toHaveCount(0)
     await expect(page.locator('button[title="Eliminar"]')).toHaveCount(0)
   })
+
+  test('el tab Categorías solo muestra categorías replicables a grupo', async ({ page }) => {
+    await page.waitForLoadState('networkidle')
+
+    // Categorías replicables (visible_grupo = true) — deben verse
+    for (const cod of ['APARIENCIA', 'SEGURIDAD', 'ESPACIOS_TRABAJO']) {
+      await expect(page.locator('code', { hasText: new RegExp(`^${cod}$`) })).toHaveCount(1)
+    }
+
+    // Categorías de sistema (visible_grupo = false) — NO deben aparecer
+    for (const cod of ['CHAT', 'DOCUMENTOS', 'OPTIMIZACION', 'LIMPIEZA', 'SISTEMA', 'TRADUCCION']) {
+      await expect(page.locator('code', { hasText: new RegExp(`^${cod}$`) })).toHaveCount(0)
+    }
+  })
 })
