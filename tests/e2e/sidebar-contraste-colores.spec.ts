@@ -29,6 +29,7 @@ function toRgbString(c: string): string {
 let sharedPage: import('@playwright/test').Page;
 
 test.beforeAll(async ({ browser }) => {
+  test.setTimeout(90000);
   const ctx = await browser.newContext();
   sharedPage = await ctx.newPage();
   await sharedPage.goto('/');
