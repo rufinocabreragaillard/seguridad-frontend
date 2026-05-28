@@ -59,7 +59,8 @@ function luminancia({ r, g, b }: { r: number; g: number; b: number }): number {
 
 // Deriva colores de texto del sidebar según luminancia del fondo, para que el
 // menú siga legible aunque el grupo configure un sidebar claro u oscuro.
-// Solo se aplica si el grupo NO definió explícitamente esas claves en su tema.
+// Se ejecuta DESPUÉS de aplicar los colores del grupo, sobreescribiendo
+// sidebar_texto / sidebar_texto_muted para garantizar contraste.
 function aplicarContrasteSidebar(
   colores: Record<string, string>,
   root: HTMLElement,
@@ -75,12 +76,8 @@ function aplicarContrasteSidebar(
     ? 'rgba(255, 255, 255, 0.78)'
     : 'rgba(15, 23, 42, 0.68)'
 
-  if (!('sidebar_texto' in colores)) {
-    root.style.setProperty('--color-sidebar-texto', textoFuerte)
-  }
-  if (!('sidebar_texto_muted' in colores)) {
-    root.style.setProperty('--color-sidebar-texto-muted', textoMuted)
-  }
+  root.style.setProperty('--color-sidebar-texto', textoFuerte)
+  root.style.setProperty('--color-sidebar-texto-muted', textoMuted)
 }
 
 function aplicarColores(colores: Record<string, string>) {
