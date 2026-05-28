@@ -2465,12 +2465,13 @@ export const pagosApi = {
     api.post<{ url: string }>('/pagos/portal-session').then((r) => r.data),
 }
 
-// ─── API Keys del usuario (auth larga duración) ──────────────────────────────
+// ─── API Keys del grupo (auth larga duración para integraciones) ─────────────
 
 export interface ApiKeyResumen {
   id: number
   prefijo: string
   nombre: string
+  codigo_usuario: string
   codigo_rol: string | null
   codigo_grupo: string
   creada_en: string
@@ -2482,18 +2483,23 @@ export interface ApiKeyNueva {
   api_key: string  // SOLO se entrega una vez, al crear
   prefijo: string
   nombre: string
+  codigo_usuario: string
   codigo_rol: string | null
   codigo_grupo: string
   creada_en: string
 }
 
+export interface ApiKeyCreateBody {
+  nombre: string
+  rol_solicitado?: string | null
+  codigo_usuario_destino?: string | null
+}
+
 export const apiKeysApi = {
   listar: () => api.get<ApiKeyResumen[]>('/auth/api-key').then((r) => r.data),
-  crear: (nombre: string, rolSolicitado?: string) =>
-    api
-      .post<ApiKeyNueva>('/auth/api-key', { nombre, rol_solicitado: rolSolicitado || null })
-      .then((r) => r.data),
-  revocar: (prefijo: string) => api.delete(`/auth/api-key/${prefijo}`),
+  crear: (body: ApiKeyCreateBody) =>
+    api.post<ApiKeyNueva>('/auth/api-key', body).then((r) => r.data),
+  revocar: (prefijo: string) => api.delete(`/auth/api-key/${encodeURIComponent(prefijo)}`),
 }
 
 export default api

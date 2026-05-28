@@ -1,14 +1,16 @@
 import { test, expect } from '@playwright/test';
 
-// Valida la pantalla "Mis API Keys" (/api-keys) — la entrada UI al chat externo.
+// Valida la pantalla "API Keys del grupo" (/api-keys) — la entrada UI al chat externo.
+// La pantalla es ADMINISTRADOR (rol SEG-GRUPO o tipo ADMINISTRADOR/SISTEMA).
+// El usuario rufino@rufinocabrera.cl tiene rol SEG-GRUPO en CAB LTDA, así que puede entrar.
 // Flujo:
-//   1. login con usuario normal
+//   1. login con admin del grupo
 //   2. ir a /api-keys
-//   3. crear una key con un nombre único
-//   4. verificar que aparece el modal "API Key creada" con el token visible
-//   5. cerrar modal, verificar que la fila aparece en la tabla con el prefijo
-//   6. revocar la key creada
-//   7. verificar que ya no aparece en la lista
+//   3. crear una key para uno mismo
+//   4. verificar modal "API Key creada" con token visible
+//   5. cerrar modal, verificar fila con prefijo + nombre
+//   6. revocar
+//   7. verificar desaparición
 
 async function login(page: import('@playwright/test').Page) {
   await page.goto('/');
@@ -22,8 +24,8 @@ test('crear, ver y revocar una API Key desde /api-keys', async ({ page }) => {
   await login(page);
   await page.goto('/api-keys');
 
-  // Heading visible
-  await expect(page.getByRole('heading', { name: /Mis API Keys/i })).toBeVisible({ timeout: 15000 });
+  // Heading visible — admin del grupo accede
+  await expect(page.getByRole('heading', { name: /API Keys del grupo/i })).toBeVisible({ timeout: 15000 });
 
   // Abrir modal "Nueva API Key"
   await page.getByRole('button', { name: /Nueva API Key/i }).click();
@@ -31,6 +33,7 @@ test('crear, ver y revocar una API Key desde /api-keys', async ({ page }) => {
 
   const nombre = `E2E test ${Date.now()}`;
   await page.getByPlaceholder(/Integración|Bot|ej/i).fill(nombre);
+  // Default: "Yo mismo" — no hay que cambiar nada del selector
   await page.getByRole('button', { name: /^Crear$/i }).click();
 
   // Modal "API Key creada" muestra el token
@@ -50,9 +53,7 @@ test('crear, ver y revocar una API Key desde /api-keys', async ({ page }) => {
   const fila = page.locator('tr', { hasText: nombre });
   await fila.getByRole('button', { name: /Revocar/i }).click();
   await expect(page.getByRole('heading', { name: /Revocar API Key/i })).toBeVisible();
-  // El botón del modal de confirmación (no el de la fila)
   await page.getByRole('dialog').getByRole('button', { name: /^Revocar$/i }).click();
 
-  // Tras revocar la fila ya no debe estar
   await expect(page.getByText(nombre)).toHaveCount(0, { timeout: 10000 });
 });

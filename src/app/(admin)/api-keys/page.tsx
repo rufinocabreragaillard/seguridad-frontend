@@ -7,16 +7,27 @@ import { Input } from '@/components/ui/input'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
-import { apiKeysApi, type ApiKeyResumen, type ApiKeyNueva } from '@/lib/api'
+import { apiKeysApi, usuariosApi, rolesApi, type ApiKeyResumen, type ApiKeyNueva } from '@/lib/api'
+import { useAuth } from '@/context/AuthContext'
+
+interface OpcionUsuario { codigo: string; nombre: string }
+interface OpcionRol { codigo: string; nombre: string }
 
 export default function PaginaApiKeys() {
+  const { usuario: contexto } = useAuth()
   const [keys, setKeys] = useState<ApiKeyResumen[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Catálogos para el modal de creación (solo se cargan al abrir)
+  const [usuariosGrupo, setUsuariosGrupo] = useState<OpcionUsuario[]>([])
+  const [rolesGrupo, setRolesGrupo] = useState<OpcionRol[]>([])
+
   // Modal "Crear"
   const [modalCrear, setModalCrear] = useState(false)
   const [nombreNueva, setNombreNueva] = useState('')
+  const [usuarioDestino, setUsuarioDestino] = useState<string>('')
+  const [rolSeleccionado, setRolSeleccionado] = useState<string>('')
   const [creando, setCreando] = useState(false)
 
   // Modal "Token recién creado" — el token solo se muestra una vez
@@ -45,12 +56,45 @@ export default function PaginaApiKeys() {
     cargar()
   }, [])
 
+  const abrirCrear = async () => {
+    setError(null)
+    setNombreNueva('')
+    setUsuarioDestino(contexto?.codigo_usuario || '')
+    setRolSeleccionado('')
+    setModalCrear(true)
+    // Cargar catálogos en paralelo
+    try {
+      const [users, roles] = await Promise.all([
+        usuariosApi.listar(),
+        rolesApi.listar(contexto?.grupo_activo, true),
+      ])
+      setUsuariosGrupo(
+        users.map((u) => ({
+          codigo: u.codigo_usuario,
+          nombre: `${u.nombre || u.codigo_usuario} (${u.codigo_usuario})`,
+        }))
+      )
+      setRolesGrupo(
+        roles.map((r) => ({
+          codigo: r.codigo_rol,
+          nombre: r.codigo_rol,
+        }))
+      )
+    } catch {
+      // Si fallan los catálogos, el formulario sigue funcionando con defaults.
+    }
+  }
+
   const crear = async () => {
     if (!nombreNueva.trim()) return
     setCreando(true)
     setError(null)
     try {
-      const data = await apiKeysApi.crear(nombreNueva.trim())
+      const data = await apiKeysApi.crear({
+        nombre: nombreNueva.trim(),
+        codigo_usuario_destino: usuarioDestino || null,
+        rol_solicitado: rolSeleccionado || null,
+      })
       setTokenRecien(data)
       setModalCrear(false)
       setNombreNueva('')
@@ -89,19 +133,19 @@ export default function PaginaApiKeys() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-[#074B91] flex items-center gap-2">
-            <Key size={24} /> Mis API Keys
+            <Key size={24} /> API Keys del grupo
           </h1>
           <p className="text-sm text-texto-muted mt-1">
-            Tokens de larga duración para consumir el chat y la API de Server LM desde
-            aplicaciones externas o agentes de IA. Reemplazan al JWT (1 hora) y heredan
-            tu rol y grupo activo al momento de crearlas.
+            Tokens de larga duración para consumir el chat y la API REST de Server LM
+            desde aplicaciones externas o agentes de IA (MCP). El administrador del
+            grupo decide qué usuarios y bajo qué rol pueden actuar afuera.
           </p>
         </div>
         <div className="flex gap-2">
           <Boton variante="contorno" onClick={cargar} cargando={cargando}>
             <RefreshCw size={15} /> Actualizar
           </Boton>
-          <Boton onClick={() => setModalCrear(true)}>
+          <Boton onClick={abrirCrear}>
             <Plus size={15} /> Nueva API Key
           </Boton>
         </div>
@@ -117,9 +161,9 @@ export default function PaginaApiKeys() {
         <TablaCabecera>
           <tr>
             <TablaTh>Nombre</TablaTh>
+            <TablaTh>Usuario</TablaTh>
             <TablaTh>Prefijo</TablaTh>
             <TablaTh>Rol</TablaTh>
-            <TablaTh>Grupo</TablaTh>
             <TablaTh>Creada</TablaTh>
             <TablaTh>Último uso</TablaTh>
             <TablaTh className="text-right">Acciones</TablaTh>
@@ -135,17 +179,17 @@ export default function PaginaApiKeys() {
           ) : keys.length === 0 ? (
             <TablaFila>
               <TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>
-                No tienes API Keys activas. Crea una para empezar a consumir Server LM
-                desde una aplicación externa.
+                No hay API Keys activas en este grupo. Crea una para empezar a consumir
+                Server LM desde una aplicación externa.
               </TablaTd>
             </TablaFila>
           ) : (
             keys.map((k) => (
               <TablaFila key={k.id}>
                 <TablaTd className="font-medium">{k.nombre}</TablaTd>
+                <TablaTd className="text-xs">{k.codigo_usuario}</TablaTd>
                 <TablaTd className="font-mono text-xs text-texto-muted">{k.prefijo}…</TablaTd>
                 <TablaTd className="text-xs">{k.codigo_rol || '—'}</TablaTd>
-                <TablaTd className="text-xs">{k.codigo_grupo}</TablaTd>
                 <TablaTd className="text-xs text-texto-muted whitespace-nowrap">
                   {new Date(k.creada_en).toLocaleDateString('es-CL')}
                 </TablaTd>
@@ -195,10 +239,7 @@ export default function PaginaApiKeys() {
       {/* Modal: crear */}
       <Modal
         abierto={modalCrear}
-        alCerrar={() => {
-          setModalCrear(false)
-          setNombreNueva('')
-        }}
+        alCerrar={() => setModalCrear(false)}
         titulo="Nueva API Key"
       >
         <div className="flex flex-col gap-4">
@@ -209,23 +250,49 @@ export default function PaginaApiKeys() {
               placeholder='ej. "Integración Zapier", "Bot de WhatsApp"'
               value={nombreNueva}
               onChange={(e) => setNombreNueva(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && nombreNueva.trim()) crear()
-              }}
             />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Dueño de la key</label>
+            <select
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              value={usuarioDestino}
+              onChange={(e) => setUsuarioDestino(e.target.value)}
+            >
+              <option value="">Yo mismo ({contexto?.codigo_usuario})</option>
+              {usuariosGrupo
+                .filter((u) => u.codigo !== contexto?.codigo_usuario)
+                .map((u) => (
+                  <option key={u.codigo} value={u.codigo}>
+                    {u.nombre}
+                  </option>
+                ))}
+            </select>
             <p className="text-xs text-texto-muted mt-1">
-              La key heredará tu rol y grupo activo. El token aparecerá una sola vez —
-              guárdalo en un gestor de secretos.
+              La key actuará en nombre de este usuario y heredará sus permisos.
             </p>
           </div>
-          <div className="flex gap-3 justify-end">
-            <Boton
-              variante="contorno"
-              onClick={() => {
-                setModalCrear(false)
-                setNombreNueva('')
-              }}
+          <div>
+            <label className="text-sm font-medium block mb-1">Rol</label>
+            <select
+              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              value={rolSeleccionado}
+              onChange={(e) => setRolSeleccionado(e.target.value)}
             >
+              <option value="">Rol principal del usuario (default)</option>
+              {rolesGrupo.map((r) => (
+                <option key={r.codigo} value={r.codigo}>
+                  {r.nombre}
+                </option>
+              ))}
+            </select>
+            <p className="text-xs text-texto-muted mt-1">
+              Restringe los permisos efectivos de la key. Recomendado: el rol mínimo
+              que cubra el caso de uso (ej. solo lectura para un bot de consultas).
+            </p>
+          </div>
+          <div className="flex gap-3 justify-end pt-2">
+            <Boton variante="contorno" onClick={() => setModalCrear(false)}>
               Cancelar
             </Boton>
             <Boton onClick={crear} cargando={creando} disabled={!nombreNueva.trim()}>
@@ -246,6 +313,11 @@ export default function PaginaApiKeys() {
             <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
               <strong>Cópiala ahora.</strong> Por seguridad no podrás volver a verla; si
               la pierdes, deberás revocar y crear una nueva.
+            </div>
+            <div className="text-xs text-texto-muted">
+              <span className="block">Dueño: <b>{tokenRecien.codigo_usuario}</b></span>
+              <span className="block">Rol: <b>{tokenRecien.codigo_rol || '—'}</b></span>
+              <span className="block">Grupo: <b>{tokenRecien.codigo_grupo}</b></span>
             </div>
             <div>
               <label className="text-sm font-medium block mb-1">Token</label>
@@ -283,7 +355,7 @@ export default function PaginaApiKeys() {
         titulo="Revocar API Key"
         mensaje={
           paraRevocar
-            ? `La API Key "${paraRevocar.nombre}" dejará de funcionar inmediatamente. Las aplicaciones que la usen recibirán 401. Esta acción no se puede deshacer.`
+            ? `La API Key "${paraRevocar.nombre}" (de ${paraRevocar.codigo_usuario}) dejará de funcionar inmediatamente. Las aplicaciones que la usen recibirán 401. Esta acción no se puede deshacer.`
             : ''
         }
         textoConfirmar="Revocar"
