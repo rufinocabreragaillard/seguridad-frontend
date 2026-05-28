@@ -1296,7 +1296,7 @@ export default function PaginaCargaDocsUsuario() {
                                 : 'text-texto-muted hover:text-texto'
                             }`}
                           >
-                            {v}
+                            {v === 'ALTO' ? t('nivelAlto') : t('nivelBajo')}
                           </button>
                         ))}
                       </div>

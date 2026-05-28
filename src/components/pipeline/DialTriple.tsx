@@ -1,5 +1,7 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 /**
  * Dial de 3 anillos concéntricos — "reloj invertido".
  *
@@ -105,6 +107,7 @@ export function DialTriple({
   tamano = 220,
   ejecutando = true,
 }: DialTripleProps) {
+  const t = useTranslations('pipelineDial')
   const cx = tamano / 2
   const cy = tamano / 2
 
@@ -139,7 +142,7 @@ export function DialTriple({
         height={tamano}
         viewBox={`0 0 ${tamano} ${tamano}`}
         role="img"
-        aria-label={`Progreso: ${pctGlobal}% — lote ${lote.actual} de ${lote.total}, etapa ${etapa.indiceActivo + 1} de ${etapa.total}`}
+        aria-label={t('ariaProgreso', { pct: pctGlobal, loteActual: lote.actual, loteTotal: lote.total, etapaActual: etapa.indiceActivo + 1, etapaTotal: etapa.total })}
       >
         <g transform={`translate(${cx} ${cy})`}>
           <Anillo
@@ -203,11 +206,11 @@ export function DialTriple({
       <div className="flex items-center gap-3 text-[10px] tabular-nums text-texto-muted">
         <span className="flex items-center gap-1">
           <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: colorExterno }} />
-          Lote {lote.actual}/{lote.total}
+          {t('lote', { actual: lote.actual, total: lote.total })}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: colorMedio }} />
-          Etapa {Math.min(etapa.indiceActivo + 1, etapa.total)}/{etapa.total}
+          {t('etapa', { actual: Math.min(etapa.indiceActivo + 1, etapa.total), total: etapa.total })}
         </span>
         <span className="flex items-center gap-1">
           <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: colorInterno }} />

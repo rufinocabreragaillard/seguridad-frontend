@@ -31,6 +31,7 @@
  *   por un mensaje legible.
  */
 
+import { useTranslations } from 'next-intl'
 import { DialTriple } from './DialTriple'
 import { Boton } from '@/components/ui/boton'
 
@@ -82,6 +83,7 @@ export function PipelineConversacional({
   slotArribaBotones,
   columnaIzquierda,
 }: PipelineConversacionalProps) {
+  const t = useTranslations('pipelineConversacional')
   const tresColumnas = !!columnaIzquierda
   return (
     <div className="flex flex-col gap-3">
@@ -127,7 +129,7 @@ export function PipelineConversacional({
                 disabled={antesDeEmpezar.deshabilitado || ejecutando}
                 className="min-w-[180px] justify-center"
               >
-                {antesDeEmpezar.textoBotonEmpezar ?? 'Cargar Semántica'}
+                {antesDeEmpezar.textoBotonEmpezar ?? t('cargarSemantica')}
               </Boton>
               {enProceso.onDetener && (
                 <Boton
@@ -136,12 +138,12 @@ export function PipelineConversacional({
                   disabled={!ejecutando}
                   className="min-w-[180px] justify-center"
                 >
-                  Detener proceso
+                  {t('detenerProceso')}
                 </Boton>
               )}
               {antesDeEmpezar.onElegirOtra && (
                 <Boton variante="contorno" onClick={antesDeEmpezar.onElegirOtra} className="min-w-[180px] justify-center">
-                  {antesDeEmpezar.textoBotonOtra ?? 'Elegir otra carpeta'}
+                  {antesDeEmpezar.textoBotonOtra ?? t('elegirOtraCarpeta')}
                 </Boton>
               )}
             </div>
@@ -151,7 +153,7 @@ export function PipelineConversacional({
               <div className="border-t border-borde pt-3 mt-1 flex flex-col gap-3 min-w-0">
                 <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
-                    Ahora mismo
+                    {t('ahoraMismo')}
                   </span>
                   <span className="font-mono text-sm text-texto break-all">
                     {enProceso.actual.archivoActual ?? '—'}
@@ -184,14 +186,14 @@ export function PipelineConversacional({
                   <span className="font-semibold text-texto">
                     {enProceso.estadisticas.vectorizados.toLocaleString()}
                   </span>
-                  <span className="text-texto-muted">vectorizados</span>
+                  <span className="text-texto-muted">{t('vectorizados')}</span>
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="inline-block w-2.5 h-2.5 rounded-full bg-red-400" />
                   <span className="font-semibold text-texto">
                     {enProceso.estadisticas.noProcesables.toLocaleString()}
                   </span>
-                  <span className="text-texto-muted">no procesables</span>
+                  <span className="text-texto-muted">{t('noProcesables')}</span>
                 </span>
               </div>
             )}
@@ -205,7 +207,7 @@ export function PipelineConversacional({
                 onClick={enProceso.onVerDetalles}
                 className="text-sm text-texto underline-offset-4 hover:underline"
               >
-                Ver detalles
+                {t('verDetalles')}
               </button>
             </div>
           )}
