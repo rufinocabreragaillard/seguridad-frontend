@@ -7,53 +7,48 @@
  */
 
 export interface DirectorioEscaneado {
-  codigo_ubicacion: string
+  // codigo_ubicacion ya no se genera en cliente: lo autogenera el backend
+  // (correlativo único desde seq_codigo_ubicacion). Se conserva en el tipo
+  // para compatibilidad con código que lo lea, pero siempre llega como null
+  // en escaneos nuevos.
+  codigo_ubicacion: string | null
   nombre_ubicacion: string
+  alias_ubicacion: string                 // slug legible del nombre (ej. "QUINTAY")
   codigo_ubicacion_superior: string | null
-  ruta_completa: string
+  ruta_completa: string                   // identificador local único del nodo
+  ruta_completa_superior: string | null   // referencia al padre por path
   nivel: number
 }
 
 /**
- * Genera un código válido a partir de un nombre de directorio.
- * Ej: "Contratos 2024" → "CONTRATOS_2024"
+ * Genera un alias legible a partir de un nombre de directorio.
+ * Ej: "Contratos 2024" → "CONTRATOS_2024". El backend autogenera el
+ * codigo_ubicacion para evitar colisiones de PK global entre grupos.
  */
-function generarCodigo(nombre: string): string {
+function generarAlias(nombre: string): string {
   return nombre
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')   // quitar acentos
+    .replace(/[̀-ͯ]/g, '')
     .toUpperCase()
-    .replace(/[^A-Z0-9_\-]/g, '_')    // caracteres no alfanuméricos → _
-    .replace(/_+/g, '_')               // colapsar underscores
-    .replace(/^_|_$/g, '')             // trim underscores
-    .slice(0, 100)                     // máx 100 chars (PK)
-}
-
-/**
- * Hace un código único agregando sufijo si hay duplicados.
- */
-function hacerUnico(codigo: string, existentes: Set<string>): string {
-  if (!existentes.has(codigo)) return codigo
-  let i = 2
-  while (existentes.has(`${codigo}_${i}`)) i++
-  return `${codigo}_${i}`
+    .replace(/[^A-Z0-9_\-]/g, '_')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '')
+    .slice(0, 100)
 }
 
 /**
  * Recorre recursivamente un FileSystemDirectoryHandle.
  *
- * @param deshabilitadas - Set de claves "${codigoPadre ?? ''}/${codigo}" para
- *   ubicaciones inhabilitadas en BD. Si el directorio físico mapea a una de esas
- *   claves, se omite completo (no se añade y no se recursa en sus hijos).
+ * @param rutasDeshabilitadas - Set de rutas (paths completos, ej.
+ *   "/cab/inmobiliario/Quintay") inhabilitadas en BD. Si el directorio físico
+ *   mapea a una ruta de ese set, se omite por completo y no se recursa.
  */
 async function recorrer(
   handle: FileSystemDirectoryHandle,
-  codigoPadre: string | null,
   rutaPadre: string,
   nivel: number,
   resultado: DirectorioEscaneado[],
-  codigos: Set<string>,
-  deshabilitadas?: Set<string>,
+  rutasDeshabilitadas?: Set<string>,
 ): Promise<void> {
   const entries: FileSystemHandle[] = []
   for await (const entry of (handle as unknown as { values(): AsyncIterable<FileSystemHandle> }).values()) {
@@ -62,46 +57,35 @@ async function recorrer(
     }
   }
 
-  // Ordenar alfabéticamente
   entries.sort((a, b) => a.name.localeCompare(b.name))
 
   for (const entry of entries) {
     const nombre = entry.name
-    // Ignorar carpetas ocultas y de sistema
     if (nombre.startsWith('.') || nombre === 'node_modules' || nombre === '__pycache__') {
       continue
     }
 
-    const codigoBase = generarCodigo(nombre)
-    // Si esta ubicación (bajo el mismo padre) está deshabilitada en BD, omitirla
-    // sin recursar. Evita generar duplicados "_2" para sus hermanos y previene
-    // que el backend intente reparentar a códigos que no van a insertarse.
-    const clave = `${codigoPadre ?? ''}/${codigoBase}`
-    if (deshabilitadas?.has(clave)) {
+    const ruta = `${rutaPadre}/${nombre}`
+    if (rutasDeshabilitadas?.has(ruta)) {
       continue
     }
-    const codigo = hacerUnico(codigoBase, codigos)
-    codigos.add(codigo)
-
-    const ruta = `${rutaPadre}/${nombre}`
 
     resultado.push({
-      codigo_ubicacion: codigo,
+      codigo_ubicacion: null,
       nombre_ubicacion: nombre,
-      codigo_ubicacion_superior: codigoPadre,
+      alias_ubicacion: generarAlias(nombre),
+      codigo_ubicacion_superior: null,
       ruta_completa: ruta,
+      ruta_completa_superior: rutaPadre,
       nivel,
     })
 
-    // Recursión
     await recorrer(
       entry as FileSystemDirectoryHandle,
-      codigo,
       ruta,
       nivel + 1,
       resultado,
-      codigos,
-      deshabilitadas,
+      rutasDeshabilitadas,
     )
   }
 }
@@ -117,11 +101,13 @@ export function soportaDirectoryPicker(): boolean {
  * Abre selector de directorio, escanea recursivamente y retorna
  * lista plana de directorios.
  *
+ * @param handleExterno - handle ya autorizado (de IndexedDB). Si no se provee, abre el picker.
+ * @param rutasDeshabilitadas - paths completos a omitir (incluyendo sus hijos).
  * @returns null si el usuario canceló, o la lista de directorios
  */
 export async function escanearDirectorio(
   handleExterno?: FileSystemDirectoryHandle | null,
-  deshabilitadas?: Set<string>,
+  rutasDeshabilitadas?: Set<string>,
 ): Promise<{
   nombreRaiz: string
   directorios: DirectorioEscaneado[]
@@ -138,32 +124,23 @@ export async function escanearDirectorio(
   }
 
   const nombreRaiz = dirHandle.name
-  const codigos = new Set<string>()
-
-  // La raíz misma es el primer directorio
-  let codigoRaiz = generarCodigo(nombreRaiz)
-  codigoRaiz = hacerUnico(codigoRaiz, codigos)
-  codigos.add(codigoRaiz)
+  const rutaRaiz = `/${nombreRaiz}`
 
   const resultado: DirectorioEscaneado[] = [{
-    codigo_ubicacion: codigoRaiz,
+    codigo_ubicacion: null,
     nombre_ubicacion: nombreRaiz,
+    alias_ubicacion: generarAlias(nombreRaiz),
     codigo_ubicacion_superior: null,
-    ruta_completa: `/${nombreRaiz}`,
+    ruta_completa: rutaRaiz,
+    ruta_completa_superior: null,
     nivel: 0,
   }]
 
-  await recorrer(dirHandle, codigoRaiz, `/${nombreRaiz}`, 1, resultado, codigos, deshabilitadas)
+  await recorrer(dirHandle, rutaRaiz, 1, resultado, rutasDeshabilitadas)
 
   return { nombreRaiz, directorios: resultado, dirHandle }
 }
 
-/**
- * Abre selector de directorio y retorna SOLO el directorio seleccionado,
- * sin escanear sus hijos.
- *
- * @returns null si el usuario canceló, o un solo directorio
- */
 // ── Escaneo de archivos (para carga de documentos) ─────────────────────────
 
 export interface ArchivoEscaneado {
@@ -184,14 +161,6 @@ export function contarArchivosVacios(archivos: ArchivoEscaneado[]): number {
   return archivos.reduce((n, a) => n + (a.vacio ? 1 : 0), 0)
 }
 
-/**
- * Escanea recursivamente un directorio y retorna todos los archivos
- * encontrados junto con la ruta del directorio que los contiene.
- *
- * @param rutasHabilitadas - Set de rutas de ubicaciones habilitadas en BD.
- *   Solo se listan archivos de directorios cuya ruta está en este Set.
- * @returns archivos encontrados + carpetas sin match en BD
- */
 /**
  * Escanea archivos en un directorio dado (o abre el picker si no se provee handle).
  * Respeta el límite de profundidad maxNiveles (0 = solo la raíz, 5 = cinco niveles).
@@ -243,7 +212,6 @@ export async function escanearArchivosDirectorio(
   ): Promise<void> {
     if (signal?.aborted) return
     if (topeAlcanzado()) { detenidoPorTope = true; return }
-    // Si esta ruta está deshabilitada en BD, omitir completamente (incluyendo hijos)
     if (rutasDeshabilitadas?.has(rutaActual)) return
     rutasEscaneadas.push(rutaActual)
 
@@ -254,7 +222,6 @@ export async function escanearArchivosDirectorio(
       entries.push({ handle: entry, kind: entry.kind })
     }
 
-    // Archivos de este directorio
     for (const entry of entries) {
       if (signal?.aborted) return
       if (topeAlcanzado()) { detenidoPorTope = true; return }
@@ -277,7 +244,6 @@ export async function escanearArchivosDirectorio(
       }
     }
 
-    // Recursión en subdirectorios (respeta límite de niveles)
     if (nivel < maxNiveles) {
       for (const entry of entries) {
         if (signal?.aborted) return
@@ -300,9 +266,6 @@ export async function escanearArchivosDirectorio(
 
   if (signal?.aborted) return null
 
-  // Si nos detuvimos por tope, vaciamos rutasEscaneadas: el cliente no debe afirmar
-  // que recorrió completamente esas rutas (huérfanos del backend usaría esa lista
-  // para borrar docs que en realidad sí estaban en el filesystem y no alcanzamos a leer).
   return {
     nombreRaiz,
     archivos,
@@ -312,6 +275,11 @@ export async function escanearArchivosDirectorio(
   }
 }
 
+/**
+ * Abre selector de directorio y retorna SOLO el directorio seleccionado,
+ * sin escanear sus hijos. El codigo_ubicacion queda null para que el backend
+ * lo autogenere.
+ */
 export async function escanearDirectorioSinHijos(): Promise<{
   nombreRaiz: string
   directorio: DirectorioEscaneado
@@ -322,15 +290,16 @@ export async function escanearDirectorioSinHijos(): Promise<{
   if (!dirHandle) return null
 
   const nombreRaiz = dirHandle.name
-  const codigoRaiz = generarCodigo(nombreRaiz)
 
   return {
     nombreRaiz,
     directorio: {
-      codigo_ubicacion: codigoRaiz,
+      codigo_ubicacion: null,
       nombre_ubicacion: nombreRaiz,
+      alias_ubicacion: generarAlias(nombreRaiz),
       codigo_ubicacion_superior: null,
       ruta_completa: `/${nombreRaiz}`,
+      ruta_completa_superior: null,
       nivel: 0,
     },
     dirHandle,

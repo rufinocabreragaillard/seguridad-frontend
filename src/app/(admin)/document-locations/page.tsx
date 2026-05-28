@@ -451,17 +451,17 @@ export default function PaginaUbicacionesDocs() {
         }
       }
       // Cargar el árbol completo ANTES del escaneo: lo usamos tanto para el
-      // preview como para construir el set de ubicaciones inhabilitadas que
-      // se le pasa al escáner (omite carpetas que mapean a inhabilitadas en BD
-      // y sus hijos — evita reparenteos a códigos que el backend no insertará).
+      // preview como para construir el set de paths inhabilitados que se le
+      // pasa al escáner (omite carpetas físicas que mapean a inhabilitadas en
+      // BD, sin recursar en sus hijos).
       const todasUbs = await asegurarArbolCompleto()
-      const deshabilitadas = new Set<string>()
+      const rutasDeshabilitadas = new Set<string>()
       for (const u of todasUbs) {
-        if (!u.ubicacion_habilitada) {
-          deshabilitadas.add(`${u.codigo_ubicacion_superior ?? ''}/${u.codigo_ubicacion}`)
+        if (!u.ubicacion_habilitada && u.url) {
+          rutasDeshabilitadas.add(u.url)
         }
       }
-      const resultado = await escanearDirectorio(handlePersistido, deshabilitadas)
+      const resultado = await escanearDirectorio(handlePersistido, rutasDeshabilitadas)
       if (!resultado) {
         setEscaneando(false)
         return // usuario canceló
@@ -487,10 +487,10 @@ export default function PaginaUbicacionesDocs() {
     if (!datosEscaneo) return
     setSincronizando(true)
     try {
-      const raiz = datosEscaneo.directorios.find((d) => !d.codigo_ubicacion_superior)
+      const raiz = datosEscaneo.directorios.find((d) => d.nivel === 0)
       const res = await ubicacionesDocsApi.sincronizar({
         directorios: datosEscaneo.directorios,
-        codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+        ruta_completa_raiz: raiz?.ruta_completa,
       })
       setResultadoSync(res)
       // Tras sync: recargar desde raíces (colapsado) para no abrumar con miles de nodos expandidos.
@@ -536,9 +536,9 @@ export default function PaginaUbicacionesDocs() {
       // Persistir el handle para que luego se puedan abrir documentos.
       idbSetHandle(dirHandle, userId, grupoActivo)
       await ubicacionesDocsApi.crear({
-        codigo_ubicacion: directorio.codigo_ubicacion,
         codigo_grupo: grupoActivo!,
         nombre_ubicacion: directorio.nombre_ubicacion,
+        alias_ubicacion: directorio.alias_ubicacion || undefined,
       })
       cargar()
     } catch (e: unknown) {
@@ -550,69 +550,70 @@ export default function PaginaUbicacionesDocs() {
 
   // ── Preview: calcular diferencias ─────────────────────────────────────────
   // ── Filtrar directorios escaneados: excluir hijos de inhabilitadas ────────
+  //
+  // Identificadores en el escaneo: usamos `ruta_completa` (path único). Los
+  // registros existentes en BD se cruzan por `url`. El codigo_ubicacion ya no
+  // existe en el escaneo (lo autogenera el backend al insertar).
   const filtrarPorInhabilitadas = (directorios: DirectorioEscaneado[]) => {
-    const inhabilitadas = new Set(
-      arbolCompletoCache.filter((u) => !u.ubicacion_habilitada).map((u) => u.codigo_ubicacion)
+    const urlsInhabilitadas = new Set(
+      arbolCompletoCache
+        .filter((u) => !u.ubicacion_habilitada && u.url)
+        .map((u) => u.url as string)
     )
-    if (inhabilitadas.size === 0) return { filtrados: directorios, excluidos: 0 }
+    if (urlsInhabilitadas.size === 0) return { filtrados: directorios, excluidos: 0 }
 
-    const padres: Record<string, string | undefined> = {}
+    // Construir un índice padre por ruta (el escaneo ya trae ruta_completa_superior).
+    const padresPorRuta: Record<string, string | null | undefined> = {}
     for (const d of directorios) {
-      padres[d.codigo_ubicacion] = d.codigo_ubicacion_superior || undefined
+      padresPorRuta[d.ruta_completa] = d.ruta_completa_superior
     }
 
-    const esDescendienteInhabilitada = (codigo: string): boolean => {
+    const esDescendienteInhabilitada = (ruta: string): boolean => {
       const visitados = new Set<string>()
-      let actual = padres[codigo] || arbolCompletoCache.find((u) => u.codigo_ubicacion === codigo)?.codigo_ubicacion_superior
+      let actual: string | null | undefined = padresPorRuta[ruta]
       while (actual) {
-        if (inhabilitadas.has(actual)) return true
+        if (urlsInhabilitadas.has(actual)) return true
         if (visitados.has(actual)) break
         visitados.add(actual)
-        actual = padres[actual] || arbolCompletoCache.find((u) => u.codigo_ubicacion === actual)?.codigo_ubicacion_superior || undefined
+        actual = padresPorRuta[actual]
+        if (actual === undefined) {
+          // El padre no está en el escaneo (caso raíz fuera): consultar BD.
+          // Como el padre del nodo escaneado siempre está en el propio
+          // escaneo (recursión empieza desde la raíz), este caso es raro.
+          break
+        }
       }
       return false
     }
 
-    const filtrados = directorios.filter((d) => !esDescendienteInhabilitada(d.codigo_ubicacion))
+    const filtrados = directorios.filter((d) => !esDescendienteInhabilitada(d.ruta_completa))
     return { filtrados, excluidos: directorios.length - filtrados.length }
   }
 
   const calcularDiferencias = () => {
     if (!datosEscaneo) return { nuevas: 0, aDeshabilitar: 0, sinCambio: 0, excluidas: 0 }
     const { filtrados: dirsFiltrados, excluidos } = filtrarPorInhabilitadas(datosEscaneo.directorios)
-    const codigosActuales = new Set(arbolCompletoCache.map((u) => u.codigo_ubicacion))
-    const codigosEscaneados = new Set(dirsFiltrados.map((d) => d.codigo_ubicacion))
-    const nuevas = dirsFiltrados.filter((d) => !codigosActuales.has(d.codigo_ubicacion)).length
-    // Acotar "a deshabilitar" al subárbol de la raíz escaneada — coincide con
-    // la lógica del backend (sólo toca descendientes de la raíz). NO destruye
-    // nada: solo marca ubicacion_habilitada=false. Documentos quedan intactos.
-    // Solo cuenta las que están actualmente habilitadas (las ya inhabilitadas
-    // no se vuelven a tocar).
-    const codigoRaiz = datosEscaneo.directorios.find((d) => !d.codigo_ubicacion_superior)?.codigo_ubicacion
+    const urlsActuales = new Set(
+      arbolCompletoCache.map((u) => u.url).filter((u): u is string => !!u)
+    )
+    const rutasEscaneadas = new Set(dirsFiltrados.map((d) => d.ruta_completa))
+    const nuevas = dirsFiltrados.filter((d) => !urlsActuales.has(d.ruta_completa)).length
+    // Acotar "a deshabilitar" al subárbol de la raíz escaneada (coincide con
+    // la lógica del backend). NO destruye nada: solo marca ubicacion_habilitada
+    // = false. Los documentos quedan intactos.
+    const rutaRaiz = datosEscaneo.directorios.find((d) => d.nivel === 0)?.ruta_completa
     const enSubarbol = new Set<string>()
-    if (codigoRaiz && codigosActuales.has(codigoRaiz)) {
-      const hijosDe = new Map<string, string[]>()
+    if (rutaRaiz && urlsActuales.has(rutaRaiz)) {
+      // Construir el subárbol por prefijos de url (el url del padre es prefijo
+      // exacto del hijo, separados por '/').
       for (const u of arbolCompletoCache) {
-        if (u.codigo_ubicacion_superior) {
-          const arr = hijosDe.get(u.codigo_ubicacion_superior) ?? []
-          arr.push(u.codigo_ubicacion)
-          hijosDe.set(u.codigo_ubicacion_superior, arr)
-        }
-      }
-      const pila: string[] = [codigoRaiz]
-      enSubarbol.add(codigoRaiz)
-      while (pila.length) {
-        const cur = pila.pop()!
-        for (const h of hijosDe.get(cur) ?? []) {
-          if (!enSubarbol.has(h)) {
-            enSubarbol.add(h)
-            pila.push(h)
-          }
+        if (u.url && (u.url === rutaRaiz || u.url.startsWith(rutaRaiz + '/'))) {
+          enSubarbol.add(u.url)
         }
       }
     }
     const aDeshabilitar = arbolCompletoCache.filter(
-      (u) => u.ubicacion_habilitada && enSubarbol.has(u.codigo_ubicacion) && !codigosEscaneados.has(u.codigo_ubicacion)
+      (u) => u.ubicacion_habilitada && u.url && enSubarbol.has(u.url) && !rutasEscaneadas.has(u.url)
     ).length
     const sinCambio = dirsFiltrados.length - nuevas
     return { nuevas, aDeshabilitar, sinCambio, excluidas: excluidos }
@@ -653,9 +654,9 @@ export default function PaginaUbicacionesDocs() {
             <Folder size={14} className={`${folderColor} shrink-0`} />
           )}
 
-          <div className="flex-1 min-w-0 truncate cursor-pointer" title={`${u.nombre_ubicacion} (${u.codigo_ubicacion})`} onDoubleClick={() => abrirEditar(u)}>
+          <div className="flex-1 min-w-0 truncate cursor-pointer" title={`${u.nombre_ubicacion} (${u.alias_ubicacion || u.codigo_ubicacion})`} onDoubleClick={() => abrirEditar(u)}>
             <span className="font-medium text-xs">{u.nombre_ubicacion}</span>
-            <span className="text-xs text-texto-muted ml-2">({u.codigo_ubicacion})</span>
+            <span className="text-xs text-texto-muted ml-2">({u.alias_ubicacion || u.codigo_ubicacion})</span>
           </div>
 
           <span className="text-xs text-texto-muted truncate max-w-[300px] shrink-0 hidden lg:block" title={u.url || ''}>
@@ -1161,22 +1162,25 @@ export default function PaginaUbicacionesDocs() {
                 <div className="py-1 w-max min-w-full">
                   {(() => {
                     const { filtrados: dirsFiltrados } = filtrarPorInhabilitadas(datosEscaneo.directorios)
-                    const codsFiltrados = new Set(dirsFiltrados.map((d) => d.codigo_ubicacion))
+                    const rutasFiltradas = new Set(dirsFiltrados.map((d) => d.ruta_completa))
+                    const urlsActuales = new Set(
+                      arbolCompletoCache.map((u) => u.url).filter((u): u is string => !!u)
+                    )
                     const tieneHijos = new Set<string>()
                     for (const d of datosEscaneo.directorios) {
-                      if (d.codigo_ubicacion_superior) tieneHijos.add(d.codigo_ubicacion_superior)
+                      if (d.ruta_completa_superior) tieneHijos.add(d.ruta_completa_superior)
                     }
                     const visibles = datosEscaneo.directorios.filter((d) =>
-                      !d.codigo_ubicacion_superior || expandidosScan.has(d.codigo_ubicacion_superior)
+                      !d.ruta_completa_superior || expandidosScan.has(d.ruta_completa_superior)
                     )
                     return visibles.map((d) => {
-                      const esNueva = !arbolCompletoCache.some((u) => u.codigo_ubicacion === d.codigo_ubicacion)
-                      const esExcluida = !codsFiltrados.has(d.codigo_ubicacion)
-                      const expandible = tieneHijos.has(d.codigo_ubicacion)
-                      const expandido = expandidosScan.has(d.codigo_ubicacion)
+                      const esNueva = !urlsActuales.has(d.ruta_completa)
+                      const esExcluida = !rutasFiltradas.has(d.ruta_completa)
+                      const expandible = tieneHijos.has(d.ruta_completa)
+                      const expandido = expandidosScan.has(d.ruta_completa)
                       return (
                         <div
-                          key={d.codigo_ubicacion}
+                          key={d.ruta_completa}
                           className={`flex items-center gap-1 px-3 py-1.5 text-sm ${esExcluida ? 'opacity-40' : ''}`}
                           style={{ paddingLeft: `${d.nivel * 20 + 8}px` }}
                         >
@@ -1186,8 +1190,8 @@ export default function PaginaUbicacionesDocs() {
                               onClick={() => {
                                 setExpandidosScan((prev) => {
                                   const s = new Set(prev)
-                                  if (s.has(d.codigo_ubicacion)) s.delete(d.codigo_ubicacion)
-                                  else s.add(d.codigo_ubicacion)
+                                  if (s.has(d.ruta_completa)) s.delete(d.ruta_completa)
+                                  else s.add(d.ruta_completa)
                                   return s
                                 })
                               }}

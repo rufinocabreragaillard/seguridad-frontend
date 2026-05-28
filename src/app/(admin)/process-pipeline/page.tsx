@@ -285,10 +285,13 @@ export default function PaginaCargaDocsUsuario() {
   // hijos) — evita generar códigos duplicados y reparenteos a nodos que
   // nunca se van a insertar.
   const clavesDeshabilitadasBD = useCallback((): Set<string> => {
+    // Paths (url) de ubicaciones inhabilitadas en BD. El escáner los usa para
+    // omitir las carpetas físicas correspondientes (y sus hijos) durante la
+    // recursión.
     const s = new Set<string>()
     for (const u of ubicaciones) {
-      if (!u.ubicacion_habilitada) {
-        s.add(`${u.codigo_ubicacion_superior ?? ''}/${u.codigo_ubicacion}`)
+      if (!u.ubicacion_habilitada && u.url) {
+        s.add(u.url)
       }
     }
     return s
@@ -312,10 +315,10 @@ export default function PaginaCargaDocsUsuario() {
     try {
       // Pasar codigo_ubicacion_raiz para que el backend deshabilite las
       // ubicaciones del subárbol que ya no aparecen en el escaneo.
-      const raiz = datosEscaneo.directorios.find((d) => !d.codigo_ubicacion_superior)
+      const raiz = datosEscaneo.directorios.find((d) => d.nivel === 0)
       const res = await ubicacionesDocsApi.sincronizar({
         directorios: datosEscaneo.directorios,
-        codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+        ruta_completa_raiz: raiz?.ruta_completa,
       })
       setResultadoSync(res); cargarUbicaciones()
       setEtapa1Estado('completado')
@@ -335,12 +338,12 @@ export default function PaginaCargaDocsUsuario() {
       if (!r) { setSyncEstado('idle'); return }
       setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
       setSyncEstado('sincronizando')
-      const raiz = r.directorios.find((d) => !d.codigo_ubicacion_superior)
+      const raiz = r.directorios.find((d) => d.nivel === 0)
       const res = await ubicacionesDocsApi.sincronizar({
         directorios: r.directorios,
-        codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+        ruta_completa_raiz: raiz?.ruta_completa,
       })
-      setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.deshabilitadas} deshabilitadas`)
+      setSyncMensaje(t('sincronizacionDetalleDeshabilitadas', { insertadas: res.insertadas, actualizadas: res.actualizadas, deshabilitadas: res.deshabilitadas }))
       setSyncEstado('listo')
       setEtapa1Estado('completado')
       cargarUbicaciones()
@@ -350,29 +353,46 @@ export default function PaginaCargaDocsUsuario() {
     }
   }
 
-  // Preview diferencias
+  // Preview diferencias — el escaneo no genera codigo_ubicacion (lo autogenera
+  // el backend), así que el cruce con BD se hace por path: ruta_completa del
+  // escaneo vs url de la ubicación en BD.
   const filtrarPorInhabilitadas = (dirs: DirectorioEscaneado[]) => {
-    const inhab = new Set(ubicaciones.filter((u) => !u.ubicacion_habilitada).map((u) => u.codigo_ubicacion))
-    if (!inhab.size) return { filtrados: dirs, excluidos: 0 }
-    const padres: Record<string, string | undefined> = {}
-    for (const d of dirs) padres[d.codigo_ubicacion] = d.codigo_ubicacion_superior || undefined
-    const esDescInhab = (cod: string): boolean => {
-      const vis = new Set<string>(); let actual = padres[cod] || ubicaciones.find((u) => u.codigo_ubicacion === cod)?.codigo_ubicacion_superior
-      while (actual) { if (inhab.has(actual)) return true; if (vis.has(actual)) break; vis.add(actual); actual = padres[actual] || ubicaciones.find((u) => u.codigo_ubicacion === actual)?.codigo_ubicacion_superior || undefined }
+    const urlsInhab = new Set(
+      ubicaciones.filter((u) => !u.ubicacion_habilitada && u.url).map((u) => u.url as string)
+    )
+    if (!urlsInhab.size) return { filtrados: dirs, excluidos: 0 }
+    const padres: Record<string, string | null | undefined> = {}
+    for (const d of dirs) padres[d.ruta_completa] = d.ruta_completa_superior
+    const esDescInhab = (ruta: string): boolean => {
+      const vis = new Set<string>()
+      let actual: string | null | undefined = padres[ruta]
+      while (actual) {
+        if (urlsInhab.has(actual)) return true
+        if (vis.has(actual)) break
+        vis.add(actual)
+        actual = padres[actual]
+      }
       return false
     }
-    const filtrados = dirs.filter((d) => !esDescInhab(d.codigo_ubicacion))
+    const filtrados = dirs.filter((d) => !esDescInhab(d.ruta_completa))
     return { filtrados, excluidos: dirs.length - filtrados.length }
   }
   const calcularDiff = () => {
     if (!datosEscaneo) return { nuevas: 0, aDeshabilitar: 0, sinCambio: 0, excluidas: 0 }
     const { filtrados, excluidos } = filtrarPorInhabilitadas(datosEscaneo.directorios)
-    const actuals = new Set(ubicaciones.map((u) => u.codigo_ubicacion))
-    const escans = new Set(filtrados.map((d) => d.codigo_ubicacion))
+    const urlsBd = new Set(ubicaciones.map((u) => u.url).filter((u): u is string => !!u))
+    const rutasEscan = new Set(filtrados.map((d) => d.ruta_completa))
     // "A deshabilitar" = ubicaciones que están en BD habilitadas y NO aparecen en el escaneo.
     // El backend marcará ubicacion_habilitada=false; nunca borra datos.
-    const aDeshabilitar = ubicaciones.filter((u) => u.ubicacion_habilitada && !escans.has(u.codigo_ubicacion)).length
-    return { nuevas: filtrados.filter((d) => !actuals.has(d.codigo_ubicacion)).length, aDeshabilitar, sinCambio: filtrados.filter((d) => actuals.has(d.codigo_ubicacion)).length, excluidas: excluidos }
+    const aDeshabilitar = ubicaciones.filter(
+      (u) => u.ubicacion_habilitada && u.url && !rutasEscan.has(u.url)
+    ).length
+    return {
+      nuevas: filtrados.filter((d) => !urlsBd.has(d.ruta_completa)).length,
+      aDeshabilitar,
+      sinCambio: filtrados.filter((d) => urlsBd.has(d.ruta_completa)).length,
+      excluidas: excluidos,
+    }
   }
 
   // Render árbol
@@ -689,7 +709,7 @@ export default function PaginaCargaDocsUsuario() {
       setPaso('CARGAR', { total: totalArchivos, completados: totalArchivos, estado: 'listo' })
       const vacios = contarArchivosVacios(pending.archivosParaCargar)
       if (vacios > 0) {
-        setMensajeAdvertencia(`⚠ ${vacios} archivo(s) están en 0 bytes (solo en línea en Dropbox/iCloud). Se cargaron pero no se podrán procesar hasta descargarlos localmente y recargar.`)
+        setMensajeAdvertencia(t('advertenciaArchivosVacios', { n: vacios }))
       }
       return true
     } catch (e) {
@@ -830,12 +850,12 @@ export default function PaginaCargaDocsUsuario() {
           const r = await escanearDirectorio(null, clavesDeshabilitadasBD())
           if (!r) { setPaso(PASO_INDEXAR, { estado: 'listo' }) /* usuario canceló */; return }
           setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
-          const raiz = r.directorios.find((d) => !d.codigo_ubicacion_superior)
+          const raiz = r.directorios.find((d) => d.nivel === 0)
           const res = await ubicacionesDocsApi.sincronizar({
             directorios: r.directorios,
-            codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+            ruta_completa_raiz: raiz?.ruta_completa,
           })
-          setSyncMensaje(`${res.insertadas} nuevas · ${res.actualizadas} actualizadas · ${res.deshabilitadas} deshabilitadas`)
+          setSyncMensaje(t('sincronizacionDetalleDeshabilitadas', { insertadas: res.insertadas, actualizadas: res.actualizadas, deshabilitadas: res.deshabilitadas }))
           setPaso(PASO_INDEXAR, { total: 1, completados: 1, estado: 'listo' })
           setEtapa1Estado('completado')
           await cargarUbicaciones()
@@ -910,11 +930,11 @@ export default function PaginaCargaDocsUsuario() {
 
     // Segmentos por estado del pipeline: cada uno muestra su porcentaje sobre el total de docs
     const SEGMENTOS_PIPELINE = [
-      { estado: 'CARGADO',     color: '#0EA5E9', label: 'Cargado'     },
-      { estado: 'METADATA',    color: '#074B91', label: 'Metadata'    },
-      { estado: 'ESCANEADO',   color: '#F97316', label: 'Escaneado'   },
-      { estado: 'CHUNKEADO',   color: '#84CC16', label: 'Chunkeado'   },
-      { estado: 'VECTORIZADO', color: '#22C55E', label: 'Vectorizado' },
+      { estado: 'CARGADO',     color: '#0EA5E9', label: t('estadoCargado')     },
+      { estado: 'METADATA',    color: '#074B91', label: t('estadoMetadata')    },
+      { estado: 'ESCANEADO',   color: '#F97316', label: t('estadoEscaneado')   },
+      { estado: 'CHUNKEADO',   color: '#84CC16', label: t('estadoChunkeado')   },
+      { estado: 'VECTORIZADO', color: '#22C55E', label: t('estadoVectorizado') },
     ]
 
     // Conteos por estado provienen de por_destino (completado) más estimación desde paquete
@@ -936,15 +956,15 @@ export default function PaginaCargaDocsUsuario() {
         data-testid="barra-paquete-operativo"
       >
         <div className="flex items-center justify-between text-xs">
-          <span className="font-semibold text-texto">
-            Paquete <span data-testid="paquete-actual" className="tabular-nums">{paq.paquete_actual}</span> de <span data-testid="paquetes-totales" className="tabular-nums">{paq.paquetes_totales}</span>
+          <span className="font-semibold text-texto" data-testid="paquete-actual-total">
+            {t('paqueteActualDeTotal', { actual: paq.paquete_actual, total: paq.paquetes_totales })}
           </span>
-          <span className="tabular-nums text-texto-muted">
-            <span data-testid="docs-completados">{paq.docs_completados.toLocaleString()}</span>
-            {' de '}
-            <span data-testid="docs-totales">{paq.docs_totales.toLocaleString()}</span>
-            {' docs · lote '}
-            <span data-testid="tamano-paquete">{paq.tamano_paquete.toLocaleString()}</span>
+          <span className="tabular-nums text-texto-muted" data-testid="paquete-docs-lote">
+            {t('paqueteDocsLote', {
+              completados: paq.docs_completados.toLocaleString(),
+              total: paq.docs_totales.toLocaleString(),
+              tamano: paq.tamano_paquete.toLocaleString(),
+            })}
           </span>
         </div>
         {/* Barra segmentada por estado */}
@@ -1011,22 +1031,22 @@ export default function PaginaCargaDocsUsuario() {
         {fase && (fase.en_proceso > 0 || fase.pendiente > 0 || fase.completado > 0 || fase.error > 0) && (
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] tabular-nums leading-tight pt-0.5">
             {fase.en_proceso > 0 && (
-              <span className="text-amber-700" title="En proceso (workers activos)">
+              <span className="text-amber-700" title={t('tooltipEnProceso')}>
                 ▶ {fase.en_proceso}
                 {fase.workers_activos > 0 && <span className="text-texto-muted"> ({fase.workers_activos}w)</span>}
               </span>
             )}
             {fase.pendiente > 0 && (
-              <span className="text-texto-muted" title="Esperando">⧗ {fase.pendiente}</span>
+              <span className="text-texto-muted" title={t('tooltipEsperando')}>⧗ {fase.pendiente}</span>
             )}
             {fase.completado > 0 && (
-              <span className="text-green-700" title="Completados">✓ {fase.completado}</span>
+              <span className="text-green-700" title={t('tooltipCompletados')}>✓ {fase.completado}</span>
             )}
             {fase.error > 0 && (
-              <span className="text-red-600" title="Errores">✕ {fase.error}</span>
+              <span className="text-red-600" title={t('tooltipErrores')}>✕ {fase.error}</span>
             )}
             {fase.velocidad_docs_por_min > 0 && (
-              <span className="text-texto-muted" title="Velocidad reciente (últimos 2 min)">
+              <span className="text-texto-muted" title={t('tooltipVelocidadReciente')}>
                 · {fase.velocidad_docs_por_min}/min
               </span>
             )}
@@ -1050,9 +1070,12 @@ export default function PaginaCargaDocsUsuario() {
   // Mensaje "X de Y documentos" — se muestra bajo el dial, debajo de "Procesando…".
   // La estimación "Quedan unos…" va en su propia línea (debajo), centrada.
   const minEtaPipeline = etaInfo?.minutosEta ?? null
-  const mensajeEnProc = `${docsVectorizados.toLocaleString()} de ${totalDocs.toLocaleString()} documentos.`
+  const mensajeEnProc = t('mensajeXdeYDocumentos', {
+    vectorizados: docsVectorizados.toLocaleString(),
+    total: totalDocs.toLocaleString(),
+  })
   const mensajeEtaPipeline = minEtaPipeline != null
-    ? `Quedan unos ${formatearMinutos(minEtaPipeline).replace('~', '')}.`
+    ? t('mensajeQuedanUnos', { tiempo: formatearMinutos(minEtaPipeline).replace('~', '') })
     : null
 
   const formatEta = (min: number | null): string => {
@@ -1094,7 +1117,7 @@ export default function PaginaCargaDocsUsuario() {
                 ? fasesNarrativas.findIndex(f => f.estadoDestino === PASOS[idxActivo].estadoDestino)
                 : -1
               const indiceActivo = idxFase >= 0 ? idxFase : 0
-              const nombreEtapa = idxFase >= 0 ? fasesNarrativas[idxFase].etiquetaCorta : 'CARGANDO'
+              const nombreEtapa = idxFase >= 0 ? fasesNarrativas[idxFase].etiquetaCorta : t('narrativoFaseCargando')
 
               const paq = resumenPipeline?.paquete
               const lote = paq && paq.paquetes_totales > 0
@@ -1177,7 +1200,7 @@ export default function PaginaCargaDocsUsuario() {
                         : <span className="w-3 shrink-0" />}
                       <FolderOpen size={13} className={`shrink-0 ${selec ? 'text-primario' : esArea ? 'text-sky-500' : 'text-amber-400'}`} />
                       <span className={`text-sm truncate flex-1 ${selec ? 'text-primario font-medium' : 'text-texto'}`}>{u.nombre_ubicacion}</span>
-                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-700'}`}>{esArea ? 'Área' : 'Contenido'}</span>
+                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full shrink-0 ${esArea ? 'bg-sky-100 text-sky-600' : 'bg-amber-100 text-amber-700'}`}>{esArea ? t('area') : t('contenido')}</span>
                     </div>
                     {expandido && hijos.map((h) => renderNodoUbic(h))}
                   </div>
@@ -1196,7 +1219,7 @@ export default function PaginaCargaDocsUsuario() {
                     className="justify-center"
                   >
                     <FolderPlus size={14} className="mr-1.5" />
-                    {escaneandoDir ? 'Escaneando…' : 'Cargar desde directorio'}
+                    {escaneandoDir ? t('escaneandoCorto') : t('btnCargarDesdeDirectorio')}
                   </Boton>
 
                   <div className="border-t border-borde pt-1 flex-1 min-h-0">
@@ -1204,7 +1227,7 @@ export default function PaginaCargaDocsUsuario() {
                       <div className="flex flex-col items-center justify-center gap-3 py-6">
                         <Loader2 size={48} className="text-primario animate-spin" />
                         <p className="text-xs font-medium text-texto text-center">
-                          {sincronizando ? 'Sincronizando ubicaciones…' : 'Escaneando directorio…'}
+                          {sincronizando ? t('sincronizandoUbicaciones') : t('escaneandoDirectorioCorto')}
                         </p>
                         {dirHandle?.name && (
                           <p className="text-[11px] text-texto-muted font-mono text-center truncate max-w-full px-2" title={dirHandle.name}>
@@ -1219,11 +1242,11 @@ export default function PaginaCargaDocsUsuario() {
                     ) : cargandoUbs ? (
                       <div className="flex items-center justify-center gap-2 py-4">
                         <Loader2 size={14} className="text-texto-muted animate-spin" />
-                        <span className="text-xs text-texto-muted">Cargando ubicaciones…</span>
+                        <span className="text-xs text-texto-muted">{t('cargandoUbicaciones')}</span>
                       </div>
                     ) : (
                       <p className="text-xs text-texto-muted text-center py-2 leading-relaxed">
-                        Sin ubicaciones.<br />Carga un directorio para empezar.
+                        {t('sinUbicacionesArbol')}<br />{t('sinUbicacionesArbolHint')}
                       </p>
                     )}
                   </div>
@@ -1233,9 +1256,9 @@ export default function PaginaCargaDocsUsuario() {
               return (
                 <PipelineConversacional
                   antesDeEmpezar={{
-                    mensajeTiempo: modoLocal ? 'Procesamiento 100% local (el contenido no sube al servidor).' : null,
+                    mensajeTiempo: modoLocal ? t('procesamientoLocalHint') : null,
                     onEmpezar: ejecutarPipeline,
-                    textoBotonEmpezar: modoLocal ? 'Cargar Semántica (local)' : 'Cargar Semántica',
+                    textoBotonEmpezar: modoLocal ? t('cargarSemanticaLocal') : t('cargarSemantica'),
                     deshabilitado: false,
                   }}
                   enProceso={{
@@ -1252,11 +1275,11 @@ export default function PaginaCargaDocsUsuario() {
                   slotArribaBotones={(
                     <div className="flex flex-col gap-1">
                       <label className="text-xs font-medium text-texto-muted">
-                        Nivel de carga semántica
+                        {t('nivelCargaSemantica')}
                       </label>
                       <div
                         role="radiogroup"
-                        aria-label="Nivel de carga semántica"
+                        aria-label={t('nivelCargaSemantica')}
                         className="inline-flex rounded-lg border border-borde bg-fondo-tarjeta p-1 w-full"
                       >
                         {(['BAJO', 'ALTO'] as const).map((v) => (
@@ -1278,9 +1301,7 @@ export default function PaginaCargaDocsUsuario() {
                         ))}
                       </div>
                       <span className="text-[10px] text-texto-muted leading-snug">
-                        {nivelCarga === 'ALTO'
-                          ? 'ALTO, más preciso, primera carga más lenta.'
-                          : 'BAJO, más rápido, indexación esencial.'}
+                        {nivelCarga === 'ALTO' ? t('nivelAltoDesc') : t('nivelBajoDesc')}
                       </span>
                     </div>
                   )}
@@ -1538,12 +1559,13 @@ export default function PaginaCargaDocsUsuario() {
                 <div className="py-1">
                   {(() => {
                     const { filtrados } = filtrarPorInhabilitadas(datosEscaneo.directorios)
-                    const codsFilt = new Set(filtrados.map((d) => d.codigo_ubicacion))
+                    const rutasFilt = new Set(filtrados.map((d) => d.ruta_completa))
+                    const urlsBd = new Set(ubicaciones.map((u) => u.url).filter((u): u is string => !!u))
                     return datosEscaneo.directorios.slice(0, 30).map((d) => {
-                      const esNueva = !ubicaciones.some((u) => u.codigo_ubicacion === d.codigo_ubicacion)
-                      const esExcluida = !codsFilt.has(d.codigo_ubicacion)
+                      const esNueva = !urlsBd.has(d.ruta_completa)
+                      const esExcluida = !rutasFilt.has(d.ruta_completa)
                       return (
-                        <div key={d.codigo_ubicacion} className={`flex items-center gap-2 px-3 py-1.5 text-sm ${esExcluida ? 'opacity-40' : ''}`} style={{ paddingLeft: `${d.nivel * 18 + 12}px` }}>
+                        <div key={d.ruta_completa} className={`flex items-center gap-2 px-3 py-1.5 text-sm ${esExcluida ? 'opacity-40' : ''}`} style={{ paddingLeft: `${d.nivel * 18 + 12}px` }}>
                           <Folder size={13} className="text-texto-muted shrink-0" />
                           <span className={esExcluida ? 'text-texto-muted line-through' : esNueva ? 'text-green-700 font-medium' : 'text-texto'}>{d.nombre_ubicacion}</span>
                           {!esExcluida && esNueva && <Insignia variante="exito">{t('insigniaNueva')}</Insignia>}
@@ -1582,10 +1604,10 @@ export default function PaginaCargaDocsUsuario() {
         abierto={mostrarModalReanudacion}
         alCerrar={() => setMostrarModalReanudacion(false)}
         alConfirmar={confirmarReanudacion}
-        titulo="Reanudar procesamiento"
-        mensaje={`Hay ${huerfanosCount} documento${huerfanosCount === 1 ? '' : 's'} colgado${huerfanosCount === 1 ? '' : 's'} de la última sesión (más de ${HUERFANOS_MINUTOS} min en proceso). ¿Reanudar el procesamiento ahora?`}
-        textoConfirmar="Reanudar"
-        textoCancelar="Dejar pausados"
+        titulo={t('reanudarTitulo')}
+        mensaje={t('reanudarMensaje', { count: huerfanosCount, minutos: HUERFANOS_MINUTOS })}
+        textoConfirmar={t('btnReanudar')}
+        textoCancelar={t('btnDejarPausados')}
         variante="primario"
         cargando={reanudando}
       />
