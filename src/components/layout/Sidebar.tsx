@@ -247,14 +247,14 @@ export function Sidebar() {
           type="button"
           onClick={togglePinned}
           className={cn(
-            'mx-2 mt-2 flex items-center rounded-md text-sm text-sidebar-texto/80 hover:bg-sidebar-texto/10 hover:text-sidebar-texto transition-colors',
-            colapsado ? 'justify-center w-10 h-10 mx-auto' : 'gap-2 px-2 py-2'
+            'mx-2 mt-2 flex items-center rounded-lg text-sm font-medium text-sidebar-texto-muted hover:bg-sidebar-hover hover:text-sidebar-texto transition-colors',
+            colapsado ? 'justify-center w-10 h-10 mx-auto' : 'gap-3 px-3 py-2.5'
           )}
           title={pinned ? t('desfijarMenu') : t('fijarMenu')}
           aria-label={pinned ? t('desfijarMenu') : t('fijarMenu')}
         >
-          {pinned ? <PinOff size={16} className="shrink-0" /> : <Pin size={16} className="shrink-0" />}
-          {expandido && <span className="text-xs">{pinned ? t('desfijarMenu') : t('fijarMenu')}</span>}
+          {pinned ? <PinOff size={18} className="shrink-0" /> : <Pin size={18} className="shrink-0" />}
+          {expandido && <span>{pinned ? t('desfijarMenu') : t('fijarMenu')}</span>}
         </button>
 
         {/* Botón Soporte */}
@@ -262,14 +262,14 @@ export function Sidebar() {
           type="button"
           onClick={abrirSoporte}
           className={cn(
-            'mx-2 mt-1 mb-1 flex items-center rounded-md text-sm text-sidebar-texto/80 hover:bg-sidebar-texto/10 hover:text-sidebar-texto transition-colors',
-            colapsado ? 'justify-center w-10 h-10 mx-auto' : 'gap-2 px-2 py-2'
+            'mx-2 mt-1 mb-1 flex items-center rounded-lg text-sm font-medium text-sidebar-texto-muted hover:bg-sidebar-hover hover:text-sidebar-texto transition-colors',
+            colapsado ? 'justify-center w-10 h-10 mx-auto' : 'gap-3 px-3 py-2.5'
           )}
           title={t('soporteYAyuda')}
           aria-label={t('abrirChatSoporte')}
         >
-          <HelpCircle size={16} className="shrink-0" />
-          {expandido && <span className="text-xs">{t('soporte')}</span>}
+          <HelpCircle size={18} className="shrink-0" />
+          {expandido && <span>{t('soporte')}</span>}
         </button>
 
         {/* Pie con versión */}
