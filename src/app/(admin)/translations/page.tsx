@@ -13,6 +13,22 @@ import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Input } from '@/components/ui/input'
 import type { LocaleSoportado, EstadoTraducciones } from '@/lib/tipos'
+import ES_MESSAGES from '../../../../messages/es.json'
+import EN_MESSAGES from '../../../../messages/en.json'
+import PT_MESSAGES from '../../../../messages/pt.json'
+import FR_MESSAGES from '../../../../messages/fr.json'
+import DE_MESSAGES from '../../../../messages/de.json'
+
+// Snapshot vivo de los messages/*.json del bundle. Se envía al backend en
+// "Regenerar TODO" para que pueda diff'ear qué namespaces UI faltan en cada
+// locale y traducir solo eso. El resultado mergeado se persiste en
+// `mensajes_ui_traducidos` y el skill /traducciones-aplicar lo baja al repo.
+const LOCALES_ACTUALES: Record<string, Record<string, unknown>> = {
+  en: EN_MESSAGES as Record<string, unknown>,
+  pt: PT_MESSAGES as Record<string, unknown>,
+  fr: FR_MESSAGES as Record<string, unknown>,
+  de: DE_MESSAGES as Record<string, unknown>,
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -312,9 +328,30 @@ export default function TraduccionesPage() {
     }
   }
 
+  // "Regenerar TODO" (incremental): BD pendientes + UI faltantes.
+  // BD se aplica directo a `traducciones_sistema`. UI queda en
+  // `mensajes_ui_traducidos` para que el dev corra el skill
+  // `/traducciones-aplicar` y se commitee al repo serverlm-frontend (Vercel).
   const generarCompleto = async () => {
     setModalCompleto(false)
-    await dispararGeneracion('completo')
+    setResultadoGen(null)
+    setErrorGen('')
+    try {
+      await traduccionesApi.generarTodo({
+        es_json: ES_MESSAGES as Record<string, unknown>,
+        locales_actuales: LOCALES_ACTUALES,
+      })
+      await cargarEstado()
+      iniciarPolling()
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : t('errorIniciarGeneracion')
+      if (msg.includes('409') || msg.includes('en curso')) {
+        await cargarEstado()
+        iniciarPolling()
+      } else {
+        setErrorGen(msg)
+      }
+    }
   }
 
   const generarIncremental = async () => {
@@ -485,6 +522,15 @@ export default function TraduccionesPage() {
           >
             <FolderTree size={14} /> {t('soloCatalogosDocs')}
           </Boton>
+        </div>
+
+        {/* Nota: el botón "Regenerar TODO" deja los messages/<locale>.json en
+            un buffer en Railway (mensajes_ui_traducidos). Hay que correr el
+            skill /traducciones-aplicar para commitearlos al repo frontend. */}
+        <div className="mt-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+          <p className="text-xs text-amber-700">
+            <strong>{t('notaRailwayVercelTitulo')}:</strong> {t('notaRailwayVercelTexto')}
+          </p>
         </div>
       </div>
 

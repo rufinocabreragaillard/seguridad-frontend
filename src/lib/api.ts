@@ -2018,6 +2018,23 @@ export const traduccionesApi = {
       { timeout: 300_000 },  // 5 minutos — puede tardar con muchos idiomas
     ).then((r) => r.data),
 
+  // Orquestador "Regenerar TODO" (incremental):
+  //   1. Registros BD pendientes (traducciones_sistema).
+  //   2. Namespaces UI faltantes vs es.json (mensajes_ui_traducidos).
+  // El frontend manda el snapshot vivo de es.json + cada locale para que el
+  // backend pueda calcular el diff sin acceso al repo frontend.
+  // Background: devuelve 202; el progreso se sigue por GET /traducciones/estado.
+  generarTodo: (params: {
+    es_json: Record<string, unknown>
+    locales_actuales: Record<string, Record<string, unknown>>
+    idiomas?: string[]
+  }) =>
+    api.post<{ status: string; mensaje: string }>(
+      '/traducciones/generar-todo',
+      params,
+      { timeout: 30_000 },
+    ).then((r) => r.data),
+
   // Genera Glosario.md desde Server_LM.md usando la función TRADUCCIONES.
   // Ver .claude/docs/PLAN_I18N.md sección 3.3.
   regenerarGlosario: () =>
