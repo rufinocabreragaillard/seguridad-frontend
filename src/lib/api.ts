@@ -2465,4 +2465,35 @@ export const pagosApi = {
     api.post<{ url: string }>('/pagos/portal-session').then((r) => r.data),
 }
 
+// ─── API Keys del usuario (auth larga duración) ──────────────────────────────
+
+export interface ApiKeyResumen {
+  id: number
+  prefijo: string
+  nombre: string
+  codigo_rol: string | null
+  codigo_grupo: string
+  creada_en: string
+  ultimo_uso: string | null
+  revocada_en: string | null
+}
+
+export interface ApiKeyNueva {
+  api_key: string  // SOLO se entrega una vez, al crear
+  prefijo: string
+  nombre: string
+  codigo_rol: string | null
+  codigo_grupo: string
+  creada_en: string
+}
+
+export const apiKeysApi = {
+  listar: () => api.get<ApiKeyResumen[]>('/auth/api-key').then((r) => r.data),
+  crear: (nombre: string, rolSolicitado?: string) =>
+    api
+      .post<ApiKeyNueva>('/auth/api-key', { nombre, rol_solicitado: rolSolicitado || null })
+      .then((r) => r.data),
+  revocar: (prefijo: string) => api.delete(`/auth/api-key/${prefijo}`),
+}
+
 export default api
