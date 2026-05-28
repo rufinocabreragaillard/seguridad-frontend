@@ -55,6 +55,9 @@ interface PipelineConversacionalProps {
     estadisticas?: { vectorizados: number; noProcesables: number }
     onVerDetalles?: () => void
     onDetener?: () => void
+    /** Si true, el botón Detener muestra "Deteniendo..." y queda deshabilitado
+     * mientras se libera la cola en backend. */
+    deteniendo?: boolean
   }
 
   ejecutando: boolean
@@ -135,10 +138,10 @@ export function PipelineConversacional({
                 <Boton
                   variante="contorno"
                   onClick={enProceso.onDetener}
-                  disabled={!ejecutando}
+                  disabled={!ejecutando || !!enProceso.deteniendo}
                   className="min-w-[180px] justify-center"
                 >
-                  {t('detenerProceso')}
+                  {enProceso.deteniendo ? t('deteniendoProceso') : t('detenerProceso')}
                 </Boton>
               )}
               {antesDeEmpezar.onElegirOtra && (

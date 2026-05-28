@@ -925,9 +925,24 @@ export default function PaginaCargaDocsUsuario() {
     finally { desuscribirCola(); setEjecutando(false); await cargarConteos() }
   }
 
-  const detener = () => {
+  const [deteniendo, setDeteniendo] = useState(false)
+  const detener = async () => {
     abortRef.current = true
     if (resolveColaRef.current) { resolveColaRef.current(); resolveColaRef.current = null }
+    setDeteniendo(true)
+    try {
+      // minutos=0 libera TODOS los EN_PROCESO del grupo (no solo los con lease vencido).
+      // Si el usuario presionó Detener, debemos abortar también los leases vivos del
+      // backend, no solo el loop del frontend. Sin esto, los items quedarían EN_PROCESO
+      // hasta que venza el lease (5 min) y el pipeline "no se detiene de verdad".
+      await colaEstadosDocsApi.recuperarHuerfanos(0)
+    } catch (e) {
+      setMensajeError(e instanceof Error ? e.message : t('errorInesperado'))
+    } finally {
+      setDeteniendo(false)
+      setEjecutando(false)
+      await cargarConteos()
+    }
   }
 
   const formatTiempo = (seg: number) => { const m = Math.floor(seg / 60); return m > 0 ? `${m}m ${seg % 60}s` : `${seg % 60}s` }
@@ -1284,6 +1299,7 @@ export default function PaginaCargaDocsUsuario() {
                       noProcesables: docsNoVectorizables,
                     },
                     onDetener: detener,
+                    deteniendo,
                   }}
                   ejecutando={ejecutando}
                   slotArribaBotones={(

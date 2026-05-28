@@ -1587,6 +1587,7 @@
   "pipelineConversacional": {
     "cargarSemantica": "Cargar Semántica",
     "detenerProceso": "Detener proceso",
+    "deteniendoProceso": "Deteniendo…",
     "elegirOtraCarpeta": "Elegir otra carpeta",
     "ahoraMismo": "Ahora mismo",
     "vectorizados": "vectorizados",
