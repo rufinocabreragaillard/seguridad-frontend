@@ -14,6 +14,7 @@ import { PieBotonesModal } from '@/components/ui/pie-botones-modal'
 import { Insignia } from '@/components/ui/insignia'
 import { Modal } from '@/components/ui/modal'
 import { ModalConfirmar } from '@/components/ui/modal-confirmar'
+import { ModalError } from '@/components/ui/modal-error'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { documentosApi, colaEstadosDocsApi, ubicacionesDocsApi, promptsApi, procesosApi, parametrosApi } from '@/lib/api'
@@ -158,6 +159,15 @@ export default function PaginaCargaDocsUsuario() {
   const [syncEstado, setSyncEstado] = useState<SyncEstado>('idle')
   const [syncMensaje, setSyncMensaje] = useState('')
 
+  // Modal estándar de error (reemplaza window.alert en los flujos de sincronización)
+  const [errorModal, setErrorModal] = useState<{ titulo: string; mensaje: string; detalle?: string } | null>(null)
+  const mostrarError = useCallback((titulo: string, e: unknown) => {
+    console.error(`[process-pipeline] ${titulo}:`, e)
+    const mensaje = e instanceof Error ? e.message : (typeof e === 'string' ? e : t('alertErrorSincronizar'))
+    const detalle = e instanceof Error && e.stack ? e.stack : undefined
+    setErrorModal({ titulo, mensaje, detalle })
+  }, [t])
+
   const cargarUbicaciones = useCallback(async () => {
     setCargandoUbs(true)
     try { setUbicaciones(await ubicacionesDocsApi.listar()) }
@@ -299,14 +309,14 @@ export default function PaginaCargaDocsUsuario() {
 
   // Carga desde directorio
   const iniciarEscaneoDir = async () => {
-    if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoporta')); return }
+    if (!soportaDirectoryPicker()) { mostrarError(t('alertNavegadorNoSoporta'), new Error(t('alertNavegadorNoSoporta'))); return }
     setEscaneandoDir(true); setResultadoSync(null)
     try {
       const r = await escanearDirectorio(null, clavesDeshabilitadasBD())
       if (!r) { setEscaneandoDir(false); return }
       setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
       setDatosEscaneo(r); setModalCarga(true)
-    } catch { alert(t('alertErrorEscaneo')) }
+    } catch (e) { mostrarError(t('alertErrorEscaneo'), e) }
     finally { setEscaneandoDir(false) }
   }
   const ejecutarSincronizacion = async () => {
@@ -323,15 +333,16 @@ export default function PaginaCargaDocsUsuario() {
       setResultadoSync(res); cargarUbicaciones()
       setEtapa1Estado('completado')
     } catch (e) {
-      const msg = e && typeof e === 'object' && 'response' in e ? (e as { response?: { data?: { detail?: string } } }).response?.data?.detail || t('alertErrorSincronizar') : t('alertErrorSincronizar')
-      alert(msg)
+      // El interceptor axios (src/lib/api.ts) ya entrega Error con mensaje rico:
+      // mensaje_usuario + sugerencia + referencia, o detail FastAPI, o explicación PG.
+      mostrarError(t('alertErrorSincronizar'), e)
     } finally { setSincronizando(false) }
   }
   const cerrarModalCarga = () => { setModalCarga(false); setDatosEscaneo(null); setResultadoSync(null) }
 
   // Escaneo + sincronización inline (sin modal, con barra de progreso)
   const sincronizarDirectamente = async () => {
-    if (!soportaDirectoryPicker()) { alert(t('alertNavegadorNoSoporta')); return }
+    if (!soportaDirectoryPicker()) { mostrarError(t('alertNavegadorNoSoporta'), new Error(t('alertNavegadorNoSoporta'))); return }
     setSyncEstado('escaneando'); setSyncMensaje('')
     try {
       const r = await escanearDirectorio(null, clavesDeshabilitadasBD())
@@ -348,8 +359,11 @@ export default function PaginaCargaDocsUsuario() {
       setEtapa1Estado('completado')
       cargarUbicaciones()
     } catch (e) {
+      console.error('[process-pipeline] sincronizarDirectamente:', e)
       setSyncEstado('error')
-      setSyncMensaje(e instanceof Error ? e.message : t('alertErrorSincronizar'))
+      const msg = e instanceof Error ? e.message : t('alertErrorSincronizar')
+      setSyncMensaje(msg)
+      mostrarError(t('alertErrorSincronizar'), e)
     }
   }
 
@@ -1610,6 +1624,15 @@ export default function PaginaCargaDocsUsuario() {
         textoCancelar={t('btnDejarPausados')}
         variante="primario"
         cargando={reanudando}
+      />
+
+      {/* Modal estándar de error para flujos de sincronización (reemplaza window.alert) */}
+      <ModalError
+        abierto={!!errorModal}
+        alCerrar={() => setErrorModal(null)}
+        titulo={errorModal?.titulo ?? t('alertErrorSincronizar')}
+        mensaje={errorModal?.mensaje ?? ''}
+        detalle={errorModal?.detalle}
       />
     </div>
   )
