@@ -211,6 +211,8 @@
   "sidebar": {
     "expandirMenu": "Expand menu",
     "colapsarMenu": "Collapse menu",
+    "fijarMenu": "Pin sidebar",
+    "desfijarMenu": "Unpin sidebar",
     "buscarFuncion": "Search function",
     "buscarFuncionPlaceholder": "Search function...",
     "limpiarBusqueda": "Clear search",

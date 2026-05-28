@@ -211,6 +211,8 @@
   "sidebar": {
     "expandirMenu": "Expandir menu",
     "colapsarMenu": "Recolher menu",
+    "fijarMenu": "Fixar menu",
+    "desfijarMenu": "Desafixar menu",
     "buscarFuncion": "Buscar função",
     "buscarFuncionPlaceholder": "Buscar função...",
     "limpiarBusqueda": "Limpar busca",

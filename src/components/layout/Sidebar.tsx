@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
-import { PanelLeftClose, PanelLeftOpen, Search, X, HelpCircle } from 'lucide-react'
+import { Pin, PinOff, Search, X, HelpCircle } from 'lucide-react'
 import { useMemo, useRef, useCallback, useState } from 'react'
 import { useTranslations } from 'next-intl'
 import { createPortal } from 'react-dom'
@@ -40,7 +40,7 @@ export function Sidebar() {
   const pathname = usePathname()
   const { usuario } = useAuth()
   const { logo } = useTema()
-  const { colapsado, setColapsado } = useSidebar()
+  const { pinned, hovered, expandido, setHovered, setPinned, togglePinned } = useSidebar()
   const { abrir: abrirSoporte } = useSoporte()
   const [tooltip, setTooltip] = useState<{ texto: string; rect: DOMRect } | null>(null)
   const [busqueda, setBusqueda] = useState('')
@@ -48,13 +48,13 @@ export function Sidebar() {
   const busquedaRef = useRef<HTMLInputElement>(null)
 
   // Buscador visible solo para SISTEMA (y cualquier ancestro futuro de SISTEMA).
-  // Usa el closure table tipo_acceso_grafo, así que se ajusta solo si la jerarquía cambia.
   const { esDescendiente } = useTipoAccesoGrafo()
   const puedeBuscar = esDescendiente(usuario?.tipo_acceso, 'SISTEMA')
 
+  const colapsado = !expandido
+
   const mostrarTooltip = useCallback((e: React.MouseEvent<HTMLDivElement>, texto: string) => {
     if (timerRef.current) clearTimeout(timerRef.current)
-    // Leer rect ANTES del timeout (el evento React se reutiliza)
     const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect()
     timerRef.current = setTimeout(() => {
       setTooltip({ texto, rect })
@@ -86,14 +86,20 @@ export function Sidebar() {
       .filter(rol => rol.funciones.length > 0)
   }, [usuario?.menu, usuario?.aplicacion_activa, busqueda])
 
+  // Click en el icono de búsqueda cuando el sidebar está en modo overlay:
+  // pinear (deja el sidebar abierto cómodamente) y enfocar el input.
   const enfocarBusqueda = useCallback(() => {
-    if (colapsado) {
-      setColapsado(false)
-      setTimeout(() => busquedaRef.current?.focus(), 60)
-    } else {
-      busquedaRef.current?.focus()
-    }
-  }, [colapsado])
+    if (!pinned) setPinned(true)
+    setTimeout(() => busquedaRef.current?.focus(), 60)
+  }, [pinned, setPinned])
+
+  const handleMouseEnter = useCallback(() => {
+    if (!pinned) setHovered(true)
+  }, [pinned, setHovered])
+
+  const handleMouseLeave = useCallback(() => {
+    if (!pinned) setHovered(false)
+  }, [pinned, setHovered])
 
   // Clases comunes para items del menú
   const itemBase = cn(
@@ -105,167 +111,183 @@ export function Sidebar() {
 
   return (
     <>
-    <aside
-      className={cn(
-        'flex flex-col h-full transition-all duration-300 shrink-0',
-        'bg-sidebar text-sidebar-texto',
-        colapsado ? 'w-16' : 'w-60'
-      )}
-    >
-      {/* Cabecera: logo centrado + botón colapsar absolute a la derecha */}
-      <div className="relative flex items-center justify-center border-b border-sidebar-texto/40 min-h-[64px] px-2">
-        {!colapsado && (
-          <Link href="/dashboard" className="flex items-center">
-            <Image
-              src={logo.url}
-              alt={logo.alt}
-              width={48}
-              height={48}
-              className="object-contain"
-              onError={(e) => {
-                const target = e.target as HTMLImageElement
-                if (target.src.includes(temaDefault.logo.url)) {
-                  target.style.display = 'none'
-                } else {
-                  target.src = temaDefault.logo.url
-                }
-              }}
-            />
-          </Link>
+      {/* Spacer que reserva el espacio del icon-bar cuando el sidebar es overlay.
+          Cuando está pinned, el <aside> ocupa su propio espacio en el flex y no se necesita. */}
+      {!pinned && <div className="w-16 shrink-0 h-full" aria-hidden />}
+
+      <aside
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={cn(
+          'flex flex-col h-full transition-[width] duration-200 bg-sidebar text-sidebar-texto',
+          pinned
+            ? 'shrink-0 w-60'
+            : cn(
+                'absolute left-0 top-0 z-40',
+                hovered ? 'w-60 shadow-2xl' : 'w-16'
+              )
         )}
-        <button
-          onClick={() => setColapsado(!colapsado)}
-          className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-lg hover:bg-sidebar-hover text-texto-muted hover:text-sidebar-texto transition-colors"
-          title={colapsado ? t('expandirMenu') : t('colapsarMenu')}
-        >
-          {colapsado
-            ? <PanelLeftOpen size={18} />
-            : <PanelLeftClose size={18} />
-          }
-        </button>
-      </div>
-
-      {/* Buscador de funciones — solo SISTEMA (y futuros ancestros) en la jerarquía tipo_acceso */}
-      {puedeBuscar && (
-        colapsado ? (
-          <button
-            onClick={enfocarBusqueda}
-            className="mx-auto mt-3 p-2 rounded-lg hover:bg-sidebar-hover text-sidebar-texto-muted hover:text-sidebar-texto transition-colors"
-            title={t('buscarFuncion')}
-            aria-label={t('buscarFuncion')}
-          >
-            <Search size={18} />
-          </button>
-        ) : (
-          <div className="px-3 pt-3 pb-1">
-            <div className="relative">
-              <Search
-                size={14}
-                className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+      >
+        {/* Cabecera: logo centrado, sin botón toggle (el control de pin vive abajo, estilo Paddle) */}
+        <div className="relative flex items-center justify-center border-b border-sidebar-texto/40 min-h-[64px] px-2">
+          {expandido && (
+            <Link href="/dashboard" className="flex items-center">
+              <Image
+                src={logo.url}
+                alt={logo.alt}
+                width={48}
+                height={48}
+                className="object-contain"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement
+                  if (target.src.includes(temaDefault.logo.url)) {
+                    target.style.display = 'none'
+                  } else {
+                    target.src = temaDefault.logo.url
+                  }
+                }}
               />
-              <input
-                ref={busquedaRef}
-                type="text"
-                value={busqueda}
-                onChange={(e) => setBusqueda(e.target.value)}
-                onKeyDown={(e) => { if (e.key === 'Escape') setBusqueda('') }}
-                placeholder={t('buscarFuncionPlaceholder')}
-                className="w-full pl-8 pr-7 py-1.5 text-sm rounded-md bg-gray-200 text-gray-800 placeholder:text-gray-500 border border-gray-300 focus:outline-none focus:border-gray-400"
-              />
-              {busqueda && (
-                <button
-                  onClick={() => setBusqueda('')}
-                  className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-300"
-                  title={t('limpiarBusqueda')}
-                  aria-label={t('limpiarBusqueda')}
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
-        )
-      )}
+            </Link>
+          )}
+        </div>
 
-      {/* Navegación — 100% dinámica desde BD (usuario.menu).
-          Si el usuario no tiene funciones en el grupo/app activo, el sidebar queda vacío. */}
-      <nav className="flex-1 py-4 px-2 flex flex-col gap-4 overflow-y-auto">
-        {menuFiltrado.length === 0 ? (
-          !colapsado && usuario?.menu && (
-            <div className="px-3 py-2 text-xs text-sidebar-texto-muted">
-              {busqueda
-                ? t('sinResultadosPara', { busqueda })
-                : t('sinFunciones')}
-            </div>
-          )
-        ) : (
-          menuFiltrado.map((rol) => (
-            <div key={rol.id_rol}>
-              {!colapsado && (
-                <span className="px-3 text-xs font-medium uppercase tracking-wider text-sidebar-texto-muted opacity-60">
-                  {tr('roles', 'alias', String(rol.id_rol), rol.alias)}
-                </span>
-              )}
-              {/* Separador fino cuando está colapsado */}
-              {colapsado && (
-                <div className="w-6 mx-auto border-t border-sidebar-texto/40 mb-1" />
-              )}
-              <div className="flex flex-col gap-1 mt-1">
-                {rol.funciones.map((fn) => {
-                  const href = fn.url || '#'
-                  const activo = pathname === href || pathname.startsWith(href + '/')
-                  const Icono = obtenerIcono(fn.icono)
-                  const alias = tr('funciones', 'alias', fn.codigo_funcion, fn.alias)
-                  return (
-                    <div
-                      key={fn.codigo_funcion}
-                      onMouseEnter={colapsado ? (e) => mostrarTooltip(e, alias) : undefined}
-                      onMouseLeave={colapsado ? ocultarTooltip : undefined}
-                    >
-                      <Link
-                        href={href}
-                        className={cn(itemBase, activo ? itemActivo : itemInactivo)}
-                      >
-                        <Icono size={18} className="shrink-0" />
-                        {!colapsado && <span>{alias}</span>}
-                      </Link>
-                    </div>
-                  )
-                })}
+        {/* Buscador de funciones — solo SISTEMA */}
+        {puedeBuscar && (
+          colapsado ? (
+            <button
+              onClick={enfocarBusqueda}
+              className="mx-auto mt-3 p-2 rounded-lg hover:bg-sidebar-hover text-sidebar-texto-muted hover:text-sidebar-texto transition-colors"
+              title={t('buscarFuncion')}
+              aria-label={t('buscarFuncion')}
+            >
+              <Search size={18} />
+            </button>
+          ) : (
+            <div className="px-3 pt-3 pb-1">
+              <div className="relative">
+                <Search
+                  size={14}
+                  className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                />
+                <input
+                  ref={busquedaRef}
+                  type="text"
+                  value={busqueda}
+                  onChange={(e) => setBusqueda(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Escape') setBusqueda('') }}
+                  placeholder={t('buscarFuncionPlaceholder')}
+                  className="w-full pl-8 pr-7 py-1.5 text-sm rounded-md bg-gray-200 text-gray-800 placeholder:text-gray-500 border border-gray-300 focus:outline-none focus:border-gray-400"
+                />
+                {busqueda && (
+                  <button
+                    onClick={() => setBusqueda('')}
+                    className="absolute right-1.5 top-1/2 -translate-y-1/2 p-0.5 rounded text-gray-500 hover:text-gray-800 hover:bg-gray-300"
+                    title={t('limpiarBusqueda')}
+                    aria-label={t('limpiarBusqueda')}
+                  >
+                    <X size={14} />
+                  </button>
+                )}
               </div>
             </div>
-          ))
+          )
         )}
-      </nav>
 
-      {/* Botón Soporte (sobre versión) */}
-      <button
-        type="button"
-        onClick={abrirSoporte}
-        className="mx-2 mt-2 mb-1 flex items-center gap-2 rounded-md px-2 py-2 text-sm text-sidebar-texto/80 hover:bg-sidebar-texto/10 hover:text-sidebar-texto transition-colors"
-        title={t('soporteYAyuda')}
-        aria-label={t('abrirChatSoporte')}
-      >
-        <HelpCircle size={16} className="shrink-0" />
-        {!colapsado && <span className="text-xs">{t('soporte')}</span>}
-      </button>
+        {/* Navegación — 100% dinámica desde BD (usuario.menu). */}
+        <nav className="flex-1 py-4 px-2 flex flex-col gap-4 overflow-y-auto">
+          {menuFiltrado.length === 0 ? (
+            expandido && usuario?.menu && (
+              <div className="px-3 py-2 text-xs text-sidebar-texto-muted">
+                {busqueda
+                  ? t('sinResultadosPara', { busqueda })
+                  : t('sinFunciones')}
+              </div>
+            )
+          ) : (
+            menuFiltrado.map((rol) => (
+              <div key={rol.id_rol}>
+                {expandido && (
+                  <span className="px-3 text-xs font-medium uppercase tracking-wider text-sidebar-texto-muted opacity-60">
+                    {tr('roles', 'alias', String(rol.id_rol), rol.alias)}
+                  </span>
+                )}
+                {colapsado && (
+                  <div className="w-6 mx-auto border-t border-sidebar-texto/40 mb-1" />
+                )}
+                <div className="flex flex-col gap-1 mt-1">
+                  {rol.funciones.map((fn) => {
+                    const href = fn.url || '#'
+                    const activo = pathname === href || pathname.startsWith(href + '/')
+                    const Icono = obtenerIcono(fn.icono)
+                    const alias = tr('funciones', 'alias', fn.codigo_funcion, fn.alias)
+                    return (
+                      <div
+                        key={fn.codigo_funcion}
+                        onMouseEnter={colapsado ? (e) => mostrarTooltip(e, alias) : undefined}
+                        onMouseLeave={colapsado ? ocultarTooltip : undefined}
+                      >
+                        <Link
+                          href={href}
+                          className={cn(itemBase, activo ? itemActivo : itemInactivo)}
+                        >
+                          <Icono size={18} className="shrink-0" />
+                          {expandido && <span>{alias}</span>}
+                        </Link>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            ))
+          )}
+        </nav>
 
-      {/* Pie con versión */}
-      <div className="px-2 py-3 border-t border-sidebar-texto/40 text-center">
-        <span
-          className="text-[10px] text-sidebar-texto/60 select-none"
-          title={
-            process.env.NEXT_PUBLIC_GIT_SHA
-              ? `commit ${process.env.NEXT_PUBLIC_GIT_SHA.slice(0, 7)}`
-              : undefined
-          }
+        {/* Botón Pin / Unpin sidebar (estilo Paddle) — sobre Soporte */}
+        <button
+          type="button"
+          onClick={togglePinned}
+          className={cn(
+            'mx-2 mt-2 flex items-center rounded-md text-sm text-sidebar-texto/80 hover:bg-sidebar-texto/10 hover:text-sidebar-texto transition-colors',
+            colapsado ? 'justify-center w-10 h-10 mx-auto' : 'gap-2 px-2 py-2'
+          )}
+          title={pinned ? t('desfijarMenu') : t('fijarMenu')}
+          aria-label={pinned ? t('desfijarMenu') : t('fijarMenu')}
         >
-          {colapsado ? `v${process.env.NEXT_PUBLIC_VERSION}` : `Server LM v${process.env.NEXT_PUBLIC_VERSION}`}
-        </span>
-      </div>
-    </aside>
-    {/* Tooltip portal — fuera del aside para escapar del overflow */}
-    {tooltip && <TooltipPortal texto={tooltip.texto} rect={tooltip.rect} />}
-  </>
+          {pinned ? <PinOff size={16} className="shrink-0" /> : <Pin size={16} className="shrink-0" />}
+          {expandido && <span className="text-xs">{pinned ? t('desfijarMenu') : t('fijarMenu')}</span>}
+        </button>
+
+        {/* Botón Soporte */}
+        <button
+          type="button"
+          onClick={abrirSoporte}
+          className={cn(
+            'mx-2 mt-1 mb-1 flex items-center rounded-md text-sm text-sidebar-texto/80 hover:bg-sidebar-texto/10 hover:text-sidebar-texto transition-colors',
+            colapsado ? 'justify-center w-10 h-10 mx-auto' : 'gap-2 px-2 py-2'
+          )}
+          title={t('soporteYAyuda')}
+          aria-label={t('abrirChatSoporte')}
+        >
+          <HelpCircle size={16} className="shrink-0" />
+          {expandido && <span className="text-xs">{t('soporte')}</span>}
+        </button>
+
+        {/* Pie con versión */}
+        <div className="px-2 py-3 border-t border-sidebar-texto/40 text-center">
+          <span
+            className="text-[10px] text-sidebar-texto/60 select-none"
+            title={
+              process.env.NEXT_PUBLIC_GIT_SHA
+                ? `commit ${process.env.NEXT_PUBLIC_GIT_SHA.slice(0, 7)}`
+                : undefined
+            }
+          >
+            {colapsado ? `v${process.env.NEXT_PUBLIC_VERSION}` : `Server LM v${process.env.NEXT_PUBLIC_VERSION}`}
+          </span>
+        </div>
+      </aside>
+      {/* Tooltip portal — fuera del aside para escapar del overflow */}
+      {tooltip && <TooltipPortal texto={tooltip.texto} rect={tooltip.rect} />}
+    </>
   )
 }

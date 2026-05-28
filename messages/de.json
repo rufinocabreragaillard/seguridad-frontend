@@ -211,6 +211,8 @@
   "sidebar": {
     "expandirMenu": "Menü erweitern",
     "colapsarMenu": "Menü einklappen",
+    "fijarMenu": "Seitenleiste anheften",
+    "desfijarMenu": "Seitenleiste lösen",
     "buscarFuncion": "Funktion suchen",
     "buscarFuncionPlaceholder": "Funktion suchen...",
     "limpiarBusqueda": "Suche löschen",

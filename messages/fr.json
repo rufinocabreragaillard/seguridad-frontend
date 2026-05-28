@@ -211,6 +211,8 @@
   "sidebar": {
     "expandirMenu": "Développer le menu",
     "colapsarMenu": "Réduire le menu",
+    "fijarMenu": "Épingler la barre latérale",
+    "desfijarMenu": "Détacher la barre latérale",
     "buscarFuncion": "Rechercher une fonction",
     "buscarFuncionPlaceholder": "Rechercher une fonction...",
     "limpiarBusqueda": "Effacer la recherche",
