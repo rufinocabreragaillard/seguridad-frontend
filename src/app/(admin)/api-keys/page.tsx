@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Key, Plus, RefreshCw, Trash2, Copy, Check, ExternalLink } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -9,12 +10,19 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { apiKeysApi, usuariosApi, rolesApi, type ApiKeyResumen, type ApiKeyNueva } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
+import { useFuncionActual } from '@/hooks/useFuncionActual'
 
 interface OpcionUsuario { codigo: string; nombre: string }
 interface OpcionRol { codigo: string; nombre: string }
 
+const selectCls = 'w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario'
+
 export default function PaginaApiKeys() {
+  const funcion = useFuncionActual()
+  const t = useTranslations('apiKeys')
+  const tc = useTranslations('common')
   const { usuario: contexto } = useAuth()
+
   const [keys, setKeys] = useState<ApiKeyResumen[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -46,7 +54,7 @@ export default function PaginaApiKeys() {
       setKeys(data)
     } catch (e) {
       const err = e as { response?: { data?: { detail?: string } }; message?: string }
-      setError(err.response?.data?.detail || err.message || 'No se pudieron cargar las API Keys')
+      setError(err.response?.data?.detail || err.message || t('errorCargar'))
     } finally {
       setCargando(false)
     }
@@ -62,7 +70,6 @@ export default function PaginaApiKeys() {
     setUsuarioDestino(contexto?.codigo_usuario || '')
     setRolSeleccionado('')
     setModalCrear(true)
-    // Cargar catálogos en paralelo
     try {
       const [users, roles] = await Promise.all([
         usuariosApi.listar(),
@@ -81,7 +88,7 @@ export default function PaginaApiKeys() {
         }))
       )
     } catch {
-      // Si fallan los catálogos, el formulario sigue funcionando con defaults.
+      // Si fallan los catálogos, el form funciona igual con defaults.
     }
   }
 
@@ -101,7 +108,7 @@ export default function PaginaApiKeys() {
       await cargar()
     } catch (e) {
       const err = e as { response?: { data?: { detail?: string } }; message?: string }
-      setError(err.response?.data?.detail || err.message || 'No se pudo crear la API Key')
+      setError(err.response?.data?.detail || err.message || t('errorCrear'))
     } finally {
       setCreando(false)
     }
@@ -116,7 +123,7 @@ export default function PaginaApiKeys() {
       await cargar()
     } catch (e) {
       const err = e as { response?: { data?: { detail?: string } }; message?: string }
-      setError(err.response?.data?.detail || err.message || 'No se pudo revocar la API Key')
+      setError(err.response?.data?.detail || err.message || t('errorRevocar'))
     } finally {
       setRevocando(false)
     }
@@ -132,21 +139,19 @@ export default function PaginaApiKeys() {
     <div className="flex flex-col gap-6 max-w-6xl">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-[#074B91] flex items-center gap-2">
-            <Key size={24} /> API Keys del grupo
-          </h1>
-          <p className="text-sm text-texto-muted mt-1">
-            Tokens de larga duración para consumir el chat y la API REST de Server LM
-            desde aplicaciones externas o agentes de IA (MCP). El administrador del
-            grupo decide qué usuarios y bajo qué rol pueden actuar afuera.
-          </p>
+          <h2 className="page-heading flex items-center gap-2">
+            <Key size={22} /> {funcion?.nombre ?? t('titulo')}
+          </h2>
+          {(funcion?.ayuda || t('subtitulo')) && (
+            <p className="text-sm text-texto-muted mt-1">{funcion?.ayuda ?? t('subtitulo')}</p>
+          )}
         </div>
         <div className="flex gap-2">
           <Boton variante="contorno" onClick={cargar} cargando={cargando}>
-            <RefreshCw size={15} /> Actualizar
+            <RefreshCw size={15} /> {tc('actualizar')}
           </Boton>
           <Boton onClick={abrirCrear}>
-            <Plus size={15} /> Nueva API Key
+            <Plus size={15} /> {t('botonNueva')}
           </Boton>
         </div>
       </div>
@@ -160,27 +165,26 @@ export default function PaginaApiKeys() {
       <Tabla>
         <TablaCabecera>
           <tr>
-            <TablaTh>Nombre</TablaTh>
-            <TablaTh>Usuario</TablaTh>
-            <TablaTh>Prefijo</TablaTh>
-            <TablaTh>Rol</TablaTh>
-            <TablaTh>Creada</TablaTh>
-            <TablaTh>Último uso</TablaTh>
-            <TablaTh className="text-right">Acciones</TablaTh>
+            <TablaTh>{t('colNombre')}</TablaTh>
+            <TablaTh>{t('colUsuario')}</TablaTh>
+            <TablaTh>{t('colPrefijo')}</TablaTh>
+            <TablaTh>{t('colRol')}</TablaTh>
+            <TablaTh>{t('colCreada')}</TablaTh>
+            <TablaTh>{t('colUltimoUso')}</TablaTh>
+            <TablaTh className="text-right">{t('colAcciones')}</TablaTh>
           </tr>
         </TablaCabecera>
         <TablaCuerpo>
           {cargando ? (
             <TablaFila>
               <TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>
-                Cargando…
+                {tc('cargando')}
               </TablaTd>
             </TablaFila>
           ) : keys.length === 0 ? (
             <TablaFila>
               <TablaTd className="py-8 text-center text-texto-muted" colSpan={7 as never}>
-                No hay API Keys activas en este grupo. Crea una para empezar a consumir
-                Server LM desde una aplicación externa.
+                {t('sinKeys')}
               </TablaTd>
             </TablaFila>
           ) : (
@@ -203,7 +207,7 @@ export default function PaginaApiKeys() {
                     onClick={() => setParaRevocar(k)}
                     className="text-error"
                   >
-                    <Trash2 size={14} /> Revocar
+                    <Trash2 size={14} /> {t('botonRevocar')}
                   </Boton>
                 </TablaTd>
               </TablaFila>
@@ -214,16 +218,16 @@ export default function PaginaApiKeys() {
 
       <div className="rounded-md border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-900">
         <p className="font-semibold mb-1 flex items-center gap-2">
-          <ExternalLink size={14} /> Uso desde aplicaciones externas
+          <ExternalLink size={14} /> {t('cardUsoTitulo')}
         </p>
         <p>
-          Envía la API Key en el header{' '}
+          {t('cardUsoIntro')}{' '}
           <code className="bg-white px-1.5 py-0.5 rounded font-mono text-xs">
             Authorization: Bearer slm_live_…
           </code>
-          . Soportada en endpoints REST (incluido el chat), CLI{' '}
+          . {t('cardUsoCanales')}{' '}
           <code className="bg-white px-1.5 py-0.5 rounded font-mono text-xs">serverlm cloud</code>{' '}
-          y el servidor MCP remoto. Documentación:{' '}
+          {t('cardUsoMcp')}{' '}
           <a
             href="https://github.com/rufinocabreragaillard/serverlm-backend/blob/main/docs/operativos/chat-externo.md"
             target="_blank"
@@ -240,26 +244,27 @@ export default function PaginaApiKeys() {
       <Modal
         abierto={modalCrear}
         alCerrar={() => setModalCrear(false)}
-        titulo="Nueva API Key"
+        titulo={t('modalCrearTitulo')}
+        className="w-[560px] max-w-[95vw]"
       >
         <div className="flex flex-col gap-4">
           <div>
-            <label className="text-sm font-medium block mb-1">Nombre descriptivo</label>
+            <label className="block text-sm font-medium text-texto mb-1">{t('labelNombre')} *</label>
             <Input
               autoFocus
-              placeholder='ej. "Integración Zapier", "Bot de WhatsApp"'
+              placeholder={t('placeholderNombre')}
               value={nombreNueva}
               onChange={(e) => setNombreNueva(e.target.value)}
             />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">Dueño de la key</label>
+            <label className="block text-sm font-medium text-texto mb-1">{t('labelDueno')}</label>
             <select
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              className={selectCls}
               value={usuarioDestino}
               onChange={(e) => setUsuarioDestino(e.target.value)}
             >
-              <option value="">Yo mismo ({contexto?.codigo_usuario})</option>
+              <option value="">{t('opcionYoMismo', { usuario: contexto?.codigo_usuario ?? '' })}</option>
               {usuariosGrupo
                 .filter((u) => u.codigo !== contexto?.codigo_usuario)
                 .map((u) => (
@@ -268,35 +273,30 @@ export default function PaginaApiKeys() {
                   </option>
                 ))}
             </select>
-            <p className="text-xs text-texto-muted mt-1">
-              La key actuará en nombre de este usuario y heredará sus permisos.
-            </p>
+            <p className="text-xs text-texto-muted mt-1">{t('ayudaDueno')}</p>
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">Rol</label>
+            <label className="block text-sm font-medium text-texto mb-1">{t('labelRol')}</label>
             <select
-              className="w-full border border-gray-300 rounded px-3 py-2 text-sm"
+              className={selectCls}
               value={rolSeleccionado}
               onChange={(e) => setRolSeleccionado(e.target.value)}
             >
-              <option value="">Rol principal del usuario (default)</option>
+              <option value="">{t('opcionRolDefault')}</option>
               {rolesGrupo.map((r) => (
                 <option key={r.codigo} value={r.codigo}>
                   {r.nombre}
                 </option>
               ))}
             </select>
-            <p className="text-xs text-texto-muted mt-1">
-              Restringe los permisos efectivos de la key. Recomendado: el rol mínimo
-              que cubra el caso de uso (ej. solo lectura para un bot de consultas).
-            </p>
+            <p className="text-xs text-texto-muted mt-1">{t('ayudaRol')}</p>
           </div>
           <div className="flex gap-3 justify-end pt-2">
             <Boton variante="contorno" onClick={() => setModalCrear(false)}>
-              Cancelar
+              {tc('cancelar')}
             </Boton>
             <Boton onClick={crear} cargando={creando} disabled={!nombreNueva.trim()}>
-              Crear
+              {tc('crear')}
             </Boton>
           </div>
         </div>
@@ -306,33 +306,33 @@ export default function PaginaApiKeys() {
       <Modal
         abierto={!!tokenRecien}
         alCerrar={() => setTokenRecien(null)}
-        titulo="API Key creada"
+        titulo={t('modalCreadaTitulo')}
+        className="w-[560px] max-w-[95vw]"
       >
         {tokenRecien && (
           <div className="flex flex-col gap-4">
             <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-              <strong>Cópiala ahora.</strong> Por seguridad no podrás volver a verla; si
-              la pierdes, deberás revocar y crear una nueva.
+              <strong>{t('avisoCopiar')}</strong> {t('avisoCopiarDetalle')}
             </div>
             <div className="text-xs text-texto-muted">
-              <span className="block">Dueño: <b>{tokenRecien.codigo_usuario}</b></span>
-              <span className="block">Rol: <b>{tokenRecien.codigo_rol || '—'}</b></span>
-              <span className="block">Grupo: <b>{tokenRecien.codigo_grupo}</b></span>
+              <span className="block">{t('labelDueno')}: <b>{tokenRecien.codigo_usuario}</b></span>
+              <span className="block">{t('labelRol')}: <b>{tokenRecien.codigo_rol || '—'}</b></span>
+              <span className="block">{t('labelGrupo')}: <b>{tokenRecien.codigo_grupo}</b></span>
             </div>
             <div>
-              <label className="text-sm font-medium block mb-1">Token</label>
+              <label className="block text-sm font-medium text-texto mb-1">{t('labelToken')}</label>
               <div className="flex gap-2">
                 <code className="flex-1 bg-gray-50 border border-gray-200 rounded px-3 py-2 font-mono text-xs break-all">
                   {tokenRecien.api_key}
                 </code>
                 <Boton onClick={() => copiar(tokenRecien.api_key)} variante="contorno">
                   {copiado ? <Check size={15} /> : <Copy size={15} />}
-                  {copiado ? 'Copiado' : 'Copiar'}
+                  {copiado ? t('copiado') : t('copiar')}
                 </Boton>
               </div>
             </div>
             <div className="text-xs text-texto-muted">
-              <p>Ejemplo de uso:</p>
+              <p>{t('ejemploUso')}</p>
               <pre className="bg-gray-50 border border-gray-200 rounded px-3 py-2 mt-1 overflow-x-auto">
                 {`curl -X POST https://seguridad-backend-production-6250.up.railway.app/chat/conversaciones \\
   -H "Authorization: Bearer ${tokenRecien.api_key.slice(0, 16)}…" \\
@@ -341,7 +341,7 @@ export default function PaginaApiKeys() {
               </pre>
             </div>
             <div className="flex justify-end">
-              <Boton onClick={() => setTokenRecien(null)}>Entendido</Boton>
+              <Boton onClick={() => setTokenRecien(null)}>{t('botonEntendido')}</Boton>
             </div>
           </div>
         )}
@@ -352,13 +352,13 @@ export default function PaginaApiKeys() {
         abierto={!!paraRevocar}
         alCerrar={() => setParaRevocar(null)}
         alConfirmar={revocar}
-        titulo="Revocar API Key"
+        titulo={t('modalRevocarTitulo')}
         mensaje={
           paraRevocar
-            ? `La API Key "${paraRevocar.nombre}" (de ${paraRevocar.codigo_usuario}) dejará de funcionar inmediatamente. Las aplicaciones que la usen recibirán 401. Esta acción no se puede deshacer.`
+            ? t('modalRevocarMensaje', { nombre: paraRevocar.nombre, usuario: paraRevocar.codigo_usuario })
             : ''
         }
-        textoConfirmar="Revocar"
+        textoConfirmar={t('botonRevocar')}
         variante="peligro"
         cargando={revocando}
       />
