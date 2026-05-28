@@ -21,14 +21,16 @@ test('/translations: "Regenerar TODO" llama /generar-todo con es_json y locales_
   await page.goto(`${BASE_URL}/translations`)
   await page.waitForLoadState('networkidle', { timeout: 15000 })
 
-  // El botón muestra "Regenerar TODO (pendientes)" según la i18n actualizada
-  const boton = page.getByRole('button', { name: /regenerar todo/i })
+  // El botón es "Regenerar TODO (pendientes)" en ES o "Regenerate ALL" en EN
+  // (el super-admin tiene la UI en inglés por defecto). Aceptamos ambos.
+  const boton = page.getByRole('button', { name: /regenerar todo|regenerate all/i })
   await expect(boton).toBeVisible({ timeout: 10000 })
 
   // Hay un modal de confirmación que se abre primero
   await boton.click()
 
-  const confirmar = page.getByRole('button', { name: /sí, regenerar pendientes/i })
+  // El modal de confirmación tiene el texto traducido (ES o EN)
+  const confirmar = page.getByRole('button', { name: /sí, regenerar pendientes|yes, regenerate/i })
   await expect(confirmar).toBeVisible({ timeout: 5000 })
 
   const [request] = await Promise.all([
