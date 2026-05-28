@@ -36,9 +36,11 @@ test('crear, ver y revocar una API Key desde /api-keys', async ({ page }) => {
   // Default: "Yo mismo" — no hay que cambiar nada del selector
   await page.getByRole('button', { name: /^Crear$/i }).click();
 
-  // Modal "API Key creada" muestra el token
+  // Modal "API Key creada" muestra el token (acotar al diálogo para no
+  // agarrar el <code> del card informativo de la página).
   await expect(page.getByRole('heading', { name: /API Key creada/i })).toBeVisible({ timeout: 15000 });
-  const codigoToken = page.locator('code').filter({ hasText: /slm_live_/ }).first();
+  const dialogo = page.getByRole('dialog').filter({ hasText: /API Key creada/i });
+  const codigoToken = dialogo.locator('code').filter({ hasText: /^slm_live_[a-f0-9]+$/ }).first();
   await expect(codigoToken).toBeVisible();
   const tokenTxt = (await codigoToken.textContent()) || '';
   expect(tokenTxt).toMatch(/^slm_live_[a-f0-9]+$/);
