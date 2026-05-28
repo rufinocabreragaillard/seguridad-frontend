@@ -194,7 +194,7 @@ export function Sidebar() {
         )}
 
         {/* Navegación — 100% dinámica desde BD (usuario.menu). */}
-        <nav className="flex-1 py-4 px-2 flex flex-col gap-4 overflow-y-auto">
+        <nav className="flex-1 py-4 px-2 flex flex-col gap-4 overflow-y-auto sidebar-scroll">
           {menuFiltrado.length === 0 ? (
             expandido && usuario?.menu && (
               <div className="px-3 py-2 text-xs text-sidebar-texto-muted">
