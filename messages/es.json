@@ -1537,7 +1537,7 @@
     "tooltipErrores": "Errores",
     "tooltipVelocidadReciente": "Velocidad reciente (últimos 2 min)",
     "sincronizacionDetalleDeshabilitadas": "{insertadas} nuevas · {actualizadas} actualizadas · {deshabilitadas} deshabilitadas",
-    "advertenciaArchivosVacios": "⚠ {n} archivo(s) están en 0 bytes (solo en línea en Dropbox/iCloud). Se cargaron pero no se podrán procesar hasta descargarlos localmente y recargar.",
+    "advertenciaArchivosVacios": "⚠ {n} archivo(s) están en 0 bytes (solo en línea, por ejemplo en Dropbox, iCloud o Google Drive). Se cargaron pero no se podrán procesar hasta descargarlos localmente y recargar.",
     "reanudarTitulo": "Reanudar procesamiento",
     "reanudarMensaje": "Hay {count, plural, one {# documento colgado} other {# documentos colgados}} de la última sesión (más de {minutos} min en proceso). ¿Reanudar el procesamiento ahora?",
     "btnReanudar": "Reanudar",

@@ -1200,7 +1200,7 @@ function PaginaProcesarDocumentosInterna() {
       })
       const vacios = contarArchivosVacios(archivosParaCargar)
       const avisoVacios = vacios > 0
-        ? ` · ⚠ ${vacios} archivo(s) en 0 bytes (solo en línea en Dropbox/iCloud): descárgalos localmente y vuelve a cargar para que se puedan procesar.`
+        ? ` · ⚠ ${vacios} archivo(s) en 0 bytes (solo en línea, por ejemplo en Dropbox, iCloud o Google Drive): descárgalos localmente y vuelve a cargar para que se puedan procesar.`
         : ''
       const resumen = `Cargados: ${res.insertados} nuevos, ${res.actualizados} actualizados, ${res.eliminados ?? 0} eliminados${avisoVacios}`
       setCola([{
