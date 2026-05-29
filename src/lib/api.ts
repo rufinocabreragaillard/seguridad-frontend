@@ -55,6 +55,8 @@ import type {
   RolCargo,
   LocaleSoportado,
   EstadoTraducciones,
+  TablaTraducible,
+  CampoTraducible,
   EspacioTrabajo,
   EspacioTrabajoCrear,
   DocumentoEspacio,
@@ -2056,6 +2058,22 @@ export const traduccionesApi = {
       fecha_modificacion?: string;
       contenido?: string;
     }>('/traducciones/glosario').then((r) => r.data),
+
+  // ── Config de tablas traducibles (tab en /functions) ──
+  listarTablasTraducibles: () =>
+    api.get<TablaTraducible[]>('/traducciones/tablas-traducibles').then((r) => r.data),
+
+  actualizarTablaTraducible: (
+    nombreTabla: string,
+    datos: Partial<Pick<TablaTraducible, 'activa' | 'tiene_columna_traducir' | 'pk' | 'pk_partes' | 'descripcion'>>,
+  ) =>
+    api.patch<TablaTraducible>(`/traducciones/tablas-traducibles/${nombreTabla}`, datos).then((r) => r.data),
+
+  reemplazarCamposTabla: (nombreTabla: string, campos: CampoTraducible[]) =>
+    api.put<{ nombre_tabla: string; campos: CampoTraducible[] }>(
+      `/traducciones/tablas-traducibles/${nombreTabla}/campos`,
+      { campos: campos.map((c) => ({ campo_logico: c.campo_logico, campo_fisico: c.campo_fisico })) },
+    ).then((r) => r.data),
 }
 
 // ─── Espacios de Trabajo ─────────────────────────────────────────────────────

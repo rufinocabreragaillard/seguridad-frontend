@@ -245,10 +245,25 @@ export interface Funcion {
   perm_update?: boolean
   perm_delete?: boolean
   traducir?: boolean
-  traducir_registros?: boolean       // si true, los registros de la tabla asociada se traducen
-  tabla_traducible?: string | null   // nombre de la tabla cuyas filas se traducen
-  campos_traducibles?: string[] | null // columnas a traducir (NULL = inferir)
   sincronizacion_pendiente?: boolean  // true si fue modificada y no se sincronizó el grafo aún
+}
+
+// ─── Tablas traducibles (config de traducción por tabla) ──────────────────────
+
+export interface CampoTraducible {
+  campo_logico: string
+  campo_fisico: string
+  orden?: number
+}
+
+export interface TablaTraducible {
+  nombre_tabla: string
+  activa: boolean
+  pk: string
+  pk_partes?: string[] | null
+  tiene_columna_traducir: boolean
+  descripcion?: string | null
+  campos: CampoTraducible[]
 }
 
 // ─── API Endpoints ───────────────────────────────────────────────────────────

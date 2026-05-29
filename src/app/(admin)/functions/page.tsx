@@ -14,9 +14,9 @@ import { ModalConfirmar } from '@/components/ui/modal-confirmar'
 import { Tabla, TablaCabecera, TablaCuerpo, TablaFila, TablaTh, TablaTd } from '@/components/ui/tabla'
 import { TabPrompts } from '@/components/ui/tab-prompts'
 import { PieBotonesPrompts } from '@/components/ui/pie-botones-prompts'
-import { aplicacionesApi, funcionesApi, rolesApi, registroLLMApi, promptsApi } from '@/lib/api'
+import { aplicacionesApi, funcionesApi, rolesApi, registroLLMApi, promptsApi, traduccionesApi } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
-import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM, Rol } from '@/lib/tipos'
+import type { Aplicacion, ApiEndpoint, Funcion, RegistroLLM, Rol, TablaTraducible, CampoTraducible } from '@/lib/tipos'
 import { exportarExcel } from '@/lib/exportar-excel'
 import { useTranslations } from 'next-intl'
 import { TIPOS_ELEMENTO, normalizarTipo, etiquetaTipo, type TipoElemento } from '@/lib/tipo-elemento'
@@ -37,6 +37,17 @@ export default function PaginaFunciones() {
   const [modelosLLM, setModelosLLM] = useState<RegistroLLM[]>([])
   const [cargando, setCargando] = useState(true)
   const [busqueda, setBusqueda] = useState('')
+
+  // ── Vista de pantalla: Funciones | Tablas traducibles ───────────────────────
+  const [vista, setVista] = useState<'funciones' | 'tablas'>('funciones')
+  const [tablasTrad, setTablasTrad] = useState<TablaTraducible[]>([])
+  const [cargandoTablas, setCargandoTablas] = useState(false)
+  const [tablaEditando, setTablaEditando] = useState<TablaTraducible | null>(null)
+  const [formTabla, setFormTabla] = useState<{ tiene_columna_traducir: boolean; descripcion: string; campos: CampoTraducible[] }>({
+    tiene_columna_traducir: true, descripcion: '', campos: [],
+  })
+  const [guardandoTabla, setGuardandoTabla] = useState(false)
+  const [errorTabla, setErrorTabla] = useState('')
 
   // ── Modal Funcion ─────────────────────────────────────────────────────────
   const [modalFuncion, setModalFuncion] = useState(false)
@@ -68,9 +79,6 @@ export default function PaginaFunciones() {
     perm_update: boolean
     perm_delete: boolean
     traducir: boolean
-    traducir_registros: boolean
-    tabla_traducible: string
-    campos_traducibles: string
   }>({
     codigo_funcion: '', nombre: '', descripcion: '', ayuda_de_funcion: '', url_funcion: '',
     alias_de_funcion: '', icono_de_funcion: '', codigo_aplicacion_origen: '',
@@ -78,7 +86,6 @@ export default function PaginaFunciones() {
     python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
     perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
     traducir: true,
-    traducir_registros: false, tabla_traducible: '', campos_traducibles: '',
   })
   const [tabModalFuncion, setTabModalFuncion] = useState<'datos' | 'otros' | 'roles' | 'aplicaciones' | 'apis' | 'system_prompt' | 'vista' | 'md' | 'programacion_insert' | 'programacion_update' | 'llm'>('datos')
   const [generandoMd, setGenerandoMd] = useState(false)
@@ -134,6 +141,55 @@ export default function PaginaFunciones() {
 
   useEffect(() => { cargar() }, [cargar])
 
+  // ── Tablas traducibles ──────────────────────────────────────────────────────
+  const cargarTablasTrad = useCallback(async () => {
+    setCargandoTablas(true)
+    try { setTablasTrad(await traduccionesApi.listarTablasTraducibles()) }
+    catch { setTablasTrad([]) }
+    finally { setCargandoTablas(false) }
+  }, [])
+
+  useEffect(() => { if (vista === 'tablas') cargarTablasTrad() }, [vista, cargarTablasTrad])
+
+  const toggleActivaTabla = async (t: TablaTraducible) => {
+    // Optimista
+    setTablasTrad((prev) => prev.map((x) => x.nombre_tabla === t.nombre_tabla ? { ...x, activa: !x.activa } : x))
+    try {
+      await traduccionesApi.actualizarTablaTraducible(t.nombre_tabla, { activa: !t.activa })
+    } catch {
+      setTablasTrad((prev) => prev.map((x) => x.nombre_tabla === t.nombre_tabla ? { ...x, activa: t.activa } : x))
+    }
+  }
+
+  const abrirEditarTabla = (t: TablaTraducible) => {
+    setTablaEditando(t)
+    setFormTabla({
+      tiene_columna_traducir: t.tiene_columna_traducir,
+      descripcion: t.descripcion || '',
+      campos: t.campos.map((c) => ({ campo_logico: c.campo_logico, campo_fisico: c.campo_fisico })),
+    })
+    setErrorTabla('')
+  }
+
+  const guardarTabla = async () => {
+    if (!tablaEditando) return
+    setGuardandoTabla(true)
+    setErrorTabla('')
+    try {
+      await traduccionesApi.actualizarTablaTraducible(tablaEditando.nombre_tabla, {
+        tiene_columna_traducir: formTabla.tiene_columna_traducir,
+        descripcion: formTabla.descripcion.trim() || null,
+      })
+      const camposLimpios = formTabla.campos
+        .map((c) => ({ campo_logico: c.campo_logico.trim(), campo_fisico: c.campo_fisico.trim() }))
+        .filter((c) => c.campo_logico && c.campo_fisico)
+      await traduccionesApi.reemplazarCamposTabla(tablaEditando.nombre_tabla, camposLimpios)
+      setTablaEditando(null)
+      cargarTablasTrad()
+    } catch (e) { setErrorTabla(e instanceof Error ? e.message : 'Error') }
+    finally { setGuardandoTabla(false) }
+  }
+
   // ── Funcion: CRUD ─────────────────────────────────────────────────────────
   const abrirNuevaFuncion = () => {
     setFuncionEditando(null)
@@ -145,7 +201,6 @@ export default function PaginaFunciones() {
       python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false,
       perm_select: true, perm_insert: true, perm_update: true, perm_delete: true,
       traducir: true,
-      traducir_registros: false, tabla_traducible: '', campos_traducibles: '',
     })
     setErrorFuncion(''); setTabModalFuncion('datos'); setModalFuncion(true)
   }
@@ -178,9 +233,6 @@ export default function PaginaFunciones() {
       perm_update: f.perm_update ?? true,
       perm_delete: f.perm_delete ?? true,
       traducir: f.traducir ?? true,
-      traducir_registros: f.traducir_registros ?? false,
-      tabla_traducible: f.tabla_traducible || '',
-      campos_traducibles: Array.isArray(f.campos_traducibles) ? f.campos_traducibles.join(', ') : '',
     })
     setErrorFuncion('')
     setMensajeMd(null)
@@ -218,11 +270,6 @@ export default function PaginaFunciones() {
         perm_update: formFuncion.perm_update,
         // perm_delete se excluye: solo modificable directamente en la BD
         traducir: formFuncion.traducir,
-        traducir_registros: formFuncion.traducir_registros,
-        tabla_traducible: formFuncion.tabla_traducible.trim() || null,
-        campos_traducibles: formFuncion.campos_traducibles.trim()
-          ? formFuncion.campos_traducibles.split(',').map((s) => s.trim()).filter(Boolean)
-          : null,
       }
       if (funcionEditando) {
         await funcionesApi.actualizar(funcionEditando.codigo_funcion, payload)
@@ -381,6 +428,19 @@ export default function PaginaFunciones() {
         <PageHeader i18nNamespace="functions" />
       </div>
 
+      {/* Lengüetas de pantalla */}
+      <div className="flex border-b border-borde">
+        <button onClick={() => setVista('funciones')} className={`px-4 py-2 text-sm tab-nav${vista === 'funciones' ? ' tab-nav-activo' : ''}`}>
+          Funciones
+        </button>
+        {esAdmin && (
+          <button onClick={() => setVista('tablas')} className={`px-4 py-2 text-sm tab-nav${vista === 'tablas' ? ' tab-nav-activo' : ''}`}>
+            Tablas traducibles
+          </button>
+        )}
+      </div>
+
+      {vista === 'funciones' && (<>
       <div className="flex items-center gap-3">
         <div className="max-w-sm flex-1">
           <Input placeholder={t('buscarPlaceholder')} value={busqueda} onChange={(e) => setBusqueda(e.target.value)} icono={<Search size={15} />} />
@@ -408,20 +468,14 @@ export default function PaginaFunciones() {
                 <TablaTd onDoubleClick={() => abrirEditarFuncion(f)}><code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{f.codigo_funcion}</code></TablaTd>
                 <TablaTd>
                   <div className="flex items-center justify-end gap-1">
-                    {/* Botón Traducir — amarillo si traducir_registros=true pero falta tabla_traducible */}
+                    {/* Botón Traducir — traduce los campos de esta fila */}
                     <button
                       onClick={() => traducirFuncion(f)}
                       disabled={traduciendo === f.codigo_funcion || f.traducir === false}
-                      className={`p-1.5 rounded-lg hover:bg-primario-muy-claro transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-                        f.traducir_registros && !f.tabla_traducible
-                          ? 'text-amber-500 hover:text-amber-600'
-                          : 'text-texto-muted hover:text-primario'
-                      }`}
+                      className="p-1.5 rounded-lg hover:bg-primario-muy-claro transition-colors disabled:opacity-40 disabled:cursor-not-allowed text-texto-muted hover:text-primario"
                       title={
                         f.traducir === false
                           ? tfx('tooltipTraduccionDesactivada')
-                          : f.traducir_registros && !f.tabla_traducible
-                          ? tfx('tooltipTablaTraducibleNoAsignada')
                           : tfx('tooltipTraducirAhora')
                       }
                     >
@@ -473,6 +527,103 @@ export default function PaginaFunciones() {
           </TablaCuerpo>
         </Tabla>
       </SortableDndContext>
+      </>)}
+
+      {/* ── VISTA TABLAS TRADUCIBLES ── */}
+      {vista === 'tablas' && (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm text-texto-muted">
+            Configura qué tablas y campos se traducen al cambiar de idioma. La columna
+            <strong> Activa</strong> controla si los registros de esa tabla entran en la generación de traducciones.
+          </p>
+          <Tabla>
+            <TablaCabecera><tr>
+              <TablaTh className="w-20 text-center">Activa</TablaTh>
+              <TablaTh>Tabla</TablaTh>
+              <TablaTh className="w-24 text-center">Campos</TablaTh>
+              <TablaTh className="w-40">PK</TablaTh>
+              <TablaTh>Descripción</TablaTh>
+              <TablaTh className="text-right w-20">{tc('acciones')}</TablaTh>
+            </tr></TablaCabecera>
+            <TablaCuerpo>
+              {cargandoTablas ? (
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>{tc('cargando')}</TablaTd></TablaFila>
+              ) : tablasTrad.length === 0 ? (
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>Sin tablas traducibles</TablaTd></TablaFila>
+              ) : tablasTrad.map((t) => (
+                <TablaFila key={t.nombre_tabla}>
+                  <TablaTd className="text-center">
+                    <input type="checkbox" checked={t.activa} onChange={() => toggleActivaTabla(t)} className="w-4 h-4 rounded accent-primario cursor-pointer" />
+                  </TablaTd>
+                  <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTabla(t)}>
+                    <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{t.nombre_tabla}</code>
+                  </TablaTd>
+                  <TablaTd className="text-center text-sm">{t.campos.length}</TablaTd>
+                  <TablaTd className="text-xs font-mono text-texto-muted">{t.pk_partes && t.pk_partes.length ? t.pk_partes.join(' + ') : t.pk}</TablaTd>
+                  <TablaTd className="text-xs text-texto-muted">{t.descripcion || '—'}</TablaTd>
+                  <TablaTd>
+                    <div className="flex items-center justify-end">
+                      <button onClick={() => abrirEditarTabla(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                    </div>
+                  </TablaTd>
+                </TablaFila>
+              ))}
+            </TablaCuerpo>
+          </Tabla>
+        </div>
+      )}
+
+      {/* ── MODAL EDITAR TABLA TRADUCIBLE ── */}
+      <Modal abierto={!!tablaEditando} alCerrar={() => setTablaEditando(null)} titulo={tablaEditando ? `Tabla traducible: ${tablaEditando.nombre_tabla}` : ''} className="w-[720px] max-w-[95vw]">
+        {tablaEditando && (
+          <div className="flex flex-col gap-4">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              <div><span className="text-texto-muted">PK:</span> <code className="text-xs font-mono">{tablaEditando.pk_partes && tablaEditando.pk_partes.length ? tablaEditando.pk_partes.join(' + ') : tablaEditando.pk}</code></div>
+              <div className="flex items-center gap-2">
+                <input type="checkbox" checked={tablaEditando.activa} onChange={() => { toggleActivaTabla(tablaEditando); setTablaEditando({ ...tablaEditando, activa: !tablaEditando.activa }) }} className="w-4 h-4 rounded accent-primario cursor-pointer" />
+                <span>Activa</span>
+              </div>
+            </div>
+
+            <label className="flex items-center gap-2 cursor-pointer select-none">
+              <input type="checkbox" checked={formTabla.tiene_columna_traducir} onChange={(e) => setFormTabla({ ...formTabla, tiene_columna_traducir: e.target.checked })} className="w-4 h-4 rounded accent-primario" />
+              <span className="text-sm font-medium text-texto">Tiene columna <code className="text-xs">traducir</code></span>
+              <span className="text-xs text-texto-muted">— respeta el flag por fila</span>
+            </label>
+
+            <div>
+              <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
+              <Input value={formTabla.descripcion} onChange={(e) => setFormTabla({ ...formTabla, descripcion: e.target.value })} placeholder="Para qué sirve esta tabla traducible" />
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-texto">Campos a traducir</label>
+                <Boton variante="contorno" tamano="sm" onClick={() => setFormTabla({ ...formTabla, campos: [...formTabla.campos, { campo_logico: '', campo_fisico: '' }] })}><Plus size={14} />Campo</Boton>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs font-medium text-texto-muted px-1">
+                  <span>Campo lógico</span><span>Campo físico</span><span />
+                </div>
+                {formTabla.campos.length === 0 && <p className="text-sm text-texto-muted py-2">Sin campos. Agrega al menos uno.</p>}
+                {formTabla.campos.map((c, i) => (
+                  <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+                    <Input value={c.campo_logico} onChange={(e) => setFormTabla({ ...formTabla, campos: formTabla.campos.map((x, j) => j === i ? { ...x, campo_logico: e.target.value } : x) })} placeholder="ej. nombre" />
+                    <Input value={c.campo_fisico} onChange={(e) => setFormTabla({ ...formTabla, campos: formTabla.campos.map((x, j) => j === i ? { ...x, campo_fisico: e.target.value } : x) })} placeholder="ej. nombre_funcion" />
+                    <button onClick={() => setFormTabla({ ...formTabla, campos: formTabla.campos.filter((_, j) => j !== i) })} className="p-1.5 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {errorTabla && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorTabla}</p></div>}
+            <div className="flex justify-end gap-2 pt-2">
+              <Boton variante="contorno" onClick={() => setTablaEditando(null)}>{tc('salir')}</Boton>
+              <Boton variante="primario" onClick={guardarTabla} cargando={guardandoTabla}>{tc('guardar')}</Boton>
+            </div>
+          </div>
+        )}
+      </Modal>
 
       {/* ── MODAL FUNCION ── */}
       <Modal abierto={modalFuncion} alCerrar={() => setModalFuncion(false)} titulo={funcionEditando ? `${t('tituloEditar')}: ${funcionEditando.nombre} - ${funcionEditando.codigo_funcion}` : t('tituloNueva')} className="w-[960px] max-w-[95vw]">
@@ -561,55 +712,6 @@ export default function PaginaFunciones() {
                     <span className="text-xs text-texto-muted">— traducir esta fila</span>
                   </label>
                 </div>
-
-                {formFuncion.tipo_acceso === 'SISTEMA' && (
-                  <div className="border border-borde rounded-lg p-3 bg-fondo flex flex-col gap-2">
-                    <label className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={formFuncion.traducir_registros}
-                        onChange={(e) => setFormFuncion({ ...formFuncion, traducir_registros: e.target.checked })}
-                        className="w-4 h-4 rounded accent-primario"
-                      />
-                      <span className="text-sm font-medium text-texto">Traducir registros del mantenedor</span>
-                    </label>
-                    <p className="text-xs text-texto-muted -mt-1">
-                      Si está activo, los registros de la tabla asociada se traducen al cambiar de idioma.
-                      No activar para auditorías, logs SQL ni estadísticas LLM.
-                    </p>
-                    {formFuncion.traducir_registros && (
-                      <>
-                        <div>
-                          <label className="block text-xs font-medium text-texto mb-1">Tabla a traducir</label>
-                          <Input
-                            value={formFuncion.tabla_traducible}
-                            onChange={(e) => setFormFuncion({ ...formFuncion, tabla_traducible: e.target.value })}
-                            placeholder="ej. funciones, roles, aplicaciones"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-xs font-medium text-texto mb-1">
-                            {tfx('camposATraducir')}
-                          </label>
-                          <Input
-                            value={formFuncion.campos_traducibles}
-                            onChange={(e) => setFormFuncion({ ...formFuncion, campos_traducibles: e.target.value })}
-                            placeholder="ej. nombre_funcion, alias_de_funcion, descripcion"
-                          />
-                        </div>
-                        {!formFuncion.tabla_traducible.trim() && (
-                          <div className="flex items-start gap-2 px-2.5 py-2 rounded-md border border-amber-300 bg-amber-50 text-amber-800">
-                            <span className="text-base leading-none">⚠️</span>
-                            <p className="text-xs">
-                              <strong>Sin efecto:</strong> el flag está activo pero no hay tabla asignada.
-                              La generación de traducciones omitirá esta función hasta que se complete &ldquo;Tabla a traducir&rdquo;.
-                            </p>
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                )}
               </div>
               {/* Columna derecha */}
               <div className="flex flex-col gap-3">
