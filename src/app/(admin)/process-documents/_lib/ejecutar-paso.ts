@@ -490,30 +490,65 @@ export async function ejecutarPasoBackend(opts: {
   // por su cuenta, y entre paquetes se borran los COMPLETADO: un snapshot de ids se
   // desincronizaba y dejaba el contador clavado en 0 mientras el backend avanzaba.
   const total = docs.length
-  const refrescar = async (): Promise<number> => {
+  const refrescar = async (): Promise<{ activos: number; completado: number }> => {
     const resumen = await colaEstadosDocsApi.resumenPipeline(120)
     const fase = resumen?.por_destino?.[estadoDestino]
-    if (!fase) return 0
+    if (!fase) return { activos: 0, completado: 0 }
     onProgreso?.(Math.min(fase.completado, total), total)
-    return fase.pendiente + fase.en_proceso
+    return { activos: fase.pendiente + fase.en_proceso, completado: fase.completado }
   }
 
   // Primera lectura: si no hay nada activo (todo ya avanzó o no se encoló nada),
   // damos una pasada de gracia —el worker puede no haber marcado EN_PROCESO aún—
   // antes de dar el paso por terminado, para no cerrarlo por una lectura prematura.
   try {
-    if (await refrescar() === 0) {
+    if ((await refrescar()).activos === 0) {
       await esperarCambio()
       if (abortRef.current) return false
-      if (await refrescar() === 0) return !abortRef.current
+      if ((await refrescar()).activos === 0) return !abortRef.current
     }
   } catch { /* continuar al loop de monitoreo */ }
+
+  // Auto-recuperación contra cuelgues. El worker backend hace UNA pasada y termina:
+  // si una pasada muere (Railway reinicia, error a mitad de ítem) quedan ítems en
+  // EN_PROCESO/PENDIENTE que nadie retoma, y este monitor giraría infinitamente con
+  // `activos > 0` sin avanzar nunca → la pantalla "colgada". Detectamos el
+  // estancamiento (sin avance de `completado` ni de `activos`) y, sin intervención
+  // del usuario: (1) liberamos huérfanos cuyo lease ya expiró (>LEASE 5 min, no toca
+  // ítems vivos) y (2) relanzamos el worker (idempotente: lock + leases impiden doble
+  // procesamiento). Un tope duro garantiza que el paso SIEMPRE retorne: si tras varios
+  // minutos no hay ningún avance, salimos y el loop de paquetes re-evalúa y reintenta.
+  const CICLOS_PARA_RECUPERAR = 3   // ~15s sin avance → intentar recuperar
+  const RECUPERAR_MINUTOS = 5       // == LEASE_DEFAULT_SEG (300s): solo huérfanos reales
+  const MAX_CICLOS_SIN_AVANCE = 60  // ~5min sin avance alguno → desistir (anti-cuelgue)
+  let prevActivos = -1
+  let prevCompletado = -1
+  let ciclosSinAvance = 0
 
   while (!abortRef.current) {
     await esperarCambio()
     if (abortRef.current) return false
     try {
-      if (await refrescar() === 0) break
+      const { activos, completado } = await refrescar()
+      if (activos === 0) break
+
+      const avanzo = completado > prevCompletado || activos !== prevActivos
+      if (avanzo) {
+        ciclosSinAvance = 0
+      } else {
+        ciclosSinAvance++
+        // Cada CICLOS_PARA_RECUPERAR ciclos sin avance, intentamos destrabar.
+        if (ciclosSinAvance % CICLOS_PARA_RECUPERAR === 0) {
+          try { await colaEstadosDocsApi.recuperarHuerfanos(RECUPERAR_MINUTOS) } catch { /* continuar */ }
+          try { await colaEstadosDocsApi.ejecutar(estadoDestino, codigoProceso || undefined) } catch { /* continuar */ }
+        }
+      }
+      prevActivos = activos
+      prevCompletado = completado
+
+      // Tope duro: nunca colgarse. Si nada avanza pese a las recuperaciones,
+      // retornamos y dejamos que el loop de paquetes reintente desde fuera.
+      if (ciclosSinAvance >= MAX_CICLOS_SIN_AVANCE) break
     } catch { /* reintentar */ }
   }
 
