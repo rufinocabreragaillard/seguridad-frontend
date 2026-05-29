@@ -124,11 +124,10 @@ export default function PaginaDocumentos() {
     const codigo = searchParams.get('codigo')
     if (!codigo || autoAbiertoRef.current === codigo) return
     autoAbiertoRef.current = codigo
-    const cd = parseInt(codigo, 10)
-    if (Number.isNaN(cd)) return
+    if (Number.isNaN(parseInt(codigo, 10))) return
     const pagina = searchParams.get('pagina')
     documentosApi
-      .obtener(cd)
+      .obtener(codigo)
       .then((doc) => {
         abrirDetalle(doc, pagina ? 'chunks' : 'datos')
       })

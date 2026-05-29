@@ -122,7 +122,7 @@ export default function PaginaChatUsuario() {
   const esSuperAdmin = grupoActivo === 'ADMIN'
 
 
-  const abrirDocDesdeLink = useCallback(async (codigo: number) => {
+  const abrirDocDesdeLink = useCallback(async (codigo: string) => {
     // Asegurar handle + permiso ANTES de abrir la pestaña: requestPermission()
     // y showDirectoryPicker() requieren un user gesture activo, que se pierde
     // si llamamos primero a documentosApi.obtener.
@@ -1714,7 +1714,7 @@ export default function PaginaChatUsuario() {
 
 const LIMITE_VISIBLE_FILAS = 10
 
-function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMensaje; streaming?: boolean; onAbrirDoc?: (codigo: number) => void }) {
+function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMensaje; streaming?: boolean; onAbrirDoc?: (codigo: string) => void }) {
   const esUser = mensaje.rol === 'user'
   const tieneTabla = !esUser && /(^|\n)\s*\|.*\|.*\n\s*\|[-:| ]+\|/.test(mensaje.contenido)
   const contenidoRef = useRef<HTMLDivElement>(null)
@@ -1781,7 +1781,7 @@ function Mensaje({ mensaje, streaming = false, onAbrirDoc }: { mensaje: ChatMens
                   // anteponga un esquema+dominio inventado (https://serverlm.cl/documents?codigo=X).
                   const matchDoc = hrefSeguro.match(/\/document(?:o)?s[?&]codigo=(\d+)/i)
                   if (matchDoc && onAbrirDoc) {
-                    const codigo = parseInt(matchDoc[1], 10)
+                    const codigo = matchDoc[1]
                     return (
                       <button
                         type="button"

@@ -685,7 +685,7 @@ export const documentosApi = {
     api.get<Documento[]>('/documentos', { params }).then((r) => r.data),
   listarPaginado: (params: { page: number; limit: number; codigo_estado_doc?: string; q?: string; ruta_prefijo?: string }) =>
     api.get<RespuestaPaginadaApi<Documento>>('/documentos/paginado', { params, timeout: 45000 }).then((r) => r.data),
-  obtener: (codigo: number) =>
+  obtener: (codigo: string) =>
     api.get<Documento>(`/documentos/${codigo}`).then((r) => r.data),
   contarPorEstado: () =>
     api.get<Record<string, number>>('/documentos/contar-por-estado').then((r) => r.data),
@@ -693,8 +693,8 @@ export const documentosApi = {
     api.post<Documento>('/documentos', datos).then((r) => r.data),
   actualizar: (id: number, datos: Partial<Documento>) =>
     api.put<Documento>(`/documentos/${id}`, datos).then((r) => r.data),
-  desactivar: (id: number) => api.delete(`/documentos/${id}`),
-  eliminarBulk: (ids: number[]) =>
+  desactivar: (id: string) => api.delete(`/documentos/${id}`),
+  eliminarBulk: (ids: string[]) =>
     api.post<{ eliminados: number }>('/documentos/eliminar-bulk', { codigos_documento: ids }).then((r) => r.data),
   // Restablecer documentos NO_ESCANEABLE / NO_ENCONTRADO a CARGADO/METADATA
   restablecerEstado: (codigos_documento: string[]) =>
@@ -755,7 +755,7 @@ export const documentosApi = {
     api.post<{ insertados: number; actualizados: number }>('/documentos/cargar-desde-ubicaciones', { archivos }).then((r) => r.data),
   // EXTRAER: subir texto extraido del archivo (CARGADO -> METADATA)
   subirTexto: (
-    id: number,
+    id: string,
     body: {
       texto_fuente: string
       caracteres?: number
@@ -782,7 +782,7 @@ export const documentosApi = {
       // el cache de claves (commit 9476cea) y el resto del cuello backend.
       `/documentos/${id}/texto`, body, { timeout: 180000 },
     ).then((r) => r.data),
-  subirOcr: (id: number, pdfBytes: ArrayBuffer) => {
+  subirOcr: (id: string, pdfBytes: ArrayBuffer) => {
     const blob = new Blob([pdfBytes], { type: 'application/pdf' })
     const form = new FormData()
     form.append('archivo', blob, 'documento.pdf')
@@ -793,7 +793,7 @@ export const documentosApi = {
     ).then((r) => r.data)
   },
   // DOC: extracción de Word binario (.doc pre-2007, formato OLE) vía antiword en backend
-  subirDoc: (id: number, docBytes: ArrayBuffer) => {
+  subirDoc: (id: string, docBytes: ArrayBuffer) => {
     const blob = new Blob([docBytes], { type: 'application/msword' })
     const form = new FormData()
     form.append('archivo', blob, 'documento.doc')
