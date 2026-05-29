@@ -2,9 +2,14 @@ import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Page } from '@playwright/test'
 
-/** Raíz donde viven los artefactos. Cubierta por /test-results/ en .gitignore. */
+/**
+ * Raíz donde viven los artefactos. NO usar `test-results/`: Playwright limpia ese
+ * directorio (su `outputDir`) al inicio de CADA corrida, así que correr una pantalla
+ * borraría los artefactos de las demás. Este dir está fuera de la gestión de
+ * Playwright y cubierto por `/artefactos-traducciones/` en .gitignore.
+ */
 export function dirPantalla(codigo: string): string {
-  return join('test-results', 'traducciones', codigo)
+  return join('artefactos-traducciones', codigo)
 }
 
 /**

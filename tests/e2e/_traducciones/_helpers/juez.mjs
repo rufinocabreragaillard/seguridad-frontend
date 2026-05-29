@@ -27,7 +27,7 @@ import { dirname, join, resolve } from 'node:path'
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const FRONTEND = resolve(__dirname, '../../../..') // _helpers → _traducciones → e2e → tests → frontend
 const MESSAGES = join(FRONTEND, 'messages')
-const RESULTS = join(FRONTEND, 'test-results', 'traducciones')
+const RESULTS = join(FRONTEND, 'artefactos-traducciones')
 
 const codigo = process.argv[2]
 if (!codigo) {
@@ -77,6 +77,20 @@ const PALABRAS_ES = new Set([
 ])
 const STOPWORDS_ES = new Set(['de', 'la', 'los', 'las', 'para', 'por', 'con', 'del', 'una', 'que', 'su'])
 
+// Para HARDCODED_ES: distinguir etiqueta de UI (alta confianza) de prosa/contenido
+// (baja confianza). En pantallas con texto libre —el chat— las burbujas de
+// conversación están legítimamente en español (datos, no UI) y son frases largas.
+// No las ocultamos: las marcamos `confianza:'baja'` para que el agente las filtre
+// en su juicio visual. Las etiquetas cortas ("FECHA INICIAL", "Crear Espacio") son
+// `alta`. SPANISH_LEAK y TAG_LITERAL son siempre alta (van atadas a una clave i18n).
+function clasificarConfianza(s) {
+  const palabras = s.trim().split(/\s+/).filter(Boolean)
+  const terminaEnPuntuacion = /[.?!…]$/.test(s.trim())
+  if (palabras.length >= 7) return 'baja'
+  if (terminaEnPuntuacion && palabras.length >= 4) return 'baja'
+  return 'alta'
+}
+
 function pareceEspanol(s) {
   if (/[ñ¿¡áéíóúü]/i.test(s)) return true
   const palabras = norm(s).split(/[^a-záéíóúüñ]+/i).filter(Boolean)
@@ -97,7 +111,7 @@ const EXCLUIR = [
   /\.(png|jpe?g|svg|js|ts|tsx|css|json|md)$/i, // nombres de archivo
   /^[A-Z]$/,                        // iniciales sueltas (avatares)
   /^[A-Z0-9]+([-_/][A-Z0-9]+)+$/,  // códigos (roles, permisos): DOCS-USUARIO-FINAL
-  /server\s*lm|client\s*lm|serverlm/i, // marca
+  /^(server\s*lm|client\s*lm|serverlm)$/i, // marca (token exacto, no substring)
   /TEST_TRAD_/,                     // sentinel
 ]
 // length < 3 descarta códigos de 2 letras ("en","es","de") que son ruido, no UI.
@@ -143,6 +157,7 @@ for (const archivo of archivos) {
         })
       } else if (pareceEspanol(s)) {
         registrar('HARDCODED_ES', s, etapa, {
+          confianza: clasificarConfianza(s),
           explicacion: 'Parece español y no está en es.json ni en.json → texto hardcodeado fuera de i18n.',
         })
       }
@@ -163,9 +178,21 @@ for (const archivo of archivos) {
 }
 
 const lista = [...hallazgos.values()]
-  .map((h) => ({ tipo: h.tipo, valor: h.valor, etapas: [...h.etapas].sort(), explicacion: h.explicacion }))
-  .sort((a, b) => a.tipo.localeCompare(b.tipo) || a.valor.localeCompare(b.valor))
+  .map((h) => ({
+    tipo: h.tipo,
+    valor: h.valor,
+    confianza: h.confianza ?? 'alta',
+    etapas: [...h.etapas].sort(),
+    explicacion: h.explicacion,
+  }))
+  // alta antes que baja; luego por tipo y valor
+  .sort((a, b) =>
+    (a.confianza === b.confianza ? 0 : a.confianza === 'alta' ? -1 : 1) ||
+    a.tipo.localeCompare(b.tipo) ||
+    a.valor.localeCompare(b.valor),
+  )
 
+const alta = lista.filter((h) => h.confianza === 'alta')
 const reporte = {
   pantalla: codigo,
   generado: new Date().toISOString(),
@@ -174,10 +201,14 @@ const reporte = {
     TAG_LITERAL: lista.filter((h) => h.tipo === 'TAG_LITERAL').length,
     SPANISH_LEAK: lista.filter((h) => h.tipo === 'SPANISH_LEAK').length,
     HARDCODED_ES: lista.filter((h) => h.tipo === 'HARDCODED_ES').length,
+    alta_confianza: alta.length,
+    baja_confianza: lista.length - alta.length,
   },
-  veredicto_determinista: lista.length === 0 ? 'SIN_HALLAZGOS_DETERMINISTAS' : 'HALLAZGOS',
+  // El veredicto determinista solo cuenta hallazgos de ALTA confianza. Los de baja
+  // (prosa/posible contenido de usuario) quedan para que el agente los confirme.
+  veredicto_determinista: alta.length === 0 ? 'SIN_HALLAZGOS_ALTA_CONFIANZA' : 'HALLAZGOS',
   hallazgos: lista,
-  nota: 'El juicio visual del agente puede sumar hallazgos (texto en imágenes, español de una sola palabra sin acento que no está en es.json, etc.).',
+  nota: 'Hallazgos de baja confianza = prosa larga que parece español pero podría ser contenido del usuario (p.ej. mensajes de chat). El agente debe confirmarlos visualmente. El juicio visual también puede SUMAR hallazgos que el texto no capta (tooltips en imágenes, etc.).',
 }
 
 const salida = join(RESULTS, `${codigo}-juez.json`)
