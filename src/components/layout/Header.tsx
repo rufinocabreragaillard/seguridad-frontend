@@ -46,9 +46,8 @@ export function Header({ titulo }: { titulo?: string }) {
       })
   }, [])
 
-  // Modal Mi Cuenta
+  // Modal Mis Preferencias
   const [modalCuenta, setModalCuenta] = useState(false)
-  const [tabCuenta, setTabCuenta] = useState<'datos' | 'preferencias'>('datos')
   const [formCuenta, setFormCuenta] = useState({
     nombre: '', telefono: '', alias: '', descripcion: '',
     sidebar_colapsado: false,
@@ -144,7 +143,6 @@ export function Header({ titulo }: { titulo?: string }) {
     })
     setErrorCuenta('')
     setExitoCuenta('')
-    setTabCuenta('datos')
     if (usuario) {
       usuariosApi.obtener(usuario.codigo_usuario).catch(() => null).then((u) => {
         if (u) {
@@ -388,99 +386,75 @@ export function Header({ titulo }: { titulo?: string }) {
         </div>
       </header>
 
-      {/* Modal Mi Cuenta (con tabs) */}
-      <Modal abierto={modalCuenta} alCerrar={() => setModalCuenta(false)} titulo={t('miCuentaTitulo', { email: usuario?.codigo_usuario || '' })} className="max-w-2xl">
-        <div className="flex flex-col gap-4">
-          {/* Pestañas */}
-          <div className="flex border-b border-borde -mx-1 overflow-x-auto">
-            {(['datos', 'preferencias'] as const).map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setTabCuenta(tab)}
-                className={`px-4 py-2 whitespace-nowrap tab-nav${tabCuenta === tab ? ' tab-nav-activo' : ''}`}
-              >
-                {tab === 'datos' ? t('tabDatos') : t('tabPreferencias')}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab Datos */}
-          {tabCuenta === 'datos' && (
-            <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-              <Input
-                etiqueta={t('alias')}
-                value={formCuenta.alias}
-                onChange={(e) => setFormCuenta({ ...formCuenta, alias: e.target.value })}
-                placeholder={t('aliasPlaceholder')}
+      {/* Modal Mis Preferencias */}
+      <Modal abierto={modalCuenta} alCerrar={() => setModalCuenta(false)} titulo={t('misPreferenciasTitulo', { email: usuario?.codigo_usuario || '' })} className="max-w-2xl">
+        <div className="flex flex-col gap-3">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-3">
+            <Input
+              etiqueta={t('alias')}
+              value={formCuenta.alias}
+              onChange={(e) => setFormCuenta({ ...formCuenta, alias: e.target.value })}
+              placeholder={t('aliasPlaceholder')}
+            />
+            <Input
+              etiqueta={t('nombreCompleto')}
+              value={formCuenta.nombre}
+              onChange={(e) => setFormCuenta({ ...formCuenta, nombre: e.target.value })}
+            />
+            <Input
+              etiqueta={t('telefono')}
+              value={formCuenta.telefono}
+              onChange={(e) => setFormCuenta({ ...formCuenta, telefono: e.target.value })}
+              placeholder={t('telefonoPlaceholder')}
+            />
+            <div />
+            <div className="col-span-2">
+              <Textarea
+                etiqueta={t('descripcion')}
+                value={formCuenta.descripcion}
+                onChange={(e) => setFormCuenta({ ...formCuenta, descripcion: e.target.value })}
+                rows={2}
               />
-              <Input
-                etiqueta={t('nombreCompleto')}
-                value={formCuenta.nombre}
-                onChange={(e) => setFormCuenta({ ...formCuenta, nombre: e.target.value })}
-              />
-              <Input
-                etiqueta={t('telefono')}
-                value={formCuenta.telefono}
-                onChange={(e) => setFormCuenta({ ...formCuenta, telefono: e.target.value })}
-                placeholder={t('telefonoPlaceholder')}
-              />
-              <div />
-              <div className="col-span-2">
-                <Textarea
-                  etiqueta={t('descripcion')}
-                  value={formCuenta.descripcion}
-                  onChange={(e) => setFormCuenta({ ...formCuenta, descripcion: e.target.value })}
-                  rows={2}
-                />
-              </div>
             </div>
-          )}
-
-          {/* Tab Preferencias */}
-          {tabCuenta === 'preferencias' && (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">{t('rolPrincipal')}</label>
-                <select
-                  value={formCuenta.id_rol_principal ?? ''}
-                  onChange={(e) => setFormCuenta({
-                    ...formCuenta,
-                    id_rol_principal: e.target.value ? Number(e.target.value) : null,
-                  })}
-                  className="w-full h-10 px-3 rounded-lg border border-borde bg-surface text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario/30 focus:border-primario"
-                >
-                  <option value="">{t('sinRolPrincipal')}</option>
-                  {rolesUsuario
-                    .filter((r) => r.codigo_grupo === usuario?.grupo_activo || !r.codigo_grupo)
-                    .map((r) => (
-                    <option key={`${r.codigo_grupo}-${r.id_rol}`} value={r.id_rol}>
-                      {r.nombre}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-texto-muted">{t('rolPorDefectoAyuda')}</p>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">{t('aplicacionPorDefecto')}</label>
-                <select
-                  value={formCuenta.aplicacion_por_defecto ?? ''}
-                  onChange={(e) => setFormCuenta({
-                    ...formCuenta,
-                    aplicacion_por_defecto: e.target.value,
-                  })}
-                  className="w-full h-10 px-3 rounded-lg border border-borde bg-surface text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario/30 focus:border-primario"
-                >
-                  <option value="">{t('sinAplicacionPorDefecto')}</option>
-                  {(usuario?.aplicaciones_disponibles || []).map((app) => (
-                    <option key={app.codigo_aplicacion} value={app.codigo_aplicacion}>
-                      {tr('aplicaciones', 'nombre', app.codigo_aplicacion, app.nombre)}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-xs text-texto-muted">{t('rolPorDefectoAyuda')}</p>
-              </div>
-
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-texto">{t('rolPrincipal')}</label>
+              <select
+                value={formCuenta.id_rol_principal ?? ''}
+                onChange={(e) => setFormCuenta({
+                  ...formCuenta,
+                  id_rol_principal: e.target.value ? Number(e.target.value) : null,
+                })}
+                className="w-full h-10 px-3 rounded-lg border border-borde bg-surface text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario/30 focus:border-primario"
+              >
+                <option value="">{t('sinRolPrincipal')}</option>
+                {rolesUsuario
+                  .filter((r) => r.codigo_grupo === usuario?.grupo_activo || !r.codigo_grupo)
+                  .map((r) => (
+                  <option key={`${r.codigo_grupo}-${r.id_rol}`} value={r.id_rol}>
+                    {r.nombre}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-texto">{t('aplicacionPorDefecto')}</label>
+              <select
+                value={formCuenta.aplicacion_por_defecto ?? ''}
+                onChange={(e) => setFormCuenta({
+                  ...formCuenta,
+                  aplicacion_por_defecto: e.target.value,
+                })}
+                className="w-full h-10 px-3 rounded-lg border border-borde bg-surface text-sm text-texto focus:outline-none focus:ring-2 focus:ring-primario/30 focus:border-primario"
+              >
+                <option value="">{t('sinAplicacionPorDefecto')}</option>
+                {(usuario?.aplicaciones_disponibles || []).map((app) => (
+                  <option key={app.codigo_aplicacion} value={app.codigo_aplicacion}>
+                    {tr('aplicaciones', 'nombre', app.codigo_aplicacion, app.nombre)}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="col-span-2 flex items-center justify-between gap-4 pt-1">
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -490,8 +464,7 @@ export function Header({ titulo }: { titulo?: string }) {
                 />
                 <span className="text-sm text-texto">{t('sidebarColapsado')}</span>
               </label>
-
-              <div className="flex items-center gap-3 pt-1">
+              <div className="flex items-center gap-2">
                 <span className="text-xs font-medium text-texto-muted uppercase tracking-wide">{t('idioma')}:</span>
                 <div className="flex gap-1 flex-wrap">
                   {(localesDinamicos.length > 0 ? localesDinamicos : localesFallback.map((codigo) => ({ codigo, nombre_nativo: codigo, nombre_es: codigo, es_base: codigo === 'es', orden: 0 }))).map((loc) => {
@@ -517,7 +490,7 @@ export function Header({ titulo }: { titulo?: string }) {
                 </div>
               </div>
             </div>
-          )}
+          </div>
 
           {errorCuenta && <div className="bg-red-50 border border-red-200 rounded-lg px-4 py-3"><p className="text-sm text-error">{errorCuenta}</p></div>}
           {exitoCuenta && <div className="bg-green-50 border border-green-200 rounded-lg px-4 py-3"><p className="text-sm text-exito">{exitoCuenta}</p></div>}
