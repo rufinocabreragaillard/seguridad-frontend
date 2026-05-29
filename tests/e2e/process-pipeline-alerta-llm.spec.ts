@@ -45,7 +45,8 @@ test.describe('process-pipeline — banner de alerta LLM', () => {
     });
 
     // Interceptar el POST de resolver para confirmar que el botón funciona.
-    await page.route('**/cola-estados-docs/alertas-llm/resolver', async (route) => {
+    // Usamos un matcher amplio porque axios añade query strings y hostnames cambian.
+    await page.route(/alertas-llm\/resolver/, async (route) => {
       resolverLlamado = true;
       await route.fulfill({
         status: 200,
@@ -87,18 +88,32 @@ test.describe('process-pipeline — banner de alerta LLM', () => {
     await expect(link).toHaveAttribute('href', 'https://ai.studio/spend');
     await expect(link).toHaveAttribute('target', '_blank');
 
-    // Botón "Ya lo resolví" llama al endpoint y oculta el banner
-    // (la siguiente carga de resumen-pipeline ya no tendrá alerta_llm si el
-    // backend la marcó resuelta — aquí mockeamos quitándola del próximo response).
+    // Botón "Ya lo resolví" llama al endpoint y oculta el banner.
+    // Cambio el mock de resumen-pipeline para que el siguiente poll devuelva
+    // alerta_llm=null, lo que debe ocultar el banner.
     await page.unroute('**/cola-estados-docs/resumen-pipeline**');
     await page.route('**/cola-estados-docs/resumen-pipeline**', async (route) => {
-      const response = await route.fetch();
-      const json = await response.json().catch(() => ({}));
-      await route.fulfill({ response, json: { ...json, alerta_llm: null } });
+      try {
+        const response = await route.fetch();
+        const json = await response.json().catch(() => ({}));
+        await route.fulfill({ response, json: { ...json, alerta_llm: null } });
+      } catch {
+        // Si la página ya cerró el contexto al final del test, ignorar
+        await route.abort().catch(() => undefined);
+      }
     });
 
+    // Click + esperar la respuesta del endpoint de resolución
+    const respResolver = page.waitForResponse(
+      (r) => /alertas-llm\/resolver/.test(r.url()) && r.request().method() === 'POST',
+      { timeout: 15000 },
+    );
     await banner.getByRole('button', { name: /ya lo resolv/i }).click();
+    await respResolver;
     expect(resolverLlamado).toBe(true);
     await expect(banner).toBeHidden({ timeout: 10000 });
+
+    // Limpiar routes pendientes antes de cerrar el contexto.
+    await page.unrouteAll({ behavior: 'ignoreErrors' });
   });
 });
