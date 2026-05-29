@@ -55,7 +55,10 @@ if (typeof document !== 'undefined') {
         if (!session) return
         const expira = session.expires_at ?? 0
         const ahora = Math.floor(Date.now() / 1000)
-        if ((expira - ahora) / 60 < 10) {
+        // Umbral 30 min (antes 10) — pestaña inactiva durante un procesamiento
+        // largo (>60 min) puede quedar con token recién expirado al volver al
+        // foco; refrescamos con holgura para no ver 401 en el polling.
+        if ((expira - ahora) / 60 < 30) {
           supabase.auth.refreshSession().catch(() => {})
         }
       }).catch(() => {})
@@ -73,6 +76,10 @@ if (typeof document !== 'undefined') {
  * - Si falla el refresh, se hace signOut local para forzar redirect a /login.
  */
 const TIMEOUT_TOKEN_MS = 4000
+// Para refreshSession damos más holgura: tras procesos largos (pipeline 60+ min)
+// con pestaña en background, la primera llamada a /token de gotrue puede tardar
+// >4s. 12s evita signOut prematuro que dejaba la UI atrapada en 401 loop.
+const TIMEOUT_REFRESH_MS = 12000
 let _tokenPromise: Promise<string | null> | null = null
 
 function conTimeout<T>(promesa: Promise<T>, ms: number, etiqueta: string): Promise<T> {
@@ -98,19 +105,28 @@ export async function obtenerToken(): Promise<string | null> {
         const ahora = Math.floor(Date.now() / 1000)
         const minutosRestantes = (expira - ahora) / 60
         if (minutosRestantes < 5) {
-          try {
-            const { data: { session: nueva } } = await conTimeout(
-              supabase.auth.refreshSession(),
-              TIMEOUT_TOKEN_MS,
-              'refreshSession',
-            )
-            return nueva?.access_token ?? null
-          } catch {
-            // refresh colgado/fallido tras inactividad larga: limpiar sesión local
-            // para que el próximo render del AuthContext redirija al login.
-            supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-            return null
+          // Reintento con backoff: el primer refresh tras inactividad larga
+          // puede tardar varios segundos (preflight + cold token endpoint).
+          // Antes de signOut, intentamos 2 veces con timeout amplio.
+          for (let intento = 0; intento < 2; intento++) {
+            try {
+              const { data: { session: nueva } } = await conTimeout(
+                supabase.auth.refreshSession(),
+                TIMEOUT_REFRESH_MS,
+                'refreshSession',
+              )
+              if (nueva?.access_token) return nueva.access_token
+            } catch {
+              if (intento === 0) {
+                await new Promise((r) => setTimeout(r, 500))
+                continue
+              }
+            }
           }
+          // Solo tras 2 fallos consecutivos: limpiar sesión local para que
+          // el próximo render del AuthContext redirija al login.
+          supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+          return null
         }
         return session.access_token
       } catch {

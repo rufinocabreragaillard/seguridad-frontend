@@ -42,6 +42,8 @@ export type OnCambioCola = (payload: ColaRealtimePayload) => void
 
 export function useColaRealtime(grupoActivo: string | null, onCambio: OnCambioCola) {
   const channelRef = useRef<RealtimeChannel | null>(null)
+  const reintentoRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const suscribirRef = useRef<() => void>(() => {})
   const grupoRef = useRef(grupoActivo)
   grupoRef.current = grupoActivo
 
@@ -79,15 +81,34 @@ export function useColaRealtime(grupoActivo: string | null, onCambio: OnCambioCo
         }
       )
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
-          console.warn('[useColaRealtime] Error al suscribirse al canal Realtime.')
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+          console.warn('[useColaRealtime] Canal Realtime caído:', status, '— reintentando en 5s')
+          // Reintento programado: el canal se pierde típicamente por token
+          // expirado durante procesos largos. Tras refresh JWT (interceptor 401)
+          // la re-suscripción debe levantar.
+          if (reintentoRef.current) clearTimeout(reintentoRef.current)
+          reintentoRef.current = setTimeout(() => {
+            reintentoRef.current = null
+            // Sólo re-suscribir si seguimos en el mismo grupo y no se hizo desuscribir
+            if (grupoRef.current && channelRef.current === canal) {
+              suscribirRef.current()
+            }
+          }, 5000)
         }
       })
 
     channelRef.current = canal
   }, [onCambio])
 
+  // Mantener ref al último `suscribir` para que el callback de reintento
+  // pueda invocarlo sin crear un ciclo de dependencias en el useCallback.
+  suscribirRef.current = suscribir
+
   const desuscribir = useCallback(() => {
+    if (reintentoRef.current) {
+      clearTimeout(reintentoRef.current)
+      reintentoRef.current = null
+    }
     if (channelRef.current) {
       supabase.removeChannel(channelRef.current)
       channelRef.current = null

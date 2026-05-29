@@ -187,17 +187,33 @@ function _esErrorResponse(data: unknown): data is {
 api.interceptors.response.use(
   (res) => res,
   async (error: AxiosError) => {
-    // 401: sesión expirada tras inactividad. Limpiar sesión local y redirigir
-    // al login para evitar que la UI se quede mostrando errores crípticos.
+    // 401: token expirado. Antes de mandar a /login intentamos refrescar la
+    // sesión de Supabase y reintentar el mismo request UNA vez. Esto evita el
+    // caso típico: pestaña en background durante un proceso largo (>60 min) →
+    // access_token expira → el refresh background de gotrue no corrió
+    // (visibility=hidden) → próxima request lleva token expirado → 401 → en
+    // vez de loopear con 401 y dejar la UI colgada, refrescamos y reintentamos.
     // Excepción: /auth/yo durante el bootstrap (AuthContext ya maneja su flujo).
     if (error.response?.status === 401 && typeof window !== 'undefined') {
       const url = error.config?.url || ''
       const enLogin = window.location.pathname === '/login'
       const esBootstrap = url.includes('/auth/yo')
-      if (!enLogin && !esBootstrap) {
+      const yaReintentado = (error.config as { _retry401?: boolean } | undefined)?._retry401
+      if (!enLogin && !esBootstrap && !yaReintentado && error.config) {
+        try {
+          const { supabase } = await import('./supabase')
+          const { data: { session } } = await supabase.auth.refreshSession()
+          if (session?.access_token) {
+            const cfg = error.config as typeof error.config & { _retry401?: boolean }
+            cfg._retry401 = true
+            cfg.headers = cfg.headers || {}
+            cfg.headers.Authorization = `Bearer ${session.access_token}`
+            return api.request(cfg)
+          }
+        } catch { /* si el refresh falla, caemos al redirect */ }
         const { supabase } = await import('./supabase')
         await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-        window.location.href = '/login'
+        window.location.replace('/login')
         return Promise.reject(new Error('Sesión expirada'))
       }
     }
