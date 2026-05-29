@@ -58,6 +58,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // lock de Supabase de 5s en la primera carga).
   const pathnameRef = useRef(pathname)
   useEffect(() => { pathnameRef.current = pathname }, [pathname])
+  // Ref a `usuario` para que el listener de onAuthStateChange pueda leerlo sin
+  // re-registrarse en cada cambio (lo que provocaba lock de Supabase de 5s).
+  const usuarioRef = useRef(usuario)
+  useEffect(() => { usuarioRef.current = usuario }, [usuario])
 
   // Purgar la base de datos legacy `cab-procesar-docs` de IndexedDB.
   // Solo se ejecuta una vez por sesión gracias al guard interno de `purgarBaseAntigua`.
@@ -203,7 +207,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             router.push('/login')
           }
         } else if (event === 'TOKEN_REFRESHED') {
-          if (session) {
+          // No recargar el contexto en cada refresh de token: gotrue refresca
+          // automáticamente cada ~55 min y también al volver de visibilidad
+          // oculta. Cada cargarContexto() dispara authApi.yo() con timeout 30s
+          // ×3 reintentos. Si el usuario clickea el sidebar justo después de
+          // volver de idle, esos requests compiten por el lock de Supabase y
+          // dejan la página en "Cargando…" hasta F5.
+          // Solo recargar contexto si por alguna razón perdimos el usuario.
+          if (session && !usuarioRef.current) {
             await cargarContexto()
           }
         }

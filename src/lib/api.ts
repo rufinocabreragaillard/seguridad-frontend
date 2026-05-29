@@ -202,7 +202,16 @@ api.interceptors.response.use(
       if (!enLogin && !esBootstrap && !yaReintentado && error.config) {
         try {
           const { supabase } = await import('./supabase')
-          const { data: { session } } = await supabase.auth.refreshSession()
+          // Timeout duro: si gotrue cuelga (preflight OPTIONS sin POST tras idle),
+          // sin esto la promesa nunca resuelve y el request original queda pendiente
+          // indefinidamente → la página queda "Cargando…" hasta F5.
+          const TIMEOUT_REFRESH_401_MS = 8000
+          const { data: { session } } = await Promise.race([
+            supabase.auth.refreshSession(),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error('timeout_refresh_401')), TIMEOUT_REFRESH_401_MS)
+            ),
+          ])
           if (session?.access_token) {
             const cfg = error.config as typeof error.config & { _retry401?: boolean }
             cfg._retry401 = true
@@ -210,7 +219,7 @@ api.interceptors.response.use(
             cfg.headers.Authorization = `Bearer ${session.access_token}`
             return api.request(cfg)
           }
-        } catch { /* si el refresh falla, caemos al redirect */ }
+        } catch { /* si el refresh falla o timeout, caemos al redirect */ }
         const { supabase } = await import('./supabase')
         await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
         window.location.replace('/login')
