@@ -1136,6 +1136,78 @@ export default function PaginaCargaDocsUsuario() {
       <PageHeader className="pr-28" i18nNamespace="processPipeline" />
 
       {/* ══════════════════════════════════════════════════════════════════════
+          Banner de alerta LLM (spending cap, quota agotada, api key inválida).
+          Solo aparece cuando el provider está rechazando llamadas y reintentar
+          no resuelve nada — pide al admin actuar (subir cap, rotar key, etc.).
+          La alerta se lee desde resumen-pipeline.alerta_llm y se marca como
+          resuelta cuando el admin pulsa el botón.
+      ══════════════════════════════════════════════════════════════════════ */}
+      {resumenPipeline?.alerta_llm && (
+        <div
+          data-testid="banner-alerta-llm"
+          data-categoria={resumenPipeline.alerta_llm.categoria}
+          className="mb-3 rounded-lg border-2 border-red-500 bg-red-50 p-4 shadow-sm"
+        >
+          <div className="flex items-start gap-3">
+            <div className="text-2xl leading-none" aria-hidden>⛔</div>
+            <div className="flex-1 min-w-0">
+              <h3 className="font-bold text-red-900 text-base">
+                {t('alertaLLM.titulo')}
+              </h3>
+              <p className="mt-1 text-sm text-red-900">
+                <span className="font-semibold">{resumenPipeline.alerta_llm.proveedor}</span>
+                {' · '}
+                <span className="font-mono text-xs">{resumenPipeline.alerta_llm.modelo}</span>
+                {' · '}
+                <span>{t(`alertaLLM.categoria.${resumenPipeline.alerta_llm.categoria}`)}</span>
+              </p>
+              <p className="mt-2 text-sm text-red-800 break-words">
+                {resumenPipeline.alerta_llm.mensaje}
+              </p>
+              {resumenPipeline.alerta_llm.sugerencia && (
+                <p className="mt-2 text-sm text-red-900 font-medium">
+                  💡 {resumenPipeline.alerta_llm.sugerencia}
+                </p>
+              )}
+              <div className="mt-3 flex flex-wrap gap-2 items-center">
+                {resumenPipeline.alerta_llm.url_ayuda && (
+                  <a
+                    href={resumenPipeline.alerta_llm.url_ayuda}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 px-3 py-1.5 bg-red-600 text-white text-sm font-medium rounded hover:bg-red-700"
+                  >
+                    {t('alertaLLM.botonAbrirConsola')} ↗
+                  </a>
+                )}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (!resumenPipeline?.alerta_llm) return
+                    try {
+                      await colaEstadosDocsApi.resolverAlertaLLM(
+                        resumenPipeline.alerta_llm.proveedor,
+                        resumenPipeline.alerta_llm.modelo,
+                        resumenPipeline.alerta_llm.categoria,
+                      )
+                      const r = await colaEstadosDocsApi.resumenPipeline(120)
+                      setResumenPipeline(r)
+                    } catch { /* ignorar */ }
+                  }}
+                  className="inline-flex items-center gap-1 px-3 py-1.5 bg-white border border-red-600 text-red-700 text-sm font-medium rounded hover:bg-red-50"
+                >
+                  {t('alertaLLM.botonMarcarResuelto')}
+                </button>
+                <span className="text-xs text-red-700">
+                  {t('alertaLLM.apariciones', { n: resumenPipeline.alerta_llm.total_apariciones })}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════════════════
           Contenido: Documentos
       ══════════════════════════════════════════════════════════════════════ */}
       <div className="flex flex-col gap-4">

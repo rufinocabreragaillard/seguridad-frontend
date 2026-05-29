@@ -1398,6 +1398,20 @@
   "processPipeline": {
     "titulo": "Indexar Documentos",
     "subtitulo": "Indexa tus ubicaciones y tus documentos",
+    "alertaLLM": {
+      "titulo": "El proveedor de IA está rechazando las llamadas",
+      "categoria": {
+        "spending_cap": "Tope de gasto mensual superado",
+        "quota": "Cuota agotada",
+        "api_key": "API key inválida o revocada",
+        "billing": "Facturación no habilitada",
+        "permission": "Permiso denegado",
+        "desconocido": "Error fatal del proveedor"
+      },
+      "botonAbrirConsola": "Abrir consola del proveedor",
+      "botonMarcarResuelto": "Ya lo resolví",
+      "apariciones": "{n} llamadas afectadas en los últimos 30 min"
+    },
     "tabUbicaciones": "Ubicaciones",
     "tabDocumentos": "Documentos",
     "sincronizarTitulo": "Sincronizar estructura de carpetas",

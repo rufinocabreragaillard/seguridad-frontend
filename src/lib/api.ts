@@ -1611,6 +1611,8 @@ export const colaEstadosDocsApi = {
     api.post<ColaEstadoDoc[]>('/cola-estados-docs/por-ids', { ids }).then((r) => r.data),
   resumenPipeline: (ventanaSeg = 120) =>
     api.get<ResumenPipeline>('/cola-estados-docs/resumen-pipeline', { params: { ventana_seg: ventanaSeg } }).then((r) => r.data),
+  resolverAlertaLLM: (proveedor: string, modelo: string, categoria: string) =>
+    api.post<{ resuelto: boolean }>('/cola-estados-docs/alertas-llm/resolver', { proveedor, modelo, categoria }).then((r) => r.data),
   limpiarCompletados: (estadoDestino?: string) =>
     api.post<{ eliminados: number }>(
       '/cola-estados-docs/limpiar-completados',
@@ -1642,11 +1644,24 @@ export interface DocEnProceso {
   codigo_estado_doc_destino: string
 }
 
+export interface AlertaLLM {
+  proveedor: string
+  modelo: string
+  categoria: 'spending_cap' | 'quota' | 'api_key' | 'billing' | 'permission' | 'desconocido'
+  mensaje: string
+  sugerencia: string
+  url_ayuda?: string | null
+  primera_aparicion: string
+  ultima_aparicion: string
+  total_apariciones: number
+}
+
 export interface ResumenPipeline {
   por_destino: Record<string, ResumenFase>
   ventana_velocidad_seg: number
   paquete: ResumenPaquete
   doc_en_proceso?: DocEnProceso | null
+  alerta_llm?: AlertaLLM | null
 }
 
 // ─── SQL Ejecutados ─────────────────────────────────────────────────────────
