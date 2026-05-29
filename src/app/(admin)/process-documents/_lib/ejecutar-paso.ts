@@ -473,13 +473,10 @@ export async function ejecutarPasoBackend(opts: {
     opcionesExtra ?? null,
   )
 
-  const pendientesFiltrados = await colaEstadosDocsApi.listar('PENDIENTE', estadoDestino)
-  const docIds = new Set(docs.map((d) => d.codigo_documento))
-  const misItems = pendientesFiltrados.filter((p) => docIds.has(p.codigo_documento))
-
+  // El procesamiento real lo hace una BackgroundTask autónoma del backend (worker
+  // con lease): drena la cola moviendo los ítems PENDIENTE→EN_PROCESO→COMPLETADO
+  // por su cuenta. La lanzamos y luego MONITOREAMOS su avance.
   try { await colaEstadosDocsApi.ejecutar(estadoDestino, codigoProceso || undefined) } catch { /* continuar */ }
-
-  const misIdsSet = new Set(misItems.map((p) => p.id_cola))
 
   const esperarCambio = () => new Promise<void>((resolve) => {
     // Timeout reducido a 5s: si el realtime no llega, polling frecuente evita bloqueos
@@ -487,26 +484,36 @@ export async function ejecutarPasoBackend(opts: {
     resolveColaRef.current = () => { clearTimeout(timeoutId); resolve() }
   })
 
+  // Progreso autoritativo: contamos sobre el estado REAL de la fase (destino) que
+  // reporta `resumen-pipeline` —la misma fuente que usa el resto de la pantalla—,
+  // y no sobre un snapshot de id_cola. El worker autónomo mueve y completa ítems
+  // por su cuenta, y entre paquetes se borran los COMPLETADO: un snapshot de ids se
+  // desincronizaba y dejaba el contador clavado en 0 mientras el backend avanzaba.
+  const total = docs.length
   const refrescar = async (): Promise<number> => {
-    if (misIdsSet.size === 0) return 0
-    const actual = await colaEstadosDocsApi.porIds(Array.from(misIdsSet))
-    const activos = actual.filter((c) => c.estado_cola === 'PENDIENTE' || c.estado_cola === 'EN_PROCESO').length
-    const completados = actual.filter((c) => c.estado_cola === 'COMPLETADO').length
-    onProgreso?.(completados, docs.length)
-    return activos
+    const resumen = await colaEstadosDocsApi.resumenPipeline(120)
+    const fase = resumen?.por_destino?.[estadoDestino]
+    if (!fase) return 0
+    onProgreso?.(Math.min(fase.completado, total), total)
+    return fase.pendiente + fase.en_proceso
   }
 
+  // Primera lectura: si no hay nada activo (todo ya avanzó o no se encoló nada),
+  // damos una pasada de gracia —el worker puede no haber marcado EN_PROCESO aún—
+  // antes de dar el paso por terminado, para no cerrarlo por una lectura prematura.
   try {
-    const activos = await refrescar()
-    if (activos === 0) return true
-  } catch { /* continuar */ }
+    if (await refrescar() === 0) {
+      await esperarCambio()
+      if (abortRef.current) return false
+      if (await refrescar() === 0) return !abortRef.current
+    }
+  } catch { /* continuar al loop de monitoreo */ }
 
   while (!abortRef.current) {
     await esperarCambio()
     if (abortRef.current) return false
     try {
-      const activos = await refrescar()
-      if (activos === 0) break
+      if (await refrescar() === 0) break
     } catch { /* reintentar */ }
   }
 
