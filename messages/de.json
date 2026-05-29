@@ -440,7 +440,7 @@
   },
   "positionsExtra": {
     "sinSuperiorRaiz": "— Ohne übergeordnetes Element (Wurzel) —",
-    "cargoPadreAyuda": "Übergeordnete Position in der Hierarchie. Leer = Wurzelebene."
+    "perfilPadreAyuda": "Übergeordnete Position in der Hierarchie. Leer = Wurzelebene."
   },
   "functionsExtra": {
     "traduccionDesactivada": "Die Funktion \"{nombre}\" hat die Übersetzung deaktiviert (Feld \"Übersetzen\" = false).",
@@ -820,8 +820,8 @@
     "titulo": "Positionen",
     "subtitulo": "Organisatorische Positionen der aktiven Gruppe",
     "buscarPlaceholder": "Nach Code, Name oder Alias suchen...",
-    "nuevoCargo": "Neue Position",
-    "sinCargos": "Keine Positionen gefunden",
+    "nuevoPerfil": "Neue Position",
+    "sinPerfiles": "Keine Positionen gefunden",
     "colNombre": "Name",
     "colAlias": "Alias",
     "colEntidad": "Entität",
@@ -2022,7 +2022,7 @@
     "featureConversacionDocumentos": "Konversation mit Dokumenten",
     "featureFocosLenguajeNatural": "Fokus auf natürlicher Sprache",
     "featureControlPorArea": "Kontrolle nach Bereich",
-    "featureControlPorCargo": "Kontrolle nach Position",
+    "featureControlPorPerfil": "Kontrolle nach Position",
     "featureServidorClienteLocal": "Lokaler Client-Server",
     "featurePersonalizacion": "Personalisierung",
     "featureEleccionLlms": "Auswahl der LLMs",

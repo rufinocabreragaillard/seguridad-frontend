@@ -30,7 +30,7 @@ test.describe.serial('Mi Cuenta (/my-account)', () => {
     // Features copiadas del sitio comercial (planes.mjs). Verifica un par de
     // bullets representativos que NO son límites numéricos.
     await expect(page.locator('text=Client LM: la indexación no sale de tu red').first()).toBeVisible()
-    await expect(page.locator('text=Control de acceso por área o cargo').first()).toBeVisible()
+    await expect(page.locator('text=Control de acceso por área o perfil').first()).toBeVisible()
   })
 
   test('resalta Business como plan recomendado (espejo del sitio comercial)', async ({ page }) => {

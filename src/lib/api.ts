@@ -51,8 +51,8 @@ import type {
   SqlEjecutado,
   ChatConversacion,
   ChatConversacionDetalle,
-  Cargo,
-  RolCargo,
+  Perfil,
+  RolPerfil,
   LocaleSoportado,
   EstadoTraducciones,
   TablaTraducible,
@@ -1920,45 +1920,45 @@ export const chatApi = {
   },
 }
 
-// ─── Cargos ───────────────────────────────────────────────────────────────────
+// ─── Perfiles ───────────────────────────────────────────────────────────────────
 
-export const cargosApi = {
+export const perfilesApi = {
   listar: (params?: { codigo_entidad?: string }) =>
-    api.get<Cargo[]>('/cargos', { params }).then((r) => r.data),
+    api.get<Perfil[]>('/perfiles', { params }).then((r) => r.data),
   crear: (datos: Record<string, unknown>) =>
-    api.post<Cargo>('/cargos', datos).then((r) => r.data),
-  actualizar: (codigo_cargo: string, datos: Record<string, unknown>) =>
-    api.put<Cargo>(`/cargos/${codigo_cargo}`, datos).then((r) => r.data),
-  eliminar: (codigo_cargo: string) => api.delete(`/cargos/${codigo_cargo}`),
-  listarRoles: (codigo_cargo: string) =>
-    api.get<RolCargo[]>(`/cargos/${codigo_cargo}/roles`).then((r) => r.data),
-  asignarRol: (codigo_cargo: string, id_rol: number) =>
-    api.post(`/cargos/${codigo_cargo}/roles/${id_rol}`).then((r) => r.data),
-  quitarRol: (codigo_cargo: string, id_rol: number) =>
-    api.delete(`/cargos/${codigo_cargo}/roles/${id_rol}`).then((r) => r.data),
-  reordenarRoles: (codigo_cargo: string, orden: { id_rol: number; orden: number }[]) =>
-    api.put(`/cargos/${codigo_cargo}/roles/reordenar`, orden).then((r) => r.data),
+    api.post<Perfil>('/perfiles', datos).then((r) => r.data),
+  actualizar: (codigo_perfil: string, datos: Record<string, unknown>) =>
+    api.put<Perfil>(`/perfiles/${codigo_perfil}`, datos).then((r) => r.data),
+  eliminar: (codigo_perfil: string) => api.delete(`/perfiles/${codigo_perfil}`),
+  listarRoles: (codigo_perfil: string) =>
+    api.get<RolPerfil[]>(`/perfiles/${codigo_perfil}/roles`).then((r) => r.data),
+  asignarRol: (codigo_perfil: string, id_rol: number) =>
+    api.post(`/perfiles/${codigo_perfil}/roles/${id_rol}`).then((r) => r.data),
+  quitarRol: (codigo_perfil: string, id_rol: number) =>
+    api.delete(`/perfiles/${codigo_perfil}/roles/${id_rol}`).then((r) => r.data),
+  reordenarRoles: (codigo_perfil: string, orden: { id_rol: number; orden: number }[]) =>
+    api.put(`/perfiles/${codigo_perfil}/roles/reordenar`, orden).then((r) => r.data),
 }
 
-// ─── Cargos Admin (SISTEMA, codigo_grupo IS NULL) ─────────────────────────────
+// ─── Perfiles Admin (SISTEMA, codigo_grupo IS NULL) ─────────────────────────────
 
-export const cargosAdminApi = {
-  listar: () => api.get<Cargo[]>('/cargos-admin').then((r) => r.data),
-  crear: (datos: { codigo_cargo?: string; nombre_cargo: string; alias?: string; descripcion?: string; prompt_insert?: string; prompt_update?: string; system_prompt?: string; python_insert?: string; python_update?: string; python_editado_manual?: boolean; javascript?: string; javascript_editado_manual?: boolean }) =>
-    api.post<Cargo>('/cargos-admin', datos).then((r) => r.data),
-  actualizar: (codigo_cargo: string, datos: Record<string, unknown>) =>
-    api.put<Cargo>(`/cargos-admin/${codigo_cargo}`, datos).then((r) => r.data),
-  eliminar: (codigo_cargo: string) => api.delete(`/cargos-admin/${codigo_cargo}`),
-  listarRoles: (codigo_cargo: string) =>
-    api.get<RolCargo[]>(`/cargos-admin/${codigo_cargo}/roles`).then((r) => r.data),
-  asignarRol: (codigo_cargo: string, id_rol: number) =>
-    api.post(`/cargos-admin/${codigo_cargo}/roles/${id_rol}`).then((r) => r.data),
-  quitarRol: (codigo_cargo: string, id_rol: number) =>
-    api.delete(`/cargos-admin/${codigo_cargo}/roles/${id_rol}`).then((r) => r.data),
-  reordenarRoles: (codigo_cargo: string, orden: { id_rol: number; orden: number }[]) =>
-    api.put(`/cargos-admin/${codigo_cargo}/roles/reordenar`, orden).then((r) => r.data),
-  generarMd: (codigo_cargo: string) =>
-    api.post<{ md: string }>(`/cargos-admin/${codigo_cargo}/generar-md`).then((r) => r.data),
+export const perfilesAdminApi = {
+  listar: () => api.get<Perfil[]>('/perfiles-admin').then((r) => r.data),
+  crear: (datos: { codigo_perfil?: string; nombre_perfil: string; alias?: string; descripcion?: string; prompt_insert?: string; prompt_update?: string; system_prompt?: string; python_insert?: string; python_update?: string; python_editado_manual?: boolean; javascript?: string; javascript_editado_manual?: boolean }) =>
+    api.post<Perfil>('/perfiles-admin', datos).then((r) => r.data),
+  actualizar: (codigo_perfil: string, datos: Record<string, unknown>) =>
+    api.put<Perfil>(`/perfiles-admin/${codigo_perfil}`, datos).then((r) => r.data),
+  eliminar: (codigo_perfil: string) => api.delete(`/perfiles-admin/${codigo_perfil}`),
+  listarRoles: (codigo_perfil: string) =>
+    api.get<RolPerfil[]>(`/perfiles-admin/${codigo_perfil}/roles`).then((r) => r.data),
+  asignarRol: (codigo_perfil: string, id_rol: number) =>
+    api.post(`/perfiles-admin/${codigo_perfil}/roles/${id_rol}`).then((r) => r.data),
+  quitarRol: (codigo_perfil: string, id_rol: number) =>
+    api.delete(`/perfiles-admin/${codigo_perfil}/roles/${id_rol}`).then((r) => r.data),
+  reordenarRoles: (codigo_perfil: string, orden: { id_rol: number; orden: number }[]) =>
+    api.put(`/perfiles-admin/${codigo_perfil}/roles/reordenar`, orden).then((r) => r.data),
+  generarMd: (codigo_perfil: string) =>
+    api.post<{ md: string }>(`/perfiles-admin/${codigo_perfil}/generar-md`).then((r) => r.data),
 }
 
 // ─── Traducciones ─────────────────────────────────────────────────────────────

@@ -440,7 +440,7 @@
   },
   "positionsExtra": {
     "sinSuperiorRaiz": "— Sans supérieur (racine) —",
-    "cargoPadreAyuda": "Poste parent dans la hiérarchie. Vide = niveau racine."
+    "perfilPadreAyuda": "Poste parent dans la hiérarchie. Vide = niveau racine."
   },
   "functionsExtra": {
     "traduccionDesactivada": "La fonction \"{nombre}\" a la traduction désactivée (champ \"traduire\" = false).",
@@ -820,8 +820,8 @@
     "titulo": "Postes",
     "subtitulo": "Postes organisationnels du groupe actif",
     "buscarPlaceholder": "Rechercher par code, nom ou alias...",
-    "nuevoCargo": "Nouveau poste",
-    "sinCargos": "Aucun poste trouvé",
+    "nuevoPerfil": "Nouveau poste",
+    "sinPerfiles": "Aucun poste trouvé",
     "colNombre": "Nom",
     "colAlias": "Alias",
     "colEntidad": "Entité",
@@ -2022,7 +2022,7 @@
     "featureConversacionDocumentos": "Conversation avec les documents",
     "featureFocosLenguajeNatural": "Focus sur le langage naturel",
     "featureControlPorArea": "Contrôle par zone",
-    "featureControlPorCargo": "Contrôle par fonction",
+    "featureControlPorPerfil": "Contrôle par fonction",
     "featureServidorClienteLocal": "Serveur client local",
     "featurePersonalizacion": "Personnalisation",
     "featureEleccionLlms": "Choix des LLM",

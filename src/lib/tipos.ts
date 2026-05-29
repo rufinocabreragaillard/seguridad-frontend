@@ -69,9 +69,9 @@ export interface UsuarioContexto {
   nombre_grupo?: string
   alias_grupo?: string | null
   alias_entidad?: string | null
-  codigo_cargo?: string | null
-  nombre_cargo?: string | null
-  alias_cargo?: string | null
+  codigo_perfil?: string | null
+  nombre_perfil?: string | null
+  alias_perfil?: string | null
   codigo_area?: string | null
   nombre_area?: string | null
   alias_area?: string | null
@@ -949,14 +949,14 @@ export interface UbicacionDoc {
   system_prompt?: string | null
 }
 
-// ─── Cargos ───────────────────────────────────────────────────────────────────
+// ─── Perfiles ───────────────────────────────────────────────────────────────────
 
-export interface Cargo {
+export interface Perfil {
   codigo_grupo: string
-  codigo_entidad: string          // '' = cargo de grupo
-  codigo_cargo: string
-  codigo_cargo_superior?: string | null  // null = raíz del árbol
-  nombre_cargo: string
+  codigo_entidad: string          // '' = perfil de grupo
+  codigo_perfil: string
+  codigo_perfil_superior?: string | null  // null = raíz del árbol
+  nombre_perfil: string
   alias: string
   descripcion?: string | null
   prompt_insert?: string | null
@@ -966,8 +966,8 @@ export interface Cargo {
   system_prompt?: string | null
 }
 
-export interface RolCargo {
-  codigo_cargo: string
+export interface RolPerfil {
+  codigo_perfil: string
   id_rol: number
   orden: number
   roles?: {

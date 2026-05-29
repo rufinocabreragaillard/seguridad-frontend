@@ -20,14 +20,14 @@ import {
   columnaDescripcion,
 } from '@/components/ui/tabla-crud'
 import { SortableDndContext, SortableListItem } from '@/components/ui/sortable'
-import { cargosAdminApi, rolesApi, promptsApi } from '@/lib/api'
-import type { Cargo, RolCargo, Rol } from '@/lib/tipos'
+import { perfilesAdminApi, rolesApi, promptsApi } from '@/lib/api'
+import type { Perfil, RolPerfil, Rol } from '@/lib/tipos'
 import { useCrudPage } from '@/hooks/useCrudPage'
 import { BotonChat } from '@/components/ui/boton-chat'
 
-type FormCargo = {
-  codigo_cargo: string
-  nombre_cargo: string
+type FormPerfil = {
+  codigo_perfil: string
+  nombre_perfil: string
   alias: string
   descripcion: string
   prompt_insert: string
@@ -43,7 +43,7 @@ type FormCargo = {
 
 type TabModal = 'datos' | 'roles' | 'system_prompt' | 'programacion_insert' | 'programacion_update' | 'md'
 
-export default function PaginaCargosAdmin() {
+export default function PaginaPerfilesAdmin() {
   const t = useTranslations('positions')
   const tc = useTranslations('common')
 
@@ -53,12 +53,12 @@ export default function PaginaCargosAdmin() {
     rolesApi.listar().then(setRoles).catch(() => {})
   }, [])
 
-  const crud = useCrudPage<Cargo, FormCargo>({
-    cargarFn: () => cargosAdminApi.listar(),
+  const crud = useCrudPage<Perfil, FormPerfil>({
+    cargarFn: () => perfilesAdminApi.listar(),
     crearFn: (f) =>
-      cargosAdminApi.crear({
-        codigo_cargo: f.codigo_cargo.trim() || undefined,
-        nombre_cargo: f.nombre_cargo.trim(),
+      perfilesAdminApi.crear({
+        codigo_perfil: f.codigo_perfil.trim() || undefined,
+        nombre_perfil: f.nombre_perfil.trim(),
         alias: f.alias.trim() || undefined,
         descripcion: f.descripcion.trim() || undefined,
         prompt_insert: f.prompt_insert.trim() || undefined,
@@ -71,8 +71,8 @@ export default function PaginaCargosAdmin() {
         javascript_editado_manual: f.javascript_editado_manual,
       } as Record<string, unknown>),
     actualizarFn: (id, f) =>
-      cargosAdminApi.actualizar(id, {
-        nombre_cargo: (f.nombre_cargo ?? '').trim(),
+      perfilesAdminApi.actualizar(id, {
+        nombre_perfil: (f.nombre_perfil ?? '').trim(),
         alias: (f.alias ?? '').trim() || undefined,
         descripcion: (f.descripcion ?? '').trim() || undefined,
         prompt_insert: (f.prompt_insert ?? '').trim() || undefined,
@@ -84,15 +84,15 @@ export default function PaginaCargosAdmin() {
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
       } as Record<string, unknown>),
-    eliminarFn: async (id: string) => { await cargosAdminApi.eliminar(id) },
-    getId: (c) => c.codigo_cargo,
-    camposBusqueda: (c) => [c.codigo_cargo, c.nombre_cargo, c.alias],
-    formInicial: { codigo_cargo: '', nombre_cargo: '', alias: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' },
+    eliminarFn: async (id: string) => { await perfilesAdminApi.eliminar(id) },
+    getId: (c) => c.codigo_perfil,
+    camposBusqueda: (c) => [c.codigo_perfil, c.nombre_perfil, c.alias],
+    formInicial: { codigo_perfil: '', nombre_perfil: '', alias: '', descripcion: '', prompt_insert: '', prompt_update: '', system_prompt: '', python_insert: '', python_update: '', javascript: '', python_editado_manual: false, javascript_editado_manual: false, md: '' },
     itemToForm: (c) => {
       const c2 = c as unknown as Record<string, unknown>
       return {
-        codigo_cargo: c.codigo_cargo,
-        nombre_cargo: c.nombre_cargo,
+        codigo_perfil: c.codigo_perfil,
+        nombre_perfil: c.nombre_perfil,
         alias: c.alias ?? '',
         descripcion: c.descripcion ?? '',
         prompt_insert: c2.prompt_insert as string ?? '',
@@ -111,16 +111,16 @@ export default function PaginaCargosAdmin() {
   const [tabActiva, setTabActiva] = useState<TabModal>('datos')
 
   const abrirNuevo = () => { setTabActiva('datos'); crud.abrirNuevo() }
-  const abrirEditar = (c: Cargo) => {
+  const abrirEditar = (c: Perfil) => {
     setTabActiva('datos')
-    setRolesCargo([])
+    setRolesPerfil([])
     setMensajeMd(null)
     crud.abrirEditar(c)
-    cargarRolesCargo(c.codigo_cargo)
+    cargarRolesPerfil(c.codigo_perfil)
   }
 
-  // ── Roles del cargo ─────────────────────────────────────────────────────────
-  const [rolesCargo, setRolesCargo] = useState<RolCargo[]>([])
+  // ── Roles del perfil ─────────────────────────────────────────────────────────
+  const [rolesPerfil, setRolesPerfil] = useState<RolPerfil[]>([])
   const [cargandoRoles, setCargandoRoles] = useState(false)
   const [busquedaRol, setBusquedaRol] = useState('')
   const [rolNuevo, setRolNuevo] = useState<number | null>(null)
@@ -132,10 +132,10 @@ export default function PaginaCargosAdmin() {
   const [sincronizandoMd, setSincronizandoMd] = useState(false)
   const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
 
-  const cargarRolesCargo = useCallback(async (codigo_cargo: string) => {
+  const cargarRolesPerfil = useCallback(async (codigo_perfil: string) => {
     setCargandoRoles(true)
-    try { setRolesCargo(await cargosAdminApi.listarRoles(codigo_cargo)) }
-    catch { setRolesCargo([]) }
+    try { setRolesPerfil(await perfilesAdminApi.listarRoles(codigo_perfil)) }
+    catch { setRolesPerfil([]) }
     finally { setCargandoRoles(false) }
   }, [])
 
@@ -143,7 +143,7 @@ export default function PaginaCargosAdmin() {
     .filter(
       (r) =>
         r.codigo_grupo == null &&
-        !rolesCargo.some((rc) => rc.id_rol === r.id_rol),
+        !rolesPerfil.some((rc) => rc.id_rol === r.id_rol),
     )
     .sort((a, b) => {
       const na = a.codigo_aplicacion_origen ?? '\uffff'
@@ -163,10 +163,10 @@ export default function PaginaCargosAdmin() {
     setAsignandoRol(true)
     setErrorRol('')
     try {
-      await cargosAdminApi.asignarRol(crud.editando.codigo_cargo, rolNuevo)
+      await perfilesAdminApi.asignarRol(crud.editando.codigo_perfil, rolNuevo)
       setRolNuevo(null)
       setBusquedaRol('')
-      await cargarRolesCargo(crud.editando.codigo_cargo)
+      await cargarRolesPerfil(crud.editando.codigo_perfil)
     } catch (e) { setErrorRol(e instanceof Error ? e.message : t('errorAlAsignarRol')) }
     finally { setAsignandoRol(false) }
   }
@@ -175,25 +175,25 @@ export default function PaginaCargosAdmin() {
     if (!crud.editando) return
     setErrorRol('')
     try {
-      await cargosAdminApi.quitarRol(crud.editando.codigo_cargo, id_rol)
-      await cargarRolesCargo(crud.editando.codigo_cargo)
+      await perfilesAdminApi.quitarRol(crud.editando.codigo_perfil, id_rol)
+      await cargarRolesPerfil(crud.editando.codigo_perfil)
     } catch (e) { setErrorRol(e instanceof Error ? e.message : t('errorAlQuitarRol')) }
   }
 
-  const reordenarRolesCargo = async (nuevos: typeof rolesCargo) => {
-    setRolesCargo(nuevos)
-    try { await cargosAdminApi.reordenarRoles(crud.editando!.codigo_cargo, nuevos.map(r => ({ id_rol: r.id_rol, orden: r.orden ?? 0 }))) }
-    catch { if (crud.editando) cargarRolesCargo(crud.editando.codigo_cargo) }
+  const reordenarRolesPerfil = async (nuevos: typeof rolesPerfil) => {
+    setRolesPerfil(nuevos)
+    try { await perfilesAdminApi.reordenarRoles(crud.editando!.codigo_perfil, nuevos.map(r => ({ id_rol: r.id_rol, orden: r.orden ?? 0 }))) }
+    catch { if (crud.editando) cargarRolesPerfil(crud.editando.codigo_perfil) }
   }
 
   const filtradosOrdenados = [...crud.filtrados].sort((a, b) =>
-    a.nombre_cargo.localeCompare(b.nombre_cargo),
+    a.nombre_perfil.localeCompare(b.nombre_perfil),
   )
 
   const TABS_MODAL: { key: TabModal; label: string }[] = [
     { key: 'datos', label: t('tabDatos') },
     ...(crud.editando ? [
-      { key: 'roles' as TabModal, label: `${t('tabRoles')} (${rolesCargo.length})` },
+      { key: 'roles' as TabModal, label: `${t('tabRoles')} (${rolesPerfil.length})` },
       { key: 'system_prompt' as TabModal, label: t('tabSystemPrompt') },
       { key: 'programacion_insert' as TabModal, label: 'Prog. Insert' },
       { key: 'programacion_update' as TabModal, label: 'Prog. Update' },
@@ -211,36 +211,36 @@ export default function PaginaCargosAdmin() {
         onBusqueda={crud.setBusqueda}
         placeholderBusqueda={t('buscarPlaceholder')}
         onNuevo={abrirNuevo}
-        textoNuevo={t('nuevoCargo')}
+        textoNuevo={t('nuevoPerfil')}
         excelDatos={filtradosOrdenados as unknown as Record<string, unknown>[]}
         excelColumnas={[
-          { titulo: t('colCodigo'), campo: 'codigo_cargo' },
-          { titulo: t('colNombre'), campo: 'nombre_cargo' },
+          { titulo: t('colCodigo'), campo: 'codigo_perfil' },
+          { titulo: t('colNombre'), campo: 'nombre_perfil' },
           { titulo: t('colAlias'), campo: 'alias' },
           { titulo: t('colDescripcion'), campo: 'descripcion' },
         ]}
-        excelNombreArchivo="cargos-admin"
+        excelNombreArchivo="perfiles-admin"
       />
 
       <TablaCrud
         columnas={[
-          columnaNombre<Cargo>(t('colNombre'), (c) => c.nombre_cargo),
-          { titulo: t('colAlias'), render: (c: Cargo) => c.alias || '—' },
-          columnaDescripcion<Cargo>(t('colDescripcion'), (c) => c.descripcion),
-          columnaCodigo<Cargo>(t('colCodigo'), (c) => c.codigo_cargo),
+          columnaNombre<Perfil>(t('colNombre'), (c) => c.nombre_perfil),
+          { titulo: t('colAlias'), render: (c: Perfil) => c.alias || '—' },
+          columnaDescripcion<Perfil>(t('colDescripcion'), (c) => c.descripcion),
+          columnaCodigo<Perfil>(t('colCodigo'), (c) => c.codigo_perfil),
         ]}
         items={filtradosOrdenados}
         cargando={crud.cargando}
-        getId={(c) => c.codigo_cargo}
+        getId={(c) => c.codigo_perfil}
         onEditar={abrirEditar}
         onEliminar={crud.setConfirmacion}
-        textoVacio={t('sinCargos')}
+        textoVacio={t('sinPerfiles')}
       />
 
       <Modal
         abierto={crud.modal}
         alCerrar={crud.cerrarModal}
-        titulo={crud.editando ? `Editar Cargo: ${crud.editando.nombre_cargo} - ${crud.editando.codigo_cargo}` : 'Nuevo cargo'}
+        titulo={crud.editando ? `Editar Perfil: ${crud.editando.nombre_perfil} - ${crud.editando.codigo_perfil}` : 'Nuevo perfil'}
         className="max-w-3xl"
       >
         <div className="flex flex-col gap-0 min-w-[520px] min-h-[420px]">
@@ -263,14 +263,14 @@ export default function PaginaCargosAdmin() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {crud.editando && (
                   <div className="sm:col-span-2">
-                    <Input etiqueta={t('etiquetaCodigo')} value={crud.form.codigo_cargo} onChange={() => {}} disabled />
+                    <Input etiqueta={t('etiquetaCodigo')} value={crud.form.codigo_perfil} onChange={() => {}} disabled />
                   </div>
                 )}
 
                 <Input
                   etiqueta={t('etiquetaNombre')}
-                  value={crud.form.nombre_cargo}
-                  onChange={(e) => crud.updateForm('nombre_cargo', e.target.value)}
+                  value={crud.form.nombre_perfil}
+                  onChange={(e) => crud.updateForm('nombre_perfil', e.target.value)}
                   placeholder={t('placeholderNombre')}
                   autoFocus
                 />
@@ -303,14 +303,14 @@ export default function PaginaCargosAdmin() {
                 <PieBotonesModal
                   editando={!!crud.editando}
                   onGuardar={() => {
-                    if (!crud.form.nombre_cargo.trim()) {
+                    if (!crud.form.nombre_perfil.trim()) {
                       crud.setError(t('errorNombreObligatorio'))
                       return
                     }
                     crud.guardar(undefined, undefined, { cerrar: false })
                   }}
                   onGuardarYSalir={() => {
-                    if (!crud.form.nombre_cargo.trim()) {
+                    if (!crud.form.nombre_perfil.trim()) {
                       crud.setError(t('errorNombreObligatorio'))
                       return
                     }
@@ -327,11 +327,11 @@ export default function PaginaCargosAdmin() {
           {tabActiva === 'system_prompt' && (
             <div className="flex flex-col gap-4 min-h-[420px]">
               <TabPrompts
-                tabla="cargos"
-                pkColumna="codigo_cargo"
-                pkValor={crud.editando?.codigo_cargo ?? null}
+                tabla="perfiles"
+                pkColumna="codigo_perfil"
+                pkValor={crud.editando?.codigo_perfil ?? null}
                 campos={crud.form}
-                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
+                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormPerfil, valor as string | boolean)}
                 mostrarPromptInsert={false}
                 mostrarPromptUpdate={false}
                 mostrarSystemPrompt={true}
@@ -355,11 +355,11 @@ export default function PaginaCargosAdmin() {
           {tabActiva === 'programacion_insert' && (
             <div className="flex flex-col gap-4 min-h-[420px]">
               <TabPrompts
-                tabla="cargos"
-                pkColumna="codigo_cargo"
-                pkValor={crud.editando?.codigo_cargo ?? null}
+                tabla="perfiles"
+                pkColumna="codigo_perfil"
+                pkValor={crud.editando?.codigo_perfil ?? null}
                 campos={crud.form}
-                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
+                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormPerfil, valor as string | boolean)}
                 mostrarSystemPrompt={false}
                 mostrarJavaScript={false}
                 mostrarPromptUpdate={false}
@@ -374,9 +374,9 @@ export default function PaginaCargosAdmin() {
                   cargando={crud.guardando}
                   botonesIzquierda={crud.editando ? (
                     <PieBotonesPrompts
-                      tabla="cargos"
-                      pkColumna="codigo_cargo"
-                      pkValor={crud.editando.codigo_cargo}
+                      tabla="perfiles"
+                      pkColumna="codigo_perfil"
+                      pkValor={crud.editando.codigo_perfil}
                       promptInsert={crud.form.prompt_insert || undefined}
                       promptUpdate={crud.form.prompt_update || undefined}
                       mostrarSincronizar={false}
@@ -391,11 +391,11 @@ export default function PaginaCargosAdmin() {
           {tabActiva === 'programacion_update' && (
             <div className="flex flex-col gap-4 min-h-[420px]">
               <TabPrompts
-                tabla="cargos"
-                pkColumna="codigo_cargo"
-                pkValor={crud.editando?.codigo_cargo ?? null}
+                tabla="perfiles"
+                pkColumna="codigo_perfil"
+                pkValor={crud.editando?.codigo_perfil ?? null}
                 campos={crud.form}
-                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormCargo, valor as string | boolean)}
+                onCampoCambiado={(campo, valor) => crud.updateForm(campo as keyof FormPerfil, valor as string | boolean)}
                 mostrarSystemPrompt={false}
                 mostrarJavaScript={false}
                 mostrarPromptInsert={false}
@@ -410,9 +410,9 @@ export default function PaginaCargosAdmin() {
                   cargando={crud.guardando}
                   botonesIzquierda={crud.editando ? (
                     <PieBotonesPrompts
-                      tabla="cargos"
-                      pkColumna="codigo_cargo"
-                      pkValor={crud.editando.codigo_cargo}
+                      tabla="perfiles"
+                      pkColumna="codigo_perfil"
+                      pkValor={crud.editando.codigo_perfil}
                       promptInsert={crud.form.prompt_insert || undefined}
                       promptUpdate={crud.form.prompt_update || undefined}
                       mostrarSincronizar={false}
@@ -476,16 +476,16 @@ export default function PaginaCargosAdmin() {
               <div className="border border-borde rounded-lg overflow-hidden">
                 {cargandoRoles ? (
                   <div className="p-4 text-sm text-texto-muted text-center">{t('cargandoRoles')}</div>
-                ) : rolesCargo.length === 0 ? (
+                ) : rolesPerfil.length === 0 ? (
                   <div className="p-4 text-sm text-texto-muted text-center">{t('sinRoles')}</div>
                 ) : (
                   <SortableDndContext
-                    items={[...rolesCargo].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as unknown as Record<string, unknown>[]}
+                    items={[...rolesPerfil].sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0)) as unknown as Record<string, unknown>[]}
                     getId={(r) => String((r as { id_rol: number }).id_rol)}
-                    onReorder={(n) => reordenarRolesCargo(n as unknown as typeof rolesCargo)}
+                    onReorder={(n) => reordenarRolesPerfil(n as unknown as typeof rolesPerfil)}
                   >
                     <ul className="divide-y divide-borde">
-                      {[...rolesCargo]
+                      {[...rolesPerfil]
                         .sort((a, b) => (a.orden ?? 0) - (b.orden ?? 0))
                         .map((rc) => (
                           <SortableListItem
@@ -553,7 +553,7 @@ export default function PaginaCargosAdmin() {
                       if (!crud.editando) return
                       setGenerandoMd(true); setMensajeMd(null)
                       try {
-                        const r = await cargosAdminApi.generarMd(crud.editando.codigo_cargo)
+                        const r = await perfilesAdminApi.generarMd(crud.editando.codigo_perfil)
                         crud.updateForm('md', r.md)
                         setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
                       } catch (e) {
@@ -571,7 +571,7 @@ export default function PaginaCargosAdmin() {
                       if (!crud.editando) return
                       setSincronizandoMd(true); setMensajeMd(null)
                       try {
-                        const r = await promptsApi.sincronizarFila('cargos', 'codigo_cargo', crud.editando.codigo_cargo)
+                        const r = await promptsApi.sincronizarFila('perfiles', 'codigo_perfil', crud.editando.codigo_perfil)
                         setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
                       } catch (e) {
                         setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
@@ -597,7 +597,7 @@ export default function PaginaCargosAdmin() {
         titulo={t('eliminarTitulo')}
         mensaje={
           crud.confirmacion
-            ? t('eliminarConfirm', { nombre: crud.confirmacion.nombre_cargo })
+            ? t('eliminarConfirm', { nombre: crud.confirmacion.nombre_perfil })
             : ''
         }
         textoConfirmar={tc('eliminar')}

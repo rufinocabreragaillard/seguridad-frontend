@@ -440,7 +440,7 @@
   },
   "positionsExtra": {
     "sinSuperiorRaiz": "— No superior (root) —",
-    "cargoPadreAyuda": "Parent position in the hierarchy. Empty = root level."
+    "perfilPadreAyuda": "Parent position in the hierarchy. Empty = root level."
   },
   "functionsExtra": {
     "traduccionDesactivada": "The function \"{nombre}\" has translation disabled (field \"translate\" = false).",
@@ -820,8 +820,8 @@
     "titulo": "Positions",
     "subtitulo": "Organizational positions of the active group",
     "buscarPlaceholder": "Search by code, name, or alias...",
-    "nuevoCargo": "New Position",
-    "sinCargos": "No positions found",
+    "nuevoPerfil": "New Position",
+    "sinPerfiles": "No positions found",
     "colNombre": "Name",
     "colAlias": "Alias",
     "colEntidad": "Entity",
@@ -2056,7 +2056,7 @@
     "featureConversacionDocumentos": "Conversation with documents",
     "featureFocosLenguajeNatural": "Natural language focus",
     "featureControlPorArea": "Control by area",
-    "featureControlPorCargo": "Control by position",
+    "featureControlPorPerfil": "Control by position",
     "featureServidorClienteLocal": "Local client server",
     "featurePersonalizacion": "Customization",
     "featureEleccionLlms": "LLM selection",
