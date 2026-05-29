@@ -1530,17 +1530,12 @@ export const tareasApi = {
     api.delete(`/tareas/tareas-lista/${id}`),
 }
 
-// ─── Estados Docs ──────────────────────────────────────────────────────────
+// ─── Estados Docs (solo lectura) ─────────────────────────────────────────────
+// Tras unificar estados, el catálogo lo sirve el backend desde estados_procesos.
+// La edición de estados se hace en Datos Básicos de Procesos (estados_procesos).
 
 export const estadosDocsApi = {
   listar: () => api.get<EstadoDoc[]>('/estados-docs').then((r) => r.data),
-  crear: (datos: Partial<EstadoDoc>) =>
-    api.post<EstadoDoc>('/estados-docs', datos).then((r) => r.data),
-  actualizar: (codigo: string, datos: Partial<EstadoDoc>) =>
-    api.put<EstadoDoc>(`/estados-docs/${codigo}`, datos).then((r) => r.data),
-  desactivar: (codigo: string) => api.delete(`/estados-docs/${codigo}`),
-  generarMd: (codigo: string) =>
-    api.post<{ md: string }>(`/estados-docs/${codigo}/generar-md`).then((r) => r.data),
 }
 
 // ─── Cola Estados Docs ─────────────────────────────────────────────────────

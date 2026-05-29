@@ -1817,14 +1817,14 @@ export default function PaginaProcesosDatosBasicos() {
                     <label className="text-xs font-medium text-texto-muted">{t('colOrigenTrans')}</label>
                     <select className={selectCls} value={formTrans.estado_origen ?? ''} onChange={(e) => setFormTrans({ ...formTrans, estado_origen: e.target.value || null })}>
                       <option value="">{t('sinEstadoOrigen')}</option>
-                      {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_ESTAN','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
+                      {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
                     </select>
                   </div>
                   <div className="flex flex-col gap-1">
                     <label className="text-xs font-medium text-texto-muted">{t('colDestinoTrans')} *</label>
                     <select className={selectCls} value={formTrans.estado_destino ?? ''} onChange={(e) => setFormTrans({ ...formTrans, estado_destino: e.target.value })}>
                       <option value="">— {t('seleccionar')} —</option>
-                      {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_ESTAN','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
+                      {['CARGADO','CHUNKEADO','CONSOLIDADO','ELIMINADO','ESCANEADO','FILESYSTEM','METADATA','NO_ANALIZABLE','NO_CHUNKEADO','NO_ENCONTRADO','NO_ESCANEABLE','NO_METADATA','NO_VECTORIZADO','REVISAR','VECTORIZADO'].map((e) => <option key={e} value={e}>{e}</option>)}
                     </select>
                   </div>
                 </div>
