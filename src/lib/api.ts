@@ -1735,7 +1735,7 @@ export const ubicacionesDocsApi = {
       nivel: number
     }[]
   }) =>
-    api.post<{ insertadas: number; deshabilitadas: number; actualizadas: number; total: number; excluidas: number }>('/ubicaciones-docs/sincronizar', datos, { timeout: 180000 }).then((r) => r.data),
+    api.post<{ insertadas: number; deshabilitadas: number; actualizadas: number; total: number; excluidas: number }>('/ubicaciones-docs/sincronizar', datos, { timeout: 300000 }).then((r) => r.data),
   // Documentos en ubicación
   listarDocumentos: (codigo: string) =>
     api.get(`/ubicaciones-docs/${codigo}/documentos`).then((r) => r.data),
