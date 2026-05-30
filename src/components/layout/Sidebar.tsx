@@ -4,7 +4,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { Pin, PinOff, Search, X, HelpCircle } from 'lucide-react'
-import { useMemo, useRef, useCallback, useState } from 'react'
+import { useMemo, useRef, useCallback, useState, useEffect } from 'react'
 import { useTranslations } from 'next-intl'
 import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
@@ -65,6 +65,14 @@ export function Sidebar() {
     if (timerRef.current) clearTimeout(timerRef.current)
     setTooltip(null)
   }, [])
+
+  // Si el sidebar cambia de colapsado<->expandido o se mueve por pin/hover,
+  // el tooltip puede quedar huérfano (el onMouseLeave del item ya no se dispara
+  // porque está condicionado a `colapsado`). Lo cerramos siempre que cambie el layout.
+  useEffect(() => {
+    if (timerRef.current) clearTimeout(timerRef.current)
+    setTooltip(null)
+  }, [expandido, pinned, hovered, pathname])
 
   const menuFiltrado = useMemo(() => {
     if (!usuario?.menu) return []
@@ -224,10 +232,11 @@ export function Sidebar() {
                       <div
                         key={fn.codigo_funcion}
                         onMouseEnter={colapsado ? (e) => mostrarTooltip(e, alias) : undefined}
-                        onMouseLeave={colapsado ? ocultarTooltip : undefined}
+                        onMouseLeave={ocultarTooltip}
                       >
                         <Link
                           href={href}
+                          onClick={ocultarTooltip}
                           className={cn(itemBase, activo ? itemActivo : itemInactivo)}
                         >
                           <Icono size={18} className="shrink-0" />
