@@ -231,7 +231,8 @@
     "ingresaUnaClave": "Ingresa una clave.",
     "regenerar": "Regenerar",
     "sincronizar": "Sincronizar",
-    "sincronizando": "Sincronizando…"
+    "sincronizando": "Sincronizando…",
+    "quitar": "Quitar"
   },
   "tabPrompts": {
     "promptInsert": "Prompt INSERT",
@@ -1878,7 +1879,27 @@
     "seleccionarAplicacion": "Seleccionar aplicación...",
     "tituloEditar": "Editar Función",
     "tituloCodigo": "Código",
-    "tituloNueva": "Nueva función"
+    "tituloNueva": "Nueva función",
+    "vistaFunciones": "Funciones",
+    "vistaTablasTraducibles": "Tablas traducibles",
+    "tablasTradIntro": "Configura qué tablas y campos se traducen al cambiar de idioma. La columna<activa>Activa</activa>controla si los registros de esa tabla entran en la generación de traducciones.",
+    "tablasTradColActiva": "Activa",
+    "tablasTradColTabla": "Tabla",
+    "tablasTradColCampos": "Campos",
+    "tablasTradColPk": "PK",
+    "tablasTradColDescripcion": "Descripción",
+    "tablasTradVacio": "Sin tablas traducibles",
+    "tablaEditarTitulo": "Tabla traducible",
+    "tablaTieneColTraducir": "Tiene columna <code>traducir</code>",
+    "tablaTieneColTraducirHint": "— respeta el flag por fila",
+    "tablaDescripcionPlaceholder": "Para qué sirve esta tabla traducible",
+    "tablaCamposTitulo": "Campos a traducir",
+    "tablaCampoBoton": "Campo",
+    "tablaCampoLogico": "Campo lógico",
+    "tablaCampoFisico": "Campo físico",
+    "tablaCamposVacio": "Sin campos. Agrega al menos uno.",
+    "tablaCampoLogicoPlaceholder": "ej. nombre",
+    "tablaCampoFisicoPlaceholder": "ej. nombre_funcion"
   },
   "audit": {
     "titulo": "Auditoría Seguridad",

@@ -431,11 +431,11 @@ export default function PaginaFunciones() {
       {/* Lengüetas de pantalla */}
       <div className="flex border-b border-borde">
         <button onClick={() => setVista('funciones')} className={`px-4 py-2 text-sm tab-nav${vista === 'funciones' ? ' tab-nav-activo' : ''}`}>
-          Funciones
+          {t('vistaFunciones')}
         </button>
         {esAdmin && (
           <button onClick={() => setVista('tablas')} className={`px-4 py-2 text-sm tab-nav${vista === 'tablas' ? ' tab-nav-activo' : ''}`}>
-            Tablas traducibles
+            {t('vistaTablasTraducibles')}
           </button>
         )}
       </div>
@@ -533,37 +533,38 @@ export default function PaginaFunciones() {
       {vista === 'tablas' && (
         <div className="flex flex-col gap-3">
           <p className="text-sm text-texto-muted">
-            Configura qué tablas y campos se traducen al cambiar de idioma. La columna
-            <strong> Activa</strong> controla si los registros de esa tabla entran en la generación de traducciones.
+            {t.rich('tablasTradIntro', {
+              activa: (chunks) => <strong> {chunks} </strong>,
+            })}
           </p>
           <Tabla>
             <TablaCabecera><tr>
-              <TablaTh className="w-20 text-center">Activa</TablaTh>
-              <TablaTh>Tabla</TablaTh>
-              <TablaTh className="w-24 text-center">Campos</TablaTh>
-              <TablaTh className="w-40">PK</TablaTh>
-              <TablaTh>Descripción</TablaTh>
+              <TablaTh className="w-20 text-center">{t('tablasTradColActiva')}</TablaTh>
+              <TablaTh>{t('tablasTradColTabla')}</TablaTh>
+              <TablaTh className="w-24 text-center">{t('tablasTradColCampos')}</TablaTh>
+              <TablaTh className="w-40">{t('tablasTradColPk')}</TablaTh>
+              <TablaTh>{t('tablasTradColDescripcion')}</TablaTh>
               <TablaTh className="text-right w-20">{tc('acciones')}</TablaTh>
             </tr></TablaCabecera>
             <TablaCuerpo>
               {cargandoTablas ? (
                 <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>{tc('cargando')}</TablaTd></TablaFila>
               ) : tablasTrad.length === 0 ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>Sin tablas traducibles</TablaTd></TablaFila>
-              ) : tablasTrad.map((t) => (
-                <TablaFila key={t.nombre_tabla}>
+                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>{t('tablasTradVacio')}</TablaTd></TablaFila>
+              ) : tablasTrad.map((tt) => (
+                <TablaFila key={tt.nombre_tabla}>
                   <TablaTd className="text-center">
-                    <input type="checkbox" checked={t.activa} onChange={() => toggleActivaTabla(t)} className="w-4 h-4 rounded accent-primario cursor-pointer" />
+                    <input type="checkbox" checked={tt.activa} onChange={() => toggleActivaTabla(tt)} className="w-4 h-4 rounded accent-primario cursor-pointer" />
                   </TablaTd>
-                  <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTabla(t)}>
-                    <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{t.nombre_tabla}</code>
+                  <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTabla(tt)}>
+                    <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tt.nombre_tabla}</code>
                   </TablaTd>
-                  <TablaTd className="text-center text-sm">{t.campos.length}</TablaTd>
-                  <TablaTd className="text-xs font-mono text-texto-muted">{t.pk_partes && t.pk_partes.length ? t.pk_partes.join(' + ') : t.pk}</TablaTd>
-                  <TablaTd className="text-xs text-texto-muted">{t.descripcion || '—'}</TablaTd>
+                  <TablaTd className="text-center text-sm">{tt.campos.length}</TablaTd>
+                  <TablaTd className="text-xs font-mono text-texto-muted">{tt.pk_partes && tt.pk_partes.length ? tt.pk_partes.join(' + ') : tt.pk}</TablaTd>
+                  <TablaTd className="text-xs text-texto-muted">{tt.descripcion || '—'}</TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end">
-                      <button onClick={() => abrirEditarTabla(t)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
+                      <button onClick={() => abrirEditarTabla(tt)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
                     </div>
                   </TablaTd>
                 </TablaFila>
@@ -574,43 +575,43 @@ export default function PaginaFunciones() {
       )}
 
       {/* ── MODAL EDITAR TABLA TRADUCIBLE ── */}
-      <Modal abierto={!!tablaEditando} alCerrar={() => setTablaEditando(null)} titulo={tablaEditando ? `Tabla traducible: ${tablaEditando.nombre_tabla}` : ''} className="w-[720px] max-w-[95vw]">
+      <Modal abierto={!!tablaEditando} alCerrar={() => setTablaEditando(null)} titulo={tablaEditando ? `${t('tablaEditarTitulo')}: ${tablaEditando.nombre_tabla}` : ''} className="w-[720px] max-w-[95vw]">
         {tablaEditando && (
           <div className="flex flex-col gap-4">
             <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
-              <div><span className="text-texto-muted">PK:</span> <code className="text-xs font-mono">{tablaEditando.pk_partes && tablaEditando.pk_partes.length ? tablaEditando.pk_partes.join(' + ') : tablaEditando.pk}</code></div>
+              <div><span className="text-texto-muted">{t('tablasTradColPk')}:</span> <code className="text-xs font-mono">{tablaEditando.pk_partes && tablaEditando.pk_partes.length ? tablaEditando.pk_partes.join(' + ') : tablaEditando.pk}</code></div>
               <div className="flex items-center gap-2">
                 <input type="checkbox" checked={tablaEditando.activa} onChange={() => { toggleActivaTabla(tablaEditando); setTablaEditando({ ...tablaEditando, activa: !tablaEditando.activa }) }} className="w-4 h-4 rounded accent-primario cursor-pointer" />
-                <span>Activa</span>
+                <span>{t('tablasTradColActiva')}</span>
               </div>
             </div>
 
             <label className="flex items-center gap-2 cursor-pointer select-none">
               <input type="checkbox" checked={formTabla.tiene_columna_traducir} onChange={(e) => setFormTabla({ ...formTabla, tiene_columna_traducir: e.target.checked })} className="w-4 h-4 rounded accent-primario" />
-              <span className="text-sm font-medium text-texto">Tiene columna <code className="text-xs">traducir</code></span>
-              <span className="text-xs text-texto-muted">— respeta el flag por fila</span>
+              <span className="text-sm font-medium text-texto">{t.rich('tablaTieneColTraducir', { code: (chunks) => <code className="text-xs">{chunks}</code> })}</span>
+              <span className="text-xs text-texto-muted">{t('tablaTieneColTraducirHint')}</span>
             </label>
 
             <div>
-              <label className="block text-sm font-medium text-texto mb-1">Descripción</label>
-              <Input value={formTabla.descripcion} onChange={(e) => setFormTabla({ ...formTabla, descripcion: e.target.value })} placeholder="Para qué sirve esta tabla traducible" />
+              <label className="block text-sm font-medium text-texto mb-1">{t('tablasTradColDescripcion')}</label>
+              <Input value={formTabla.descripcion} onChange={(e) => setFormTabla({ ...formTabla, descripcion: e.target.value })} placeholder={t('tablaDescripcionPlaceholder')} />
             </div>
 
             <div>
               <div className="flex items-center justify-between mb-2">
-                <label className="text-sm font-medium text-texto">Campos a traducir</label>
-                <Boton variante="contorno" tamano="sm" onClick={() => setFormTabla({ ...formTabla, campos: [...formTabla.campos, { campo_logico: '', campo_fisico: '' }] })}><Plus size={14} />Campo</Boton>
+                <label className="text-sm font-medium text-texto">{t('tablaCamposTitulo')}</label>
+                <Boton variante="contorno" tamano="sm" onClick={() => setFormTabla({ ...formTabla, campos: [...formTabla.campos, { campo_logico: '', campo_fisico: '' }] })}><Plus size={14} />{t('tablaCampoBoton')}</Boton>
               </div>
               <div className="flex flex-col gap-2">
                 <div className="grid grid-cols-[1fr_1fr_auto] gap-2 text-xs font-medium text-texto-muted px-1">
-                  <span>Campo lógico</span><span>Campo físico</span><span />
+                  <span>{t('tablaCampoLogico')}</span><span>{t('tablaCampoFisico')}</span><span />
                 </div>
-                {formTabla.campos.length === 0 && <p className="text-sm text-texto-muted py-2">Sin campos. Agrega al menos uno.</p>}
+                {formTabla.campos.length === 0 && <p className="text-sm text-texto-muted py-2">{t('tablaCamposVacio')}</p>}
                 {formTabla.campos.map((c, i) => (
                   <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
-                    <Input value={c.campo_logico} onChange={(e) => setFormTabla({ ...formTabla, campos: formTabla.campos.map((x, j) => j === i ? { ...x, campo_logico: e.target.value } : x) })} placeholder="ej. nombre" />
-                    <Input value={c.campo_fisico} onChange={(e) => setFormTabla({ ...formTabla, campos: formTabla.campos.map((x, j) => j === i ? { ...x, campo_fisico: e.target.value } : x) })} placeholder="ej. nombre_funcion" />
-                    <button onClick={() => setFormTabla({ ...formTabla, campos: formTabla.campos.filter((_, j) => j !== i) })} className="p-1.5 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
+                    <Input value={c.campo_logico} onChange={(e) => setFormTabla({ ...formTabla, campos: formTabla.campos.map((x, j) => j === i ? { ...x, campo_logico: e.target.value } : x) })} placeholder={t('tablaCampoLogicoPlaceholder')} />
+                    <Input value={c.campo_fisico} onChange={(e) => setFormTabla({ ...formTabla, campos: formTabla.campos.map((x, j) => j === i ? { ...x, campo_fisico: e.target.value } : x) })} placeholder={t('tablaCampoFisicoPlaceholder')} />
+                    <button onClick={() => setFormTabla({ ...formTabla, campos: formTabla.campos.filter((_, j) => j !== i) })} className="p-1.5 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title={tc('quitar')}><X size={14} /></button>
                   </div>
                 ))}
               </div>
