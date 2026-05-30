@@ -27,6 +27,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   loginConGoogle: () => Promise<void>
   loginConMicrosoft: () => Promise<void>
+  loginConGithub: () => Promise<void>
   logout: () => Promise<void>
   cambiarEntidad: (codigoEntidad: string) => Promise<void>
   cambiarGrupo: (codigoGrupo: string) => Promise<void>
@@ -278,7 +279,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const traducirErrorOAuth = (mensaje: string, provider: 'Google' | 'Microsoft'): string => {
+  const traducirErrorOAuth = (mensaje: string, provider: 'Google' | 'Microsoft' | 'GitHub'): string => {
     if (mensaje.includes('Unsupported provider') || mensaje.includes('provider is not enabled')) {
       return `Login con ${provider} no está disponible en este ambiente. Usa email y contraseña.`
     }
@@ -317,6 +318,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (err) {
       loginExplicito.current = false
       const mensaje = traducirErrorOAuth(err.message, 'Microsoft')
+      setError(mensaje)
+      throw new Error(mensaje)
+    }
+  }
+
+  const loginConGithub = async () => {
+    setError(null)
+    loginExplicito.current = true
+    clearOverridesSesion()  // Garantizar inicio con defaults de BD
+    const { error: err } = await supabase.auth.signInWithOAuth({
+      provider: 'github',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+    if (err) {
+      loginExplicito.current = false
+      const mensaje = traducirErrorOAuth(err.message, 'GitHub')
       setError(mensaje)
       throw new Error(mensaje)
     }
@@ -413,7 +432,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider
       value={{
-        usuario, cargando, error, login, loginConGoogle, loginConMicrosoft, logout,
+        usuario, cargando, error, login, loginConGoogle, loginConMicrosoft, loginConGithub, logout,
         cambiarEntidad, cambiarGrupo, cambiarAplicacion,
         tieneFuncion, tieneAccesoRuta,
         esAdmin, esSuperAdmin, entidadActiva, grupoActivo, aplicacionActiva,
