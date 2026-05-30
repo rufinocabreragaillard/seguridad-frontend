@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Download, Loader2, RefreshCw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Paginador } from '@/components/ui/paginador'
@@ -19,6 +20,7 @@ function fmtInt(n: number | undefined | null) {
 }
 
 export default function PaginaCostosGrupo() {
+  const t = useTranslations('llmGroupCosts')
   const { grupoActivo } = useAuth()
 
   const [resumen, setResumen] = useState<LLMUsoResumen | null>(null)
@@ -67,20 +69,20 @@ export default function PaginaCostosGrupo() {
     exportarExcel(
       filas as unknown as Record<string, unknown>[],
       [
-        { titulo: 'Fecha', campo: 'created_at' },
-        { titulo: 'Proveedor', campo: 'proveedor' },
-        { titulo: 'Modelo', campo: 'modelo' },
-        { titulo: 'Alias', campo: 'alias_credencial' },
-        { titulo: 'Key casa', campo: 'uso_key_casa', formato: (v) => (v ? 'SI' : 'NO') },
-        { titulo: 'Usuario', campo: 'codigo_usuario' },
-        { titulo: 'Función', campo: 'codigo_funcion' },
-        { titulo: 'Operación', campo: 'operacion' },
-        { titulo: 'Tokens in', campo: 'tokens_input' },
-        { titulo: 'Tokens out', campo: 'tokens_output' },
-        { titulo: 'Costo USD', campo: 'costo_estimado_usd' },
-        { titulo: 'Duración ms', campo: 'duracion_ms' },
-        { titulo: 'Éxito', campo: 'exito', formato: (v) => (v ? 'SI' : 'NO') },
-        { titulo: 'Error', campo: 'error_mensaje' },
+        { titulo: t('colFecha'), campo: 'created_at' },
+        { titulo: t('colProveedor'), campo: 'proveedor' },
+        { titulo: t('colModelo'), campo: 'modelo' },
+        { titulo: t('colAlias'), campo: 'alias_credencial' },
+        { titulo: t('colKeyCasa'), campo: 'uso_key_casa', formato: (v) => (v ? 'SI' : 'NO') },
+        { titulo: t('colUsuario'), campo: 'codigo_usuario' },
+        { titulo: t('colFuncion'), campo: 'codigo_funcion' },
+        { titulo: t('colOperacion'), campo: 'operacion' },
+        { titulo: t('colTokensIn'), campo: 'tokens_input' },
+        { titulo: t('colTokensOut'), campo: 'tokens_output' },
+        { titulo: t('colCostoUsd'), campo: 'costo_estimado_usd' },
+        { titulo: t('colDuracionMs'), campo: 'duracion_ms' },
+        { titulo: t('colExito'), campo: 'exito', formato: (v) => (v ? 'SI' : 'NO') },
+        { titulo: t('colError'), campo: 'error_mensaje' },
       ],
       `costos-grupo-${grupoActivo}-${new Date().toISOString().slice(0, 10)}`,
     )
@@ -90,15 +92,15 @@ export default function PaginaCostosGrupo() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <PageHeader
-          titulo="Costos LLM del Grupo"
-          subtitulo={`Uso de modelos LLM para el grupo ${grupoActivo ?? ''}`}
+          titulo={t('titulo')}
+          subtitulo={t('subtitulo', { grupo: grupoActivo ?? '' })}
         />
         <div className="flex gap-2 shrink-0">
           <Boton variante="contorno" onClick={cargar}>
-            <RefreshCw className="w-4 h-4 mr-1" />Refrescar
+            <RefreshCw className="w-4 h-4 mr-1" />{t('botonRefrescar')}
           </Boton>
           <Boton variante="contorno" onClick={exportar}>
-            <Download className="w-4 h-4 mr-1" />Exportar
+            <Download className="w-4 h-4 mr-1" />{t('botonExportar')}
           </Boton>
         </div>
       </div>
@@ -107,19 +109,19 @@ export default function PaginaCostosGrupo() {
       {resumen && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-xs text-gray-500 uppercase">Mes actual</div>
+            <div className="text-xs text-gray-500 uppercase">{t('cardMesActual')}</div>
             <div className="text-xl font-bold text-[#074B91] mt-1">{resumen.mes}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-xs text-gray-500 uppercase">Llamadas</div>
+            <div className="text-xs text-gray-500 uppercase">{t('cardLlamadas')}</div>
             <div className="text-xl font-bold text-gray-900 mt-1">{fmtInt(resumen.total_llamadas)}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-xs text-gray-500 uppercase">Costo total</div>
+            <div className="text-xs text-gray-500 uppercase">{t('cardCostoTotal')}</div>
             <div className="text-xl font-bold text-gray-900 mt-1">{fmtUsd(resumen.total_costo_usd)}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-xs text-gray-500 uppercase">Key casa / Grupo</div>
+            <div className="text-xs text-gray-500 uppercase">{t('cardKeyCasaGrupo')}</div>
             <div className="text-sm font-medium text-gray-900 mt-2">
               <span className="text-amber-600">{fmtUsd(resumen.costo_key_casa_usd)}</span>{' '}/{' '}
               <span className="text-green-600">{fmtUsd(resumen.costo_key_grupo_usd)}</span>
@@ -132,15 +134,15 @@ export default function PaginaCostosGrupo() {
       {resumen && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Por modelo (mes actual)</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('seccionPorModelo')}</h3>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-gray-500 text-xs uppercase border-b">
-                  <th className="text-left py-1">Modelo</th>
-                  <th className="text-right py-1">Llamadas</th>
-                  <th className="text-right py-1">Tok. In</th>
-                  <th className="text-right py-1">Tok. Out</th>
-                  <th className="text-right py-1">Costo</th>
+                  <th className="text-left py-1">{t('colModelo')}</th>
+                  <th className="text-right py-1">{t('colLlamadas')}</th>
+                  <th className="text-right py-1">{t('colTokIn')}</th>
+                  <th className="text-right py-1">{t('colTokOut')}</th>
+                  <th className="text-right py-1">{t('colCosto')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -154,19 +156,19 @@ export default function PaginaCostosGrupo() {
                   </tr>
                 ))}
                 {resumen.por_modelo.length === 0 && (
-                  <tr><td colSpan={5} className="py-4 text-center text-gray-400">Sin datos este mes</td></tr>
+                  <tr><td colSpan={5} className="py-4 text-center text-gray-400">{t('sinDatosEsteMes')}</td></tr>
                 )}
               </tbody>
             </table>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Por usuario (mes actual)</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('seccionPorUsuario')}</h3>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-gray-500 text-xs uppercase border-b">
-                  <th className="text-left py-1">Usuario</th>
-                  <th className="text-right py-1">Llamadas</th>
-                  <th className="text-right py-1">Costo</th>
+                  <th className="text-left py-1">{t('colUsuario')}</th>
+                  <th className="text-right py-1">{t('colLlamadas')}</th>
+                  <th className="text-right py-1">{t('colCosto')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -178,7 +180,7 @@ export default function PaginaCostosGrupo() {
                   </tr>
                 ))}
                 {resumen.por_usuario.length === 0 && (
-                  <tr><td colSpan={3} className="py-4 text-center text-gray-400">Sin datos este mes</td></tr>
+                  <tr><td colSpan={3} className="py-4 text-center text-gray-400">{t('sinDatosEsteMes')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -188,7 +190,7 @@ export default function PaginaCostosGrupo() {
 
       {/* Detalle con filtros */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Detalle de llamadas</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('seccionDetalle')}</h3>
         <div className="flex flex-wrap items-center gap-2 mb-3">
           <input
             type="date"
@@ -207,19 +209,19 @@ export default function PaginaCostosGrupo() {
             onChange={(e) => setFiltros({ ...filtros, proveedor: e.target.value })}
             className="h-9 w-36 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           >
-            <option value="">Proveedor</option>
+            <option value="">{t('colProveedor')}</option>
             <option value="anthropic">Anthropic</option>
             <option value="google">Google</option>
             <option value="openai">OpenAI</option>
           </select>
           <input
-            placeholder="Modelo"
+            placeholder={t('colModelo')}
             value={filtros.modelo}
             onChange={(e) => setFiltros({ ...filtros, modelo: e.target.value })}
             className="h-9 w-28 border border-gray-300 rounded-lg px-2 py-1 text-sm"
           />
           <input
-            placeholder="Función"
+            placeholder={t('colFuncion')}
             value={filtros.codigo_funcion}
             onChange={(e) => setFiltros({ ...filtros, codigo_funcion: e.target.value })}
             className="h-9 w-28 border border-gray-300 rounded-lg px-2 py-1 text-sm"
@@ -231,9 +233,9 @@ export default function PaginaCostosGrupo() {
               onChange={(e) => setFiltros({ ...filtros, solo_errores: e.target.checked })}
               className="rounded border-gray-300"
             />
-            Solo errores
+            {t('soloErrores')}
           </label>
-          <Boton onClick={aplicarFiltros}>Aplicar filtros</Boton>
+          <Boton onClick={aplicarFiltros}>{t('botonAplicarFiltros')}</Boton>
         </div>
         {cargando ? (
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>

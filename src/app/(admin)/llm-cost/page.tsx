@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
+import { useTranslations } from 'next-intl'
 import { Download, Loader2, RefreshCw } from 'lucide-react'
 import { Boton } from '@/components/ui/boton'
 import { Input } from '@/components/ui/input'
@@ -17,8 +18,8 @@ function fmtInt(n: number | undefined | null) {
   return (Number(n) || 0).toLocaleString('es-CL')
 }
 
-const GRUPOS = [
-  { codigo: '', nombre: 'Todos los grupos' },
+const GRUPOS_BASE = [
+  { codigo: '', nombre: '__todosLosGrupos__' },
   { codigo: 'ADMIN', nombre: 'SuperSeguridad' },
   { codigo: 'CAB LTDA', nombre: 'Cab Limitada' },
   { codigo: 'MUNIPIRQUE', nombre: 'Municipalidad de Pirque' },
@@ -35,6 +36,8 @@ const GRUPOS = [
 ]
 
 export default function PaginaCostosSistema() {
+  const t = useTranslations('llmCost')
+  const GRUPOS = GRUPOS_BASE.map((g) => g.codigo === '' ? { ...g, nombre: t('todosLosGrupos') } : g)
   const [resumen, setResumen] = useState<LLMUsoResumenGlobal | null>(null)
   const [filas, setFilas] = useState<LLMUsoFila[]>([])
   const [cargando, setCargando] = useState(true)
@@ -71,23 +74,23 @@ export default function PaginaCostosSistema() {
     exportarExcel(
       filas as unknown as Record<string, unknown>[],
       [
-        { titulo: 'Fecha', campo: 'created_at' },
-        { titulo: 'Grupo', campo: 'codigo_grupo' },
-        { titulo: 'Entidad', campo: 'codigo_entidad' },
-        { titulo: 'Proveedor', campo: 'proveedor' },
-        { titulo: 'Modelo', campo: 'modelo' },
-        { titulo: 'Alias', campo: 'alias_credencial' },
-        { titulo: 'Key casa', campo: 'uso_key_casa', formato: (v) => (v ? 'SI' : 'NO') },
-        { titulo: 'Usuario', campo: 'codigo_usuario' },
-        { titulo: 'Función', campo: 'codigo_funcion' },
-        { titulo: 'Habilidad', campo: 'codigo_habilidad' },
-        { titulo: 'Proceso', campo: 'codigo_proceso' },
-        { titulo: 'Tokens in', campo: 'tokens_input' },
-        { titulo: 'Tokens out', campo: 'tokens_output' },
-        { titulo: 'Costo USD', campo: 'costo_estimado_usd' },
-        { titulo: 'Duración ms', campo: 'duracion_ms' },
-        { titulo: 'Éxito', campo: 'exito', formato: (v) => (v ? 'SI' : 'NO') },
-        { titulo: 'Error', campo: 'error_mensaje' },
+        { titulo: t('colFecha'), campo: 'created_at' },
+        { titulo: t('colGrupo'), campo: 'codigo_grupo' },
+        { titulo: t('colEntidad'), campo: 'codigo_entidad' },
+        { titulo: t('colProveedor'), campo: 'proveedor' },
+        { titulo: t('colModelo'), campo: 'modelo' },
+        { titulo: t('colAlias'), campo: 'alias_credencial' },
+        { titulo: t('colKeyCasa'), campo: 'uso_key_casa', formato: (v) => (v ? 'SI' : 'NO') },
+        { titulo: t('colUsuario'), campo: 'codigo_usuario' },
+        { titulo: t('colFuncion'), campo: 'codigo_funcion' },
+        { titulo: t('colHabilidad'), campo: 'codigo_habilidad' },
+        { titulo: t('colProceso'), campo: 'codigo_proceso' },
+        { titulo: t('colTokensIn'), campo: 'tokens_input' },
+        { titulo: t('colTokensOut'), campo: 'tokens_output' },
+        { titulo: t('colCostoUsd'), campo: 'costo_estimado_usd' },
+        { titulo: t('colDuracionMs'), campo: 'duracion_ms' },
+        { titulo: t('colExito'), campo: 'exito', formato: (v) => (v ? 'SI' : 'NO') },
+        { titulo: t('colError'), campo: 'error_mensaje' },
       ],
       `costos-sistema-${new Date().toISOString().slice(0, 10)}`,
     )
@@ -97,15 +100,15 @@ export default function PaginaCostosSistema() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <PageHeader
-          titulo="Costos LLM — Sistema"
-          subtitulo="Vista global de uso de modelos LLM en todos los grupos"
+          titulo={t('titulo')}
+          subtitulo={t('subtitulo')}
         />
         <div className="flex gap-2 shrink-0">
           <Boton variante="contorno" onClick={cargar}>
-            <RefreshCw className="w-4 h-4 mr-1" />Refrescar
+            <RefreshCw className="w-4 h-4 mr-1" />{t('botonRefrescar')}
           </Boton>
           <Boton variante="contorno" onClick={exportar}>
-            <Download className="w-4 h-4 mr-1" />Exportar
+            <Download className="w-4 h-4 mr-1" />{t('botonExportar')}
           </Boton>
         </div>
       </div>
@@ -114,19 +117,19 @@ export default function PaginaCostosSistema() {
       {resumen && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-xs text-gray-500 uppercase">Mes actual</div>
+            <div className="text-xs text-gray-500 uppercase">{t('cardMesActual')}</div>
             <div className="text-xl font-bold text-[#074B91] mt-1">{resumen.mes}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-xs text-gray-500 uppercase">Llamadas totales</div>
+            <div className="text-xs text-gray-500 uppercase">{t('cardLlamadasTotales')}</div>
             <div className="text-xl font-bold text-gray-900 mt-1">{fmtInt(resumen.total_llamadas)}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-xs text-gray-500 uppercase">Costo total</div>
+            <div className="text-xs text-gray-500 uppercase">{t('cardCostoTotal')}</div>
             <div className="text-xl font-bold text-gray-900 mt-1">{fmtUsd(resumen.total_costo_usd)}</div>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <div className="text-xs text-gray-500 uppercase">Key casa / Grupos</div>
+            <div className="text-xs text-gray-500 uppercase">{t('cardKeyCasaGrupos')}</div>
             <div className="text-sm font-medium text-gray-900 mt-2">
               <span className="text-amber-600">{fmtUsd(resumen.costo_key_casa_usd)}</span>{' '}/{' '}
               <span className="text-green-600">{fmtUsd(resumen.costo_key_grupo_usd)}</span>
@@ -139,14 +142,14 @@ export default function PaginaCostosSistema() {
       {resumen && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Por modelo (mes actual)</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('seccionPorModelo')}</h3>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-gray-500 text-xs uppercase border-b">
-                  <th className="text-left py-1">Modelo</th>
-                  <th className="text-right py-1">Llamadas</th>
-                  <th className="text-right py-1">Errores</th>
-                  <th className="text-right py-1">Costo</th>
+                  <th className="text-left py-1">{t('colModelo')}</th>
+                  <th className="text-right py-1">{t('colLlamadas')}</th>
+                  <th className="text-right py-1">{t('colErrores')}</th>
+                  <th className="text-right py-1">{t('colCosto')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -159,20 +162,20 @@ export default function PaginaCostosSistema() {
                   </tr>
                 ))}
                 {resumen.por_modelo.length === 0 && (
-                  <tr><td colSpan={4} className="py-4 text-center text-gray-400">Sin datos este mes</td></tr>
+                  <tr><td colSpan={4} className="py-4 text-center text-gray-400">{t('sinDatosEsteMes')}</td></tr>
                 )}
               </tbody>
             </table>
           </div>
           <div className="bg-white rounded-lg border border-gray-200 p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">Por grupo (mes actual)</h3>
+            <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('seccionPorGrupo')}</h3>
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-gray-500 text-xs uppercase border-b">
-                  <th className="text-left py-1">Grupo</th>
-                  <th className="text-right py-1">Llamadas</th>
-                  <th className="text-right py-1">Errores</th>
-                  <th className="text-right py-1">Costo</th>
+                  <th className="text-left py-1">{t('colGrupo')}</th>
+                  <th className="text-right py-1">{t('colLlamadas')}</th>
+                  <th className="text-right py-1">{t('colErrores')}</th>
+                  <th className="text-right py-1">{t('colCosto')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -185,7 +188,7 @@ export default function PaginaCostosSistema() {
                   </tr>
                 ))}
                 {resumen.por_grupo.length === 0 && (
-                  <tr><td colSpan={4} className="py-4 text-center text-gray-400">Sin datos este mes</td></tr>
+                  <tr><td colSpan={4} className="py-4 text-center text-gray-400">{t('sinDatosEsteMes')}</td></tr>
                 )}
               </tbody>
             </table>
@@ -195,16 +198,16 @@ export default function PaginaCostosSistema() {
 
       {/* Detalle con filtros */}
       <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold text-gray-900 mb-3">Detalle de llamadas</h3>
+        <h3 className="text-sm font-semibold text-gray-900 mb-3">{t('seccionDetalle')}</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-2 mb-3">
-          <Input type="date" value={filtros.desde} onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })} placeholder="Desde" />
-          <Input type="date" value={filtros.hasta} onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })} placeholder="Hasta" />
+          <Input type="date" value={filtros.desde} onChange={(e) => setFiltros({ ...filtros, desde: e.target.value })} placeholder={t('placeholderDesde')} />
+          <Input type="date" value={filtros.hasta} onChange={(e) => setFiltros({ ...filtros, hasta: e.target.value })} placeholder={t('placeholderHasta')} />
           <select
             value={filtros.proveedor}
             onChange={(e) => setFiltros({ ...filtros, proveedor: e.target.value })}
             className="border border-gray-300 rounded px-2 py-1 text-sm"
           >
-            <option value="">Todos los proveedores</option>
+            <option value="">{t('todosLosProveedores')}</option>
             <option value="anthropic">Anthropic</option>
             <option value="google">Google</option>
             <option value="openai">OpenAI</option>
@@ -218,8 +221,8 @@ export default function PaginaCostosSistema() {
               <option key={g.codigo} value={g.codigo}>{g.nombre}</option>
             ))}
           </select>
-          <Input placeholder="Modelo" value={filtros.modelo} onChange={(e) => setFiltros({ ...filtros, modelo: e.target.value })} />
-          <Input placeholder="Función" value={filtros.codigo_funcion} onChange={(e) => setFiltros({ ...filtros, codigo_funcion: e.target.value })} />
+          <Input placeholder={t('colModelo')} value={filtros.modelo} onChange={(e) => setFiltros({ ...filtros, modelo: e.target.value })} />
+          <Input placeholder={t('colFuncion')} value={filtros.codigo_funcion} onChange={(e) => setFiltros({ ...filtros, codigo_funcion: e.target.value })} />
           <div className="flex items-center gap-2">
             <label className="flex items-center gap-1.5 text-sm cursor-pointer">
               <input
@@ -228,12 +231,12 @@ export default function PaginaCostosSistema() {
                 onChange={(e) => setFiltros({ ...filtros, solo_errores: e.target.checked })}
                 className="rounded border-gray-300"
               />
-              Solo errores
+              {t('soloErrores')}
             </label>
           </div>
         </div>
         <div className="flex justify-end mb-3">
-          <Boton onClick={cargar}>Aplicar filtros</Boton>
+          <Boton onClick={cargar}>{t('botonAplicarFiltros')}</Boton>
         </div>
         {cargando ? (
           <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>

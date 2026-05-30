@@ -360,7 +360,7 @@ export default function PaginaAplicaciones() {
                             }}
                             className="w-4 h-4 rounded accent-primario"
                           />
-                          <span className="text-texto-muted">Inicial</span>
+                          <span className="text-texto-muted">{t('etiquetaInicial')}</span>
                         </label>
                         <button onClick={() => quitarFuncionApp(fa.codigo_funcion)} className="p-1 rounded hover:bg-red-50 text-texto-muted hover:text-error transition-colors" title="Quitar"><X size={14} /></button>
                       </SortableListItem>
@@ -480,12 +480,12 @@ export default function PaginaAplicaciones() {
           {tabModalApp === 'md' && appEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('labelMarkdownGenerado')}</label>
                 <textarea
                   value={formApp.md || ''}
                   readOnly
                   rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('placeholderMarkdownVacio')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
@@ -503,15 +503,15 @@ export default function PaginaAplicaciones() {
                       try {
                         const r = await aplicacionesApi.generarMd(appEditando.codigo_aplicacion)
                         setFormApp((prev) => ({ ...prev, md: r.md }))
-                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        setMensajeMd({ tipo: 'ok', texto: t('mensajeMarkdownOk') })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorAlGenerar') })
                       } finally { setGenerandoMd(false) }
                     }}
                     cargando={generandoMd}
                     disabled={generandoMd || sincronizandoMd}
                   >
-                    Generar
+                    {t('botonGenerar')}
                   </Boton>
                   <Boton
                     className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -521,13 +521,13 @@ export default function PaginaAplicaciones() {
                         const r = await promptsApi.sincronizarFila('aplicaciones', 'codigo_aplicacion', appEditando.codigo_aplicacion)
                         setMensajeMd({ tipo: 'ok', texto: tc('documentoListoParaVectorizar', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorAlSincronizar') })
                       } finally { setSincronizandoMd(false) }
                     }}
                     cargando={sincronizandoMd}
                     disabled={generandoMd || sincronizandoMd || !formApp.md}
                   >
-                    Sincronizar
+                    {t('botonSincronizar')}
                   </Boton>
                 </div>
                 <Boton variante="contorno" onClick={() => setModalApp(false)}>{tc('salir')}</Boton>

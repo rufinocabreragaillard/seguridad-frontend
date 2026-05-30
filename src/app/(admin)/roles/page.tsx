@@ -751,12 +751,12 @@ function TabRolesGlobales() {
           {tabModal === 'md' && editando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{trx('labelMarkdownGenerado')}</label>
                 <textarea
                   value={form.md || ''}
                   readOnly
                   rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={trx('placeholderMarkdownVacio')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
@@ -774,15 +774,15 @@ function TabRolesGlobales() {
                       try {
                         const r = await rolesApi.generarMd(editando.id_rol)
                         setForm((prev) => ({ ...prev, md: r.md }))
-                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        setMensajeMd({ tipo: 'ok', texto: trx('mensajeMarkdownOk') })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : trx('errorAlGenerar') })
                       } finally { setGenerandoMd(false) }
                     }}
                     cargando={generandoMd}
                     disabled={generandoMd || sincronizandoMd}
                   >
-                    Generar
+                    {trx('botonGenerar')}
                   </Boton>
                   <Boton
                     className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -792,13 +792,13 @@ function TabRolesGlobales() {
                         const r = await promptsApi.sincronizarFila('roles', 'id_rol', String(editando.id_rol))
                         setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : trx('errorAlSincronizar') })
                       } finally { setSincronizandoMd(false) }
                     }}
                     cargando={sincronizandoMd}
                     disabled={generandoMd || sincronizandoMd || !form.md}
                   >
-                    Sincronizar
+                    {trx('botonSincronizar')}
                   </Boton>
                 </div>
                 <Boton variante="contorno" onClick={() => setModalAbierto(false)}>{tc('cerrar')}</Boton>

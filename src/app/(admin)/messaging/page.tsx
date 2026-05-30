@@ -324,7 +324,7 @@ function TabPlantillas() {
             {tabModal === 'datos' && (
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs text-texto-muted">Código</label>
+                  <label className="text-xs text-texto-muted">{tc('codigo')}</label>
                   <Input
                     value={editando.codigo_plantilla || ''}
                     onChange={(e) => setEditando({ ...editando, codigo_plantilla: e.target.value.toUpperCase() })}
@@ -332,7 +332,7 @@ function TabPlantillas() {
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-texto-muted">Canal</label>
+                  <label className="text-xs text-texto-muted">{tmx('labelCanal')}</label>
                   <select
                     value={editando.codigo_canal || ''}
                     onChange={(e) => setEditando({ ...editando, codigo_canal: e.target.value })}
@@ -344,15 +344,15 @@ function TabPlantillas() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-texto-muted">Tipo de evento</label>
+                  <label className="text-xs text-texto-muted">{tmx('labelTipoEvento')}</label>
                   <Input
                     value={editando.tipo_evento || ''}
                     onChange={(e) => setEditando({ ...editando, tipo_evento: e.target.value.toUpperCase() })}
-                    placeholder="BIENVENIDA, VENCE_PRUEBA..."
+                    placeholder={tmx('placeholderTipoEvento')}
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-texto-muted">Asunto</label>
+                  <label className="text-xs text-texto-muted">{tmx('labelAsunto')}</label>
                   <Input
                     value={editando.asunto || ''}
                     onChange={(e) => setEditando({ ...editando, asunto: e.target.value })}
@@ -360,7 +360,7 @@ function TabPlantillas() {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-xs text-texto-muted">Cuerpo (texto fijo, soporta markdown y placeholders {`{nombre_usuario}`}, {`{codigo_grupo}`}...)</label>
+                  <label className="text-xs text-texto-muted">{tmx('labelCuerpo')}</label>
                   <textarea
                     value={editando.cuerpo || ''}
                     onChange={(e) => setEditando({ ...editando, cuerpo: e.target.value })}
@@ -370,32 +370,32 @@ function TabPlantillas() {
                 </div>
 
                 <div>
-                  <label className="text-xs text-texto-muted">Tipo de disparo</label>
+                  <label className="text-xs text-texto-muted">{tmx('labelTipoDisparo')}</label>
                   <select
                     value={editando.tipo_disparo || ''}
                     onChange={(e) => setEditando({ ...editando, tipo_disparo: e.target.value || null })}
                     className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm"
                   >
-                    {TIPOS_DISPARO.map((t) => (
-                      <option key={t} value={t}>{t || '— sin definir —'}</option>
+                    {TIPOS_DISPARO.map((td) => (
+                      <option key={td} value={td}>{td || tmx('sinDefinir')}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="text-xs text-texto-muted">Frecuencia</label>
+                  <label className="text-xs text-texto-muted">{tmx('labelFrecuencia')}</label>
                   <select
                     value={editando.frecuencia || ''}
                     onChange={(e) => setEditando({ ...editando, frecuencia: e.target.value || null })}
                     className="w-full rounded-lg border border-borde bg-surface px-3 py-2 text-sm"
                   >
-                    {FRECUENCIAS.map((f) => (
-                      <option key={f} value={f}>{f || '— sin definir —'}</option>
+                    {FRECUENCIAS.map((fr) => (
+                      <option key={fr} value={fr}>{fr || tmx('sinDefinir')}</option>
                     ))}
                   </select>
                 </div>
 
                 <div>
-                  <label className="text-xs text-texto-muted">Prioridad (menor = primero)</label>
+                  <label className="text-xs text-texto-muted">{tmx('labelPrioridad')}</label>
                   <Input
                     type="number"
                     value={editando.prioridad ?? 100}
@@ -414,7 +414,7 @@ function TabPlantillas() {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-xs text-texto-muted">id_modelo (registro_llm)</label>
+                  <label className="text-xs text-texto-muted">{tmx('labelIdModelo')}</label>
                   <Input
                     type="number"
                     value={editando.id_modelo ?? ''}

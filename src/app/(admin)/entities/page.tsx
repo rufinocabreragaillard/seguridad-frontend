@@ -293,7 +293,7 @@ export default function PaginaEntidades() {
       {tabActiva === 'entidades' && (
         <>
           <div className="flex items-center justify-between gap-4">
-            <p className="text-sm text-texto-muted">{entidades.length} entidades registradas</p>
+            <p className="text-sm text-texto-muted">{entidades.length} {t('contadorEntidadesRegistradas')}</p>
             <div className="flex gap-2">
               <Boton variante="contorno" tamano="sm"
                 onClick={() => exportarExcel(entidadesFiltradas as unknown as Record<string, unknown>[], [
@@ -323,8 +323,8 @@ export default function PaginaEntidades() {
               <TablaCabecera><tr>
                 <TablaTh className="w-8"></TablaTh>
                 <TablaTh className="w-10">#</TablaTh>
-                <TablaTh>Código</TablaTh><TablaTh>Nombre</TablaTh><TablaTh>Descripción</TablaTh>
-                <TablaTh className="text-right">Acciones</TablaTh>
+                <TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{tc('descripcion')}</TablaTh>
+                <TablaTh className="text-right">{tc('acciones')}</TablaTh>
               </tr></TablaCabecera>
               <TablaCuerpo>
                 {entidadesFiltradas.length === 0 ? (
@@ -362,13 +362,13 @@ export default function PaginaEntidades() {
         <>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <p className="text-sm text-texto-muted">Entidad:</p>
+              <p className="text-sm text-texto-muted">{t('labelEntidad')}</p>
               <select
                 value={entidadSeleccionada?.codigo_entidad || ''}
                 onChange={(e) => { const ent = entidades.find((x) => x.codigo_entidad === e.target.value) || null; setEntidadSeleccionada(ent) }}
                 className="rounded-lg border border-borde bg-surface px-3 py-2 text-sm text-texto focus:outline-none focus:ring-1 focus:ring-primario"
               >
-                <option value="">Selecciona entidad</option>
+                <option value="">{t('placeholderSelectEntidad')}</option>
                 {entidades.map((e) => <option key={e.codigo_entidad} value={e.codigo_entidad}>{e.nombre}</option>)}
               </select>
             </div>
@@ -391,7 +391,7 @@ export default function PaginaEntidades() {
                     <Download size={15} /> Excel
                   </Boton>
                   <Boton variante="primario" tamano="sm" onClick={abrirNuevaArea}>
-                    <Plus size={14} /> Nueva ubicación
+                    <Plus size={14} /> {t('botonNuevaUbicacion')}
                   </Boton>
                 </>
               )}
@@ -412,7 +412,7 @@ export default function PaginaEntidades() {
                   <TablaTh className="w-14">{tc('codigo')}</TablaTh>
                   <TablaTh>{tc('nombre')}</TablaTh>
                   <TablaTh className="w-36">{tc('alias')}</TablaTh>
-                  <TablaTh className="w-16">Ubic. Superior</TablaTh>
+                  <TablaTh className="w-16">{t('colUbicSuperior')}</TablaTh>
                   <TablaTh className="w-24">{tc('tipo')}</TablaTh>
                   <TablaTh className="w-20 text-right">{tc('acciones')}</TablaTh>
                 </tr></TablaCabecera>
@@ -424,7 +424,7 @@ export default function PaginaEntidades() {
                       <TablaTd className="py-8 text-center" colSpan={6 as never}>
                         <div className="flex flex-col items-center gap-2 text-texto-muted">
                           <MapPin size={24} />
-                          <p className="text-sm">{busquedaAreas ? 'No se encontraron ubicaciones' : 'No hay ubicaciones configuradas'}</p>
+                          <p className="text-sm">{busquedaAreas ? t('noUbicacionesEncontradas') : t('sinUbicaciones')}</p>
                         </div>
                       </TablaTd>
                     </TablaFila>
@@ -644,12 +644,12 @@ export default function PaginaEntidades() {
           {tabModalEntidad === 'md' && entidadEditando && (
             <div className="flex flex-col gap-3">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('labelMarkdownGenerado')}</label>
                 <textarea
                   value={mdEnt}
                   readOnly
                   rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('placeholderMarkdownVacio')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
@@ -667,15 +667,15 @@ export default function PaginaEntidades() {
                       try {
                         const r = await entidadesApi.generarMd(entidadEditando.codigo_entidad)
                         setMdEnt(r.md)
-                        setMensajeMdEnt({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        setMensajeMdEnt({ tipo: 'ok', texto: t('mensajeMarkdownOk') })
                       } catch (e) {
-                        setMensajeMdEnt({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        setMensajeMdEnt({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorAlGenerar') })
                       } finally { setGenerandoMdEnt(false) }
                     }}
                     cargando={generandoMdEnt}
                     disabled={generandoMdEnt || sincronizandoMdEnt}
                   >
-                    Generar
+                    {t('botonGenerar')}
                   </Boton>
                   <Boton
                     className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -685,13 +685,13 @@ export default function PaginaEntidades() {
                         const r = await promptsApi.sincronizarFila('entidades', 'codigo_entidad', entidadEditando.codigo_entidad)
                         setMensajeMdEnt({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
                       } catch (e) {
-                        setMensajeMdEnt({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        setMensajeMdEnt({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorAlSincronizar') })
                       } finally { setSincronizandoMdEnt(false) }
                     }}
                     cargando={sincronizandoMdEnt}
                     disabled={generandoMdEnt || sincronizandoMdEnt || !mdEnt}
                   >
-                    Sincronizar
+                    {t('botonSincronizar')}
                   </Boton>
                 </div>
                 <Boton variante="contorno" onClick={() => setModalEntidad(false)}>{tc('salir')}</Boton>

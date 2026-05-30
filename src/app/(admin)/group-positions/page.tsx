@@ -440,7 +440,7 @@ export default function PaginaPerfilesAdmin() {
                     {busquedaRol.length > 0 && !rolNuevo && (
                       <div className="absolute z-10 mt-1 w-full max-h-52 overflow-y-auto rounded-lg border border-borde bg-surface shadow-lg">
                         {rolesFiltrados.length === 0 ? (
-                          <div className="p-2 text-xs text-texto-muted">Sin resultados</div>
+                          <div className="p-2 text-xs text-texto-muted">{tc('sinResultados')}</div>
                         ) : (
                           rolesFiltrados.slice(0, 20).map((r) => (
                             <button
@@ -467,7 +467,7 @@ export default function PaginaPerfilesAdmin() {
                     disabled={!rolNuevo || asignandoRol}
                   >
                     <Plus size={14} />
-                    Asignar
+                    {tc('asignar')}
                   </Boton>
                 </div>
               </div>
@@ -531,12 +531,12 @@ export default function PaginaPerfilesAdmin() {
           {tabActiva === 'md' && crud.editando && (
             <div className="flex flex-col gap-3 min-h-[420px]">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('labelMarkdownGenerado')}</label>
                 <textarea
                   value={crud.form.md || ''}
                   readOnly
                   rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('placeholderMarkdownVacio')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
@@ -555,15 +555,15 @@ export default function PaginaPerfilesAdmin() {
                       try {
                         const r = await perfilesAdminApi.generarMd(crud.editando.codigo_perfil)
                         crud.updateForm('md', r.md)
-                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        setMensajeMd({ tipo: 'ok', texto: t('mensajeMarkdownOk') })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorAlGenerar') })
                       } finally { setGenerandoMd(false) }
                     }}
                     cargando={generandoMd}
                     disabled={generandoMd || sincronizandoMd}
                   >
-                    Generar
+                    {t('botonGenerar')}
                   </Boton>
                   <Boton
                     className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -574,13 +574,13 @@ export default function PaginaPerfilesAdmin() {
                         const r = await promptsApi.sincronizarFila('perfiles', 'codigo_perfil', crud.editando.codigo_perfil)
                         setMensajeMd({ tipo: 'ok', texto: `Documento ${r.accion} (código ${r.codigo_documento}). Listo para CHUNKEAR + VECTORIZAR.` })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorAlSincronizar') })
                       } finally { setSincronizandoMd(false) }
                     }}
                     cargando={sincronizandoMd}
                     disabled={generandoMd || sincronizandoMd || !crud.form.md}
                   >
-                    Sincronizar
+                    {t('botonSincronizar')}
                   </Boton>
                 </div>
                 <Boton variante="contorno" onClick={crud.cerrarModal}>{tc('cerrar')}</Boton>
