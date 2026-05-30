@@ -1313,6 +1313,10 @@ export default function PaginaCargaDocsUsuario() {
                 .sort((a, b) => a.nombre_ubicacion.localeCompare(b.nombre_ubicacion))
               const columnaUbicaciones = (
                 <div className="rounded-xl border border-borde bg-fondo-tarjeta p-4 flex flex-col gap-3 min-w-0">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-lg font-semibold text-texto-muted leading-tight">{t('paso1Titulo')}</span>
+                    <span className="text-sm text-texto-muted">{t('paso1Subtitulo')}</span>
+                  </div>
                   <Boton
                     variante="contorno"
                     onClick={iniciarEscaneoDir}
@@ -1375,7 +1379,11 @@ export default function PaginaCargaDocsUsuario() {
                   }}
                   ejecutando={ejecutando}
                   slotArribaBotones={(
-                    <div className="flex flex-col gap-1">
+                    <div className="flex flex-col gap-3">
+                      <div className="flex flex-col gap-0.5 -mt-1">
+                        <span className="text-lg font-semibold text-texto-muted leading-tight">{t('paso2Titulo')}</span>
+                      </div>
+                      <div className="flex flex-col gap-1">
                       <label className="text-xs font-medium text-texto-muted">
                         {t('nivelCargaSemantica')}
                       </label>
@@ -1405,32 +1413,31 @@ export default function PaginaCargaDocsUsuario() {
                       <span className="text-[10px] text-texto-muted leading-snug">
                         {nivelCarga === 'ALTO' ? t('nivelAltoDesc') : t('nivelBajoDesc')}
                       </span>
+                      </div>
                     </div>
                   )}
                   columnaIzquierda={columnaUbicaciones}
                   porQueTexto={t('narrativoPorQue')}
                   mensajeError={mensajeError || null}
                   mensajeAdvertencia={mensajeAdvertencia || null}
+                  slotBajoDial={(ejecutando || todosListos) ? (
+                    <div className="flex flex-col items-center gap-0.5">
+                      <p className="text-center text-base text-texto-muted">
+                        {ejecutando ? t('procesando', { tiempo: formatTiempo(tiempoTranscurrido) }) : t('completadoEn', { tiempo: formatTiempo(tiempoTranscurrido) })}
+                      </p>
+                      {ejecutando && (
+                        <>
+                          <p className="text-center text-base text-texto-muted">{mensajeEnProc}</p>
+                          {mensajeEtaPipeline && (
+                            <p className="text-center text-base text-texto-muted">{mensajeEtaPipeline}</p>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  ) : null}
                 />
               )
             })()}
-
-            {/* Timer informativo (los botones ya viven en PipelineNarrativo arriba) */}
-            {(ejecutando || todosListos) && (
-              <div className="flex flex-col items-center gap-0.5">
-                <p className="text-center text-base text-texto-muted">
-                  {ejecutando ? t('procesando', { tiempo: formatTiempo(tiempoTranscurrido) }) : t('completadoEn', { tiempo: formatTiempo(tiempoTranscurrido) })}
-                </p>
-                {ejecutando && (
-                  <>
-                    <p className="text-center text-base text-texto-muted">{mensajeEnProc}</p>
-                    {mensajeEtaPipeline && (
-                      <p className="text-center text-base text-texto-muted">{mensajeEtaPipeline}</p>
-                    )}
-                  </>
-                )}
-              </div>
-            )}
         </div>
 
       {/* ══════════════════════════════════════════════════════════════════════

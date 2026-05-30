@@ -75,6 +75,8 @@ interface PipelineConversacionalProps {
    * [columnaIzquierda] · [dial+mensaje] · [tarjeta botones + Ahora mismo]
    */
   columnaIzquierda?: React.ReactNode
+  /** Slot opcional que se renderiza debajo del dial, centrado en su misma columna. */
+  slotBajoDial?: React.ReactNode
 }
 
 export function PipelineConversacional({
@@ -85,6 +87,7 @@ export function PipelineConversacional({
   mensajeAdvertencia,
   slotArribaBotones,
   columnaIzquierda,
+  slotBajoDial,
 }: PipelineConversacionalProps) {
   const t = useTranslations('pipelineConversacional')
   const tresColumnas = !!columnaIzquierda
@@ -182,6 +185,11 @@ export function PipelineConversacional({
               ejecutando={ejecutando}
               tamano={220}
             />
+            {slotBajoDial && (
+              <div className="w-full flex flex-col items-center">
+                {slotBajoDial}
+              </div>
+            )}
             {enProceso.estadisticas && (
               <div className="flex items-center gap-4 text-xs tabular-nums">
                 <span className="flex items-center gap-1.5">
