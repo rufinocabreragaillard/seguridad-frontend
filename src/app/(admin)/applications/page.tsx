@@ -115,15 +115,15 @@ export default function PaginaAplicaciones() {
     setAppEditando(a); setFormApp({
       codigo_aplicacion: a.codigo_aplicacion, nombre: a.nombre, alias: a.alias || '', descripcion: a.descripcion || '',
       tipo_acceso: normalizarTipo(a.tipo_acceso), sidebar_ancho: a.sidebar_ancho !== false,
-      prompt_insert: (a as Record<string, unknown>).prompt_insert as string || '',
-      prompt_update: (a as Record<string, unknown>).prompt_update as string || '',
-      system_prompt: (a as Record<string, unknown>).system_prompt as string || '',
-      python_insert: (a as Record<string, unknown>).python_insert as string || '',
-      python_update: (a as Record<string, unknown>).python_update as string || '',
-      javascript: (a as Record<string, unknown>).javascript as string || '',
-      python_editado_manual: ((a as Record<string, unknown>).python_editado_manual as boolean) ?? false,
-      javascript_editado_manual: ((a as Record<string, unknown>).javascript_editado_manual as boolean) ?? false,
-      md: (a as Record<string, unknown>).md as string || '',
+      prompt_insert: a.prompt_insert || '',
+      prompt_update: a.prompt_update || '',
+      system_prompt: a.system_prompt || '',
+      python_insert: a.python_insert || '',
+      python_update: a.python_update || '',
+      javascript: a.javascript || '',
+      python_editado_manual: a.python_editado_manual ?? false,
+      javascript_editado_manual: a.javascript_editado_manual ?? false,
+      md: a.md || '',
     })
     setErrorApp(''); setMensajeMd(null); setTabModalApp(tabInicial); cargarFuncionesApp(a.codigo_aplicacion); cargarGruposApp(a.codigo_aplicacion); setModalApp(true)
   }
@@ -227,7 +227,7 @@ export default function PaginaAplicaciones() {
         </div>
       </div>
 
-      <SortableDndContext items={appsFiltradas as unknown as Record<string,unknown>[]} getId={(a) => (a as Aplicacion).codigo_aplicacion} onReorder={(n) => reordenarApps(n as unknown as Aplicacion[])} disabled={!!busqueda}>
+      <SortableDndContext items={appsFiltradas} getId={(a) => a.codigo_aplicacion} onReorder={(n) => reordenarApps(n)} disabled={!!busqueda}>
         <Tabla>
           <TablaCabecera><tr><TablaTh className="w-8" /><TablaTh>{t('colCodigo')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh>{t('colTipo')}</TablaTh><TablaTh>{t('colDescripcion')}</TablaTh><TablaTh className="text-right">{tc('acciones')}</TablaTh></tr></TablaCabecera>
           <TablaCuerpo>

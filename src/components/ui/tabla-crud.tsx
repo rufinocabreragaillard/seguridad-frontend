@@ -31,7 +31,7 @@ interface TablaCrudProps<T> {
   sortDisabled?: boolean
 }
 
-export function TablaCrud<T extends Record<string, unknown>>({
+export function TablaCrud<T extends object>({
   columnas,
   items,
   cargando,

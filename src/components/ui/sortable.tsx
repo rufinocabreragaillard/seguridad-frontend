@@ -20,7 +20,7 @@ import { GripVertical } from 'lucide-react'
 
 // ── Context wrapper (no DOM element) ─────────────────────────────────────────
 
-interface SortableDndContextProps<T extends Record<string, unknown>> {
+interface SortableDndContextProps<T extends object> {
   items: T[]
   getId: (item: T) => string
   onReorder: (newItems: T[]) => void
@@ -28,7 +28,7 @@ interface SortableDndContextProps<T extends Record<string, unknown>> {
   children: ReactNode
 }
 
-export function SortableDndContext<T extends Record<string, unknown>>({
+export function SortableDndContext<T extends object>({
   items,
   getId,
   onReorder,

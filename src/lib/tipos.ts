@@ -320,6 +320,10 @@ export interface Aplicacion {
   python_insert?: string | null
   python_update?: string | null
   system_prompt?: string | null
+  javascript?: string | null
+  python_editado_manual?: boolean | null
+  javascript_editado_manual?: boolean | null
+  md?: string | null
 }
 
 // ─── Parámetros ──────────────────────────────────────────────────────────────
