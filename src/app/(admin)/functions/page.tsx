@@ -408,7 +408,7 @@ export default function PaginaFunciones() {
     { key: 'datos', label: t('tabDatos') },
     { key: 'otros', label: t('tabOtros') },
     ...(funcionEditando ? [
-      { key: 'roles', label: `Roles (${rolesDeFuncion.length})` },
+      { key: 'roles', label: `${tc('tabRoles')} (${rolesDeFuncion.length})` },
       { key: 'aplicaciones', label: `${t('tabAplicaciones')} (${appsDeFuncion.length})` },
       ...(esAdmin ? [
         { key: 'system_prompt', label: t('tabSystemPrompt') },
@@ -539,31 +539,35 @@ export default function PaginaFunciones() {
           </p>
           <Tabla>
             <TablaCabecera><tr>
+              <TablaTh className="w-8"></TablaTh>
+              <TablaTh className="w-10">#</TablaTh>
               <TablaTh className="w-20 text-center">{t('tablasTradColActiva')}</TablaTh>
-              <TablaTh className="w-48">{t('tablasTradColTabla')}</TablaTh>
+              <TablaTh>{t('tablasTradColTabla')}</TablaTh>
               <TablaTh className="w-24 text-center">{t('tablasTradColCampos')}</TablaTh>
-              <TablaTh className="w-56">{t('tablasTradColPk')}</TablaTh>
+              <TablaTh>{t('tablasTradColPk')}</TablaTh>
               <TablaTh>{t('tablasTradColDescripcion')}</TablaTh>
-              <TablaTh className="text-right w-28">{tc('acciones')}</TablaTh>
+              <TablaTh className="text-right">{tc('acciones')}</TablaTh>
             </tr></TablaCabecera>
             <TablaCuerpo>
               {cargandoTablas ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>{tc('cargando')}</TablaTd></TablaFila>
+                <tr><TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>{tc('cargando')}</TablaTd></tr>
               ) : tablasTrad.length === 0 ? (
-                <TablaFila><TablaTd className="py-8 text-center text-texto-muted" colSpan={6 as never}>{t('tablasTradVacio')}</TablaTd></TablaFila>
-              ) : tablasTrad.map((tt) => (
+                <tr><TablaTd className="py-8 text-center text-texto-muted" colSpan={8 as never}>{t('tablasTradVacio')}</TablaTd></tr>
+              ) : tablasTrad.map((tt, idx) => (
                 <TablaFila key={tt.nombre_tabla}>
+                  <TablaTd className="w-8"></TablaTd>
+                  <TablaTd className="text-xs text-texto-muted w-10 text-center">{idx + 1}</TablaTd>
                   <TablaTd className="text-center">
                     <input type="checkbox" checked={tt.activa} onChange={() => toggleActivaTabla(tt)} className="w-4 h-4 rounded accent-primario cursor-pointer" />
                   </TablaTd>
                   <TablaTd onDoubleClick={() => abrirEditarTabla(tt)}>
-                    <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tt.nombre_tabla}</code>
+                    <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tt.nombre_tabla}</code>
                   </TablaTd>
                   <TablaTd className="text-center text-sm">{tt.campos.length}</TablaTd>
                   <TablaTd onDoubleClick={() => abrirEditarTabla(tt)}>
-                    <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tt.pk_partes && tt.pk_partes.length ? tt.pk_partes.join(' + ') : tt.pk}</code>
+                    <code className="text-xs bg-surface border border-borde rounded px-1.5 py-0.5">{tt.pk_partes && tt.pk_partes.length ? tt.pk_partes.join(' + ') : tt.pk}</code>
                   </TablaTd>
-                  <TablaTd className="text-sm">{tt.descripcion ? tt.descripcion : <span className="text-texto-muted">—</span>}</TablaTd>
+                  <TablaTd className="text-texto-muted text-sm">{tt.descripcion || <span className="text-texto-light">—</span>}</TablaTd>
                   <TablaTd>
                     <div className="flex items-center justify-end gap-1">
                       <button onClick={() => abrirEditarTabla(tt)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>

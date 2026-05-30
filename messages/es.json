@@ -232,7 +232,20 @@
     "regenerar": "Regenerar",
     "sincronizar": "Sincronizar",
     "sincronizando": "Sincronizando…",
-    "quitar": "Quitar"
+    "quitar": "Quitar",
+    "tabSystemPrompt": "System Prompt",
+    "tabProgInsert": "Prog. Insert",
+    "tabProgUpdate": "Prog. Update",
+    "tabMd": ".md",
+    "tabLlm": "LLM",
+    "tabVista": "Vista",
+    "tabPrompts": "Prompts",
+    "tabPromptInsert": "Prompt Insert",
+    "tabJson": "JSON",
+    "tabRoles": "Roles",
+    "tabFunciones": "Funciones",
+    "tabUsuarios": "Usuarios",
+    "tabOtrosDatos": "Otros datos"
   },
   "tabPrompts": {
     "promptInsert": "Prompt INSERT",
@@ -425,7 +438,10 @@
     "soportaRecepcion": "Soporta recepción (entrada)",
     "systemPromptCanal": "System prompt común al canal",
     "promptInsertCanal": "Prompt insert común al canal",
-    "sinEnvios": "Sin envíos"
+    "sinEnvios": "Sin envíos",
+    "tabPlantillas": "Plantillas",
+    "tabCanales": "Canales",
+    "tabHistorial": "Historial"
   },
   "seedUsersExtra": {
     "inicializacion": "Inicialización",
@@ -762,7 +778,8 @@
     "parametroGuardado": "Parámetro guardado correctamente",
     "parametroEliminado": "Parámetro eliminado",
     "eliminarTitulo": "Eliminar parámetro",
-    "eliminarConfirm": "¿Eliminar el parámetro {cat} / {tipo}? Esta acción no se puede deshacer."
+    "eliminarConfirm": "¿Eliminar el parámetro {cat} / {tipo}? Esta acción no se puede deshacer.",
+    "tabGenerales": "Generales"
   },
   "systemParameters": {
     "titulo": "Parámetros Generales",
@@ -1773,7 +1790,11 @@
     "buscarUsuarioPlaceholder": "Buscar usuario por nombre o correo...",
     "filtrarUsuariosPlaceholder": "Filtrar usuarios del grupo...",
     "agregarUsuario": "Agregar",
-    "placeholderNombreEntidad": "Municipalidad de..."
+    "placeholderNombreEntidad": "Municipalidad de...",
+    "tabGrupos": "Grupos",
+    "tabEntidades": "Entidades",
+    "tabCambiarGrupo": "Cambiar Grupo",
+    "tabBorrarGrupo": "Borrar Grupo"
   },
   "entities": {
     "titulo": "Entidades y Áreas",

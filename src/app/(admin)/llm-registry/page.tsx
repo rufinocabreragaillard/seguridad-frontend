@@ -309,10 +309,10 @@ export default function PaginaRegistroLLM() {
                 <div className="flex border-b border-borde -mx-1">
                   <button onClick={() => setTabModal('datos')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'datos' ? ' tab-nav-activo' : ''}`}>{t('tabDatos')}</button>
                   <button onClick={() => setTabModal('probar')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'probar' ? ' tab-nav-activo' : ''}`}>{t('tabProbarConexion')}</button>
-                  <button onClick={() => setTabModal('system_prompt')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'system_prompt' ? ' tab-nav-activo' : ''}`}>System Prompt</button>
-                  <button onClick={() => setTabModal('programacion_insert')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'programacion_insert' ? ' tab-nav-activo' : ''}`}>Prog. Insert</button>
-                  <button onClick={() => setTabModal('programacion_update')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'programacion_update' ? ' tab-nav-activo' : ''}`}>Prog. Update</button>
-                  <button onClick={() => setTabModal('md')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'md' ? ' tab-nav-activo' : ''}`}>.md</button>
+                  <button onClick={() => setTabModal('system_prompt')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'system_prompt' ? ' tab-nav-activo' : ''}`}>{tc('tabSystemPrompt')}</button>
+                  <button onClick={() => setTabModal('programacion_insert')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'programacion_insert' ? ' tab-nav-activo' : ''}`}>{tc('tabProgInsert')}</button>
+                  <button onClick={() => setTabModal('programacion_update')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'programacion_update' ? ' tab-nav-activo' : ''}`}>{tc('tabProgUpdate')}</button>
+                  <button onClick={() => setTabModal('md')} className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === 'md' ? ' tab-nav-activo' : ''}`}>{tc('tabMd')}</button>
                 </div>
               )}
 

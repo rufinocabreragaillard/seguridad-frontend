@@ -344,8 +344,8 @@ export default function PaginaHabilidades() {
       >
         {/* Tabs */}
         <div className="flex gap-0 border-b border-borde -mt-2 mb-4">
-          <button type="button" className={tabStyle(tabModal === 'datos')}   onClick={() => setTabModal('datos')}>Datos</button>
-          <button type="button" className={tabStyle(tabModal === 'prompts')} onClick={() => setTabModal('prompts')}>Prompts</button>
+          <button type="button" className={tabStyle(tabModal === 'datos')}   onClick={() => setTabModal('datos')}>{tc('datos')}</button>
+          <button type="button" className={tabStyle(tabModal === 'prompts')} onClick={() => setTabModal('prompts')}>{tc('tabPrompts')}</button>
         </div>
 
         <div className="flex flex-col">

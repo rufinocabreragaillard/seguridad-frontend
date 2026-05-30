@@ -320,10 +320,10 @@ function TabRolesGlobales() {
     { key: 'datos', label: t('tabDatos') },
     ...(editando ? [
       { key: 'funciones' as TabModal, label: `${t('tabFunciones')} (${funcionesRol.length})` },
-      { key: 'system_prompt' as TabModal, label: 'System Prompt' },
-      { key: 'programacion_insert' as TabModal, label: 'Prog. Insert' },
-      { key: 'programacion_update' as TabModal, label: 'Prog. Update' },
-      { key: 'md' as TabModal, label: '.md' },
+      { key: 'system_prompt' as TabModal, label: tc('tabSystemPrompt') },
+      { key: 'programacion_insert' as TabModal, label: tc('tabProgInsert') },
+      { key: 'programacion_update' as TabModal, label: tc('tabProgUpdate') },
+      { key: 'md' as TabModal, label: tc('tabMd') },
     ] : []),
   ]
 

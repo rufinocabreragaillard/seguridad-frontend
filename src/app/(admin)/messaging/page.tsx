@@ -50,6 +50,10 @@ function iconoCanal(codigo: string) {
 
 export default function PaginaMensajeria() {
   const [tab, setTab] = useState<Tab>('plantillas')
+  const tmx = useTranslations('messagingExtra')
+
+  const labelTab = (t: Tab) =>
+    t === 'plantillas' ? tmx('tabPlantillas') : t === 'canales' ? tmx('tabCanales') : tmx('tabHistorial')
 
   return (
     <div className="space-y-4">
@@ -62,7 +66,7 @@ export default function PaginaMensajeria() {
             onClick={() => setTab(t)}
             className={`px-4 py-2 tab-nav${tab === t ? ' tab-nav-activo' : ''}`}
           >
-            {t === 'plantillas' ? 'Plantillas' : t === 'canales' ? 'Canales' : 'Historial'}
+            {labelTab(t)}
           </button>
         ))}
       </div>
@@ -301,9 +305,9 @@ function TabPlantillas() {
           {/* Lenguetas */}
           <div className="flex border-b border-borde mb-4">
             {([
-              { key: 'datos', label: 'Datos' },
-              { key: 'system_prompt', label: 'System Prompt' },
-              { key: 'prompt_insert', label: 'Prompt Insert' },
+              { key: 'datos', label: tc('datos') },
+              { key: 'system_prompt', label: tc('tabSystemPrompt') },
+              { key: 'prompt_insert', label: tc('tabPromptInsert') },
             ] as const).map(({ key, label }) => (
               <button
                 key={key}

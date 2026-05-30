@@ -308,7 +308,7 @@ export default function PaginaParametros() {
 
   // ── Tabs config ───────────────────────────────────────────────────────────
   const tabs: { id: TabId; label: string; icon: typeof SlidersHorizontal; visible: boolean }[] = [
-    { id: 'generales', label: 'Generales', icon: SlidersHorizontal, visible: esSuperAdmin() },
+    { id: 'generales', label: t('tabGenerales'), icon: SlidersHorizontal, visible: esSuperAdmin() },
     { id: 'grupo', label: t('tabGrupo'), icon: Layers, visible: true },
     { id: 'entidad', label: t('tabEntidad'), icon: Building2, visible: true },
     { id: 'usuario', label: t('tabUsuario'), icon: User, visible: true },

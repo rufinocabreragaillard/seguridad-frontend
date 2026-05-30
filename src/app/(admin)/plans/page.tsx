@@ -221,7 +221,7 @@ export default function PaginaPlanes() {
               {([
                 { key: 'datos', label: t('tabDatos') },
                 ...(editando ? [
-                  { key: 'funciones' as TabModal, label: `Funciones (${funcionesAsignadas.size})` },
+                  { key: 'funciones' as TabModal, label: `${tc('tabFunciones')} (${funcionesAsignadas.size})` },
                   { key: 'system_prompt' as TabModal, label: t('tabSystemPrompt') },
                   { key: 'programacion_insert' as TabModal, label: t('tabProgramacionInsert') },
                   { key: 'programacion_update' as TabModal, label: t('tabProgramacionUpdate') },

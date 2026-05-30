@@ -150,7 +150,7 @@ export default function PaginaTiposDocumentoPersona() {
                 onClick={() => setTabModal(tab)}
                 className={`flex-1 text-center px-4 py-2 tab-nav${tabModal === tab ? ' tab-nav-activo' : ''}`}
               >
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : '.md'}
+                {tab === 'datos' ? tc('datos') : tab === 'system_prompt' ? tc('tabSystemPrompt') : tab === 'programacion_insert' ? tc('tabProgInsert') : tab === 'programacion_update' ? tc('tabProgUpdate') : tc('tabMd')}
               </button>
             ))}
           </div>

@@ -189,8 +189,8 @@ export default function PaginaTareasMantenedor() {
         <div className="flex flex-col gap-4 min-w-[400px] min-h-[500px]">
           <div className="flex gap-1 border-b border-borde -mt-2">
             {([
-              { key: 'datos' as TabTarea, label: 'Datos' },
-              { key: 'json' as TabTarea, label: 'JSON' },
+              { key: 'datos' as TabTarea, label: tc('datos') },
+              { key: 'json' as TabTarea, label: tc('tabJson') },
             ]).map((tb) => (
               <button
                 key={tb.key}

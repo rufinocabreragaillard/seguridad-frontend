@@ -358,10 +358,10 @@ export default function PaginaPerfiles() {
           />
         </div>
         <Boton variante="contorno" className="h-[38px]" onClick={expandirTodos} disabled={crud.items.length === 0}>
-          Expandir todo
+          {t('botonExpandirTodo')}
         </Boton>
         <Boton variante="contorno" className="h-[38px]" onClick={colapsarTodos} disabled={expandidos.size === 0}>
-          Colapsar todo
+          {t('botonColapsarTodo')}
         </Boton>
       </div>
 
@@ -405,10 +405,10 @@ export default function PaginaPerfiles() {
                   : tab === 'system_prompt'
                   ? t('tabSystemPrompt')
                   : tab === 'programacion_insert'
-                  ? 'Prog. Insert'
+                  ? tc('tabProgInsert')
                   : tab === 'programacion_update'
-                  ? 'Prog. Update'
-                  : '.md'}
+                  ? tc('tabProgUpdate')
+                  : tc('tabMd')}
               </button>
             ))}
           </div>
@@ -458,13 +458,13 @@ export default function PaginaPerfiles() {
 
                 {/* Selector de perfil superior */}
                 <div className="flex flex-col gap-1 sm:col-span-2">
-                  <label className="text-sm font-medium text-texto">Perfil superior</label>
+                  <label className="text-sm font-medium text-texto">{t('labelPerfilSuperior')}</label>
                   <select
                     className={selectClass}
                     value={crud.form.codigo_perfil_superior}
                     onChange={(e) => crud.updateForm('codigo_perfil_superior', e.target.value)}
                   >
-                    <option value="">— Sin superior (raíz) —</option>
+                    <option value="">{t('opcionSinSuperior')}</option>
                     {opcionesPadre(crud.editando?.codigo_perfil)
                       .sort((a, b) => a.nombre_perfil.localeCompare(b.nombre_perfil))
                       .map((c) => (
@@ -473,7 +473,7 @@ export default function PaginaPerfiles() {
                         </option>
                       ))}
                   </select>
-                  <p className="text-xs text-texto-muted">Perfil padre en la jerarquía. Vacío = nivel raíz.</p>
+                  <p className="text-xs text-texto-muted">{t('ayudaPerfilSuperior')}</p>
                 </div>
 
                 <div className="sm:col-span-2">
@@ -627,12 +627,12 @@ export default function PaginaPerfiles() {
           {tabActiva === 'md' && crud.editando && (
             <div className="flex flex-col gap-4 min-h-[500px]">
               <div className="flex flex-col gap-1.5">
-                <label className="text-sm font-medium text-texto">Markdown generado (solo lectura)</label>
+                <label className="text-sm font-medium text-texto">{t('labelMarkdownGenerado')}</label>
                 <textarea
                   value={md}
                   readOnly
                   rows={13}
-                  placeholder="Sin contenido. Presiona Generar para crear el documento Markdown."
+                  placeholder={t('placeholderMarkdownVacio')}
                   className="w-full rounded-lg border border-borde bg-fondo px-3 py-2 text-sm text-texto font-mono focus:outline-none resize-none cursor-default"
                 />
               </div>
@@ -650,15 +650,15 @@ export default function PaginaPerfiles() {
                       try {
                         const r = await perfilesAdminApi.generarMd(crud.editando!.codigo_perfil)
                         setMd(r.md)
-                        setMensajeMd({ tipo: 'ok', texto: 'Markdown generado correctamente.' })
+                        setMensajeMd({ tipo: 'ok', texto: t('mensajeMarkdownOk') })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al generar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorAlGenerar') })
                       } finally { setGenerandoMd(false) }
                     }}
                     cargando={generandoMd}
                     disabled={generandoMd || sincronizandoMd}
                   >
-                    Generar
+                    {t('botonGenerar')}
                   </Boton>
                   <Boton
                     className="bg-primario-light hover:bg-primario text-white focus:ring-primario"
@@ -668,13 +668,13 @@ export default function PaginaPerfiles() {
                         const r = await promptsApi.sincronizarFila('perfiles', 'codigo_perfil', crud.editando!.codigo_perfil)
                         setMensajeMd({ tipo: 'ok', texto: tc('documentoListoParaVectorizar', { accion: r.accion, codigo: r.codigo_documento }) })
                       } catch (e) {
-                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : 'Error al sincronizar' })
+                        setMensajeMd({ tipo: 'error', texto: e instanceof Error ? e.message : t('errorAlSincronizar') })
                       } finally { setSincronizandoMd(false) }
                     }}
                     cargando={sincronizandoMd}
                     disabled={generandoMd || sincronizandoMd || !md}
                   >
-                    Sincronizar
+                    {t('botonSincronizar')}
                   </Boton>
                 </div>
                 <Boton variante="contorno" onClick={crud.cerrarModal}>{tc('salir')}</Boton>

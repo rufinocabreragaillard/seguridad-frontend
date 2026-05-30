@@ -195,9 +195,9 @@ export default function PaginaPerfilesAdmin() {
     ...(crud.editando ? [
       { key: 'roles' as TabModal, label: `${t('tabRoles')} (${rolesPerfil.length})` },
       { key: 'system_prompt' as TabModal, label: t('tabSystemPrompt') },
-      { key: 'programacion_insert' as TabModal, label: 'Prog. Insert' },
-      { key: 'programacion_update' as TabModal, label: 'Prog. Update' },
-      { key: 'md' as TabModal, label: '.md' },
+      { key: 'programacion_insert' as TabModal, label: tc('tabProgInsert') },
+      { key: 'programacion_update' as TabModal, label: tc('tabProgUpdate') },
+      { key: 'md' as TabModal, label: tc('tabMd') },
     ] : []),
   ]
 

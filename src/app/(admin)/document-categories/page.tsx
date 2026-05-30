@@ -1235,7 +1235,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             ] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalCat(tab)}
                 className={`flex-1 text-center px-4 py-2 whitespace-nowrap tab-nav${tabModalCat === tab ? ' tab-nav-activo' : ''}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : tab === 'programacion_update' ? 'Prog. Update' : tab === 'md' ? '.md' : 'LLM'}
+                {tab === 'datos' ? tc('datos') : tab === 'system_prompt' ? tc('tabSystemPrompt') : tab === 'programacion_insert' ? tc('tabProgInsert') : tab === 'programacion_update' ? tc('tabProgUpdate') : tab === 'md' ? tc('tabMd') : tc('tabLlm')}
               </button>
             ))}
           </div>
@@ -1384,7 +1384,7 @@ export default function PaginaCategoriasCaracteristicaDocs() {
             {(['datos', 'system_prompt', 'programacion_insert', 'programacion_update'] as const).map((tab) => (
               <button key={tab} onClick={() => setTabModalTipo(tab)}
                 className={`flex-1 text-center px-4 py-2 whitespace-nowrap tab-nav${tabModalTipo === tab ? ' tab-nav-activo' : ''}`}>
-                {tab === 'datos' ? 'Datos' : tab === 'system_prompt' ? 'System Prompt' : tab === 'programacion_insert' ? 'Prog. Insert' : 'Prog. Update'}
+                {tab === 'datos' ? tc('datos') : tab === 'system_prompt' ? tc('tabSystemPrompt') : tab === 'programacion_insert' ? tc('tabProgInsert') : tc('tabProgUpdate')}
               </button>
             ))}
           </div>

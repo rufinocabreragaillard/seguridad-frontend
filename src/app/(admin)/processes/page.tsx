@@ -477,8 +477,8 @@ export default function PaginaProcesoInstancias() {
     : 'Nuevo proceso'
 
   const TABS: { key: Tab; label: string }[] = [
-    { key: 'datos', label: 'Datos' },
-    { key: 'detalle', label: 'Detalle' },
+    { key: 'datos', label: tc('datos') },
+    { key: 'detalle', label: tc('detalle') },
   ]
 
   return (
