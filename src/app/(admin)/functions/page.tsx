@@ -540,11 +540,11 @@ export default function PaginaFunciones() {
           <Tabla>
             <TablaCabecera><tr>
               <TablaTh className="w-20 text-center">{t('tablasTradColActiva')}</TablaTh>
-              <TablaTh>{t('tablasTradColTabla')}</TablaTh>
+              <TablaTh className="w-48">{t('tablasTradColTabla')}</TablaTh>
               <TablaTh className="w-24 text-center">{t('tablasTradColCampos')}</TablaTh>
-              <TablaTh className="w-40">{t('tablasTradColPk')}</TablaTh>
+              <TablaTh className="w-56">{t('tablasTradColPk')}</TablaTh>
               <TablaTh>{t('tablasTradColDescripcion')}</TablaTh>
-              <TablaTh className="text-right w-20">{tc('acciones')}</TablaTh>
+              <TablaTh className="text-right w-28">{tc('acciones')}</TablaTh>
             </tr></TablaCabecera>
             <TablaCuerpo>
               {cargandoTablas ? (
@@ -556,14 +556,16 @@ export default function PaginaFunciones() {
                   <TablaTd className="text-center">
                     <input type="checkbox" checked={tt.activa} onChange={() => toggleActivaTabla(tt)} className="w-4 h-4 rounded accent-primario cursor-pointer" />
                   </TablaTd>
-                  <TablaTd className="font-medium" onDoubleClick={() => abrirEditarTabla(tt)}>
+                  <TablaTd onDoubleClick={() => abrirEditarTabla(tt)}>
                     <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tt.nombre_tabla}</code>
                   </TablaTd>
                   <TablaTd className="text-center text-sm">{tt.campos.length}</TablaTd>
-                  <TablaTd className="text-xs font-mono text-texto-muted">{tt.pk_partes && tt.pk_partes.length ? tt.pk_partes.join(' + ') : tt.pk}</TablaTd>
-                  <TablaTd className="text-xs text-texto-muted">{tt.descripcion || '—'}</TablaTd>
+                  <TablaTd onDoubleClick={() => abrirEditarTabla(tt)}>
+                    <code className="text-xs bg-fondo px-2 py-1 rounded font-mono">{tt.pk_partes && tt.pk_partes.length ? tt.pk_partes.join(' + ') : tt.pk}</code>
+                  </TablaTd>
+                  <TablaTd className="text-sm">{tt.descripcion ? tt.descripcion : <span className="text-texto-muted">—</span>}</TablaTd>
                   <TablaTd>
-                    <div className="flex items-center justify-end">
+                    <div className="flex items-center justify-end gap-1">
                       <button onClick={() => abrirEditarTabla(tt)} className="p-1.5 rounded-lg hover:bg-primario-muy-claro text-texto-muted hover:text-primario transition-colors" title={tc('editar')}><Pencil size={14} /></button>
                     </div>
                   </TablaTd>
