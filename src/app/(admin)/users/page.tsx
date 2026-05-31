@@ -324,10 +324,10 @@ export default function PaginaUsuarios() {
           invitar: form.invitar,
         })
         const nuevoUsuario: Usuario = {
-          codigo_usuario: form.codigo_usuario,
-          nombre: form.nombre,
-          grupo_por_defecto: grupoActivo,
           ...creado,
+          codigo_usuario: creado.codigo_usuario ?? form.codigo_usuario,
+          nombre: creado.nombre ?? form.nombre,
+          grupo_por_defecto: grupoActivo,
         }
         setUsuarioEditando(nuevoUsuario)
         setForm((f) => ({ ...f, grupo_por_defecto: grupoActivo }))

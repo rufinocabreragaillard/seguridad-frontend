@@ -442,7 +442,7 @@ export const funcionesApi = {
   quitarAplicacion: (id: string, codigoApp: string) =>
     api.delete(`/funciones/${id}/aplicaciones/${codigoApp}`),
   listarRoles: (id: string) =>
-    api.get<{ id_rol: number; orden: number; roles: { codigo_rol: string; nombre_rol: string; codigo_grupo: string | null } | null }[]>(
+    api.get<{ id_rol: number; orden: number; roles: { codigo_rol: string; nombre_rol: string; codigo_grupo: string | null; tipo_acceso?: string | null } | null }[]>(
       `/funciones/${id}/roles`
     ).then((r) => r.data),
   asignarRol: (id: string, idRol: number) =>
@@ -762,13 +762,13 @@ export const documentosApi = {
       { timeout: 120000 },
     ).then((r) => r.data),
   // Características
-  listarCaracteristicas: (id: number) =>
+  listarCaracteristicas: (id: string) =>
     api.get<CategoriaConCaracteristicasDocs[]>(`/documentos/${id}/caracteristicas`).then((r) => r.data),
-  crearCaracteristica: (id: number, datos: Partial<CaracteristicaDocumento>) =>
+  crearCaracteristica: (id: string, datos: Partial<CaracteristicaDocumento>) =>
     api.post<CaracteristicaDocumento>(`/documentos/${id}/caracteristicas`, datos).then((r) => r.data),
-  actualizarCaracteristica: (id: number, idCar: number, datos: Partial<CaracteristicaDocumento>) =>
+  actualizarCaracteristica: (id: string, idCar: number, datos: Partial<CaracteristicaDocumento>) =>
     api.put<CaracteristicaDocumento>(`/documentos/${id}/caracteristicas/${idCar}`, datos).then((r) => r.data),
-  eliminarCaracteristica: (id: number, idCar: number) =>
+  eliminarCaracteristica: (id: string, idCar: number) =>
     api.delete(`/documentos/${id}/caracteristicas/${idCar}`),
   // Procesamiento LLM
   resumir: (id: number, texto: string, idModelo: number) =>
@@ -827,7 +827,7 @@ export const documentosApi = {
     ).then((r) => r.data)
   },
   // TEXTO: ver texto_fuente extraído en EXTRAER (tabla documento_texto)
-  obtenerTexto: (id: number) =>
+  obtenerTexto: (id: string) =>
     api.get<{
       codigo_documento: string
       nombre_documento: string | null
@@ -841,7 +841,7 @@ export const documentosApi = {
     }>(`/documentos/${id}/texto`).then((r) => r.data),
   // CHUNKS: ver chunks generados por el proceso CHUNKEAR
   listarChunks: (
-    id: number,
+    id: string,
     params?: { q?: string; page?: number; limit?: number },
   ) =>
     api.get<{
@@ -1605,7 +1605,7 @@ export const colaEstadosDocsApi = {
     ).then((r) => r.data),
   idsInvalidos: (estadoDestino: string) =>
     api.get<number[]>('/cola-estados-docs/ids-invalidos', { params: { estado_destino: estadoDestino } }).then((r) => r.data),
-  porDocumento: (codigoDocumento: number) =>
+  porDocumento: (codigoDocumento: string) =>
     api.get<ColaEstadoDoc[]>(`/cola-estados-docs/por-documento/${codigoDocumento}`).then((r) => r.data),
   porIds: (ids: number[]) =>
     api.post<ColaEstadoDoc[]>('/cola-estados-docs/por-ids', { ids }).then((r) => r.data),

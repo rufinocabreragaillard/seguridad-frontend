@@ -366,12 +366,12 @@ export default function PaginaUsuariosSemilla() {
     }
     setGuardando(true)
     try {
-      const datos = {
+      const datos: Partial<Usuario> = {
         nombre: form.nombre,
         alias: form.alias || undefined,
         telefono: form.telefono || undefined,
         descripcion: form.descripcion || undefined,
-        tipo_acceso: form.tipo_acceso || undefined,
+        tipo_acceso: (form.tipo_acceso || undefined) as Usuario['tipo_acceso'],
         grupo_por_defecto: form.grupo_por_defecto || undefined,
         entidad_por_defecto: form.entidad_por_defecto || undefined,
         codigo_area: form.codigo_area || undefined,
@@ -385,8 +385,9 @@ export default function PaginaUsuariosSemilla() {
         await usuariosApi.actualizar(usuarioEditando.codigo_usuario, datos)
       } else {
         await usuariosApi.crear({
-          codigo_usuario: form.codigo_usuario,
           ...datos,
+          codigo_usuario: form.codigo_usuario,
+          nombre: form.nombre,
           invitar: form.invitar,
         })
       }
@@ -1177,8 +1178,8 @@ export default function PaginaUsuariosSemilla() {
         abierto={!!confirmarEliminar}
         titulo={tc('eliminar')}
         mensaje={tc('confirmarEliminar', { nombre: confirmarEliminar?.nombre ?? '' })}
-        onConfirmar={ejecutarEliminar}
-        onCancelar={() => setConfirmarEliminar(null)}
+        alConfirmar={ejecutarEliminar}
+        alCerrar={() => setConfirmarEliminar(null)}
         cargando={eliminando}
       />
     </div>

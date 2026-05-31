@@ -440,7 +440,7 @@ export default function TraduccionesPage() {
           }
         />
         <div className="ml-auto">
-          <Boton variante="contorno" onClick={cargarEstado} className="gap-2" deshabilitado={enGeneracion}>
+          <Boton variante="contorno" onClick={cargarEstado} className="gap-2" disabled={enGeneracion}>
             <RefreshCw size={14} /> {tc('actualizar')}
           </Boton>
         </div>
@@ -499,7 +499,7 @@ export default function TraduccionesPage() {
             variante="primario"
             onClick={() => setModalCompleto(true)}
             cargando={enGeneracion}
-            deshabilitado={enGeneracion}
+            disabled={enGeneracion}
             className="gap-2"
           >
             <Play size={14} /> {t('regenerarTodo')}
@@ -508,7 +508,7 @@ export default function TraduccionesPage() {
             variante="contorno"
             onClick={generarIncremental}
             cargando={enGeneracion}
-            deshabilitado={enGeneracion || (estado?.cambios_pendientes ?? 0) === 0}
+            disabled={enGeneracion || (estado?.cambios_pendientes ?? 0) === 0}
             className="gap-2"
           >
             <RefreshCw size={14} /> {t('soloCambios', { total: estado?.cambios_pendientes ?? 0 })}
@@ -547,7 +547,7 @@ export default function TraduccionesPage() {
             variante="contorno"
             onClick={() => { setFormNuevo({ codigo: '', nombre_nativo: '', nombre_es: '' }); setModalAgregar(true) }}
             className="gap-2"
-            deshabilitado={enGeneracion}
+            disabled={enGeneracion}
           >
             <Plus size={14} /> {t('agregarIdioma')}
           </Boton>
@@ -611,7 +611,7 @@ export default function TraduccionesPage() {
                         <Boton
                           variante="contorno"
                           onClick={() => regenerarLocale(loc.codigo)}
-                          deshabilitado={enGeneracion}
+                          disabled={enGeneracion}
                           className="text-xs py-1 px-2.5 h-auto gap-1"
                         >
                           <RefreshCw size={11} /> {t('regenerar')}

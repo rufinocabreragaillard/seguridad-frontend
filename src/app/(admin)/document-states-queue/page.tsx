@@ -100,7 +100,7 @@ export default function PaginaColaEstadosDocs() {
     setModalInit(true)
   }
 
-  const toggleDoc = (id: number) => {
+  const toggleDoc = (id: string) => {
     setDocsSeleccionados((prev) => {
       const next = new Set(prev)
       if (next.has(id)) next.delete(id)

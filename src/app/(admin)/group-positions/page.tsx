@@ -69,7 +69,7 @@ export default function PaginaPerfilesAdmin() {
         javascript: f.javascript.trim() || undefined,
         python_editado_manual: f.python_editado_manual,
         javascript_editado_manual: f.javascript_editado_manual,
-      } as Record<string, unknown>),
+      }),
     actualizarFn: (id, f) =>
       perfilesAdminApi.actualizar(id, {
         nombre_perfil: (f.nombre_perfil ?? '').trim(),

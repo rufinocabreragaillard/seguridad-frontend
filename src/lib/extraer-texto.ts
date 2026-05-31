@@ -245,7 +245,7 @@ async function extraerTextoPDF(file: File, timings?: TimingsExtraccion): Promise
         canvas.height = viewport.height
         const ctx = canvas.getContext('2d')
         if (!ctx) continue
-        await pagina.render({ canvasContext: ctx, viewport }).promise
+        await pagina.render({ canvas, canvasContext: ctx, viewport }).promise
         const base64 = canvas.toDataURL('image/jpeg', 0.8).split(',')[1]
         paginasImagen.push({ pagina: i, base64 })
       } catch {
@@ -282,7 +282,7 @@ async function extraerTextoPDF(file: File, timings?: TimingsExtraccion): Promise
           console.warn(`[extraer-texto] No se pudo obtener contexto 2D para página ${numPag}`)
           continue
         }
-        await pagina.render({ canvasContext: ctx, viewport }).promise
+        await pagina.render({ canvas, canvasContext: ctx, viewport }).promise
         // JPEG 85% — mejor legibilidad para documentos legales con texto fino
         const base64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1]
         if (!base64) {

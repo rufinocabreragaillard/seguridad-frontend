@@ -37,7 +37,7 @@ export default function PaginaTiposAcceso() {
       }),
     actualizarFn: (id, f) =>
       tiposAccesoApi.actualizar(id, {
-        nombre_tipo_acceso: f.nombre_tipo_acceso.trim(),
+        nombre_tipo_acceso: f.nombre_tipo_acceso?.trim(),
         tipo_acceso_superior: f.tipo_acceso_superior,
       }),
     eliminarFn: async (id) => { await tiposAccesoApi.eliminar(id) },
@@ -275,8 +275,8 @@ export default function PaginaTiposAcceso() {
         abierto={!!crud.confirmacion}
         titulo={t('eliminarTitulo')}
         mensaje={crud.confirmacion ? t('eliminarConfirm', { nombre: crud.confirmacion.nombre_tipo_acceso }) : ''}
-        onConfirmar={crud.confirmarEliminar}
-        onCancelar={() => crud.setConfirmacion(null)}
+        alConfirmar={crud.ejecutarEliminacion}
+        alCerrar={() => crud.setConfirmacion(null)}
         cargando={crud.eliminando}
       />
     </div>

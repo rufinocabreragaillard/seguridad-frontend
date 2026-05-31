@@ -724,9 +724,9 @@ export default function PaginaPerfiles() {
                 <p className="text-sm text-texto-muted italic">{t('sinRoles')}</p>
               ) : (
                 <SortableDndContext
-                  items={[...rolesPerfil].sort((a, b) => a.orden - b.orden) as unknown as Record<string, unknown>[]}
-                  getId={(r) => String((r as { id_rol: number }).id_rol)}
-                  onReorder={(n) => reordenarRolesPerfil(n as typeof rolesPerfil)}
+                  items={[...rolesPerfil].sort((a, b) => a.orden - b.orden)}
+                  getId={(r) => String(r.id_rol)}
+                  onReorder={(n) => reordenarRolesPerfil(n)}
                 >
                   <Tabla>
                     <TablaCabecera>
@@ -734,7 +734,7 @@ export default function PaginaPerfiles() {
                         <TablaTh className="w-8" />
                         <TablaTh>{t('colRol')}</TablaTh>
                         <TablaTh></TablaTh>
-                        <TablaTh alineacion="derecha">{t('colAccion')}</TablaTh>
+                        <TablaTh className="text-right">{t('colAccion')}</TablaTh>
                       </tr>
                     </TablaCabecera>
                     <TablaCuerpo>
@@ -752,7 +752,7 @@ export default function PaginaPerfiles() {
                                 <Insignia variante="secundario">{t('global')}</Insignia>
                               )}
                             </TablaTd>
-                            <TablaTd alineacion="derecha">
+                            <TablaTd className="text-right">
                               <Boton variante="peligro" tamano="sm" onClick={() => quitarRol(rc.id_rol)}>
                                 {t('quitar')}
                               </Boton>

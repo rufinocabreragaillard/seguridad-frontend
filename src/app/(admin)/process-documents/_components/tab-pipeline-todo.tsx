@@ -205,7 +205,7 @@ export function TabPipelineTodo({ procesos = [], ubicaciones: ubicacionesProp = 
       const raiz = resultado.directorios.find((d) => !d.codigo_ubicacion_superior)
       const sync = await ubicacionesDocsApi.sincronizar({
         directorios: resultado.directorios,
-        codigo_ubicacion_raiz: raiz?.codigo_ubicacion,
+        codigo_ubicacion_raiz: raiz?.codigo_ubicacion ?? undefined,
       })
       setP1Completados(total)
       setP1Estado('listo')

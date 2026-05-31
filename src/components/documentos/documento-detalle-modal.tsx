@@ -154,7 +154,7 @@ export function DocumentoDetalleModal({
   const tieneResumen = resumenValor != null && (esPayload(resumenValor) ? resumenValor.cifrado : !!resumenValor)
   const tieneMd = mdValor != null && (esPayload(mdValor) ? mdValor.cifrado : !!mdValor)
 
-  const cargarTexto = useCallback(async (idDocumento: number) => {
+  const cargarTexto = useCallback(async (idDocumento: string) => {
     setCargandoTexto(true)
     try {
       const data = await documentosApi.obtenerTexto(idDocumento)
@@ -226,7 +226,7 @@ export function DocumentoDetalleModal({
     }
   }
 
-  const cargarChunks = useCallback(async (idDocumento: number, q?: string, page = 1) => {
+  const cargarChunks = useCallback(async (idDocumento: string, q?: string, page = 1) => {
     setCargandoChunks(true)
     try {
       const data = await documentosApi.listarChunks(idDocumento, { q: q || undefined, page, limit: 10 })

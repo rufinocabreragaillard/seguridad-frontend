@@ -42,14 +42,6 @@ export default function PaginaTiposDocumentoPersona() {
   const [mensajeMd, setMensajeMd] = useState<{ tipo: 'ok' | 'error'; texto: string } | null>(null)
   const [md, setMd] = useState('')
 
-  useEffect(() => {
-    if (crud.modal) {
-      setMensajeMd(null)
-      const item = crud.editando as unknown as Record<string, unknown>
-      setMd((item?.md as string) || '')
-    }
-  }, [crud.modal, crud.editando])
-
   const crud = useCrudPage<TipoDocumentoPersona, FormTipoDocPers>({
     cargarFn: tiposDocumentoPersonaApi.listar,
     crearFn: (f) => tiposDocumentoPersonaApi.crear({
@@ -100,6 +92,14 @@ export default function PaginaTiposDocumentoPersona() {
     },
   })
 
+  useEffect(() => {
+    if (crud.modal) {
+      setMensajeMd(null)
+      const item = crud.editando as unknown as Record<string, unknown>
+      setMd((item?.md as string) || '')
+    }
+  }, [crud.modal, crud.editando])
+
   const filtradosOrdenados = [...crud.filtrados].sort((a, b) => a.nombre.localeCompare(b.nombre))
 
   return (
@@ -129,7 +129,6 @@ export default function PaginaTiposDocumentoPersona() {
         columnas={[
           columnaNombre<TipoDocumentoPersona>(t('colNombre'), (item) => item.nombre),
           columnaDescripcion<TipoDocumentoPersona>(t('colDescripcion'), (item) => item.descripcion),
-          ,
           columnaCodigo<TipoDocumentoPersona>(t('colCodigo'), (item) => item.codigo_tipo_doc),
         ]}
         items={filtradosOrdenados}

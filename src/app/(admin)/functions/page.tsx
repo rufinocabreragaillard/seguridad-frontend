@@ -108,7 +108,7 @@ export default function PaginaFunciones() {
   const [cargandoApisFuncion, setCargandoApisFuncion] = useState(false)
 
   // Roles de la funcion
-  type RolDeFuncion = { id_rol: number; orden: number; roles: { codigo_rol: string; nombre_rol: string; codigo_grupo: string | null; tipo_acceso: string | null } | null }
+  type RolDeFuncion = { id_rol: number; orden: number; roles: { codigo_rol: string; nombre_rol: string; codigo_grupo: string | null; tipo_acceso?: string | null } | null }
   const [rolesDeFuncion, setRolesDeFuncion] = useState<RolDeFuncion[]>([])
   const [cargandoRolesFuncion, setCargandoRolesFuncion] = useState(false)
   const [rolesDisponibles, setRolesDisponibles] = useState<Rol[]>([])
@@ -451,7 +451,7 @@ export default function PaginaFunciones() {
         </div>
       </div>
 
-      <SortableDndContext items={funcionesFiltradas as unknown as Record<string, unknown>[]} getId={(f) => (f as Funcion).codigo_funcion} onReorder={(n) => reordenarFunciones(n as unknown as Funcion[])} disabled={!!busqueda}>
+      <SortableDndContext items={funcionesFiltradas} getId={(f) => f.codigo_funcion} onReorder={(n) => reordenarFunciones(n)} disabled={!!busqueda}>
         <Tabla>
           <TablaCabecera><tr><TablaTh className="w-8" /><TablaTh className="w-28">{t('colTipo')}</TablaTh><TablaTh className="w-32">{t('colAlias')}</TablaTh><TablaTh>{t('colNombre')}</TablaTh><TablaTh className="w-40">{t('colUrl')}</TablaTh><TablaTh className="w-40">{t('colCodigo')}</TablaTh><TablaTh className="text-right w-28">{tc('acciones')}</TablaTh></tr></TablaCabecera>
           <TablaCuerpo>

@@ -393,10 +393,10 @@ export default function PaginaTareasDatosBasicos() {
     } catch { cargarEstados() }
   }
 
-  const toggleActivoTipo = async (t: TipoTarea) => {
+  const toggleActivoTipo = async (tipo: TipoTarea) => {
     try {
       await tareasDatosBasicosApi.actualizarTipoTar(
-        t.codigo_categoria_tarea, t.codigo_tipo_tarea, 
+        tipo.codigo_categoria_tarea, tipo.codigo_tipo_tarea, {},
       )
       cargarTipos()
     } catch (err) {
@@ -449,7 +449,7 @@ export default function PaginaTareasDatosBasicos() {
   const toggleActivoEst = async (e: EstadoTarea) => {
     try {
       await tareasDatosBasicosApi.actualizarEstadoTar(
-        e.codigo_categoria_tarea, e.codigo_tipo_tarea, e.codigo_estado_tarea, 
+        e.codigo_categoria_tarea, e.codigo_tipo_tarea, e.codigo_estado_tarea, {},
       )
       cargarEstados()
     } catch (err) {
@@ -1090,7 +1090,7 @@ export default function PaginaTareasDatosBasicos() {
       </Modal>
 
       {/* Modal Tipo Canónico */}
-      <Modal abierto={modalTC} alCerrar={() => setModalTC(false)} titulo={tcEditando ? `Editar Tipo Canónico: ${tcEditando.nombre} - ${tcEditando.codigo_tipo_canonico}` : t('tcNuevoTitulo')}>
+      <Modal abierto={modalTC} alCerrar={() => setModalTC(false)} titulo={tcEditando ? `Editar Tipo Canónico: ${tcEditando.nombre_tipo_canonico} - ${tcEditando.codigo_tipo_canonico}` : t('tcNuevoTitulo')}>
         <div className="flex flex-col gap-4 min-w-[400px]">
           {!tcEditando && (
             <Input etiqueta={t('etiquetaCodigoAutogenerar')} value={formTC.codigo_tipo_canonico}

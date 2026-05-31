@@ -394,7 +394,7 @@ export default function PaginaCategoriasCaracteristica() {
             </div>
           </div>
 
-          <SortableDndContext items={catsFiltradas as unknown as Record<string,unknown>[]} getId={(c) => (c as {codigo_cat_pers:string}).codigo_cat_pers} onReorder={(n) => reordenarCategorias(n as typeof categorias)} disabled={!!busquedaCat}>
+          <SortableDndContext items={catsFiltradas} getId={(c) => c.codigo_cat_pers} onReorder={(n) => reordenarCategorias(n)} disabled={!!busquedaCat}>
             <Tabla>
               <TablaCabecera>
                 <tr>
@@ -515,7 +515,7 @@ export default function PaginaCategoriasCaracteristica() {
               </div>
 
               {/* Tabla roles asignados */}
-              <SortableDndContext items={rolesCategoria as unknown as Record<string,unknown>[]} getId={(r) => String((r as {id_rol:number}).id_rol)} onReorder={(n) => reordenarRolesCategoria(n as typeof rolesCategoria)}>
+              <SortableDndContext items={rolesCategoria} getId={(r) => String(r.id_rol)} onReorder={(n) => reordenarRolesCategoria(n)}>
                 <Tabla>
                   <TablaCabecera>
                     <tr>
