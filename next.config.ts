@@ -11,10 +11,9 @@ const nextConfig: NextConfig & { eslint?: { ignoreDuringBuilds?: boolean } } = {
     NEXT_PUBLIC_VERSION: pkg.version,
     NEXT_PUBLIC_GIT_SHA: process.env.VERCEL_GIT_COMMIT_SHA || "",
   },
-  typescript: {
-    // Permite que el build pase aunque haya errores de tipos
-    ignoreBuildErrors: true,
-  },
+  // typescript.ignoreBuildErrors removido (2026-05-31): tsc en 0 errores.
+  // El build de Next ahora falla ante cualquier error de tipos → tsc vuelve a
+  // ser red de seguridad real en CI/Vercel. No reactivar sin justificación.
   eslint: {
     // Permite que el build pase aunque haya errores de ESLint
     ignoreDuringBuilds: true,
