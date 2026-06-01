@@ -732,6 +732,12 @@ export const documentosApi = {
       '/documentos/resetear-a-cargado',
       { codigos_documento },
     ).then((r) => r.data),
+  // Apartar a REVISAR los docs que el pipeline no logró avanzar (loop atascado).
+  marcarRevisar: (codigos_documento: string[], detalle?: string) =>
+    api.post<{ marcados: number }>(
+      '/documentos/marcar-revisar',
+      { codigos_documento, detalle },
+    ).then((r) => r.data),
   // Revertir al estado anterior (solo UPDATE, sin procesamiento).
   // estados_origen incluye éxito + inválido del mismo paso.
   // Ej: ['VECTORIZADO','NO_VECTORIZADO'] → 'CHUNKEADO'  (NO toca NO_CHUNKEADO)
