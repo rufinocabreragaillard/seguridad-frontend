@@ -248,6 +248,15 @@ export async function ejecutarExtraer(opts: {
     debugTiempos = (r?.valor || '').toLowerCase() === 'true'
   } catch { /* apagado */ }
 
+  // 4b. Tamaño máximo del archivo (MB) — archivos mayores se apartan a REVISAR
+  // sin intentar extraerlos (un archivo enorme cuelga la extracción en el navegador).
+  let maxTamanoMb = 800
+  try {
+    const r = await parametrosApi.obtenerValor('PROCESAMIENTO', 'TAMAÑO_MAXIMO_ARCHIVO')
+    const v = parseInt(r?.valor || '', 10)
+    if (!Number.isNaN(v) && v > 0) maxTamanoMb = v
+  } catch { /* usa default 800 */ }
+
   // 5. Cola local inicial
   const colaInicial: ItemColaLocal[] = docsFinal.map((doc) => ({
     id_cola: 0,
@@ -295,6 +304,21 @@ export async function ejecutarExtraer(opts: {
       }
 
       const ext = (item.ubicacion_documento.split('.').pop() || '').toLowerCase()
+
+      // Guard de tamaño: si el archivo supera TAMAÑO_MAXIMO_ARCHIVO (MB), lo
+      // apartamos a REVISAR y seguimos con el siguiente — sin leer el contenido,
+      // que es lo que cuelga la extracción en el navegador con archivos enormes.
+      const archivoMeta = await fileHandle.getFile()
+      const tamanoMb = archivoMeta.size / (1024 * 1024)
+      if (tamanoMb > maxTamanoMb) {
+        await documentosApi.marcarRevisar(
+          [item.codigo_documento],
+          `El archivo tiene más de ${maxTamanoMb} MB (${tamanoMb.toFixed(0)} MB); apartado para revisión manual`,
+        )
+        onItem?.({ ...item, estado_cola: 'COMPLETADO', resultado: `REVISAR (>${maxTamanoMb}MB)`, tiempo_ms: Date.now() - t0 })
+        return
+      }
+
       const tExtraccion = Date.now()
       const contenidoRaw = await extraerTextoDeArchivo(fileHandle, timeoutExtraccionMs, timings)
       subDuracionMs = Date.now() - tExtraccion
