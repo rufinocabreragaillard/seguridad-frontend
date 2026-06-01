@@ -708,7 +708,7 @@ export interface RespuestaPaginadaApi<T> {
 export const documentosApi = {
   listar: (params?: { codigo_estado_doc?: string; q?: string; limit?: number }) =>
     api.get<Documento[]>('/documentos', { params }).then((r) => r.data),
-  listarPaginado: (params: { page: number; limit: number; codigo_estado_doc?: string; q?: string; ruta_prefijo?: string }) =>
+  listarPaginado: (params: { page: number; limit: number; codigo_estado_doc?: string; tipo_estado?: 'VALIDO' | 'INVALIDO'; q?: string; ruta_prefijo?: string }) =>
     api.get<RespuestaPaginadaApi<Documento>>('/documentos/paginado', { params, timeout: 45000 }).then((r) => r.data),
   obtener: (codigo: string) =>
     api.get<Documento>(`/documentos/${codigo}`).then((r) => r.data),

@@ -876,6 +876,7 @@ export interface EstadoDoc {
   nombre_estado: string
   descripcion?: string | null
   orden: number
+  tipo_estado?: 'VALIDO' | 'INVALIDO' | null
   prompt_insert?: string | null
   prompt_update?: string | null
   python_insert?: string | null

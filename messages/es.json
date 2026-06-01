@@ -1276,6 +1276,8 @@
     "titulo": "Documentos",
     "subtitulo": "Gestión de documentos del grupo",
     "buscarPlaceholder": "Buscar por nombre o resumen...",
+    "estadoValidos": "Válidos",
+    "estadoInvalidos": "Inválidos",
     "nuevoDocumento": "Nuevo documento",
     "sinDocumentos": "No se encontraron documentos",
     "colId": "ID",

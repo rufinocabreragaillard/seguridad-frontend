@@ -35,11 +35,16 @@ export default function PaginaDocumentos() {
   const [estados, setEstados] = useState<EstadoDoc[]>([])
   const [busqueda, setBusqueda] = useState('')
   const [estadoFiltro, setEstadoFiltro] = useState('')
+  // Toggle de clase de estado: '' (todos) | 'VALIDO' | 'INVALIDO'.
+  const [tipoEstadoFiltro, setTipoEstadoFiltro] = useState<'' | 'VALIDO' | 'INVALIDO'>('')
 
-  // Estados ordenados: primero los válidos (ruta feliz, orden múltiplo de 10),
-  // luego los no válidos (NO_*, REVISAR, ELIMINADO). Dentro de cada grupo, por `orden`.
+  // Estados ordenados: primero los válidos (ruta feliz), luego los inválidos
+  // (NO_*, REVISAR, ELIMINADO). Dentro de cada grupo, por `orden`.
+  // Clase del estado: usa el campo real `tipo_estado` de estados_procesos; si el
+  // catálogo aún no lo trae, cae a la heurística histórica orden % 10 === 0.
   const estadosOrdenados = useMemo(() => {
-    const esValido = (e: EstadoDoc) => e.orden % 10 === 0
+    const esValido = (e: EstadoDoc) =>
+      e.tipo_estado ? e.tipo_estado === 'VALIDO' : e.orden % 10 === 0
     return [...estados].sort((a, b) => {
       const va = esValido(a) ? 0 : 1
       const vb = esValido(b) ? 0 : 1
@@ -52,9 +57,10 @@ export default function PaginaDocumentos() {
   const filtros = useMemo(() => ({
     q: busqueda.trim() || undefined,
     codigo_estado_doc: estadoFiltro || undefined,
-  }), [busqueda, estadoFiltro])
+    tipo_estado: tipoEstadoFiltro || undefined,
+  }), [busqueda, estadoFiltro, tipoEstadoFiltro])
   const fetcher = useCallback(
-    (params: { page: number; limit: number; q?: string}) =>
+    (params: { page: number; limit: number; q?: string; codigo_estado_doc?: string; tipo_estado?: 'VALIDO' | 'INVALIDO' }) =>
       documentosApi.listarPaginado(params),
     [],
   )
@@ -67,7 +73,7 @@ export default function PaginaDocumentos() {
     setPage,
     setLimit,
     refetch,
-  } = usePaginacion<Documento, { q?: string}>({
+  } = usePaginacion<Documento, { q?: string; codigo_estado_doc?: string; tipo_estado?: 'VALIDO' | 'INVALIDO' }>({
     fetcher,
     filtros,
     limitInicial: 50,
@@ -208,6 +214,27 @@ export default function PaginaDocumentos() {
                 onChange={(e) => setBusqueda(e.target.value)}
                 icono={<Search size={15} />}
               />
+            </div>
+            {/* Toggle segmentado: clase del estado (Válidos / Inválidos) */}
+            <div className="inline-flex rounded-md border border-borde overflow-hidden">
+              {([
+                { val: '', label: tc('todos') },
+                { val: 'VALIDO', label: t('estadoValidos') },
+                { val: 'INVALIDO', label: t('estadoInvalidos') },
+              ] as const).map((opt) => (
+                <button
+                  key={opt.val || 'todos'}
+                  type="button"
+                  onClick={() => setTipoEstadoFiltro(opt.val)}
+                  className={`text-sm px-3 py-2 transition-colors ${
+                    tipoEstadoFiltro === opt.val
+                      ? 'bg-primario text-white'
+                      : 'bg-surface text-texto hover:bg-primario-muy-claro'
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              ))}
             </div>
             <select
               value={estadoFiltro}
