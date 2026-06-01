@@ -1736,6 +1736,7 @@
     "elegirOtraCarpeta": "Elegir otra carpeta",
     "ahoraMismo": "Ahora mismo",
     "sinDocsNuevos": "No hay nuevos documentos a procesar. Todo está al día.",
+    "cargarPrimeroDirectorios": "Carga primero un directorio en el Paso 1 para empezar.",
     "vectorizados": "vectorizados",
     "noProcesables": "no procesables",
     "verDetalles": "Ver detalles"

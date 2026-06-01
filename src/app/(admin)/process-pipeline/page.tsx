@@ -1448,6 +1448,7 @@ export default function PaginaCargaDocsUsuario() {
                   }}
                   ejecutando={ejecutando}
                   sinDocsNuevos={sinDocsNuevos}
+                  sinUbicaciones={!modoLocal && !cargandoUbs && ubicaciones.length === 0}
                   slotArribaBotones={(
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-col gap-0.5 -mt-1">

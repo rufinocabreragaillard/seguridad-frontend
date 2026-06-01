@@ -64,6 +64,10 @@ interface PipelineConversacionalProps {
   /** True cuando la última corrida terminó sin documentos nuevos que procesar:
    * el bloque "Ahora mismo" informa que está todo al día en vez del archivo en curso. */
   sinDocsNuevos?: boolean
+  /** True cuando aún no hay ubicaciones cargadas (no se ejecutó el Paso 1):
+   * el bloque "Ahora mismo" invita a cargar primero un directorio, en vez de
+   * decir que está todo al día. Tiene prioridad sobre `sinDocsNuevos`. */
+  sinUbicaciones?: boolean
   /** Texto del bloque "Por qué" — ya no se renderiza, conservado por compatibilidad con callers. */
   porQueTexto?: string
   /** Mensaje de error inhabilitador (rojo). */
@@ -87,6 +91,7 @@ export function PipelineConversacional({
   enProceso,
   ejecutando,
   sinDocsNuevos,
+  sinUbicaciones,
   mensajeError,
   mensajeAdvertencia,
   slotArribaBotones,
@@ -162,13 +167,17 @@ export function PipelineConversacional({
                 - Ejecutando → archivo en curso.
                 - Terminó sin docs nuevos → mensaje "todo al día" (informa al usuario
                   que no quedó nada pendiente de procesar). */}
-            {(ejecutando || sinDocsNuevos) && (
+            {(ejecutando || sinDocsNuevos || sinUbicaciones) && (
               <div className="border-t border-borde pt-3 mt-1 flex flex-col gap-3 min-w-0">
                 <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
                     {t('ahoraMismo')}
                   </span>
-                  {!ejecutando && sinDocsNuevos ? (
+                  {!ejecutando && sinUbicaciones ? (
+                    <span className="text-sm text-texto leading-snug">
+                      {t('cargarPrimeroDirectorios')}
+                    </span>
+                  ) : !ejecutando && sinDocsNuevos ? (
                     <span className="text-sm text-texto leading-snug">
                       {t('sinDocsNuevos')}
                     </span>

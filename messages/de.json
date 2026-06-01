@@ -2804,6 +2804,7 @@
   "pipelineConversacional": {
     "ahoraMismo": "Gerade jetzt",
     "sinDocsNuevos": "Keine neuen Dokumente zu verarbeiten. Alles ist aktuell.",
+    "cargarPrimeroDirectorios": "Laden Sie zuerst in Schritt 1 ein Verzeichnis, um zu beginnen.",
     "verDetalles": "Details anzeigen",
     "vectorizados": "vektorisiert",
     "noProcesables": "nicht verarbeitbar",
