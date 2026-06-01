@@ -2803,6 +2803,7 @@
   },
   "pipelineConversacional": {
     "ahoraMismo": "Gerade jetzt",
+    "sinDocsNuevos": "Keine neuen Dokumente zu verarbeiten. Alles ist aktuell.",
     "verDetalles": "Details anzeigen",
     "vectorizados": "vektorisiert",
     "noProcesables": "nicht verarbeitbar",

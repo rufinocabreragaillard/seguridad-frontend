@@ -61,6 +61,9 @@ interface PipelineConversacionalProps {
   }
 
   ejecutando: boolean
+  /** True cuando la última corrida terminó sin documentos nuevos que procesar:
+   * el bloque "Ahora mismo" informa que está todo al día en vez del archivo en curso. */
+  sinDocsNuevos?: boolean
   /** Texto del bloque "Por qué" — ya no se renderiza, conservado por compatibilidad con callers. */
   porQueTexto?: string
   /** Mensaje de error inhabilitador (rojo). */
@@ -83,6 +86,7 @@ export function PipelineConversacional({
   antesDeEmpezar,
   enProceso,
   ejecutando,
+  sinDocsNuevos,
   mensajeError,
   mensajeAdvertencia,
   slotArribaBotones,
@@ -154,16 +158,25 @@ export function PipelineConversacional({
               )}
             </div>
 
-            {/* En proceso: AHORA MISMO bajo los botones */}
-            {ejecutando && (
+            {/* En proceso: AHORA MISMO bajo los botones.
+                - Ejecutando → archivo en curso.
+                - Terminó sin docs nuevos → mensaje "todo al día" (informa al usuario
+                  que no quedó nada pendiente de procesar). */}
+            {(ejecutando || sinDocsNuevos) && (
               <div className="border-t border-borde pt-3 mt-1 flex flex-col gap-3 min-w-0">
                 <div className="flex flex-col gap-1 min-w-0">
                   <span className="text-[10px] font-semibold uppercase tracking-wider text-texto-muted">
                     {t('ahoraMismo')}
                   </span>
-                  <span className="font-mono text-sm text-texto break-all">
-                    {enProceso.actual.archivoActual ?? '—'}
-                  </span>
+                  {!ejecutando && sinDocsNuevos ? (
+                    <span className="text-sm text-texto leading-snug">
+                      {t('sinDocsNuevos')}
+                    </span>
+                  ) : (
+                    <span className="font-mono text-sm text-texto break-all">
+                      {enProceso.actual.archivoActual ?? '—'}
+                    </span>
+                  )}
                 </div>
               </div>
             )}

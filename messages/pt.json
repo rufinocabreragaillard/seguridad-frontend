@@ -2806,6 +2806,7 @@
   },
   "pipelineConversacional": {
     "ahoraMismo": "Agora mesmo",
+    "sinDocsNuevos": "Não há novos documentos a processar. Está tudo em dia.",
     "verDetalles": "Ver detalhes",
     "vectorizados": "vetorizados",
     "noProcesables": "não processáveis",

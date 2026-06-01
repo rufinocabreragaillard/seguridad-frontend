@@ -484,6 +484,13 @@ export default function PaginaCargaDocsUsuario() {
 
   const [progresos, setProgresos] = useState<Record<string, ProgresoPaso>>(progresosIniciales)
   const [ejecutando, setEjecutando] = useState(false)
+  // True cuando la última corrida terminó sin documentos nuevos que procesar
+  // (todo ya estaba vectorizado/no procesable). Se usa para informar en el
+  // bloque "Ahora mismo" que está todo al día. Se resetea al iniciar cada corrida.
+  const [sinDocsNuevos, setSinDocsNuevos] = useState(false)
+  // Marca si la corrida actual avanzó algún documento real (algún paso accionable
+  // —distinto de CARGAR, que siempre reporta total=1— recibió docs a procesar).
+  const huboTrabajoRef = useRef(false)
   // Modo local (Client LM): pipeline 100% local contra el FastAPI 127.0.0.1.
   const [modoLocal, setModoLocal] = useState(false)
   const modoLocalRef = useRef(false)
@@ -639,8 +646,14 @@ export default function PaginaCargaDocsUsuario() {
     }
   }
 
-  const setPaso = (key: string, patch: Partial<ProgresoPaso>) =>
+  const setPaso = (key: string, patch: Partial<ProgresoPaso>) => {
+    // Si un paso accionable (no CARGAR) reporta documentos a procesar, hubo trabajo
+    // real en la corrida → no se mostrará "no hay nuevos documentos".
+    if (key !== 'CARGAR' && typeof patch.total === 'number' && patch.total > 0) {
+      huboTrabajoRef.current = true
+    }
     setProgresos((prev) => ({ ...prev, [key]: { ...prev[key], ...patch } }))
+  }
 
   // EXTRAER (CARGADO → METADATA, client-side): delega en _lib/ejecutar-paso para
   // compartir lógica con /process-documents (OCR, antiword, fast-path de tipos no
@@ -762,7 +775,7 @@ export default function PaginaCargaDocsUsuario() {
   // Pipeline 100% LOCAL (Client LM): elegir carpeta nativa → ingestar → procesar
   // → poll del estado local. El contenido y los embeddings nunca suben al servidor.
   const ejecutarPipelineLocal = async () => {
-    setMensajeError(''); setMensajeAdvertencia(''); abortRef.current = false; setEjecutando(true)
+    setMensajeError(''); setMensajeAdvertencia(''); setSinDocsNuevos(false); abortRef.current = false; setEjecutando(true)
     setTiempoInicio(Date.now()); setTiempoTranscurrido(0)
     setProgresos(progresosIniciales()); setArchivoActualLocal(null)
     try {
@@ -795,9 +808,103 @@ export default function PaginaCargaDocsUsuario() {
     }
   }
 
+  // Estados de documento que cuentan como "pendiente" (el pipeline aún debe avanzarlos).
+  const ESTADOS_PIPELINE_INTERMEDIOS = ['CARGADO', 'METADATA', 'ESCANEADO', 'CHUNKEADO']
+  // Ciclos consecutivos sin avance antes de apartar un doc a REVISAR.
+  const MAX_CICLOS_SIN_AVANCE = 5
+  // Techo global de seguridad por corrida (mucho menor que el viejo 200).
+  const MAX_ITERACIONES = 30
+
+  // Loop de paquetes compartido por ejecutarPipeline y ejecutarPipelineUbicaciones.
+  // Corre una ventana, limpia COMPLETADOs y refresca contadores. Si los MISMOS
+  // documentos siguen en estados intermedios sin avanzar durante MAX_CICLOS_SIN_AVANCE
+  // ciclos, los aparta a REVISAR (nombrándolos en pantalla) y continúa con el resto,
+  // evitando el loop infinito que provocaba un doc que nunca completa.
+  const correrLoopPaquetes = async (tamanoPaquete: number) => {
+    let iteraciones = 0
+    let ciclosSinAvance = 0
+    // Firma del conjunto pendiente del ciclo anterior, para detectar estancamiento.
+    let firmaAnterior = ''
+    const yaRevisar = new Set<string>()
+
+    while (!abortRef.current && iteraciones < MAX_ITERACIONES) {
+      iteraciones += 1
+
+      // Procesar UNA ventana.
+      const ok = await ejecutarFasesDelPipeline(tamanoPaquete)
+      if (!ok) break
+
+      // Cierre del paquete: limpia COMPLETADOs para acotar la cola.
+      try { await colaEstadosDocsApi.limpiarCompletados() } catch { /* no bloquear si falla */ }
+
+      // Refrescar contadores para que la BarraPaqueteOperativo avance.
+      await cargarConteos()
+      try {
+        const resumen2 = await colaEstadosDocsApi.resumenPipeline(120)
+        setResumenPipeline(resumen2)
+      } catch { /* ignorar */ }
+
+      // ¿Quedan pendientes? Listar los docs en estados intermedios para conocer
+      // su identidad (no solo el total) y poder detectar estancamiento y nombrarlos.
+      let docsPendientes: { codigo_documento: string; nombre_documento?: string | null; codigo_estado_doc?: string | null }[] = []
+      try {
+        const listas = await Promise.all(
+          ESTADOS_PIPELINE_INTERMEDIOS.map((e) =>
+            documentosApi.listar({ codigo_estado_doc: e, limit: 500 }).catch(() => [] as never[])
+          )
+        )
+        docsPendientes = listas.flat().filter((d) => !yaRevisar.has(d.codigo_documento))
+      } catch { break }
+
+      if (docsPendientes.length <= 0) break
+
+      // Firma = conjunto ordenado de (codigo:estado). Si no cambia entre ciclos,
+      // ningún doc avanzó.
+      const firmaActual = docsPendientes
+        .map((d) => `${d.codigo_documento}:${d.codigo_estado_doc ?? ''}`)
+        .sort()
+        .join('|')
+
+      if (firmaActual === firmaAnterior) {
+        ciclosSinAvance += 1
+      } else {
+        ciclosSinAvance = 0
+        firmaAnterior = firmaActual
+      }
+
+      if (ciclosSinAvance >= MAX_CICLOS_SIN_AVANCE) {
+        // Apartar los atascados a REVISAR y seguir.
+        const codigos = docsPendientes.map((d) => d.codigo_documento)
+        const nombres = docsPendientes
+          .map((d) => d.nombre_documento || d.codigo_documento)
+          .slice(0, 5)
+        try {
+          await documentosApi.marcarRevisar(
+            codigos,
+            'El pipeline no logró avanzar este documento tras varios intentos.',
+          )
+        } catch { /* si falla el marcado, igual cortamos para no quedar en loop */ }
+        codigos.forEach((c) => yaRevisar.add(c))
+        const extra = docsPendientes.length > nombres.length
+          ? t('revisarYMasDocs', { n: docsPendientes.length - nombres.length }) || ` y ${docsPendientes.length - nombres.length} más`
+          : ''
+        setMensajeAdvertencia(
+          (t('avisoDocsARevisar', { docs: nombres.join(', '), extra }) ||
+            `Se apartaron a "Revisar" ${docsPendientes.length} documento(s) que no avanzaron: ${nombres.join(', ')}${extra}. El pipeline continuó con el resto.`),
+        )
+        // Refrescar y reiniciar el detector; el resto puede seguir.
+        await cargarConteos()
+        firmaAnterior = ''
+        ciclosSinAvance = 0
+        continue
+      }
+    }
+  }
+
   const ejecutarPipeline = async () => {
     if (modoLocalRef.current) { await ejecutarPipelineLocal(); return }
-    setMensajeError(''); setMensajeAdvertencia(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
+    setMensajeError(''); setMensajeAdvertencia(''); setSinDocsNuevos(false); huboTrabajoRef.current = false; abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
+    let huboError = false
     try {
       // Leer tamaño de paquete del resumen del pipeline
       let tamanoPaquete = 0
@@ -814,39 +921,18 @@ export default function PaginaCargaDocsUsuario() {
           if (!ok) break
         }
       } else {
-        // Loop de paquetes: corre fases con tope = TAMANO_PAQUETE, limpia, repite
-        const ESTADOS_PIPELINE_INTERMEDIOS = ['CARGADO', 'METADATA', 'ESCANEADO', 'CHUNKEADO']
-        let iteraciones = 0
-        const MAX_ITERACIONES = 200 // safety guard
-        // Siempre ejecutar al menos una ronda completa (incluye CARGAR).
-        while (!abortRef.current && iteraciones < MAX_ITERACIONES) {
-          iteraciones += 1
-
-          // Procesar UNA ventana
-          const ok = await ejecutarFasesDelPipeline(tamanoPaquete)
-          if (!ok) break
-
-          // Cierre del paquete: limpia COMPLETADOs para acotar la cola
-          try { await colaEstadosDocsApi.limpiarCompletados() } catch { /* no bloquear si falla */ }
-
-          // Refrescar contadores para que la BarraPaqueteOperativo avance
-          await cargarConteos()
-          try {
-            const resumen2 = await colaEstadosDocsApi.resumenPipeline(120)
-            setResumenPipeline(resumen2)
-          } catch { /* ignorar */ }
-
-          // Verificar si quedaron pendientes para seguir iterando
-          let pendientes = 0
-          try {
-            const conteos = await documentosApi.contarPorEstado()
-            pendientes = ESTADOS_PIPELINE_INTERMEDIOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
-          } catch { break }
-          if (pendientes <= 0) break
-        }
+        // Loop de paquetes: corre fases con tope = TAMANO_PAQUETE, limpia, repite.
+        // Si el conteo de pendientes NO baja en varios ciclos, hay docs atascados:
+        // se apartan a REVISAR (nombrándolos) y el pipeline sigue con el resto.
+        await correrLoopPaquetes(tamanoPaquete)
       }
-    } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
-    finally { desuscribirCola(); setEjecutando(false); await cargarConteos() }
+    } catch (e) { huboError = true; setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
+    finally {
+      desuscribirCola(); setEjecutando(false); await cargarConteos()
+      // Si la corrida completó sin abortar ni error y no avanzó ningún documento,
+      // todo estaba ya al día → informar "no hay nuevos documentos a procesar".
+      if (!abortRef.current && !huboError) setSinDocsNuevos(!huboTrabajoRef.current)
+    }
   }
 
   // Pipeline completo desde la tab Ubicaciones.
@@ -854,15 +940,16 @@ export default function PaginaCargaDocsUsuario() {
   // - Si no hay ubicaciones → abre el finder para crearlas primero.
   const ejecutarPipelineUbicaciones = async () => {
     if (modoLocalRef.current) { await ejecutarPipelineLocal(); return }
-    setMensajeError(''); setMensajeAdvertencia(''); abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
+    setMensajeError(''); setMensajeAdvertencia(''); setSinDocsNuevos(false); huboTrabajoRef.current = false; abortRef.current = false; setEjecutando(true); setTiempoInicio(Date.now()); setTiempoTranscurrido(0); setProgresos(progresosIniciales()); setArchivoActualLocal(null); suscribirCola()
+    let huboError = false
     try {
       // Paso 1: indexar ubicaciones — solo si no hay ubicaciones en BD
       if (ubicaciones.length === 0) {
-        if (!soportaDirectoryPicker()) { setMensajeError(t('alertNavegadorNoSoporta') || 'Navegador no soporta File System Access API'); return }
+        if (!soportaDirectoryPicker()) { huboError = true; setMensajeError(t('alertNavegadorNoSoporta') || 'Navegador no soporta File System Access API'); return }
         setPaso(PASO_INDEXAR, { total: 1, completados: 0, estado: 'activo' })
         try {
           const r = await escanearDirectorio(null, clavesDeshabilitadasBD())
-          if (!r) { setPaso(PASO_INDEXAR, { estado: 'listo' }) /* usuario canceló */; return }
+          if (!r) { huboError = true; setPaso(PASO_INDEXAR, { estado: 'listo' }) /* usuario canceló */; return }
           setDirHandleState(r.dirHandle); await setDirectoryHandle(r.dirHandle, userId, grupoActivo)
           const raiz = r.directorios.find((d) => d.nivel === 0)
           const res = await ubicacionesDocsApi.sincronizar({
@@ -874,6 +961,7 @@ export default function PaginaCargaDocsUsuario() {
           setEtapa1Estado('completado')
           await cargarUbicaciones()
         } catch (e) {
+          huboError = true
           setPaso(PASO_INDEXAR, { estado: 'error' })
           setMensajeError(e instanceof Error ? e.message : (t('alertErrorSincronizar') || 'Error al sincronizar'))
           return
@@ -897,32 +985,13 @@ export default function PaginaCargaDocsUsuario() {
           if (!ok) break
         }
       } else {
-        const ESTADOS_PIPELINE_INTERMEDIOS = ['CARGADO', 'METADATA', 'ESCANEADO', 'CHUNKEADO']
-        let iteraciones = 0
-        const MAX_ITERACIONES = 200
-        // Siempre ejecutar al menos una ronda completa (incluye CARGAR que llena los docs).
-        // Luego verificar pendientes para decidir si hay que repetir con más paquetes.
-        while (!abortRef.current && iteraciones < MAX_ITERACIONES) {
-          iteraciones += 1
-          const ok = await ejecutarFasesDelPipeline(tamanoPaquete)
-          if (!ok) break
-          try { await colaEstadosDocsApi.limpiarCompletados() } catch { /* no bloquear */ }
-          await cargarConteos()
-          try {
-            const resumen2 = await colaEstadosDocsApi.resumenPipeline(120)
-            setResumenPipeline(resumen2)
-          } catch { /* ignorar */ }
-          // Verificar si quedaron pendientes para seguir iterando
-          let pendientes = 0
-          try {
-            const conteos = await documentosApi.contarPorEstado()
-            pendientes = ESTADOS_PIPELINE_INTERMEDIOS.reduce((acc, e) => acc + (conteos[e] ?? 0), 0)
-          } catch { break }
-          if (pendientes <= 0) break
-        }
+        await correrLoopPaquetes(tamanoPaquete)
       }
-    } catch (e) { setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
-    finally { desuscribirCola(); setEjecutando(false); await cargarConteos() }
+    } catch (e) { huboError = true; setMensajeError(e instanceof Error ? e.message : t('errorInesperado')) }
+    finally {
+      desuscribirCola(); setEjecutando(false); await cargarConteos()
+      if (!abortRef.current && !huboError) setSinDocsNuevos(!huboTrabajoRef.current)
+    }
   }
 
   const [deteniendo, setDeteniendo] = useState(false)
@@ -1378,6 +1447,7 @@ export default function PaginaCargaDocsUsuario() {
                     deteniendo,
                   }}
                   ejecutando={ejecutando}
+                  sinDocsNuevos={sinDocsNuevos}
                   slotArribaBotones={(
                     <div className="flex flex-col gap-3">
                       <div className="flex flex-col gap-0.5 -mt-1">
